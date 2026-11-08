@@ -112,6 +112,12 @@ Measured traps (each costs a turn):
   So any verification that must RUN a script happens INSIDE the cycle while the
   lock is held; after `end_change()` it is unavailable. Plan those runs into the
   work.
+- **`execute_code` is write-class to the enforcer even for pure reads** — it
+  embeds terminal/read calls the classifier cannot see inside, so a read-only
+  `execute_code` probing files or DBs is refused with "No governed repo could
+  be resolved for this call". For lock-free multi-file inspection use repeated
+  `read_file`/`search_files` (or a simple `ls`/`grep` compound), and run
+  `execute_code` only inside a governed cycle with the repo resolved.
 - When a read is blocked, change the MECHANISM (listed primitive or
   read_file/search_files) — never re-run the same shape reworded.
 
