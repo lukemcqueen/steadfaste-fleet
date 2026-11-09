@@ -85,12 +85,17 @@ def _host(home: Path, *, mcp_json: bool = True, agent_name: str = "testagent",
     for s in CURATED:
         if s == drop_link:
             continue
-        (agent / "cortex-skills" / s).write_text("# skill\n")
+        # The audit resolves a curated skill as <root>/<name>/SKILL.md (a skill
+        # DIRECTORY, not a flat file) — the flat-cortex-skills farm was retired
+        # 2026-10-21 and the audit walks the registered published tree for each
+        # always-name's SKILL.md.
+        (agent / "cortex-skills" / s).mkdir(parents=True, exist_ok=True)
+        (agent / "cortex-skills" / s / "SKILL.md").write_text("# skill\n")
 
     (dep / "skills.yaml").write_text("version: 1\nalways:\n"
                                      + "".join(f"  - name: {s}\n" for s in CURATED))
 
-    for name, script in (("loop-governance", dep / "tools" / "loop-governance" / "loop-gov-mcp.py"),
+    for name, script in (("review", dep / "tools" / "loop-governance" / "loop-gov-mcp.py"),
                          ("tasks", dep / "scripts" / "task-mcp.py"),
                          ("executor", dep / "scripts" / "executor-mcp.py"),
                          ("agent-bus", dep / "scripts" / "fleet-bus-mcp.py"),
@@ -99,7 +104,7 @@ def _host(home: Path, *, mcp_json: bool = True, agent_name: str = "testagent",
     if mcp_json:
         import json
         entries = {}
-        for name, script in (("loop-governance", dep / "tools" / "loop-governance" / "loop-gov-mcp.py"),
+        for name, script in (("review", dep / "tools" / "loop-governance" / "loop-gov-mcp.py"),
                              ("tasks", dep / "scripts" / "task-mcp.py"),
                              ("executor", dep / "scripts" / "executor-mcp.py"),
                              ("agent-bus", dep / "scripts" / "fleet-bus-mcp.py"),

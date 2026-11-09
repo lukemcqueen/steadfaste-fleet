@@ -68,9 +68,12 @@ import json, sys
 d = json.load(open(sys.argv[1]))
 assert d["autoEnableCodemode"] is True, "existing key lost"
 assert d["mcpServers"]["user-own-server"]["command"] == "uvx", "user server clobbered"
-for n in ("loop-governance", "tasks", "executor", "agent-bus", "fleet-context"):
+for n in ("review", "tasks", "executor", "agent-bus", "fleet-context"):
     assert n in d["mcpServers"], f"{n} missing"
-s = d["mcpServers"]["loop-governance"]
+# Slice-B: the loop-gov binary is ALSO registered under its role name
+# loop-governance (a second name, not in the audit's canonical required set).
+assert "loop-governance" in d["mcpServers"], "Slice-B loop-governance name missing"
+s = d["mcpServers"]["review"]
 assert s["env"]["AGENT_NAME"] == "tituspi", f"AGENT_NAME not derived: {s.get('env')}"
 assert s["exposure"] == "direct", "governance tools must be declared to the model"
 assert s["args"][0].endswith("tools/loop-governance/loop-gov-mcp.py"), s["args"]
@@ -90,7 +93,8 @@ python3 - "$PJ" <<'EOF'
 import json, sys
 d = json.load(open(sys.argv[1]))
 assert "user-own-server" in d["mcpServers"], "remove took the user's server"
-assert "loop-governance" not in d["mcpServers"], "governance server survived remove"
+assert "review" not in d["mcpServers"], "review server survived remove"
+assert "loop-governance" not in d["mcpServers"], "loop-governance (Slice-B) survived remove"
 assert "fleet-context" not in d["mcpServers"], "fleet-context survived remove"
 assert d["autoEnableCodemode"] is True, "remove dropped an unrelated key"
 EOF
@@ -109,15 +113,19 @@ printf 'AGENT_NAME=tituspi\n' > "$HOME_B/.steadfaste-fleet/agent.env"
 { printf '#!/bin/sh\n'; printf 'exec "%s" "$@"\n' "$PY_MCP"; } > "$TD/shim/python3"
 chmod +x "$TD/shim/python3"
 PJB="$HOME_B/.pi/agent/mcp.json"
+# The registered server is `review` — the canonical name the installer's
+# interpreter-preservation probe tests (post-Slice-B it no longer reads a
+# `loop-governance`-only entry, so a fixture named loop-governance would test
+# the replace path, not the keep path).
 python3 - "$PJB" "$TD/shim/python3" <<'PY'
 import json, sys
 path, shim = sys.argv[1], sys.argv[2]
-json.dump({"mcpServers": {"loop-governance": {
+json.dump({"mcpServers": {"review": {
     "command": shim, "args": ["/x/loop-gov-mcp.py"], "env": {"AGENT_NAME": "tituspi"}}}},
     open(path, "w"))
 PY
 env HOME="$HOME_B" PYTHON="$PY_MCP" bash "$SCRIPT" >/dev/null 2>&1
-GOT="$(python3 -c "import json;print(json.load(open('$PJB'))['mcpServers']['loop-governance']['command'])")"
+GOT="$(python3 -c "import json;print(json.load(open('$PJB'))['mcpServers']['review']['command'])")"
 check "B: kept the working shim interpreter (got: $GOT)" "$([ "$GOT" = "$TD/shim/python3" ] && echo 1 || echo 0)"
 
 echo
@@ -135,7 +143,7 @@ for f in scripts/task-mcp.py scripts/executor-mcp.py scripts/fleet-bus-mcp.py \
   printf '# mcp server\n' > "$HOME_C/.steadfaste-fleet/$f"
 done
 BIN_C="$TD/bin_c"; mkdir -p "$BIN_C"
-for b in bash dirname grep cp mkdir cat sed head cut tr basename cmp; do
+for b in bash dirname grep cp mkdir cat sed head cut tr basename cmp rm awk echo; do
   ln -sf "$(command -v "$b")" "$BIN_C/$b" 2>/dev/null || true
 done
 printf '#!/bin/sh\nexit 1\n' > "$BIN_C/python3"; chmod +x "$BIN_C/python3"

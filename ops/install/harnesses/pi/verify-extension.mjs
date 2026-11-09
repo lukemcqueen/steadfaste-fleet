@@ -5,7 +5,7 @@
  * Two things are asserted, both by RUNNING the extension rather than reading it:
  *
  *  1. IT REGISTERS NO TOOLS. The memory/session tools come from the shared
- *     cortex-context MCP server, so a registerTool call here would be a SECOND
+ *     fleet-context MCP server, so a registerTool call here would be a SECOND
  *     definition of the same capability — and when the hand-written one went
  *     stale (pi 0.87.1 -> 1.0.0) every call failed silently while the store was
  *     healthy. A grep can see the word "registerTool"; only running it proves
@@ -32,12 +32,12 @@ import path from "node:path";
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 // PI_EXTENSION_UNDER_TEST is the DISCRIMINATION SEAM: point it at a PRE-FIX copy
-// (git show <rev>:ops/install/harnesses/pi/extensions/cortex-context.ts) and this
+// (git show <rev>:ops/install/harnesses/pi/extensions/fleet-context.ts) and this
 // guard MUST fail on the skill-load cases. A guard that has never failed on the
 // broken revision proves nothing about the fix.
 const EXT =
   process.env.PI_EXTENSION_UNDER_TEST ??
-  path.join(HERE, "extensions", "cortex-context.ts");
+  path.join(HERE, "extensions", "fleet-context.ts");
 
 const failures = [];
 const note = (ok, msg) => {
@@ -163,7 +163,7 @@ try {
 // ── 1. NO tools: one way in per capability ──────────────────────────────────
 note(tools.length === 0,
      `extension registers ZERO tools (got ${tools.length}) — the tools come from the ` +
-     `shared cortex-context MCP server, so a second definition here is the phantom bug`);
+     `shared fleet-context MCP server, so a second definition here is the phantom bug`);
 
 // ── 2. the hooks that own WHEN a checkpoint is written ──────────────────────
 for (const h of ["before_agent_start", "turn_end", "session_before_compact", "tool_result"]) {
