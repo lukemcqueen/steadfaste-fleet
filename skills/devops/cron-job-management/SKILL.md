@@ -109,6 +109,20 @@ id) and the job's last output under `~/.hermes/cron/output/<job_id>/`. Then eith
 it deliberately or record what the evidence shows — a silent resume is a behaviour change
 nobody asked for.
 
+**A cadence consolidation's carrier can be paused WITH a reason that names the crons you are
+about to delete — resume it in the SAME change or the function silently stops.** The "one
+job each, never three-job trios" policy retires the evening/overnight siblings of a
+workday job, and the doctor's `Orphan crons: N` / `Extra cron (<name>)` INFO items are
+exactly the signal that the policy landed in manifest+installers but the live trio was
+never pruned. Check the surviving carrier's pause reason FIRST (`hermes cron notepad <id>
+list`): a reason like "deliberately paused; the evening/overnight jobs already carry this
+workflow" is a conditional that expires the moment you delete those siblings. The correct
+sequence is: verify the installers no longer create the siblings (durable removal), remove
+siblings + resume carrier + rewrite the notepad reason in ONE change, then confirm
+`jobs.json` shows the carrier `enabled: true / state: scheduled / next_run_at` in the
+future — a resumed job whose `next_run_at` is still a past date has a stale scheduler view
+until the ticker recomputes it.
+
 ## Cron rename workflow
 
 When renaming a cron (e.g. `fleet-status-watchdog` → `orch-fleet-watchdog`):

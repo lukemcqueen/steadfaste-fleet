@@ -931,6 +931,14 @@ written while every code path looked correct.
   ops/scripts' -- <path>` was refused twice, identically, while the same command with a `+` instead of
   the `;` committed on the first try). Removing the punctuation from the message is the fix; do NOT
   re-stage or re-diagnose the index, and do not reach for `-o/--only` — the message is what is wrong.
+  **A MULTI-LINE `-m` BODY is the same trap, and `--only` is the correct escape there** — a
+  newline-bearing body (normal for a subject+body message) splits the command text the same way, so
+  the scoped form `git commit -m '<subject>\n\n<body>' -- <paths>` is refused as BARE even though
+  the pathspec is right. `git commit --only -m … -- <paths>` forces git to build the temporary
+  index the guard's "partial" verdict requires, so it passes without mutating the message; then
+  verify `git log -1 --format=%s` shows the intended subject. Prefer `-F <message-file>` for any
+  body you control, but when a multi-line `-m` is the shape, `--only` is the structural fix, not a
+  bypass.
 
 ## Verification
 
