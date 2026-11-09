@@ -123,6 +123,36 @@ every path fires — not in the matrix, and not only in the gated function.
   `WITH CHECK` that only lets a caller write its OWN rows means the reachable case is
   "a worker self-completing its own row", not "any agent completing any slice".
 
+**Delegating a gated arc (capability + recorded authorization).** When a
+role-only arc dead-ends operationally (the approved identity cannot reach the
+store the work lives in), widen it WITHOUT weakening the no-self-grade
+protection:
+- **De-name the allowlist first:** `is_<holder>(p_role)` becomes
+  `pg_has_role(p_role, '<capability_role>', 'MEMBER')` with a NOLOGIN capability
+  role granted to the default holders (IF EXISTS, per-host safe). "Add a holder"
+  is now a GRANT — data, queryable, revocable — never a schema edit, and the name
+  list disappears from the SECURITY DEFINER body.
+- **Delegate per INSTANCE, not per holder:** an authorization table (PK on the
+  instance id; verifier; authorized_by; REQUIRED note; created_at; expires_at
+  with `CHECK (expires_at > created_at)`), written only by a SECURITY DEFINER
+  function that re-checks the capability and returns `false` silently to non-
+  holders. The gated function accepts a capability holder OR a live row matching
+  (instance, caller), and CONSUMES the row on the first decision — one-shot and
+  instance-scoped, so self-delegation is impossible and a grant cannot be reused.
+- **Widen EXECUTE so every profile role can CALL the gated function:** callable
+  ≠ authorized — the inside gate stays the authority, and the refusal becomes a
+  testable `false` instead of a `permission denied` layer.
+- **The BEFORE trigger must gain the SAME delegation branch** — it fires under the
+  CALLER's `session_user` and would refuse the very path you opened — via the
+  SECURITY DEFINER visibility helper (the trigger is INVOKER and the
+  authorization table has NO table grants, so a trigger subquery would hit
+  `permission denied for table`). Accept that a granted caller's RAW update also
+  passes the trigger (same session_user): the row is instance-scoped + short-
+  lived, so the exposure is bounded to what the grant names.
+- A never-used grant is inert (expiry); state that in the migration header, and
+  validate loudly (RAISE) on bad delegation input to the AUTHORIZING side while
+  staying silent to non-holders.
+
 ## NOT NULL DEFAULT gotcha
 
 `DEFAULT current_setting('hostname', true)` returns **NULL** (no such GUC exists),
@@ -150,6 +180,15 @@ the CLI resolves `--source` filters by id, but `local_path` stays protected.
   straight into the committed evidence file (never retype it), and assert the new symbol
   is ABSENT from it (`grep -c is_orchestrator` = 0) to prove it really is the pre-change
   revision.
+- **Migration files are HISTORIC, not current: a CREATE OR REPLACE replacement
+  must be based on the body as DEPLOYED — the NEWEST migration that rewrote the
+  function — never the file that first introduced it.** Later migrations freely
+  replace parts of an earlier body (e.g. a reason-string early return replaced by
+  a verified precondition), so copying verbatim from the older file resurrects
+  the old — usually weaker — gate, and only a sibling battery assertion catches
+  it. Measure the live body (`pg_get_functiondef()` from a freshly-migrated
+  scratch DB) or read the newest migration that touched the function before
+  writing the replacement.
 - **Build the RED/GREEN pair with the FINAL test file.** Move the new migration file
   aside, run the battery (RED), restore it, run again (GREEN) — both sides then measure
   the same probe, and the RED transcript shows the defect rather than an older revision
@@ -187,6 +226,21 @@ Mirror `tests/test-bus-schema.sh` style:
   assertion is worse than no assertion, because every genuine RED afterwards is
   indistinguishable from it and the battery's signal is gone. Fix it in the same cycle
   and name the migration that changed the rule in the comment.
+- **Per-host IF EXISTS grant loops are only testable for roles that EXIST
+  locally** — a widening asserted through one existing role can pass vacuously
+  (that role may have held the grant since an earlier version). Assert
+  `bool_and(has_function_privilege(...))` over the roles that exist AND a static
+  grep guard on the migration SOURCE for the exact (unspaced) role names: a
+  single typo silently skips every grant, because the IF EXISTS guard never
+  matches a misspelled role and no host may exist to catch it.
+- **A battery under `set -eu` dies WITHOUT a Summary when a bare fixture command
+  fails** — the output ends mid-section and looks like a normal end, so the
+  failing command is easy to miss. The failure is usually a fixture problem, not
+  the gate under test: a CHECK constraint can reject the very NEGATIVE-test data
+  you manufactured through the API (an "already expired" grant row violates
+  `CHECK (expires_at > created_at)`). Manufacture CHECK-compliant negative
+  fixtures with a direct owner INSERT (all timestamps in the past), and use the
+  API only for what the API legitimately admits.
 - Idempotency check: run migrate.py twice, assert second run reports no-op.
 - Bus-untouched: assert `bus` schema table count unchanged after schema apply.
 
