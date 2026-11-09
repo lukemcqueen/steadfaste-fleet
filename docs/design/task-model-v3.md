@@ -267,3 +267,63 @@ execute fully, report once. No thrash loops, no re-derivation (SOUL #4).
 - [ ] Orchestrator decompose→dispatch→verify loop runs a full client slice end-to-end
 - [ ] Compete mode: 2 candidates on one slice → deterministic winner by AC + adversarial findings; loser archived with reason
 - [ ] Doctor green; transition matrix tests pass
+
+---
+
+## 10. Delegated verification (v017 — capability role + per-slice grants)
+
+**The dead-end this fixes** (Titus Pi gate-safety report, 2026-11-08): the
+tasks store is HOST-LOCAL, and `verify_slice` needed a moses/esther session
+inside the host's OWN Postgres. A worker host has no orchestrator identity, so
+a slice reported to `review` there sat forever — the documented fallback
+("hand the slice over") failed because the orchestrator cannot reach a peer's
+store. Titus's recorded-and-reversed workaround (temporary allowlist change,
+operator-authorization note, strict gate restored) was safe but manual; the
+durable fix is in the schema.
+
+**The model — capability, not names; authorization, not identity:**
+
+- `is_orchestrator(p_role)` is now `pg_has_role(p_role, 'tasks_verifier',
+  'MEMBER')` — a CAPABILITY check. The new NOLOGIN role `tasks_verifier` is
+  granted by default to the orchestrator reader roles (IF EXISTS, per-host);
+  "add a permanent verifier" is a GRANT, never a schema edit (no name list in
+  the deciding code).
+- `tasks.verify_grants(slice_id PK, verifier, authorized_by, note, created_at,
+  expires_at)` — the per-slice delegation record. No grants to any role; only
+  the SECURITY DEFINER functions write it.
+- `tasks.authorize_verify(p_slice_id, p_verifier, p_note, p_expires_at
+  DEFAULT now()+1h)` — orchestrator-only (silent `false` to others); refuses
+  (loudly) a nonexistent verifier role, an empty note, or a slice not in
+  `review`; upserts the row.
+- `verify_slice` accepts an orchestrator OR the verifier named in a live grant
+  for that slice; the grant is CONSUMED on the first decision (approve or
+  reject). Self-delegation is impossible (the row requires an orchestrator),
+  self-verification is impossible without a recorded authorization, and a grant
+  never crosses slices.
+- `check_transition` (trigger) gained the same delegation branch — it fires
+  under the caller's session_user, so the v014 identity check alone would have
+  refused the granted worker's own UPDATE — via `verify_grant_active()`, a
+  SECURITY DEFINER visibility helper (the trigger is INVOKER and
+  `verify_grants` has no table grants).
+
+**Operational flow** (a worker's slice stuck in review on its own host):
+
+1. Worker reports (`report`) → slice in `review`; sends the slice id + evidence
+   to moses/esther over the bus (or the operator directs the closure).
+2. Orchestrator records the authorization on the target host (its existing
+   SSH/psql path, the same one the L2 fleet test uses to apply schema):
+   `task-db.py verify-grant <slice-id> --verifier mycortex_reader_<agent>
+   --note "<why>" [--expires-in-hours N]` — writes `authorized_by` + note
+   (the audit trail Titus was approximating by hand).
+3. Worker runs `task_verify`/`task-db.py verify`; the grant is consumed; the
+   row records who authorized what.
+
+The grant is slice-scoped + short-lived + one-shot, so v014's protection — no
+authorization, no review→completed — holds everywhere; the raw-UPDATE path a
+granted worker could take stays bounded to that one slice. A never-used grant
+expires and is inert.
+
+**Tests:** `tests/test-tasks-schema.sh` AC-L1-27 (13 checks: refusal without
+grant, trigger refusal, self-authorize refusal, validation refusals, grant
+flow + consumption, one-shot, slice-scope, expiry, raw-with-grant, reject
+consumption, capability de-name, helper access, migration typo guard).

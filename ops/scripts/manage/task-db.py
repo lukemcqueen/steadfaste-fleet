@@ -190,6 +190,10 @@ V4_MIN_SCHEMA = 9
 # v5 (orchestrator write surface) features require schema v016 — the 21-arg
 # tasks.task_upsert that carries `p_plan`. Nothing else in this CLI needs it.
 V5_MIN_SCHEMA = 16
+# v6 (delegated verification) features require schema v017 — authorize_verify /
+# verify_grants / the widened verify_slice ACL. A host at v016 refuses
+# verify-grant up front with the same actionable message.
+V6_MIN_SCHEMA = 17
 
 
 def _valid_name(value: str | None) -> bool:
@@ -455,6 +459,19 @@ def _require_v5(feature: str) -> None:
     """
     if schema_version() < V5_MIN_SCHEMA:
         print(f"ERROR: {feature} requires tasks schema v{V5_MIN_SCHEMA}+ "
+              f"(found v{schema_version()}). Run: bash fleet-update.sh",
+              file=sys.stderr)
+        sys.exit(2)
+
+
+def _require_v6(feature: str) -> None:
+    """Refuse a v6 (delegated verification) feature below schema v017.
+
+    A host at v016 lacks tasks.authorize_verify / verify_grants entirely; a raw
+    `function does not exist` would hide the actionable fix. Refuse up front.
+    """
+    if schema_version() < V6_MIN_SCHEMA:
+        print(f"ERROR: {feature} requires tasks schema v{V6_MIN_SCHEMA}+ "
               f"(found v{schema_version()}). Run: bash fleet-update.sh",
               file=sys.stderr)
         sys.exit(2)
@@ -1138,6 +1155,48 @@ def cmd_verify(task_id: str, approve: bool, note: str | None = None,
     else:
         print(f"❌ Verify refused — only orchestrators (moses/esther) may "
               f"verify, or slice is not in review", file=sys.stderr)
+        sys.exit(1)
+
+
+def cmd_verify_grant(task_id: str, verifier: str, note: str,
+                     expires_in_hours: int | None = None) -> None:
+    """v6: ORCHESTRATOR-ONLY (DB-enforced) — record a per-slice verify grant.
+
+    The single-host verify dead-end fix: a slice in `review` on a WORKER host
+    can only be verified by a session on that host, and (before v017) only a
+    moses/esther session — which does not exist there. The orchestrator records
+    a slice-scoped, short-lived, one-shot grant (authorized_by + note = the
+    audit trail); the named verifier's OWN task_verify/verify_slice call then
+    honors it for that slice only, and the row is consumed on the first verify
+    decision. Self-delegation is impossible: authorize_verify refuses any
+    caller without the tasks_verifier capability.
+    """
+    _require_v6("verify-grant")
+    task_id = _resolve_uuid(task_id)
+    if not note or not note.strip():
+        print("ERROR: verify-grant requires --note (the recorded reason the "
+              "operator authorized this verification)", file=sys.stderr)
+        sys.exit(1)
+    if expires_in_hours is not None and expires_in_hours < 1:
+        print("ERROR: --expires-in-hours must be >= 1", file=sys.stderr)
+        sys.exit(1)
+    if expires_in_hours is None:
+        q = ("SELECT tasks.authorize_verify(p_slice_id=>?::uuid, "
+             "p_verifier=>?, p_note=>?);")
+        params = [task_id, verifier, note]
+    else:
+        q = ("SELECT tasks.authorize_verify(p_slice_id=>?::uuid, "
+             "p_verifier=>?, p_note=>?, p_expires_at=>now() + ?::interval);")
+        params = [task_id, verifier, note, f"{expires_in_hours} hours"]
+    ok = psql(q, params)
+    if ok.strip() == "t":
+        span = (f"  expires={expires_in_hours}h" if expires_in_hours is not None
+                else "  expires=1h (default)")
+        print(f"✅ Verify-grant {task_id[:8]}... → verifier {verifier}{span}\n"
+              f"   note: {note}")
+    else:
+        print(f"❌ Verify-grant refused — only orchestrators (moses/esther) may "
+              f"authorize verification", file=sys.stderr)
         sys.exit(1)
 
 
@@ -1825,6 +1884,22 @@ def main():
                   file=sys.stderr)
             sys.exit(1)
         cmd_verify(sys.argv[2], approve, _flag("--note"), _has("--no-notify"))
+
+    elif command == "verify-grant":
+        if len(sys.argv) < 3:
+            print("ERROR: Usage: task-db.py verify-grant <slice-id> "
+                  "--verifier <reader-role> --note <text> "
+                  "[--expires-in-hours N]", file=sys.stderr)
+            sys.exit(1)
+        verifier = _flag("--verifier")
+        note = _flag("--note")
+        exp = _flag("--expires-in-hours")
+        expiry_hours = int(exp) if exp else None
+        if not verifier:
+            print("ERROR: verify-grant requires --verifier <reader-role> "
+                  "(e.g. mycortex_reader_titus)", file=sys.stderr)
+            sys.exit(1)
+        cmd_verify_grant(sys.argv[2], verifier, note or "", expiry_hours)
 
     elif command == "pending":
         cmd_pending(_flag("--repo"), None, None, True,

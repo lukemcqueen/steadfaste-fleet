@@ -885,6 +885,172 @@ V16_CALL=$($PSQL_READER -c "SELECT tasks.task_upsert(p_content=>'L1 v16 reader c
   || fail "the reader role cannot call task_upsert after v016"
 
 echo ""
+echo "═══ AC-L1-27: v017 — delegated verify: per-slice grant, one-shot, capability-de-named ═══"
+# The single-host dead-end (Titus Pi gate-safety follow-up): verify_slice needs a
+# moses/esther session inside the host's OWN Postgres; a worker host has none, so a
+# reported slice sat in review forever (Titus worked around it with a recorded-and-
+# reversed temporary allowlist change). v017 fixes it at the source: is_orchestrator
+# becomes a capability (pg_has_role on role tasks_verifier — no name list), EXECUTE
+# on verify_slice is widened to every profile role, and the ORCHESTRATOR records a
+# per-slice verify_grant that the worker's own verify_slice call honors — slice-
+# scoped, short-lived, one-shot, audited by authorized_by+note. The BEFORE UPDATE
+# trigger gains the same delegation branch (it fires on verify_slice's UPDATE under
+# the CALLER's session_user, so the untouched v014 check would refuse the granted
+# worker); verify_grant_active is a SECURITY DEFINER visibility helper because the
+# trigger runs INVOKER and verify_grants has NO grants to any role.
+# Setup: the probe needs EXECUTE on verify_slice (v017 widens it to the six profile
+# roles; a real worker host's role IS one of them — grant the probe the same) and
+# on authorize_verify (same widening; the in-function orchestrator check is the gate).
+$PSQL -c "GRANT EXECUTE ON FUNCTION tasks.verify_slice(uuid,boolean,text), tasks.authorize_verify(uuid,name,text,timestamptz) TO ${PROBE_ROLE};" >/dev/null 2>&1
+VD_SLICE=$($PSQL_PROBE -c "SELECT tasks.task_upsert(p_content=>'L1 v17 delegated slice', p_created_by=>'probe', p_scope=>'personal');" 2>/dev/null | head -1 || true)
+$PSQL_PROBE -c "SELECT tasks.claim_slice('${VD_SLICE}', 'probe');" >/dev/null 2>&1
+$PSQL_PROBE -c "SELECT tasks.report_done('${VD_SLICE}', 'probe evidence');" >/dev/null 2>&1
+VD_ST=$($PSQL_PROBE -c "SELECT status FROM tasks.tasks WHERE id='${VD_SLICE}';" 2>/dev/null || true)
+[ "$VD_ST" = "review" ] && pass "v017: worker reached review on its own slice (setup)" \
+  || fail "v017: setup failed (status=$VD_ST)"
+
+# 1. The WIDENED EXECUTE alone is NOT authorization — the inside gate still refuses
+#    (this is the 'f', not 'permission denied', that the dead-end report asked for).
+#    The widening is asserted against the host's OWN reality: of the six profile
+#    roles the migration grants, EVERY ONE THAT EXISTS must hold EXECUTE (the
+#    grant loop is IF EXISTS-guarded per-host, so absent roles are skipped by
+#    design — asserting their names would be a false failure on a host that does
+#    not create them). bool_and over the existing set is non-vacuous here because
+#    myc cortex_reader_esther always exists on an orchestrator host.
+VD_EXECS=$($PSQL -c "SELECT COALESCE(bool_and(has_function_privilege(r.rolname, 'tasks.verify_slice(uuid,boolean,text)', 'EXECUTE')), true) FROM pg_roles r WHERE r.rolname IN ('myc cortex_reader_esther','myc cortex_reader_moses','myc cortex_reader_titus','myc cortex_reader_joseph','myc cortex_reader_kustos','myc cortex_reader_gisu');" 2>/dev/null || true)
+[ "$VD_EXECS" = "t" ] && pass "v017: every EXISTING profile role holds EXECUTE on verify_slice (widened)" \
+  || fail "v017: widening missing — some existing profile role lacks EXECUTE (bool_and=$VD_EXECS)"
+VD_REFUSED=$($PSQL_PROBE -c "SELECT tasks.verify_slice('${VD_SLICE}', true, 'no grant');" 2>/dev/null || true)
+[ "$VD_REFUSED" = "f" ] && pass "v017: worker verify refused WITHOUT a grant ($VD_REFUSED)" \
+  || fail "v017: worker verified without any grant ($VD_REFUSED)"
+
+# 2. Trigger layer, ungranted: the raw UPDATE stays refused (v014 intact).
+VD_RAW_RC=0
+VD_RAW_OUT=$($PSQL_PROBE -v ON_ERROR_STOP=1 -c "UPDATE tasks.tasks SET status='completed', \"column\"='done' WHERE id='${VD_SLICE}';" 2>&1) || VD_RAW_RC=$?
+if [ "$VD_RAW_RC" -ne 0 ] && echo "$VD_RAW_OUT" | grep -q orchestrator; then
+  pass "v017: ungranted worker raw UPDATE still refused (rc=$VD_RAW_RC)"
+else
+  fail "v017: ungranted raw UPDATE slipped through (rc=$VD_RAW_RC)" "$VD_RAW_OUT"
+fi
+
+# 3. A worker CANNOT authorize itself — authorize_verify is orchestrator-only and
+#    returns 'f' (silent) to non-orchestrators, like verify_slice.
+VD_SELF=$($PSQL_PROBE -c "SELECT tasks.authorize_verify(p_slice_id=>'${VD_SLICE}', p_verifier=>'${PROBE_ROLE}', p_note=>'self-delegation attempt', p_expires_at=>now() + interval '1 hour');" 2>/dev/null || true)
+VD_GR1=$($PSQL -c "SELECT count(*) FROM tasks.verify_grants WHERE slice_id='${VD_SLICE}';" 2>/dev/null || true)
+[ "$VD_SELF" = "f" ] && [ "$VD_GR1" = "0" ] \
+  && pass "v017: worker cannot self-authorize (authorize_verify=$VD_SELF, grants=$VD_GR1)" \
+  || fail "v017: self-authorization possible (authorize_verify=$VD_SELF, grants=$VD_GR1)"
+
+# 4. Orchestrator-side validation FAILS LOUD (exception), and nothing is recorded.
+#    a) verifier role that does not exist
+VD_GHOST_RC=0
+$PSQL -v ON_ERROR_STOP=1 -c "SELECT tasks.authorize_verify(p_slice_id=>'${VD_SLICE}', p_verifier=>'mycortex_reader_ghost', p_note=>'ghost role', p_expires_at=>now() + interval '1 hour');" >/dev/null 2>&1 || VD_GHOST_RC=$?
+#    b) empty note — an authorization without a recorded reason is refused
+VD_NONOTE_RC=0
+$PSQL -v ON_ERROR_STOP=1 -c "SELECT tasks.authorize_verify(p_slice_id=>'${VD_SLICE}', p_verifier=>'${PROBE_ROLE}', p_note=>'', p_expires_at=>now() + interval '1 hour');" >/dev/null 2>&1 || VD_NONOTE_RC=$?
+#    c) slice not in review (pending) — fail-closed
+VD_NEW=$($PSQL -c "SELECT tasks.task_upsert(p_content=>'L1 v17 never-started', p_created_by=>'esther');" 2>/dev/null | head -1 || true)
+VD_NR_RC=0
+$PSQL -v ON_ERROR_STOP=1 -c "SELECT tasks.authorize_verify(p_slice_id=>'${VD_NEW}', p_verifier=>'${PROBE_ROLE}', p_note=>'not in review', p_expires_at=>now() + interval '1 hour');" >/dev/null 2>&1 || VD_NR_RC=$?
+VD_GR2=$($PSQL -c "SELECT count(*) FROM tasks.verify_grants WHERE slice_id IN ('${VD_SLICE}','${VD_NEW}');" 2>/dev/null || true)
+[ "$VD_GHOST_RC" -ne 0 ] && [ "$VD_NONOTE_RC" -ne 0 ] && [ "$VD_NR_RC" -ne 0 ] && [ "$VD_GR2" = "0" ] \
+  && pass "v017: authorize_verify refuses ghost role / empty note / non-review slice (rc=$VD_GHOST_RC/$VD_NONOTE_RC/$VD_NR_RC, grants=$VD_GR2)" \
+  || fail "v017: authorize_verify accepted an invalid call (rc=$VD_GHOST_RC/$VD_NONOTE_RC/$VD_NR_RC, grants=$VD_GR2)"
+
+# 5. The REAL delegation: esther records a grant → the worker's OWN verify works,
+#    the grant row is consumed, the slice is completed.
+VD_AUTH=$($PSQL -c "SELECT tasks.authorize_verify(p_slice_id=>'${VD_SLICE}', p_verifier=>'${PROBE_ROLE}', p_note=>'operator authorized: Titus closure', p_expires_at=>now() + interval '1 hour');" 2>/dev/null || true)
+VD_GR3=$($PSQL -c "SELECT count(*) FROM tasks.verify_grants WHERE slice_id='${VD_SLICE}' AND verifier='${PROBE_ROLE}';" 2>/dev/null || true)
+[ "$VD_AUTH" = "t" ] && [ "$VD_GR3" = "1" ] \
+  && pass "v017: orchestrator authorize_verify records a grant (auth=$VD_AUTH, grants=$VD_GR3)" \
+  || fail "v017: authorize_verify failed (auth=$VD_AUTH, grants=$VD_GR3)"
+VD_WVERIFY=$($PSQL_PROBE -c "SELECT tasks.verify_slice('${VD_SLICE}', true, 'verified under recorded grant');" 2>/dev/null || true)
+VD_WST=$($PSQL_PROBE -c "SELECT status FROM tasks.tasks WHERE id='${VD_SLICE}';" 2>/dev/null || true)
+VD_GR4=$($PSQL -c "SELECT count(*) FROM tasks.verify_grants WHERE slice_id='${VD_SLICE}';" 2>/dev/null || true)
+[ "$VD_WVERIFY" = "t" ] && [ "$VD_WST" = "completed" ] && [ "$VD_GR4" = "0" ] \
+  && pass "v017: granted worker verifies review→completed; grant consumed (verify=$VD_WVERIFY, status=$VD_WST, grants=$VD_GR4)" \
+  || fail "v017: granted verify failed (verify=$VD_WVERIFY, status=$VD_WST, grants=$VD_GR4)"
+
+# 6. The grant is ONE-SHOT — the consumed slice cannot be verified twice.
+VD_AGAIN=$($PSQL_PROBE -c "SELECT tasks.verify_slice('${VD_SLICE}', true, 'second attempt');" 2>/dev/null || true)
+[ "$VD_AGAIN" = "f" ] && pass "v017: consumed grant refuses a second verify ($VD_AGAIN)" \
+  || fail "v017: re-verification possible after consumption ($VD_AGAIN)"
+
+# 7. Slice-scoping: a grant for ONE slice never authorizes another.
+VD_OTHER=$($PSQL_PROBE -c "SELECT tasks.task_upsert(p_content=>'L1 v17 other slice', p_created_by=>'probe', p_scope=>'personal');" 2>/dev/null | head -1 || true)
+$PSQL_PROBE -c "SELECT tasks.claim_slice('${VD_OTHER}', 'probe');" >/dev/null 2>&1
+$PSQL_PROBE -c "SELECT tasks.report_done('${VD_OTHER}', 'evidence');" >/dev/null 2>&1
+VD_SCOPE=$($PSQL_PROBE -c "SELECT tasks.verify_slice('${VD_OTHER}', true, 'scope probe');" 2>/dev/null || true)
+[ "$VD_SCOPE" = "f" ] && pass "v017: grant is slice-scoped — other slice refused ($VD_SCOPE)" \
+  || fail "v017: grant leaked to another slice ($VD_SCOPE)"
+
+# 8. Expiry: an expired grant refuses. (The CHECK expires_at > created_at forbids
+#    authorize_verify from WANTING a past expiry, so the only legitimate way to get
+#    an expired row on the store is age — manufacture it directly as the owner,
+#    both timestamps in the past, and let the gate's expires_at > now() refuse.)
+VD_EXP=$($PSQL_PROBE -c "SELECT tasks.task_upsert(p_content=>'L1 v17 expired-grant slice', p_created_by=>'probe', p_scope=>'personal');" 2>/dev/null | head -1 || true)
+$PSQL_PROBE -c "SELECT tasks.claim_slice('${VD_EXP}', 'probe');" >/dev/null 2>&1
+$PSQL_PROBE -c "SELECT tasks.report_done('${VD_EXP}', 'evidence');" >/dev/null 2>&1
+$PSQL -c "INSERT INTO tasks.verify_grants (slice_id, verifier, authorized_by, note, created_at, expires_at) VALUES ('${VD_EXP}', '${PROBE_ROLE}', 'mycortex_reader_esther', 'already expired (manufactured for the expiry gate)', now() - interval '2 hours', now() - interval '1 hour');" >/dev/null 2>&1
+VD_EXPV=$($PSQL_PROBE -c "SELECT tasks.verify_slice('${VD_EXP}', true, 'expired grant');" 2>/dev/null || true)
+[ "$VD_EXPV" = "f" ] && pass "v017: expired grant refuses ($VD_EXPV)" \
+  || fail "v017: expired grant still verified ($VD_EXPV)"
+
+# 9. TRIGGER layer with a grant: the granted worker's raw UPDATE also passes
+#    check_transition (the trigger cannot tell verify_slice's UPDATE from raw SQL);
+#    the grant row SURVIVES the raw path (consumption is verify_slice's job) and is
+#    cleaned up here because the battery must not leave rows behind.
+VD_RAW2=$($PSQL_PROBE -c "SELECT tasks.task_upsert(p_content=>'L1 v17 raw-with-grant slice', p_created_by=>'probe', p_scope=>'personal');" 2>/dev/null | head -1 || true)
+$PSQL_PROBE -c "SELECT tasks.claim_slice('${VD_RAW2}', 'probe');" >/dev/null 2>&1
+$PSQL_PROBE -c "SELECT tasks.report_done('${VD_RAW2}', 'evidence');" >/dev/null 2>&1
+$PSQL -c "SELECT tasks.authorize_verify(p_slice_id=>'${VD_RAW2}', p_verifier=>'${PROBE_ROLE}', p_note=>'raw-path trigger proof', p_expires_at=>now() + interval '1 hour');" >/dev/null 2>&1
+VD_RAW2_RC=0
+$PSQL_PROBE -v ON_ERROR_STOP=1 -c "UPDATE tasks.tasks SET status='completed', \"column\"='done' WHERE id='${VD_RAW2}';" >/dev/null 2>&1 || VD_RAW2_RC=$?
+VD_RAW2_ST=$($PSQL_PROBE -c "SELECT status FROM tasks.tasks WHERE id='${VD_RAW2}';" 2>/dev/null || true)
+VD_GR5=$($PSQL -c "SELECT count(*) FROM tasks.verify_grants WHERE slice_id='${VD_RAW2}';" 2>/dev/null || true)
+$PSQL -c "DELETE FROM tasks.verify_grants WHERE slice_id='${VD_RAW2}';" >/dev/null 2>&1
+[ "$VD_RAW2_RC" -eq 0 ] && [ "$VD_RAW2_ST" = "completed" ] && [ "$VD_GR5" = "1" ] \
+  && pass "v017: granted worker raw UPDATE passes the trigger (rc=$VD_RAW2_RC, status=$VD_RAW2_ST, grant retained=$VD_GR5, cleaned up)" \
+  || fail "v017: raw-with-grant behavior wrong (rc=$VD_RAW2_RC, status=$VD_RAW2_ST, grants=$VD_GR5)"
+
+# 10. Reject with a grant: review→in_progress works and CONSUMES the grant.
+VD_REJ=$($PSQL_PROBE -c "SELECT tasks.task_upsert(p_content=>'L1 v17 reject slice', p_created_by=>'probe', p_scope=>'personal');" 2>/dev/null | head -1 || true)
+$PSQL_PROBE -c "SELECT tasks.claim_slice('${VD_REJ}', 'probe');" >/dev/null 2>&1
+$PSQL_PROBE -c "SELECT tasks.report_done('${VD_REJ}', 'evidence');" >/dev/null 2>&1
+$PSQL -c "SELECT tasks.authorize_verify(p_slice_id=>'${VD_REJ}', p_verifier=>'${PROBE_ROLE}', p_note=>'reject-path grant', p_expires_at=>now() + interval '1 hour');" >/dev/null 2>&1
+VD_REJV=$($PSQL_PROBE -c "SELECT tasks.verify_slice('${VD_REJ}', false, 'gap found by delegated verifier');" 2>/dev/null || true)
+VD_REJST=$($PSQL_PROBE -c "SELECT status FROM tasks.tasks WHERE id='${VD_REJ}';" 2>/dev/null || true)
+VD_GR6=$($PSQL -c "SELECT count(*) FROM tasks.verify_grants WHERE slice_id='${VD_REJ}';" 2>/dev/null || true)
+[ "$VD_REJV" = "t" ] && [ "$VD_REJST" = "in_progress" ] && [ "$VD_GR6" = "0" ] \
+  && pass "v017: granted worker reject works and consumes (verify=$VD_REJV, status=$VD_REJST, grants=$VD_GR6)" \
+  || fail "v017: reject-with-grant failed (verify=$VD_REJV, status=$VD_REJST, grants=$VD_GR6)"
+
+# 11. The ALLOWLIST IS DE-NAMED: is_orchestrator is now pg_has_role on
+#     tasks_verifier (granted by default to the orchestrator reader roles).
+VD_MEMBER=$($PSQL -c "SELECT pg_has_role('mycortex_reader_esther','tasks_verifier','MEMBER');" 2>/dev/null || true)
+VD_ISORCH=$($PSQL -c "SELECT tasks.is_orchestrator('mycortex_reader_esther');" 2>/dev/null || true)
+VD_ISPROBE=$($PSQL -c "SELECT tasks.is_orchestrator('${PROBE_ROLE}');" 2>/dev/null || true)
+[ "$VD_MEMBER" = "t" ] && [ "$VD_ISORCH" = "t" ] && [ "$VD_ISPROBE" = "f" ] \
+  && pass "v017: is_orchestrator == tasks_verifier membership (member=$VD_MEMBER, esther=$VD_ISORCH, probe=$VD_ISPROBE)" \
+  || fail "v017: de-named capacity wrong (member=$VD_MEMBER, esther=$VD_ISORCH, probe=$VD_ISPROBE)"
+
+# 12. The visibility helper is callable by a worker in INVOKER context (the trigger's
+#     call path) without permission errors — verify_grants itself stays unreadable.
+VD_HELPER=$($PSQL_PROBE -c "SELECT tasks.verify_grant_active('${VD_NEW}', '${PROBE_ROLE}');" 2>/dev/null || true)
+VD_TABDENIED=$($PSQL_PROBE -c "SELECT count(*) FROM tasks.verify_grants;" 2>/dev/null || echo denied)
+[ "$VD_HELPER" = "f" ] && [ "$VD_TABDENIED" = "denied" ] \
+  && pass "v017: worker calls verify_grant_active (f, no error); table unreadable ($VD_TABDENIED)" \
+  || fail "v017: helper/table access wrong (helper=$VD_HELPER, table='$VD_TABDENIED')"
+
+# 13. The migration's grant loops use the EXACT role names — a spaced typo silently
+#     skips every grant (IF EXISTS never matches a role named 'myc cortex_reader_…'),
+#     and no worker profile role exists on every host to catch it at runtime. The
+#     source file itself is the surface this guards (structure-derived, not prose).
+VD_SQLTYPO=$(grep -c 'myc cortex_reader' "${REPO_DIR}/ops/services/tasks/schema/v017__verify-delegation-capability.sql" || true)
+[ "${VD_SQLTYPO}" = "0" ] && pass "v017: migration grant loops carry unspaced role names" \
+  || fail "v017: ${VD_SQLTYPO} spaced role-name typo(s) in the migration grants"
+
+echo ""
 echo "═══ Summary ═══"
 echo "  ${P} passed, ${F} failed"
 [ "$F" -eq 0 ] || echo "  ❌ SOME TESTS FAILED — investigate before shipping"

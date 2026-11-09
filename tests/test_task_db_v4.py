@@ -38,9 +38,11 @@ class FakePsql:
 @pytest.fixture(autouse=True)
 def fake_psql(monkeypatch):
     f = FakePsql({"claim_slice": "t", "unclaim_slice": "t",
-                  "report_done": "t", "verify_slice": "t"})
+                  "report_done": "t", "verify_slice": "t",
+                  "authorize_verify": "t"})
     monkeypatch.setattr(task_db, "psql", f)
     monkeypatch.setattr(task_db, "_require_v4", lambda x: None)
+    monkeypatch.setattr(task_db, "_require_v6", lambda x: None)
     monkeypatch.setattr(task_db, "PROFILE", "esther")
     return f
 
@@ -78,6 +80,43 @@ def test_verify_reject(fake_psql):
     task_db.cmd_verify("11111111-2222-3333-4444-555555555555", False, "weak")
     q, params, _ = fake_psql.calls[-1]
     assert params == ["11111111-2222-3333-4444-555555555555", False, "weak"]
+
+
+def test_verify_grant_default_expiry_uses_three_arg_call(fake_psql):
+    task_db.cmd_verify_grant("11111111-2222-3333-4444-555555555555",
+                             "mycortex_reader_titus", "operator authorized")
+    q, params, _ = fake_psql.calls[-1]
+    assert "authorize_verify" in q
+    assert "p_slice_id=>?::uuid" in q
+    assert "p_expires_at" not in q  # default now()+1h applies in the function
+    assert params == ["11111111-2222-3333-4444-555555555555",
+                      "mycortex_reader_titus", "operator authorized"]
+
+
+def test_verify_grant_explicit_expiry_passes_interval(fake_psql):
+    task_db.cmd_verify_grant("11111111-2222-3333-4444-555555555555",
+                             "mycortex_reader_titus", "authorized", 4)
+    q, params, _ = fake_psql.calls[-1]
+    assert "authorize_verify" in q
+    assert "p_expires_at=>now() + ?::interval" in q
+    assert params == ["11111111-2222-3333-4444-555555555555",
+                      "mycortex_reader_titus", "authorized", "4 hours"]
+
+
+def test_verify_grant_requires_note(fake_psql):
+    with pytest.raises(SystemExit) as ei:
+        task_db.cmd_verify_grant("11111111-2222-3333-4444-555555555555",
+                                 "mycortex_reader_titus", "   ")
+    assert ei.value.code == 1
+    assert fake_psql.calls == []  # nothing reached the store
+
+
+def test_verify_grant_refuses_short_expiry(fake_psql):
+    with pytest.raises(SystemExit) as ei:
+        task_db.cmd_verify_grant("11111111-2222-3333-4444-555555555555",
+                                 "mycortex_reader_titus", "note", 0)
+    assert ei.value.code == 1
+    assert fake_psql.calls == []
 
 
 def test_claim_failure_exits(capsys):

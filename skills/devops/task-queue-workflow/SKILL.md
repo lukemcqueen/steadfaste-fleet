@@ -62,13 +62,23 @@ pending → (claim) → in_progress → (report) → review → (verify) → com
   identity EXISTS on that host, and the drain has to be installed PER HOST — a sweep running here
   cannot reach a peer's store, and routing their slice to a remote orchestrator is not a mechanism
   that exists. Do not promise a peer host will act, and do not offer to verify it yourself: say which
-  host must clear it, and for a host with no verifier identity escalate to the operator.
-- **Widening WHO may verify is a SCHEMA decision, never a config tweak.** The EXECUTE grant AND the
-  `profile_of` allowlist inside the SECURITY DEFINER function both have to change — `transition_allowed`
-  is role-agnostic, so it does not gate this at all and reading it will not tell you who may verify.
-  And the tempting shortcut is the wrong shape: letting a worker complete its OWN slice deletes the
-  reason `review` exists, because self-graded work then becomes indistinguishable from verified work.
-  Prefer provisioning a verifier identity per host over relaxing the rule.
+  host must clear it. **v017 (2026-11-08) gives the worker host's own session the sanctioned route:
+  the ORCHESTRATOR records a per-slice verify grant there (via its SSH/psql path — the same one the
+  L2 fleet test uses to apply schema) and the worker then verifies THAT slice itself.**
+  `task-db.py verify-grant <id> --verifier mycortex_reader_<agent> --note "<why>"` — slice-scoped,
+  short-lived (1h default), one-shot (consumed on the first verify decision, approve or reject),
+  audited (authorized_by + note). For a host with no verifier route at all, escalate to the operator.
+- **Widening WHO may verify WAS the schema decision, made at v017 — capability + recorded grants,
+  never a config tweak.** `is_orchestrator` is now `pg_has_role(p_role, 'tasks_verifier', 'MEMBER')`
+  (the NOLOGIN role is granted by default to the orchestrator reader roles; the old moses/esther
+  name list is gone — adding a permanent verifier is `GRANT tasks_verifier TO <role>`, a data
+  operation). `verify_slice` EXECUTE is widened to every profile role, and `authorize_verify`
+  (orchestrator-only) records the grant row that lets a worker close a slice. The reason `review`
+  exists is intact: a worker's OWN verify still requires an orchestrator-recorded authorization —
+  every completion now carries a recorded authorization (authorized_by + note) or falls into the
+  refused class — so DON'T bypass the grant by completing your own slice: the
+  trigger refuses review→completed on every write path unless the caller is a capability holder or
+  the slice has a live grant naming that caller.
 
 ## Worker commands (any agent)
 
@@ -89,6 +99,10 @@ task-db.py report <slice-id> --evidence "<test output / measured numbers>"
 ```bash
 task-db.py verify <slice-id> --approve --note "<what was checked>"
 task-db.py verify <slice-id> --reject --note "<the gap>"   # → back to in_progress
+task-db.py verify-grant <slice-id> --verifier mycortex_reader_<agent> --note "<why>"
+                                                           # v017: delegate ONE slice's
+                                                           # verification to a worker-host
+                                                           # session (see delegation above)
 task-db.py list --board                                     # counts + per-agent + review queue
 task-db.py list --board --repo ALL                          # the FLEET view (explicit)
 ```

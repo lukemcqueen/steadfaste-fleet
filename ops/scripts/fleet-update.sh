@@ -463,6 +463,14 @@ register "ops/services/tasks/schema/v015__story-completion-verified-precondition
 # deploy, and a host whose DEPLOYED schema dir stops at v015 cannot reach v016
 # through cortex-update at all.
 register "ops/services/tasks/schema/v016__task-upsert-plan.sql" "${CORTEX_DEPLOY_HOME}/services/tasks/schema/v016__task-upsert-plan.sql"
+# v017: delegated verification — is_orchestrator is a CAPABILITY (pg_has_role on
+# tasks_verifier, no name list), verify_slice EXECUTE is widened to every profile
+# role, and the orchestrator records per-slice verify_grants the worker's own
+# verify honors (slice-scoped, short-lived, one-shot, audited). Closes the
+# single-host verify dead-end (Titus Pi gate-safety report 2026-11-08): a slice
+# in review on a worker host no longer waits forever for an orchestrator session
+# that does not exist on that host.
+register "ops/services/tasks/schema/v017__verify-delegation-capability.sql" "${CORTEX_DEPLOY_HOME}/services/tasks/schema/v017__verify-delegation-capability.sql"
 # learnings ledger (F-001) — schema + version-gated runner, orchestrator-only
 # (the bus Postgres that hosts learnings exists only on Moses/Esther; workers
 # write via the HTTP collector path and never need this schema locally).

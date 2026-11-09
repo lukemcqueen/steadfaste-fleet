@@ -4,12 +4,14 @@
 Raised 2026-10-21 (operator, from the Pi agent): task_verify described itself only as
 "ORCHESTRATOR-ONLY: verify a review slice" and task_report as "awaiting orchestrator verify". Both
 invite the inference that moses/esther will pick the slice up — and NOTHING does. Verified
-mechanism, not assumed: tasks.verify_slice (ops/services/tasks/schema/v009__task-model-v3.sql) is
-the only review→completed path, it is enforced in the DB (SECURITY DEFINER, moses/esther allowlist
-inside the function, no EXECUTE grant for other profiles), and the fleet cron inventory
-(docs/cron-schedules.md) lists no slice-verification job. An agent that believes someone will act
-stops working on a slice that then sits in review forever, so the wording an agent READS under a
-refusal is the fix.
+Verified mechanism, not assumed: tasks.verify_slice (ops/services/tasks/schema/v009__task-model-v3.sql,
+reworked at v014/v017) is the only review→completed path, it is enforced in the DB (SECURITY
+DEFINER, tasks_verifier capability + optional per-slice verify grants inside the function,
+EXECUTE widened to every profile role), and the fleet cron inventory
+(docs/cron-schedules.md) lists no slice-verification job — so a refused worker's only
+routes are an orchestrator verify or an orchestrator-recorded grant. An agent that believes
+someone will act stops working on a slice that then sits in review forever, so the wording an
+agent READS under a refusal is the fix.
 
 WHY A TEXT GUARD: the deliverable here IS the wording. The mechanism the wording cites is proven
 in the schema and the cron inventory (named above); what this pins is that the description cannot

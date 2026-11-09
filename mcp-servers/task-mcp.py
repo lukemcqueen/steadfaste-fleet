@@ -401,7 +401,7 @@ async def list_tools(ctx, params=None) -> ListToolsResult:
         ),
         Tool(
             name="task_update",
-            description=f"Update a task's status (canonical lifecycle; reopen requires reason='reopen'). Completing a slice that is IN REVIEW is ORCHESTRATOR-ONLY and enforced in the DB trigger, not by convention: a non-orchestrator's review→completed is REFUSED on every write path (this tool, task-db.py update, raw SQL), so a reported slice stays in review until moses/esther run task_verify. {_CONTENT_WARNING}",
+            description=f"Update a task's status (canonical lifecycle; reopen requires reason='reopen'). Completing a slice that is IN REVIEW is verification-gated and enforced in the DB trigger, not by convention: review→completed is REFUSED on every write path (this tool, task-db.py update, raw SQL) unless the caller is an orchestrator (tasks_verifier capability) OR a live per-slice verify_grant names that caller for that slice — so a reported slice stays in review until moses/esther run task_verify or a recorded verifier acts. {_CONTENT_WARNING}",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -524,7 +524,7 @@ async def list_tools(ctx, params=None) -> ListToolsResult:
         ),
         Tool(
             name="task_verify",
-            description="ORCHESTRATOR-ONLY (enforced in the DB, not by convention): approve a slice in review → completed, or reject → back to in_progress with a note. tasks.verify_slice is SECURITY DEFINER with a moses/esther allowlist INSIDE it, and other profiles hold no EXECUTE grant — so a non-orchestrator's 'permission denied for function verify_slice' is a hard refusal, not a hint to retry. NOTHING RUNS THIS AUTOMATICALLY: no scheduled job verifies slices, so one sits in review until an orchestrator is asked. If you cannot run it, do not wait — task_report() the evidence, then hand the slice id + evidence to moses/esther over the bus (or escalate to the operator for a decision only they hold). " + _CONTENT_WARNING,
+            description="Verify a slice in review → completed (approve=true) or back to in_progress (approve=false, note required). WHO MAY RUN IT, ENFORCED IN THE DB, NOT BY CONVENTION: tasks.verify_slice is SECURITY DEFINER — inside it either the caller holds the tasks_verifier capability (a role granted to moses/esther by default), or a per-slice verify_grant the ORCHESTRATOR recorded names THIS caller for THIS slice (slice-scoped, short-lived, one-shot — consumed on the first decision). A worker WITHOUT either sees the refusal a worker actually sees ('permission denied for function verify_slice' or a false return) — a hard refusal, not a retry hint; and the review→completed arc is closed on EVERY other write path (trigger). NOTHING RUNS THIS AUTOMATICALLY: no scheduled job verifies slices, so one sits in review until an orchestrator or a recorded verifier acts. NEXT ACTION if you are a worker: report, then hand the slice id + evidence to moses/esther over the bus — or ask the orchestrator to record a verify grant (task-db.py verify-grant) so YOUR host's session can close it; waiting leaves it in review forever. " + _CONTENT_WARNING,
             inputSchema={
                 "type": "object",
                 "properties": {
