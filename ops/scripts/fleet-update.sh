@@ -974,6 +974,10 @@ register "ops/scripts/session-autocheckpoint.py"           "${CORTEX_DEPLOY_HOME
 # S2c — ONE tool implementation, shared by the MCP server and the CLI, so a
 # harness picks an access layer and never its own semantics.
 register "ops/services/mycortex-mem/context_tools.py"      "${CORTEX_DEPLOY_HOME}/services/mycortex-mem/context_tools.py"
+# S2c — the host-neutral write-classification contract (ONE implementation of
+# "is this a write?" for every coding agent; extracted from the Hermes enforcer,
+# parity-proven by tests/test_write_class_parity.py).
+register "ops/services/fleet-governance/write_class.py"   "${CORTEX_DEPLOY_HOME}/services/fleet-governance/write_class.py"
 # S2c — the CLI access layer (Pi, and anything that shells out).
 register "ops/scripts/fleet-context.py"                   "${CORTEX_DEPLOY_HOME}/scripts/fleet-context.py"
 # The generic governance CLI — the interactive ritual for a harness with no MCP
