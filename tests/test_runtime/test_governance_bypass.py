@@ -31,15 +31,25 @@ _spec = importlib.util.spec_from_file_location("governance_enforcer", _ENFORCER_
 enforcer = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(enforcer)
 
+# The legacy write-PATTERN classifier (_is_terminal_write) moved to the
+# write-class CONTRACT with the other classification tables; the enforcer now
+# delegates to it. Load the contract here so the write/read corpus still pins
+# the SHIPPED predicate (never a re-implementation).
+_CONTRACT_PATH = Path(__file__).resolve().parents[2] / "ops" / "services" / \
+    "fleet-governance" / "write_class.py"
+_cspec = importlib.util.spec_from_file_location("fleet_write_class", _CONTRACT_PATH)
+assert _cspec is not None and _cspec.loader is not None, f"cannot load {_CONTRACT_PATH}"
+_contract = importlib.util.module_from_spec(_cspec)
+_cspec.loader.exec_module(_contract)
+
 
 REPO_ROOT = _ENFORCER_PATH.resolve().parents[2]   # <repo>/plugins/governance-enforcer/__init__.py
 
 WRITE_TOOLS = enforcer.WRITE_TOOLS
-WRITE_COMMAND_PATTERNS = enforcer.WRITE_COMMAND_PATTERNS
 WRITE_CRON_ACTIONS = enforcer.WRITE_CRON_ACTIONS
 WRITE_SKILL_ACTIONS = enforcer.WRITE_SKILL_ACTIONS
 _is_write_tool = enforcer._is_write_tool
-_is_terminal_write = enforcer._is_terminal_write
+_is_terminal_write = _contract.is_terminal_write
 _is_readonly_terminal_command = enforcer._is_readonly_terminal_command
 _is_cronjob_write = enforcer._is_cronjob_write
 _is_skill_write = enforcer._is_skill_write
@@ -729,11 +739,11 @@ class TestSkillsStatePerSession:
         assert files == ["sess_A.json", "sess_B.json"]
 
     def test_summary_is_per_session(self, temp_state_dir):
-        _write_skills_state("sess_A", always_loaded={"task-start", "agent-flow"})
-        _write_skills_state("sess_B", always_loaded={"change-checklist"})
-        assert _get_loaded_skills_summary("sess_A")["task-start"] is True
-        assert _get_loaded_skills_summary("sess_A")["change-checklist"] is False
-        assert _get_loaded_skills_summary("sess_B")["change-checklist"] is True
+        _write_skills_state("sess_A", always_loaded={"task-orient", "execute-right"})
+        _write_skills_state("sess_B", always_loaded={"verify-and-ship"})
+        assert _get_loaded_skills_summary("sess_A")["task-orient"] is True
+        assert _get_loaded_skills_summary("sess_A")["verify-and-ship"] is False
+        assert _get_loaded_skills_summary("sess_B")["verify-and-ship"] is True
 
     def test_same_session_merge_appends(self, temp_state_dir):
         _write_skills_state("sess_A", always_loaded={"task-start"})
@@ -1268,11 +1278,11 @@ class TestSkillsDirResolution:
         It also missed a same-second content change. Now: an mtime-only move
         must NOT change it, and a content change MUST.
         """
-        # Build a fake skills tree: one required skill at workflow/ (task-start
+        # Build a fake skills tree: one required skill at workflow/ (task-orient
         # lives there), the rest under software-development/.
         root = tmp_path / "skills"
         for name in enforcer._REQUIRED_SKILLS:
-            d = root / ("workflow" if name == "task-start" else "software-development") / name
+            d = root / ("workflow" if name == "task-orient" else "software-development") / name
             d.mkdir(parents=True, exist_ok=True)
             (d / "SKILL.md").write_text("x")
         monkeypatch.setenv("HERMES_HOME", str(tmp_path))  # HERMES_HOME IS the .hermes dir
@@ -1284,7 +1294,7 @@ class TestSkillsDirResolution:
             fp1 = enforcer._skills_fingerprint()
             # identical bytes, newer mtime — exactly what a redeploy does
             import os as _os
-            ts = (root / "workflow" / "task-start" / "SKILL.md")
+            ts = (root / "workflow" / "task-orient" / "SKILL.md")
             _os.utime(ts, (ts.stat().st_atime + 2, ts.stat().st_mtime + 2))
             fp2 = enforcer._skills_fingerprint()
             # real content change

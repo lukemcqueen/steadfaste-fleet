@@ -37,6 +37,7 @@ import re
 import shlex
 import sqlite3
 import subprocess
+import sys
 import threading
 import time
 import traceback
@@ -1106,7 +1107,12 @@ def _learn_repo_from_arg(session_id: str, raw: Any) -> bool:
     return True
 
 
-def _note_session_repo(session_id: str, args: Dict[str, Any], tool_name: str = "") -> None:
+def _note_session_repo(
+    session_id: str,
+    args: Dict[str, Any],
+    tool_name: str = "",
+    terminal_verdict: Optional[Dict[str, Any]] = None,
+) -> None:
     """Learn this session's repo from the paths its own tool calls touch.
 
     The gateway does not hand a pre_tool_call hook the session's cwd, but it does
@@ -1136,7 +1142,8 @@ def _note_session_repo(session_id: str, args: Dict[str, Any], tool_name: str = "
     for key in _CWD_ARG_KEYS:
         if _learn_repo_from_arg(session_id, args.get(key)):
             return
-    if _session_repo_hint(session_id) and not _is_write_tool(tool_name, args):
+    if _session_repo_hint(session_id) and not _is_write_tool(
+            tool_name, args, terminal_verdict):
         return
     for key in _FILE_ARG_KEYS:
         if _learn_repo_from_arg(session_id, args.get(key)):
@@ -1798,40 +1805,10 @@ WRITE_COMPUTER_USE_ACTIONS = {
     "drag", "scroll", "type", "key", "set_value", "focus_app",
 }
 
-# Terminal commands that modify state — require governance lock
-WRITE_COMMAND_PATTERNS = [
-    r"\s*(sudo\s+)?(rm|mv|cp|install|apt|apt-get|dpkg|brew|make|cmake|docker compose|kubectl)\s",
-    r"\s*(sudo\s+)?(systemctl|service)\s+(start|stop|restart|reload|enable|disable|daemon-reload)\s",
-    r"\s*(sudo\s+)?(chmod|chown|chattr|mkfs|fdisk|mount|umount|dd)\s",
-    r"\s*(sudo\s+)?(sed|awk|tee)\s.*-i\s",
-    r"\s*(sudo\s+)?(git)\s+(push|commit|merge|rebase|reset|cherry-pick|branch\s+-[dD]|tag|stash|checkout|restore|clean|rm|mv|update-ref|config|submodule)\s",
-    r"\s*(sudo\s+)?(cronjob)\s+(create|update|remove|delete)",
-    r"\s*(sudo\s+)?(uv|python3?)\s.*-(m\s+pip\s+install)",
-    # guard: (python|python3)\s.*-c
-    r"\s*(sudo\s+)?python3?\s+-c\s",
-    # guard: (bash|sh|zsh)\s+-c
-    r"\s*(sudo\s+)?bash\s+-c\s",
-    r"\s*(sudo\s+)?wget\s.*-O\s",
-    r"\s*(sudo\s+)?curl\s.*-o\s",
-    r"\s*(sudo\s+)?nohup\s",
-    r"\s*(sudo\s+)?docker\s+(run|build|push|commit|tag|save|load|rmi|system\s+prune)",
-    r"\s*(sudo\s+)?crontab\s",
-    r"\s*(sudo\s+)?(usermod|groupmod|useradd|groupadd|passwd)\s",
-    r"\s*(sudo\s+)?ufw\s+(enable|disable|allow|deny|reject|delete|reset)",
-    r"\s*(sudo\s+)?nginx\s+(-s\s+(reload|stop|quit))",
-    r"\s*(sudo\s+)?journalctl\s+--rotate",
-    r"\s*(sudo\s+)?(printf|cat|tee|head|tail|grep|find)\s+.*>\s",
-    r"\s*(sudo\s+)?(printf|cat)\s+.*<<\s",
-    r"\s*(sudo\s+)?(touch|mkdir|ln|rsync|unzip|tar|mkfifo|tee)\s",
-    r"\s*(sudo\s+)?(npx|yarn|go|cargo|flatpak|snap)\s",
-    r"\s*(sudo\s+)?(pip3?|npm)\s+(install|uninstall|remove|update|upgrade)",
-    r"\s*echo\s+.*>\s",
-    # guard: interpreter + script file execution
-    # Catches `python3 script.py`, `node app.js`, `bash setup.sh`, etc.
-    # The script argument must start with a non-dash character (excludes flags like -c, --version)
-    # Requires .py/.js/.rb/.pl/.sh extension to distinguish from interactive mode
-    r"\s*(sudo\s+)?(python3(?:\.\d+)?|node|ruby|perl|bash|sh|zsh)\s+[^\s-][^\s]*\.(py|js|rb|pl|sh)(?:\s|$)",
-]
+# Terminal write-command patterns now live in the write-class CONTRACT
+# (ops/services/fleet-governance/write_class.py), the ONE implementation this
+# plugin delegates to via loop-gov-classify.py. Nothing in this module may
+# carry a second copy of a classification table (agent-interop.md rule 1).
 
 # Cronjob actions that require governance
 WRITE_CRON_ACTIONS = {"create", "update", "remove"}
@@ -1840,77 +1817,16 @@ WRITE_CRON_ACTIONS = {"create", "update", "remove"}
 WRITE_SKILL_ACTIONS = {"create", "edit", "delete", "write_file", "remove_file", "patch"}
 
 
-def _is_terminal_write(args: Dict[str, Any]) -> bool:
-    """Check if a terminal command is a write/modify operation."""
-    command = args.get("command", "")
-    if not command:
-        return False
-    for pattern in WRITE_COMMAND_PATTERNS:
-        if re.search(pattern, command):
-            return True
-    return False
+# `_is_terminal_write` is dead: terminal write-class is decided by the contract
+# via `_is_readonly_terminal_command` / the delegated verdict below (never the
+# old READONLY/WRITE tables, which are gone from this module).
 
 
-# Read-only terminal commands that NEVER need a governance lock.
-# Fail-closed policy (2026-07-31, governance-improvement-plan-gaps G2):
-# a terminal command is lock-free ONLY when it matches this strict allowlist
-# AND contains no metacharacters that could compose a write. Everything else
-# falls through to the governance lock check.
-#
-# Security invariants (from adversarial review):
-#  - Interpreter -c forms (python3 -c, bash -c, node -e ...) are NEVER
-#    allowlisted: "no write intent" is not observable from the command string
-#    (G1). They stay hard-blocked without a lock.
-#  - `doctor --fix` is NOT read-only (G3): it mutates the fleet.
-#  - sqlite3 CLI is NOT allowlisted: `.shell`, `-cmd`, multi-statement, and
-#    load_extension all execute beyond a SELECT (G4).
-READONLY_COMMAND_PATTERNS = [
-    r"^\s*(ls|cat|head|tail|less|more|grep|find|which|whoami|id|pwd|date|stat|file|du|wc|sort|uniq|diff|comm|env|printenv|getent|nproc|lscpu|lsblk|pgrep)(?:\s|$)",
-    r"^\s*(ps|top|htop|df|free|uptime|uname|hostname|dmesg|journalctl|ss|netstat)(?:\s|$)",
-    # Inspection shapes that wrap a read without writing anything: `cd` moves the
-    # shell's own cwd; `echo`/`printf` write to stdout only (a redirect is a
-    # forbidden metacharacter, so `echo x > f` never reaches here); `test`/`[`
-    # are pure predicates; `command -v`/`-V` only LOOK UP a tool (bare `command
-    # <cmd>` EXECUTES its argument and stays write-class by not matching).
-    # Without these, the ordinary shape of an inspection — a `cd` into the repo
-    # plus a progress banner — was write-class and required a lock.
-    r"^\s*(cd|echo|printf|true|false)(?:\s|$)",
-    r"^\s*(?:test|\[)(?:\s|$)",
-    r"^\s*command\s+-[vV](?:\s|$)",
-    # git's own read-only modifiers may precede the subcommand (`-C <dir>`,
-    # `--no-pager`). The subcommand itself must still be one of the read-only
-    # ones below, so `git -C x push` stays write-class.
-    r"^\s*(git)\s+(?:-C\s+\S+\s+|--no-pager\s+|--no-optional-locks\s+)*(status|log|diff|show|branch|stash\s+list|rev-parse|rev-list|for-each-ref|ls-files|ls-tree|cat-file|show-ref|merge-base|describe)",
-    r"^\s*(docker)\s+(ps|images|logs|inspect|stats|top|port|events|version|info|diff|history)",
-    r"^\s*(docker\s+compose)\s+(ps|logs|config|top|images|events|port)",
-    r"^\s*(pip|npm)\s+(list|show|search)",
-    r"^\s*(hermes)\s+(--version|doctor|config\s+get|config\s+show|config\s+path|config\s+check|env-path)",
-    r"^\s*(systemctl)\s+(is-active|is-enabled|is-failed|status|show|list-units|list-timers|list-sockets|list-services|list-jobs|list-dependencies|get-default|show-environment|cat)",
-    r"^\s*(systemctl)\s+list-unit-files\b",
-    # curl GET/HEAD health checks — read-only. POST/PUT/DELETE/-d/-o/-O/-F/-X
-    # are excluded because they mutate remote or local state.
-    r"^\s*curl\s+(-s\s+)?(-o\s+/dev/null\s+)?-s?I\s+",
-    r"^\s*curl\s+(-s\s+)?-s\s+(https?://|file:///dev/|localhost:|127\.0\.0\.1:)",
-    # MCP introspection — `hermes mcp list` / `hermes mcp test <name>` only
-    # report configured servers and their tool lists; neither writes state.
-    # Without this exemption the diagnostic path for a MISSING loop-governance
-    # MCP server (the gate-2 deadlock: no begin_change tool → no lock → the
-    # read-only check itself blocked) was unreachable. Add/remove of servers
-    # (`hermes mcp add|remove`) stays write-class.
-    r"^\s*(hermes)\s+mcp\s+(list|test)\b",
-    # mycortex QUERY subcommands — the knowledge brain's read surface. Only
-    # `list`, `search`, `stats` and `doctor` (plus `sources list` and
-    # `answer search|stats`) match, and they only SELECT. The mutating siblings
-    # stay write-class by NOT matching: `sync` writes the index, `sources
-    # add|remove` changes registration, `answer store|prune` writes the cache.
-    # Without this exemption an unattended session cannot read the brain at all
-    # — measured 2026-10-27, the nightly dream died on its FIRST step
-    # (`mycortex list -n 20` → write-class → governance lock required) and
-    # wrote no dream for a week on every host.
-    r"^\s*(mycortex)\s+(list|search|stats|doctor)\b",
-    r"^\s*(mycortex)\s+sources\s+list\b",
-    r"^\s*(mycortex)\s+answer\s+(search|stats)\b",
-]
+# Read-only terminal classification now lives in the write-class CONTRACT
+# (ops/services/fleet-governance/write_class.py) and is reached through
+# loop-gov-classify.py below — the ONE implementation (agent-interop.md rule 1).
+# The two compiled syntax regexes retained here render the block message and
+# feed the frozen fleet-update recovery lane; they are NOT classification.
 
 # Metacharacters that can never appear in a lock-free read-only command:
 #   > <        redirect (writes a file / feeds stdin)
@@ -1926,71 +1842,73 @@ _COMMAND_FORBIDDEN_METACHARS = re.compile(r"[<>`]|\$\(|\|\||\n|(?<!&)&(?!&)")
 # Segment separators (evaluated only after the forbidden set is clean).
 _COMMAND_SEPARATORS = re.compile(r"&&|;|\|")
 
-# Mutating flags/predicates that hide INSIDE otherwise read-only primitives.
-# The allowlist only anchors the FIRST token, so before these guards existed
-# `find . -exec rm {} +`, `find . -delete`, `sort -o out f`, `date -s ...`,
-# `curl -s URL -d x=y`, `env bash -c '...'`, `git branch new`,
-# `journalctl --vacuum-time=1d` and `dmesg -C` all matched a read-only prefix
-# while mutating state (pre-existing holes; compound support would have made
-# them cheap to reach, so they close here).
-_READONLY_MUTATION_GUARDS = [
-    re.compile(r"\bfind\b[^|;]*\s-(exec|execdir|ok|okdir|delete|fprint|fprintf|fls)\b"),
-    re.compile(r"\bsort\b[^|;]*(\s-o\s|\s--output[=\s])"),
-    re.compile(r"\bdate\b[^|;]*\s(-s|--set)\b"),
-    re.compile(r"\bhostname\s+[^-\s]"),
-    re.compile(r"\bdmesg\b[^|;]*\s(-C|-c|--clear)\b"),
-    re.compile(r"\bjournalctl\b[^|;]*--(vacuum-\w+|rotate|flush|sync|relinquish-var)"),
-    re.compile(
-        r"\bcurl\b[^|;]*\s(-d|--data[\w-]*|-X|--request|-F|--form|-T|--upload-file"
-        r"|-o|--output|-O|-J|--remote-name|-c|--cookie-jar)\b"
-    ),
-    re.compile(r"\bgit\b[^|;]*\s(--output|-o\s)"),
-    re.compile(r"\b(cat|head|tail|grep|wc|diff|comm|uniq|stat)\b[^|;]*\s--output[=\s]"),
-    # `git branch <name>` creates; `-d/-D/-m/-M/-c/-C` mutate. Only flag args pass.
-    re.compile(r"\bgit\s+branch\b[^|;]*(?:\s+(?!-)\S)"),
-    # `env <cmd>` executes its arguments — only bare VAR=value / -flag args read.
-    re.compile(r"\benv\b[^|;&]*(?:\s+(?:-{1,2}[\w-]+|\w+=\S*))*\s+(?![-\w]+=)(?!-)[^|;&\s]"),
-]
+_CLASSIFY_CLI_BASENAME = "loop-gov-classify.py"
+
+
+def _classify_cli_path() -> Optional[Path]:
+    """Resolve the classify CLI: repo layout first, then the deployed copy."""
+    here = Path(__file__).resolve()
+    candidates = [
+        # repo layout: <repo>/plugins/governance-enforcer/__init__.py
+        # (the deployed plugin is usually a symlink into the repo, so resolve()
+        # lands here; three parents up from the plugin dir is the repo root)
+        here.parent.parent.parent / "ops" / "scripts" / _CLASSIFY_CLI_BASENAME,
+        Path.home() / ".steadfaste-fleet" / "scripts" / _CLASSIFY_CLI_BASENAME,  # deployed
+    ]
+    for c in candidates:
+        if c.is_file():
+            return c
+    return None
+
+
+def _classify_terminal(command: str) -> Optional[Dict[str, Any]]:
+    """Ask the ONE contract implementation (loop-gov-classify.py) for the verdict.
+
+    Returns the parsed verdict dict {"read_only", "sanctioned", "db_mutation"}
+    or None when the classification cannot be verified — a caller MUST treat
+    None as write-class (fail closed, operator remedy named in the gateway
+    log). A fresh subprocess per call IS the reload mechanism: a contract rule
+    change is picked up on the next call with no gateway restart. The hook
+    computes this ONCE per terminal tool call and threads the result; standalone
+    callers (unit tests of the gate) pay one spawn each.
+    """
+    cli = _classify_cli_path()
+    if cli is None:
+        log.warning("governance-enforcer: loop-gov-classify.py not found — terminal "
+                    "write-classification is FAIL-CLOSED until fleet-update.sh deploys it")
+        return None
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(cli), command],
+            capture_output=True, text=True, timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        log.warning("governance-enforcer: classify unavailable (%s: %s) — "
+                    "fail closed (write-class)", exc.__class__.__name__, exc)
+        return None
+    if proc.returncode != 0:
+        log.warning("governance-enforcer: classify rc=%s — fail closed (write-class)",
+                    proc.returncode)
+        return None
+    try:
+        verdict = json.loads(proc.stdout or "{}")
+    except ValueError:
+        log.warning("governance-enforcer: classify returned unparseable JSON — "
+                    "fail closed (write-class)")
+        return None
+    if not isinstance(verdict, dict):
+        return None
+    return verdict
 
 
 def _is_readonly_terminal_command(command: str) -> bool:
-    """Fail-closed read-only terminal check (compound-aware, 2026-09-23).
+    """Fail-closed read-only terminal check — DELEGATED to the contract.
 
-    A terminal command is lock-free ONLY when:
-      1. it carries no forbidden metacharacter (>, <, `, $(, ||, lone &,
-         newline) — the things that turn a read primitive into a write,
-      2. every `|` / `&&` / `;` segment independently matches the strict
-         read-only allowlist, AND
-      3. no mutating flag or predicate rides along inside an allowlisted
-         primitive (see _READONLY_MUTATION_GUARDS).
-
-    Lock-free examples: `ls -la`, `git status --short`, `ls | grep foo`,
-    `journalctl -u hermes-gateway | tail -20`, `git log --oneline && git diff`.
-    Still write-class (need a lock): `ls > f`, `cat $(f)`, `git status; rm -rf x`,
-    `python3 -c '...'`, `find . -exec rm {} +`, `curl -s URL -d x=y`.
+    Kept as a function so every existing gate test and the block-message path
+    keeps its call shape; the verdict comes from the shared implementation.
     """
-    if not command:
-        return False
-    # `doctor --fix` mutates the fleet (P1-5 auto-reconcile) — never read-only
-    if re.search(r"hermes\s+doctor", command) and re.search(r"--fix|-f\b", command):
-        return False
-    # Forbidden metacharacters / multi-line → NOT read-only
-    if _COMMAND_FORBIDDEN_METACHARS.search(command):
-        return False
-    if "\n" in command:
-        return False
-    # Mutating flags hiding inside read-only primitives → NOT read-only
-    for guard in _READONLY_MUTATION_GUARDS:
-        if guard.search(command):
-            return False
-    # Every separator-joined segment must itself be a read primitive
-    segments = [s.strip() for s in _COMMAND_SEPARATORS.split(command)]
-    if not segments or any(not s for s in segments):
-        return False
-    for segment in segments:
-        if not any(re.search(pattern, segment) for pattern in READONLY_COMMAND_PATTERNS):
-            return False
-    return True
+    v = _classify_terminal(command)
+    return bool(v and v.get("read_only"))
 
 
 # ── Sanctioned lock-free recovery command ──────────────────────────
@@ -2039,263 +1957,47 @@ def _is_sanctioned_fleet_update_command(command: str) -> bool:
 # rm -rf /tmp/templates && echo cleaned`) was gated: `rm` is write-class and no
 # lock covers the repo (all cycles closed). /tmp is ephemeral scratch OUTSIDE
 # any repo — requiring a repo lock to delete it is an impossible demand at
-# cleanup time. Same class as the cortex-update/brain-write/plan-review
-# carve-outs (a sanctioned lock-free write the lock rule cannot justly gate).
-#
-# Deliberately NARROW — ONLY scratch deletion, by resolved path:
-#   * command is `rm`/`rmdir` (+ only -f/-r/-rf/-d flags) AND/OR `echo <word>`,
-#     `&&`-chained; no `;`, pipes, redirection, sudo, mv, cd, ~, metachars;
-#   * EVERY operand is resolved with realpath AFTER expanding $TMPDIR, and the
-#     RESOLVED target must be strictly INSIDE the resolved scratch root
-#     (/tmp or $TMPDIR) — a `..` component, a bare root, /home, or a repo path
-#     is refused; wildcards are refused (exact names + an rglob dir cover the
-#     real need). Nothing outside scratch is ever touched, so this never
-#     enlarges the blast radius of what an agent may delete.
-#
-# The ONE scratch root is the system temp dir /tmp (realpath'd). $TMPDIR is NOT
-# trusted as a root of its own: a hostile/buggy TMPDIR=/home/x must not hand
-# the carve-out a home directory to delete. A `$TMPDIR/...` operand is allowed
-# but its RESOLVED path must still land strictly under /tmp.
-_TMP_SCRATCH_ROOTS = ("/tmp",)
-
-
-def _resolve_scratch_roots() -> list[str]:
-    roots = []
-    for r in _TMP_SCRATCH_ROOTS:
-        try:
-            roots.append(os.path.realpath(r))
-        except (OSError, RuntimeError):
-            continue
-    return roots
-
-
-def _operand_under_scratch(operand: str) -> bool:
-    """True when the operand's RESOLVED path is strictly inside a scratch root.
-
-    Rejects escapes (``/tmp/../repo/x``), the bare root itself (``/tmp``),
-    wildcards, home and repo paths — the resolved target must be a STRICT child
-    of /tmp or $TMPDIR. Fails safe: anything unprovable is refused.
-    """
-    if not operand or not operand.startswith(("/", "$")):
-        return False
-    if any(ch in operand for ch in ("*", "?", "[", "{", "}", "~")):
-        return False
-    if operand.startswith("$"):
-        operand = os.path.expandvars(operand)
-        if not operand or not operand.startswith("/"):
-            return False
-    if "/.." in operand or operand.startswith("..") or operand.endswith("/.."):
-        return False
-    try:
-        resolved = os.path.realpath(operand)
-    except (OSError, RuntimeError):
-        return False
-    if resolved in (r for r in (_resolve_scratch_roots())):
-        return False  # the bare scratch root itself is never a delete target
-    for root in _resolve_scratch_roots():
-        if resolved.startswith(root + "/"):
-            return True
-    return False
+# cleanup time. The NARROW exact-match shape (rm/rmdir of realpath-resolved
+# paths strictly inside /tmp or $TMPDIR, &&-chained, optional trailing echo)
+# now lives in the write-class CONTRACT and is reported in the classify
+# verdict's `sanctioned` field. This wrapper keeps the gate's call shape.
 
 
 def _is_sanctioned_tmp_cleanup_command(command: str) -> bool:
-    """Exact-match check for the ONE lock-free scratch-cleanup shape.
-
-    Returns True only for a command made of `rm`/`rmdir` (only -f/-r/-rf/-d
-    flags) whose operands ALL resolve strictly inside /tmp or $TMPDIR, chained
-    only by `&&`, with at most one trailing `echo <word>`. Anything else —
-    sudo, cd, mv, `;`, pipes, redirection, metachars, non-scratch or escaped
-    operands, wildcards — returns False (still needs a lock). Fail closed.
-    """
-    if not command:
-        return False
-    # Only `&&` may separate segments. Anything that could smuggle work, mutate
-    # elsewhere, or escape scratch is refused: redirects, backticks, $(), ${},
-    # a lone pipe, `;`, a bare newline, sudo, mv, cd, and wildcard metachars.
-    if re.search(r"[<>`\[\]{}]|\$\(|\$\{|\|(?!\|)|(?:^|[^&]);(?:[^&]|$)|\n"
-                 r"|\bsudo\b|\bmv\b|\bcd\b|\*\??|\?\??", command):
-        return False
-    if re.search(r"&&\s*[|;]|&&\s*$|^\s*&&", command):
-        return False
-    # Whole command must be &&-joined segments each starting with rm/rmdir/echo.
-    segments = _COMMAND_SEPARATORS.split(command)
-    segments = [s.strip() for s in segments if s.strip()]
-    if not segments:
-        return False
-    for i, seg in enumerate(segments):
-        toks = seg.split()
-        head = toks[0] if toks else ""
-        if head in ("echo", "printf"):
-            # Only the LAST segment may be a banner echo; nothing else allowed.
-            if i != len(segments) - 1:
-                return False
-            if len(toks) != 2 or toks[1].startswith(("-", "/", "$", "~")):
-                return False
-            continue
-        if head not in ("rm", "rmdir", "/bin/rm", "/usr/bin/rm"):
-            return False
-        for tok in toks[1:]:
-            if tok.startswith("-") and tok in ("-f", "-r", "-rf", "-fr", "-d"):
-                continue
-            if not _operand_under_scratch(tok):
-                return False
-    return True
+    """Exact-match /tmp-cleanup check — DELEGATED to the contract."""
+    v = _classify_terminal(command)
+    return bool(v and v.get("sanctioned") == "tmp_cleanup")
 
 
 # ── Plan-review record is sanctioned and lock-free (2026-10-30) ─────────────
-# The plan-review-before-slice gate (plan-review-check.py) refuses a
-# non-trivial slice unless the active cycle has a row in `adversarial_reviews`.
-# The ONLY sanctioned writer is adversarial-review.py --cycle-id N --review,
-# which writes into ~/.steadfaste-fleet/data/loop-governance.db — governance DATA,
-# not a git repo. `_target_repo_root()` resolves that write to steadfaste-fleet,
-# so the lock gate demanded a steadfaste-fleet lock before the worker's own repo
-# lock and pending cycle made one unobtainable: a structural deadlock where a
-# worker could never satisfy the gate that gates their own commit.
-#
-# Same class as the brain-write carve-out above: governance is scoped to a git
-# repo; there is no repo to bind this DATA-store write to; demanding a lock is
-# an impossible demand. The review row is exactly the record the gate needs,
-# so giving any governed agent the sanctioned way to produce it — WITHOUT a
-# secondary steadfaste-fleet lock — is the fix, and it PRESERVES the gate (review
-# before building stays). Independence is preserved by the fixed committed
-# prompt + a distinct reviewer model (deepseek-v4-pro) + recorded reviewer_id
-# and model for audit; it never depended on which actor receives the row.
-#
-# Deliberately NARROW — the EXACT single-cycle review invocation only:
-#   python3 <any-path>/adversarial-review.py --cycle-id <int>
-#     --material-file <path> --review --reviewer-id <id>
-# and its inline --material variant. --sweep is never sanctioned from here
-# (that is the orchestrator cron's job — a worker never sweeps the shared DB).
-# Metachars/separators/sudo/chaining are rejected. Every other write path still
-# requires a lock.
-_PLAN_REVIEW_SCRIPT_NAMES = ("adversarial-review.py",)
-
-
-def _plan_review_material_ok(command: str) -> bool:
-    """Either --material-file <path> (preferred) or --material <inline> is present."""
-    return bool(re.search(r"--material-file\s+\S+", command)) or bool(
-        re.search(r"--material\s+\S+", command))
+# The plan-review-before-slice gate refuses a non-trivial slice unless the
+# active cycle has a row in `adversarial_reviews`; the ONLY sanctioned writer
+# is adversarial-review.py --cycle-id N --review(-file) --reviewer-id X. The
+# exact-match shape now lives in the write-class CONTRACT and is reported in
+# the classify verdict's `sanctioned` field. This wrapper keeps the gate's
+# call shape.
 
 
 def _is_sanctioned_plan_review_command(command: str) -> bool:
-    """Exact-match check for the ONE worker plan-review write that is lock-free.
-
-    Returns True only for a single python3 invocation of adversarial-review.py
-    that RECORDS a review (--review) for ONE cycle (--cycle-id <int>) with a
-    reviewer identity (--reviewer-id <id>) and material (--material/-file).
-    --sweep, sudo, `-c`, chained commands, redirects, pipes, metacharacters and
-    separators are all rejected. Fail closed otherwise.
-    """
-    if not command:
-        return False
-    # No metacharacter AND no separator may ride along — the carve-out must
-    # never authorise more than the review write itself.
-    if _COMMAND_FORBIDDEN_METACHARS.search(command) or _COMMAND_SEPARATORS.search(command):
-        return False
-    if re.search(r"\bsudo\b", command):
-        return False
-    if re.search(r"\b--sweep\b", command):
-        return False
-    # A single python3 invocation naming the reviewer script.
-    if not re.search(r"\bpython3?\b", command):
-        return False
-    if not any(name in command for name in _PLAN_REVIEW_SCRIPT_NAMES):
-        return False
-    # The recording shape: one cycle, an identity, material, and --review
-    # (or --re-review — the append-only re-judge that supersedes into history).
-    if not re.search(r"--cycle-id\s+\d+", command):
-        return False
-    if not re.search(r"--reviewer-id\s+\S+", command):
-        return False
-    if not _plan_review_material_ok(command):
-        return False
-    if not re.search(r"(?<![\w-])--re-review\b", command) and not re.search(
-            r"(?<![\w-])--review\b", command):
-        return False
-    return True
+    """Exact-match plan-review check — DELEGATED to the contract."""
+    v = _classify_terminal(command)
+    return bool(v and v.get("sanctioned") == "plan_review")
 
 
 # ── Loop-governance DB is append-only: raw mutation is BLOCKED (2026-10-30) ──
-# A worker was observed doing
-#   sqlite3 ~/.steadfaste-fleet/data/loop-governance.db \
-#     "DELETE FROM adversarial_reviews WHERE cycle_id=8208;"
-# to clear a stale FINDINGS verdict, then re-recording. The DELETE is the
-# re-roll-until-CLEAN loophole and an audit-tamper: adversarial_reviews is the
-# review-of-record, and a FINDINGS a worker dislikes cannot simply cease to
-# exist. Operator directive (Luke): review/governance must be self-contained on
-# the agent's server (no orchestrator) and the store is APPEND-ONLY — the
-# legitimate need (fresh verdict after improving material) is served by the
-# reviewer's --re-review, which moves the old verdict into
-# adversarial_reviews_history and records a fresh current row. DELETE is never
-# the answer.
-#
-# This gate is a BLOCK (not a carve-out): a write-class terminal command that
-# mentions the governance DB and is NOT the sanctioned reviewer/record-review
-# invocation, and shows MUTATION intent, is refused with the sanctioned path
-# named. Read-only SQL (SELECT/PRAGMA diagnostics — the doctor's own queries)
-# is NOT blocked. Shapes targeted:
-#   * raw sqlite3 CLI:        sqlite3 <db> "DELETE FROM / DROP / UPDATE / ALTER / INSERT"
-#   * a script run with --db: python3 /tmp/adv-review.py ... --db <db>  (copy trick)
-#   * inline python/heredoc:  python3 - <<'PY'  ... execute("DELETE... / executescript(
-#
-# Sanctioned writers that bypass this gate (checked BEFORE it — the plan-review
-# carve-out above, and the manage script record-review.py):
-#   python3 .../adversarial-review.py --cycle-id N --material-file <p> --review
-#     | --re-review --reviewer-id <id> [--db <db>]
-#   python3 .../record-review.py --cycle-id N ... (manage-side record)
-_GOV_DB_BASENAME = "loop-governance.db"
-_GOV_DB_MUTATE_VERBS = re.compile(
-    r"(?:DELETE\s+FROM|DROP\s+TABLE|DROP\s+INDEX|UPDATE\s+\w+|"
-    r"ALTER\s+TABLE|CREATE\s+TABLE|INSERT\s+INTO|REPLACE\s+INTO|"
-    r"VACUUM|REINDEX)", re.IGNORECASE)
-_RECORD_REVIEW_NAMES = ("record-review.py",)
-
-
-def _mentions_governance_db(command: str) -> bool:
-    """The command text names the loop-governance DB (basename anywhere)."""
-    return _GOV_DB_BASENAME in command
-
-
-def _has_db_path_arg(command: str) -> bool:
-    """`--db <path>` (or `--db=<path>`) present — a script pointing at the store."""
-    return bool(re.search(r"--db(?:\s+|=)\S*", command))
-
-
-def _is_sanctioned_gov_db_writer(command: str) -> bool:
-    """The canonical reviewer (--review/--re-review) or the manage record-review.py."""
-    if re.search(r"\bpython3?\b", command) and re.search(
-            r"adversarial-review\.py", command):
-        return True
-    if re.search(r"\bpython3?\b", command) and any(
-            n in command for n in _RECORD_REVIEW_NAMES):
-        return True
-    return False
+# adversarial_reviews is the review-of-record: DELETE/UPDATE/DROP to clear a
+# FINDINGS a worker dislikes is the re-roll-until-CLEAN loophole and an
+# audit-tamper. The mutation-detection shape now lives in the write-class
+# CONTRACT and is reported in the classify verdict's `db_mutation` field (raw
+# sqlite3/python mutation of the store, `--db` copy-trick scripts; sanctioned
+# writers adversarial-review.py/record-review.py exempted; SELECT reads pass).
+# This wrapper keeps the gate's call shape.
 
 
 def _is_governance_db_mutation_command(command: str) -> bool:
-    """True when a write-class terminal command mutates the governance DB
-    outside the sanctioned writers. Fail open ON PURPOSE for reads — this gate
-    targets MUTATION only; the ordinary write-class/lock handling still applies
-    to anything this returns False for."""
-    if not command or not _mentions_governance_db(command):
-        return False
-    if _is_sanctioned_gov_db_writer(command):
-        return False
-    # Raw sqlite3 CLI against the DB with any mutating verb.
-    if re.search(r"\bsqlite3\b", command) and _GOV_DB_MUTATE_VERBS.search(command):
-        return True
-    # Any python invocation naming the DB with a mutating verb (a heredoc or
-    # one-liner whose SQL is IN the command text).
-    if re.search(r"\bpython3?\b", command) and _GOV_DB_MUTATE_VERBS.search(command):
-        return True
-    # A `--db <path>` script that is NOT a sanctioned writer is a copy/tamper
-    # shape: the script file's body is not in the command text, so intent is not
-    # visible — refuse the opaque writer pointing at the store.
-    if re.search(r"\bpython3?\b", command) and _has_db_path_arg(command):
-        return True
-    # A bare sqlite3 <db> with no visible mutating verb is not provable as a
-    # mutation from text — leave it to the ordinary lock gate.
-    return False
+    """Governance-DB mutation check — DELEGATED to the contract."""
+    v = _classify_terminal(command)
+    return bool(v and v.get("db_mutation"))
 
 
 def _is_cronjob_write(args: Dict[str, Any]) -> bool:
@@ -2319,16 +2021,28 @@ def _is_computer_use_write(args: Dict[str, Any]) -> bool:
     return action in WRITE_COMPUTER_USE_ACTIONS
 
 
-def _is_write_tool(tool_name: str, args: Dict[str, Any]) -> bool:
+def _is_write_tool(
+    tool_name: str,
+    args: Dict[str, Any],
+    terminal_verdict: Optional[Dict[str, Any]] = None,
+) -> bool:
+    """True when a tool call is write-class (needs skills + lock gates).
+
+    terminal_verdict: the hook's already-computed classify verdict for a
+    terminal call (so the hot path pays ONE subprocess per call, threaded
+    through the hook). When absent — a standalone caller such as a gate test
+    — the terminal branch delegates to _is_readonly_terminal_command, which
+    spawns the classify CLI itself.
+    """
     if tool_name in WRITE_TOOLS:
         return True
     if tool_name == "terminal":
-        # Fail-closed terminal policy (2026-07-31): a terminal command is
-        # write-class UNLESS it is strictly read-only (allowlist + no
-        # compound metacharacters). This closes the historical fail-open:
-        # `curl -X POST -d`, `wget URL`, `ssh host 'rm -rf'`, and
-        # `git status > ~/.bashrc` all previously passed the lock check
-        # because they didn't match WRITE_COMMAND_PATTERNS.
+        # Fail-closed terminal policy: a terminal command is write-class
+        # UNLESS it is strictly read-only. The classification is the
+        # CONTRACT's, reached through _classify_terminal (a fresh process per
+        # call, so a rule change reloads with no gateway restart).
+        if terminal_verdict is not None:
+            return not bool(terminal_verdict.get("read_only"))
         command = args.get("command", "")
         return not _is_readonly_terminal_command(command)
     if tool_name == "cronjob" and _is_cronjob_write(args):
@@ -3222,6 +2936,14 @@ def register(ctx):
 
             args = args or {}
 
+            # ONE classify subprocess per terminal tool call — the CONTRACT's
+            # verdict, threaded through every site below (a fresh process per
+            # call, so a contract rule change reloads on the next call with no
+            # gateway restart). None = classification unavailable = fail closed.
+            _terminal_verdict = None
+            if tool_name == "terminal":
+                _terminal_verdict = _classify_terminal(str(args.get("command", "")))
+
             # Keep _REQUIRED_SKILLS current with the deployed manifest so a
             # skills.yaml change (e.g. a consolidation deploy) is enforced by
             # the running gateway without a restart. mtime-cached — a stat, not
@@ -3258,7 +2980,8 @@ def register(ctx):
                 # a steadfaste session reviewed against steadfaste-fleet).
                 # tool_name is passed so the hint can tell a call that WORKS in a repo
                 # (a write, or an explicit workdir) from one that merely reads it.
-                _note_session_repo(hermes_session_id, args, tool_name)
+                _note_session_repo(hermes_session_id, args, tool_name,
+                                   terminal_verdict=_terminal_verdict)
                 if tool_name.startswith(("mcp__loop_governance__", "mcp__review__")):
                     _inject_session_context(hermes_session_id, tool_name, args)
 
@@ -3304,7 +3027,7 @@ def register(ctx):
             # falls through to the skills gate + governance lock check.
             if tool_name == "terminal":
                 command = args.get("command", "")
-                if _is_readonly_terminal_command(command):
+                if _terminal_verdict and _terminal_verdict.get("read_only"):
                     return None
 
             # ── Sanctioned lock-free recovery command ──
@@ -3333,7 +3056,7 @@ def register(ctx):
             # The enforcer auto-creates the marker when all 7 skills have
             # been loaded via actual skill_view() calls — no touch needed.
             if not _check_skills_loaded_marker(hermes_session_id):
-                if _is_write_tool(tool_name, args):
+                if _is_write_tool(tool_name, args, _terminal_verdict):
                     # ── Build helpful block message ──
                     # Read this session's skills-state file to show which
                     # skills are loaded.
@@ -3418,7 +3141,7 @@ def register(ctx):
                         ),
                     }
 
-            if not _is_write_tool(tool_name, args):
+            if not _is_write_tool(tool_name, args, _terminal_verdict):
                 return None
 
             # Cronjob read operations pass through
@@ -3612,8 +3335,8 @@ def register(ctx):
             # review their own gate demands must never need a steadfaste-fleet lock
             # its pending cycle forbids. A command-scoped carve-out, so it is
             # checked regardless of which repo the command's path resolves to.
-            if tool_name == "terminal" and _is_sanctioned_plan_review_command(
-                    str(args.get("command", ""))):
+            if tool_name == "terminal" and (
+                    (_terminal_verdict or {}).get("sanctioned") == "plan_review"):
                 return None
 
             # /tmp cleanup: sanctioned and lock-free (2026-10-30 — see
@@ -3625,8 +3348,8 @@ def register(ctx):
             # sudo, escapes) is still refused / lock-gated. Checked BEFORE the
             # no-repo refusal, AFTER the DB-mutation block (a DB mutation never
             # counts as /tmp cleanup).
-            if tool_name == "terminal" and _is_sanctioned_tmp_cleanup_command(
-                    str(args.get("command", ""))):
+            if tool_name == "terminal" and (
+                    (_terminal_verdict or {}).get("sanctioned") == "tmp_cleanup"):
                 return None
 
             # Loop-governance DB mutation gate (2026-10-30 — see
@@ -3635,8 +3358,8 @@ def register(ctx):
             # (re-roll-until-CLEAN / audit-tamper). Read-only SELECT diagnostics
             # are NOT blocked. The sanctioned reviewer and record-review.py are
             # exempted by the helper. Checked BEFORE the no-repo refusal.
-            if tool_name == "terminal" and _is_governance_db_mutation_command(
-                    str(args.get("command", ""))):
+            if tool_name == "terminal" and bool(
+                    (_terminal_verdict or {}).get("db_mutation")):
                 _db_cmd = str(args.get("command", ""))[:160]
                 return {
                     "action": "block",
@@ -3716,7 +3439,7 @@ def register(ctx):
                     _COMMAND_FORBIDDEN_METACHARS.search(_cmd)
                     or (
                         _COMMAND_SEPARATORS.search(_cmd)
-                        and not _is_readonly_terminal_command(_cmd)
+                        and not bool(_terminal_verdict and _terminal_verdict.get("read_only"))
                     )
                 )
             ):

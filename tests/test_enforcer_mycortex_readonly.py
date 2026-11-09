@@ -26,6 +26,9 @@ import pytest
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 ENFORCER = REPO / "plugins" / "governance-enforcer" / "__init__.py"
+# The read-only allowlist now lives in the WRITE-CLASS CONTRACT, so the source
+# guard below points at the contract's patterns (the enforcer delegates to it).
+CONTRACT = REPO / "ops" / "services" / "fleet-governance" / "write_class.py"
 
 # Read-only by intent — query the index, never change it.
 READS = [
@@ -102,11 +105,12 @@ def test_brain_mutations_stay_write_class(cmd):
 def test_every_mycortex_allowlist_line_is_subcommand_scoped():
     """Source guard: the plausible wrong fix is a whole-CLI entry.
 
-    An entry like `^\\s*(mycortex)\\b` would admit `sync` too. Slice by LINE —
+    An entry like `^\s*(mycortex)\b` would admit `sync` too. Slice by LINE —
     slicing the block at the first `]` lands inside `[vV]` of an earlier
     pattern and reports a truncated block (this probe failed that way first).
+    Points at the CONTRACT (write_class.py), which owns the allowlist now.
     """
-    src = ENFORCER.read_text(encoding="utf-8")
+    src = CONTRACT.read_text(encoding="utf-8")
     lines = [ln for ln in src.splitlines()
              if "mycortex" in ln and ln.strip().startswith(("r\"", "r'"))]
     assert lines, "no mycortex entry in the read-only allowlist"
