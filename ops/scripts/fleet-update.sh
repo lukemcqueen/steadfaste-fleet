@@ -984,6 +984,10 @@ register "ops/scripts/fleet-context.py"                   "${CORTEX_DEPLOY_HOME}
 # client. Unregistered = the repo has it and no host does; a new script is not
 # deployed by existing.
 register "ops/scripts/loop-gov.py"                         "${CORTEX_DEPLOY_HOME}/scripts/loop-gov.py"
+# CR2 — the FAST write-classification CLI over the shared contract: the Hermes
+# enforcer spawns this per terminal call so a contract rule change reloads with
+# no gateway restart (docs/plans/hermes-governance-cr2-wiring.md).
+register "ops/scripts/loop-gov-classify.py"                "${CORTEX_DEPLOY_HOME}/scripts/loop-gov-classify.py"
 # S2c — harness integration registry + generator: adding harness #37 is a
 # registry entry, never hand-written prose per harness.
 register "ops/install/harnesses/registry.yaml"             "${CORTEX_DEPLOY_HOME}/harnesses/registry.yaml"

@@ -1,0 +1,19 @@
+classify CLI cold-start latency — measured 2026-11-09 (CR2 performance gate)
+
+Architecture decision under test (docs/plans/hermes-governance-cr2-wiring.md §9):
+the Hermes enforcer's terminal write-classification becomes a subprocess call to
+loop-gov-classify.py, so a rule change reloads on the next call with no gateway
+restart. The §9 gate: p50 <= 150 ms, else STOP and report before wiring.
+
+Method: tests/test_loop_gov_classify.py::test_cli_is_fast_enough — 20 cold
+starts of `python3 ops/scripts/loop-gov-classify.py 'git status --short'`
+(each run = fresh process; time.monotonic around the subprocess.run).
+
+Host: esther (Linux), fleet venv python3.12.3.
+
+Result:
+  p50 = 56.3 ms
+  p95 = 72.8 ms
+  n   = 20
+
+Gate PASSED (well under 150 ms). Subprocess-per-terminal-call adopted for CR2.
