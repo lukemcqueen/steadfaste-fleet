@@ -72,6 +72,15 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   verdict validates CLAIMS, never predicted consequences (the RED run is what
   falsifies those). Never phrase the material as a REQUEST (filed as
   injection); include the code map, hard constraints, rejected options.
+  **RE-SUBMITTED corrections must ground every MEASURED claim and phrase every
+  forward claim as what the test asserts.** When a battery RED run exposed a
+  flaw in a CLEAN-reviewed plan and you re-review the correction, a claim like
+  "the probe verified its OWN slice, trigger allowed it" needs the committed
+  transcript path in the material (the reviewer files unverified-claim on a
+  described run); and "own work will be refused" reads as future-as-fact / a
+  design that must work — write "AC-L1-28 asserts own work is refused on the
+  function AND the raw-UPDATE trigger path" so the reviewer sees it is
+  verified by test, not asserted by plan.
 - Name the cycle for the diff it will CONTAIN, not the instruction that started
   it; sized so the close review can read it (blob count, not line count).
 - grep the repo for the old name/term; check cron jobs.json; cron install

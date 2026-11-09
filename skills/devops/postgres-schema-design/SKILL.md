@@ -152,6 +152,20 @@ protection:
 - A never-used grant is inert (expiry); state that in the migration header, and
   validate loudly (RAISE) on bad delegation input to the AUTHORIZING side while
   staying silent to non-holders.
+- **When the de-named capability is ALSO used to admit a lower tier, keep the
+  tiers as SEPARATE roles — never let the delegated tier hold `is_<holder>`
+  membership, or the first OR-branch short-circuits and that tier's own
+  restriction is dead code.** If you de-name `is_<holder>` to
+  `pg_has_role(…, '<role>', 'MEMBER')` and then add a designated-verifier tier
+  under the SAME role, every designated holder IS "<holder>" and a predicate
+  like `is_<holder> OR (designated AND created_by <> caller)` returns true for
+  the designated holder on its own work — the no-self-grade branch never runs.
+  Prove the collapse is impossible with a hermetic battery check that a
+  designated holder is NOT `is_<holder>` (assert both `pg_has_role(designated
+  role)` on the core role is `f` and the tier's own restriction holds on the
+  owner's own row): a CLEAN plan-review does NOT catch it — the RED battery run
+  is what measures whether a newly-introduced lower tier still obeys its
+  stated restriction.
 
 ## NOT NULL DEFAULT gotcha
 
