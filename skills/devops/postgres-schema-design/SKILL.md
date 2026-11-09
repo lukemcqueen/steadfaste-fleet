@@ -208,6 +208,15 @@ the CLI resolves `--source` filters by id, but `local_path` stays protected.
   the same probe, and the RED transcript shows the defect rather than an older revision
   of your own test.
 - `schema_version(version INT PK, applied_at)` table; runner reads `MAX(version)`, applies pending, records — re-run is a **no-op**.
+- **A grant that must follow RUNTIME config belongs OUTSIDE the migration —
+  the version-gated runner applies a migration ONCE, so anything that converges
+  after a later env/operator change never will if it lives in SQL.** An
+  operator-designated capability ("who may hold this role") driven by an env
+  var is a per-update DEPLOY step: `GRANT` the named roles on every run (IF
+  EXISTS, warn-and-skip absent roles, never fail — a host that does not create
+  the role is legitimately skipped). Keep the capability ROLE itself + the
+  predicate in the migration (created once, then stable) and the DESIGNATION
+  in the deploy (re-runnable, convergent, revocable via the recorded REVOKE).
 - Role creation: `DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='x') THEN CREATE ROLE x LOGIN; END IF; END $$;` — PG has no `CREATE ROLE IF NOT EXISTS`. Roles are cluster-level; guard idempotently.
 - `--db-name` override so tests target a scratch DB, never prod.
 - Pinned `search_path`, `ON_ERROR_STOP=1`, explicit target DB.
@@ -247,6 +256,20 @@ Mirror `tests/test-bus-schema.sh` style:
   grep guard on the migration SOURCE for the exact (unspaced) role names: a
   single typo silently skips every grant, because the IF EXISTS guard never
   matches a misspelled role and no host may exist to catch it.
+- **A multi-file existence guard uses `grep -l | wc -l`, never `grep -c`.**
+  `grep -c` over several files prints a `file:N` line for EVERY file (even the
+  zero-match ones), so the captured value is a multiline list that never equals
+  the literal `0` the guard compares against — a guard that passed as a single
+  file flips to always-FAIL the moment you widen it to a glob. A check that
+  cannot distinguish "clean" from "mechanism broken" proves nothing either way:
+  match on FILE COUNT and compare to `0`.
+- **Derive identifier spellings from the system or the file bytes, never from a
+  retyped literal — a transcribed split (a space inside a role or container
+  name) re-introduces the exact misspelling the guard exists to catch.** Pull
+  the container from `docker ps --format '{{.Names}}'` and the role shape from
+  `grep -o 'prefix[a-z_]*'` on the source, then paste those into the psql
+  verification; when a fix needs a literal, delete the offending character with
+  a lookahead (`s/myc (?=cortex)//g`) so the replacement cannot re-typo it.
 - **A battery under `set -eu` dies WITHOUT a Summary when a bare fixture command
   fails** — the output ends mid-section and looks like a normal end, so the
   failing command is easy to miss. The failure is usually a fixture problem, not
