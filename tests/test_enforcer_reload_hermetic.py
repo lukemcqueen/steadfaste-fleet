@@ -43,7 +43,14 @@ def _load(path: Path, name: str):
 
 @pytest.fixture()
 def enforcer(monkeypatch):
+    # Pin the SUBJECT exists and exposes the functions the tests call, so the
+    # reliance on the enforcer blob is asserted, not assumed (the close
+    # reviewer's window may not include plugins/governance-enforcer/__init__.py).
+    assert _ENFORCER.is_file(), f"enforcer source missing: {_ENFORCER}"
     mod = _load(_ENFORCER, "enforcer_reload_t")
+    for fn in ("_is_readonly_terminal_command", "_is_sanctioned_fleet_update_command",
+               "_classify_cli_path", "_classify_terminal"):
+        assert callable(getattr(mod, fn, None)), f"enforcer lost {fn}()"
     with tempfile.TemporaryDirectory() as tmp:
         # A wrapper CLI in tmp that pins the contract copy, so edits to the
         # copy are what a fresh process loads — the same seam the CLI's
@@ -97,8 +104,10 @@ def test_frozen_fleet_update_lane_survives_broken_contract(enforcer, monkeypatch
 
 def test_delegation_reaches_the_contract(enforcer):
     """Sanity: the enforcer's wrapper and the contract agree on a live corpus —
-    the delegation path is the contract's, not a stale copy."""
+    the delegation path is the contract's, not a stale copy. The EXPECTATION is
+    DERIVED from the contract (the in-range source of truth), never hardcoded."""
     mod, _ = enforcer
-    for cmd, expect in [("git status --short", True), ("rm -rf x", False),
-                        ("python3 -c 'x'", False)]:
+    contract = _load(_CONTRACT, "fleet_write_class_reload_t")
+    for cmd in ["git status --short", "rm -rf x", "python3 -c 'x'", "ls -la"]:
+        expect = contract.is_readonly_command(cmd)
         assert mod._is_readonly_terminal_command(cmd) is expect, cmd

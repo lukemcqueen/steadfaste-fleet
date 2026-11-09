@@ -3543,21 +3543,32 @@ def check_governance(res):
   enforcer_path = CORTEX_REPO / "plugins" / "governance-enforcer" / "__init__.py"
   if enforcer_path.exists():
     enforcer_src = enforcer_path.read_text()
+    # CR2 (2026-11-09): the classification TABLES live in the write-class
+    # CONTRACT now (the enforcer delegates to it via loop-gov-classify.py), so
+    # the bypass-closure markers split by ownership: tool-set + hook-behaviour
+    # markers stay on the enforcer; the command-pattern markers are checked
+    # against the CONTRACT they actually live in.
+    contract_path = CORTEX_REPO / "ops" / "services" / "fleet-governance" / "write_class.py"
+    contract_src = contract_path.read_text() if contract_path.exists() else ""
     checks = [
       ("WRITE_TOOLS includes execute_code", '"execute_code"' in enforcer_src),
       ("WRITE_TOOLS includes memory", '"memory"' in enforcer_src),
       ("WRITE_TOOLS includes text_to_speech", '"text_to_speech"' in enforcer_src),
       ("CONDITIONAL_WRITE_TOOLS includes process", '"process"' in enforcer_src),
       ("WRITE_PROCESS_ACTIONS defined", "WRITE_PROCESS_ACTIONS" in enforcer_src),
-      ("python3 -c pattern present", r"(python|python3)\s.*-c" in enforcer_src),
-      ("bash -c pattern present", r"(bash|sh|zsh)\s+-c" in enforcer_src),
-      ("script-exec pattern (python3 .py etc)", r"python3(?:\.\d+)?" in enforcer_src),
-      ("script-exec pattern (node .js etc)", r"node|ruby|perl" in enforcer_src),
       ("fail-closed crash handler", "GOVERNANCE ENFORCER CRASHED" in enforcer_src),
       ("pipe not caught as write (no [>|>>])", "[>|>>]" not in enforcer_src),
-      ("grouped passwd alternation", r"(usermod|groupmod|useradd|groupadd|passwd)\s" in enforcer_src),
       ("read-check before write-check", "read-only terminal fast-path" in enforcer_src.lower()),
-      ("no pip|npm in broad catch-all", "dpkg|brew" in enforcer_src and "pip|npm" not in enforcer_src.split("dpkg")[0]),
+      ("python3 -c pattern present", r"(python|python3)\s.*-c" in contract_src),
+      ("bash -c pattern present", r"(bash|sh|zsh)\s+-c" in contract_src),
+      ("script-exec pattern (python3 .py etc)", r"python3(?:\.\d+)?" in contract_src),
+      ("script-exec pattern (node .js etc)", r"node|ruby|perl" in contract_src),
+      # Substring checks, not regexes: the source stores the PATTERN text as
+      # written, so match the single escaped `\s` the way the original did.
+      ("grouped passwd alternation",
+       r"(usermod|groupmod|useradd|groupadd|passwd)\s" in contract_src),
+      ("no pip|npm in broad catch-all",
+       "dpkg|brew" in contract_src and "pip|npm" not in contract_src.split("dpkg")[0]),
     ]
     all_pass = True
     for label, ok in checks:
