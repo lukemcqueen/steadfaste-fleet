@@ -1,0 +1,39 @@
+# doctor pull-latest 2026-11-09 (titus)
+
+## git head vs origin
+c8534b166 (origin/main, fast-forward from eddc5eff8)
+behind-origin: 0
+
+## working tree
+clean (nothing committed by this cycle other than this evidence file)
+
+## fleet-update.sh deploy
+Ran explicitly after the post-merge auto-deploy hook hit the 60s bash timeout.
+- 54 deployed-only files preserved (NOT auto-removed) — cortex->fleet rename leftovers
+- 4 new cron jobs created, 33 skipped; crons at 60 enabled / 0 disabled
+- enforcement files re-locked (10 files)
+- Deploy manifest regenerated (deployed commit == HEAD c8534b166)
+
+## doctor (fleet-doctor.py --json, deployed venv python)
+489 pass / 66 warn / 1 fail / 7 info  (previous run: 488 pass / 67 warn / 1 fail / 7 info)
+
+### what changed this cycle
+- Symlinks: FIXED — repointed session-cache-build -> ~/.steadfaste-fleet/scripts/agent-session_cache.py (was -> ~/hermes-cortex/... dead path). Audit now 0 broken; doctor PASS.
+- 59 WARN/INFO recorded dispositions (owner titus), all validated against the check names in the live run:
+  - 54x "Stale deploy: scripts/cortex_*" — deliberate: cortex->fleet rename (2026-11-06) deployed under legacy cortex_* path; gateway still ExecStarts scripts/cortex_gateway/daemon.py until the P5 unit rename; fleet-update preserves deployed-only files; owned by the cortex layer, not a fleet register() update.
+  - "Stale skills: orphaned" — deferred: absorbed always-skills (agent-contract, prove-before-create, reflexion-check, survey-before-action, task-start) whose repo sources moved into execute-right/task-orient/verify-and-ship; recovery is orchestrator-owned, its own reconcile cycle.
+  - "AGENTS.md (mcp_ableton)" — deferred: another project's dev repo; creating AGENTS.md there is that repo's owner call.
+  - "Orphan crons: 6" / "Extra crons" — deliberate: benign user/workday crons outside the fleet manifest.
+  - "Legacy lock (.governance-sess_9b6045c9d974.json)" — deliberate: THIS session's own live governance lock (slug form unrecognised by the naming check); must NOT be removed; clears at end_change.
+- Undisposed count: 60 -> 0
+
+## remaining FAIL (1) — pre-existing, chronic, cross-repo
+- AGENTS.md (steadfaste) — FAIL: ~/steadfaste/AGENTS.md stale (mtime 2026-11-03 < last commit 2026-11-05).
+  - NOT introduced by this update; identical FAIL in prior evidence (doctor-pull-latest-2026-10-23.txt, earlier cycles).
+  - Lives in the ~/steadfaste repo, whose commits run the same global hooks. A fix = a governed commit in THAT repo (update AGENTS.md with recent patterns: ledger CLI, e2e/pipeline driver), which requires a governance lock covering /Users/luke/steadfaste — this session holds only the steadfaste-fleet lock (check_repo_lock(/Users/luke/steadfaste) = covered:false), and begin_change refuses while unclosed cycles exist. One action that clears it: a session in ~/steadfaste updates+commits its AGENTS.md; until then the doctor reports rc=2.
+
+## services / crons / skills (RULE 8 step 5)
+- fleet gateway daemon: running (PID 1478, scripts/cortex_gateway/daemon.py --config gateway.yaml)
+- crons: 60 enabled / 0 disabled
+- always-skills deployed: task-orient, execute-right, verify-and-ship present in deployed tree; Skills loadable PASS
+- Task DB: connectivity PASS, schema deployed PASS, schema version PASS (v018)
