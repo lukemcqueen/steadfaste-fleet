@@ -916,8 +916,11 @@ VD_ST=$($PSQL_PROBE -c "SELECT status FROM tasks.tasks WHERE id='${VD_SLICE}';" 
 #    grant loop is IF EXISTS-guarded per-host, so absent roles are skipped by
 #    design — asserting their names would be a false failure on a host that does
 #    not create them). bool_and over the existing set is non-vacuous here because
-#    myc cortex_reader_esther always exists on an orchestrator host.
-VD_EXECS=$($PSQL -c "SELECT COALESCE(bool_and(has_function_privilege(r.rolname, 'tasks.verify_slice(uuid,boolean,text)', 'EXECUTE')), true) FROM pg_roles r WHERE r.rolname IN ('myc cortex_reader_esther','myc cortex_reader_moses','myc cortex_reader_titus','myc cortex_reader_joseph','myc cortex_reader_kustos','myc cortex_reader_gisu');" 2>/dev/null || true)
+#    myc cortex_reader_esther always exists on an orchestrator host. (The role
+#    names below MUST be unspaced — a spaced name matches no pg_roles row, the
+#    WHERE set is empty, and COALESCE turns the vacuous empty-set into a false
+#    pass: measured, esther exists here and still the check read as green.)
+VD_EXECS=$($PSQL -c "SELECT COALESCE(bool_and(has_function_privilege(r.rolname, 'tasks.verify_slice(uuid,boolean,text)', 'EXECUTE')), true) FROM pg_roles r WHERE r.rolname IN ('mycortex_reader_esther','mycortex_reader_moses','mycortex_reader_titus','mycortex_reader_joseph','mycortex_reader_kustos','mycortex_reader_gisu');" 2>/dev/null || true)
 [ "$VD_EXECS" = "t" ] && pass "v017: every EXISTING profile role holds EXECUTE on verify_slice (widened)" \
   || fail "v017: widening missing — some existing profile role lacks EXECUTE (bool_and=$VD_EXECS)"
 VD_REFUSED=$($PSQL_PROBE -c "SELECT tasks.verify_slice('${VD_SLICE}', true, 'no grant');" 2>/dev/null || true)
@@ -1042,13 +1045,113 @@ VD_TABDENIED=$($PSQL_PROBE -c "SELECT count(*) FROM tasks.verify_grants;" 2>/dev
   && pass "v017: worker calls verify_grant_active (f, no error); table unreadable ($VD_TABDENIED)" \
   || fail "v017: helper/table access wrong (helper=$VD_HELPER, table='$VD_TABDENIED')"
 
-# 13. The migration's grant loops use the EXACT role names — a spaced typo silently
+# 13. The migrations' grant loops use the EXACT role names — a spaced typo silently
 #     skips every grant (IF EXISTS never matches a role named 'myc cortex_reader_…'),
 #     and no worker profile role exists on every host to catch it at runtime. The
-#     source file itself is the surface this guards (structure-derived, not prose).
-VD_SQLTYPO=$(grep -c 'myc cortex_reader' "${REPO_DIR}/ops/services/tasks/schema/v017__verify-delegation-capability.sql" || true)
+#     source files themselves are the surface this guards (structure-derived, not
+#     prose) — every v0NN migration, not just the latest.
+VD_SQLTYPO=$(grep -l 'myc cortex_reader' "${REPO_DIR}"/ops/services/tasks/schema/v0*.sql 2>/dev/null | wc -l | tr -d ' ' || true)
 [ "${VD_SQLTYPO}" = "0" ] && pass "v017: migration grant loops carry unspaced role names" \
   || fail "v017: ${VD_SQLTYPO} spaced role-name typo(s) in the migration grants"
+
+echo ""
+echo "═══ AC-L1-28: v018 — designated verifier may verify non-own work ONLY (no self-grading) ═══"
+# Operator steer after v017 ("does Titus have to ask for a grant?" → best option
+# that doesn't reduce quality): a designated verifier (tasks_verifier membership,
+# granted here exactly as the operator's TASKS_VERIFIER_ROLES step does on a real
+# host) verifies any review slice EXCEPT ones it created itself — v014's
+# no-self-grading guard survives, and dispatched/fleet work closes with zero asks.
+# The SINGLE predicate verify_capable_for() backs verify_slice AND the trigger
+# (the ADV-14378-1 lesson: both layers must carry the SAME rule, because the
+# trigger fires on verify_slice's UPDATE under the caller's session_user).
+$PSQL -c "GRANT tasks_verifier TO ${PROBE_ROLE};" >/dev/null 2>&1
+VE_MEMBER=$($PSQL -c "SELECT pg_has_role('${PROBE_ROLE}','tasks_verifier','MEMBER');" 2>/dev/null || true)
+[ "$VE_MEMBER" = "t" ] && pass "v018: probe is a designated verifier (simulated operator GRANT)" \
+  || fail "v018: probe lacks the capability (member=$VE_MEMBER)"
+# TIER SEPARATION (the battery RED that fixed the plan): capability membership
+# must NOT make the probe a core orchestrator — is_orchestrator is the
+# tasks_orchestrator tier now, or the no-self-grade branch is dead code.
+VE_ISORCH=$($PSQL -c "SELECT tasks.is_orchestrator('${PROBE_ROLE}');" 2>/dev/null || true)
+VE_HASCORE=$($PSQL -c "SELECT pg_has_role('${PROBE_ROLE}','tasks_orchestrator','MEMBER');" 2>/dev/null || true)
+[ "$VE_ISORCH" = "f" ] && [ "$VE_HASCORE" = "f" ] \
+  && pass "v018: designated verifier is NOT a core orchestrator (is_orchestrator=$VE_ISORCH, orchestrator-role=$VE_HASCORE)" \
+  || fail "v018: tiers collapsed — designated verifier reads as orchestrator (is_orchestrator=$VE_ISORCH, core=$VE_HASCORE)"
+
+# Setup A: dispatched work — esther creates, works, reports; the probe did NOT create it.
+VE_DISP=$($PSQL -c "SELECT tasks.task_upsert(p_content=>'L1 v18 dispatched slice', p_created_by=>'esther', p_scope=>'fleet');" 2>/dev/null | head -1 || true)
+$PSQL_READER -c "SELECT tasks.claim_slice('${VE_DISP}', 'esther');" >/dev/null 2>&1
+$PSQL_READER -c "SELECT tasks.report_done('${VE_DISP}', 'esther evidence');" >/dev/null 2>&1
+VE_DISP_ST=$($PSQL -c "SELECT status FROM tasks.tasks WHERE id='${VE_DISP}';" 2>/dev/null || true)
+[ "$VE_DISP_ST" = "review" ] && pass "v018: dispatched slice in review (setup)" \
+  || fail "v018: dispatched setup failed (status=$VE_DISP_ST)"
+
+# 1. THE STEER, satisfied: designated verifier closes non-own work with ZERO asks
+#    (no grant row, no orchestrator — the capability + created_by differ).
+VE_DISPV=$($PSQL_PROBE -c "SELECT tasks.verify_slice('${VE_DISP}', true, 'designated verifier: dispatched work');" 2>/dev/null || true)
+VE_DISP_ST2=$($PSQL_PROBE -c "SELECT status FROM tasks.tasks WHERE id='${VE_DISP}';" 2>/dev/null || true)
+[ "$VE_DISPV" = "t" ] && [ "$VE_DISP_ST2" = "completed" ] \
+  && pass "v018: designated verifier closes non-own work, no grant needed (verify=$VE_DISPV, status=$VE_DISP_ST2)" \
+  || fail "v018: non-own verify failed (verify=$VE_DISPV, status=$VE_DISP_ST2)"
+
+# Setup B: the verifier's OWN slice in review.
+VE_OWN=$($PSQL_PROBE -c "SELECT tasks.task_upsert(p_content=>'L1 v18 own slice', p_created_by=>'probe', p_scope=>'personal');" 2>/dev/null | head -1 || true)
+$PSQL_PROBE -c "SELECT tasks.claim_slice('${VE_OWN}', 'probe');" >/dev/null 2>&1
+$PSQL_PROBE -c "SELECT tasks.report_done('${VE_OWN}', 'probe evidence');" >/dev/null 2>&1
+
+# 2. Self-grading stays closed — function layer AND trigger layer.
+VE_OWNV=$($PSQL_PROBE -c "SELECT tasks.verify_slice('${VE_OWN}', true, 'self-approve');" 2>/dev/null || true)
+[ "$VE_OWNV" = "f" ] && pass "v018: designated verifier CANNOT verify its own slice via capability ($VE_OWNV)" \
+  || fail "v018: self-verification slipped through the capability ($VE_OWNV)"
+VE_OWN_RC=0
+VE_OWN_OUT=$($PSQL_PROBE -v ON_ERROR_STOP=1 -c "UPDATE tasks.tasks SET status='completed', \"column\"='done' WHERE id='${VE_OWN}';" 2>&1) || VE_OWN_RC=$?
+VE_OWN_ST=$($PSQL_PROBE -c "SELECT status FROM tasks.tasks WHERE id='${VE_OWN}';" 2>/dev/null || true)
+[ "$VE_OWN_RC" -ne 0 ] && [ "$VE_OWN_ST" = "review" ] \
+  && pass "v018: raw UPDATE of own review slice refused by the trigger (rc=$VE_OWN_RC, status=$VE_OWN_ST)" \
+  || fail "v018: trigger allowed self-completion (rc=$VE_OWN_RC, status=$VE_OWN_ST)" "$VE_OWN_OUT"
+
+# 3. The recorded grant STILL covers the self-closure case (v017 branch intact):
+#    operator-authorized spot delegation is the sanctioned self-verify route.
+$PSQL -c "SELECT tasks.authorize_verify(p_slice_id=>'${VE_OWN}', p_verifier=>'${PROBE_ROLE}', p_note=>'operator authorized: own closure', p_expires_at=>now() + interval '1 hour');" >/dev/null 2>&1
+VE_OWNV2=$($PSQL_PROBE -c "SELECT tasks.verify_slice('${VE_OWN}', true, 'own closure under recorded grant');" 2>/dev/null || true)
+VE_OWN_ST2=$($PSQL_PROBE -c "SELECT status FROM tasks.tasks WHERE id='${VE_OWN}';" 2>/dev/null || true)
+[ "$VE_OWNV2" = "t" ] && [ "$VE_OWN_ST2" = "completed" ] \
+  && pass "v018: own slice verified via RECORDED GRANT (verify=$VE_OWNV2, status=$VE_OWN_ST2)" \
+  || fail "v018: grant path regressed (verify=$VE_OWNV2, status=$VE_OWN_ST2)"
+
+# 4. Without the capability AND without a grant → refused (v014/v017 intact).
+VE_NOCAP=$($PSQL_PROBE -c "SELECT tasks.task_upsert(p_content=>'L1 v18 no-cap slice', p_created_by=>'probe', p_scope=>'personal');" 2>/dev/null | head -1 || true)
+$PSQL_PROBE -c "SELECT tasks.claim_slice('${VE_NOCAP}', 'probe');" >/dev/null 2>&1
+$PSQL_PROBE -c "SELECT tasks.report_done('${VE_NOCAP}', 'evidence');" >/dev/null 2>&1
+$PSQL -c "REVOKE tasks_verifier FROM ${PROBE_ROLE};" >/dev/null 2>&1
+VE_NOCAPV=$($PSQL_PROBE -c "SELECT tasks.verify_slice('${VE_NOCAP}', true, 'no capability');" 2>/dev/null || true)
+[ "$VE_NOCAPV" = "f" ] && pass "v018: no capability + no grant still refused ($VE_NOCAPV)" \
+  || fail "v018: refusal regressed ($VE_NOCAPV)"
+
+# 5. Orchestrator branch unchanged: esther verifies a slice it created itself.
+VE_EST=$($PSQL -c "SELECT tasks.task_upsert(p_content=>'L1 v18 esther own slice', p_created_by=>'esther', p_scope=>'fleet');" 2>/dev/null | head -1 || true)
+$PSQL_READER -c "SELECT tasks.claim_slice('${VE_EST}', 'esther');" >/dev/null 2>&1
+$PSQL_READER -c "SELECT tasks.report_done('${VE_EST}', 'ev');" >/dev/null 2>&1
+VE_ESTV=$($PSQL_READER -c "SELECT tasks.verify_slice('${VE_EST}', true, 'orchestrator own closure');" 2>/dev/null || true)
+[ "$VE_ESTV" = "t" ] && pass "v018: orchestrator still verifies its own work (unchanged, $VE_ESTV)" \
+  || fail "v018: orchestrator branch broke ($VE_ESTV)"
+
+# 6. The predicate itself is callable by a worker in INVOKER context; the grant
+#    table stays unreadable.
+VE_CAP=$($PSQL_PROBE -c "SELECT tasks.verify_capable_for('${PROBE_ROLE}', '${VE_NOCAP}');" 2>/dev/null || true)
+VE_CAP_TAB=$($PSQL_PROBE -c "SELECT count(*) FROM tasks.verify_grants;" 2>/dev/null || echo denied)
+[ "$VE_CAP" = "f" ] && [ "$VE_CAP_TAB" = "denied" ] \
+  && pass "v018: worker calls verify_capable_for (f); verify_grants unreadable ($VE_CAP_TAB)" \
+  || fail "v018: predicate/table access wrong (cap=$VE_CAP, table='$VE_CAP_TAB')"
+
+# 7. The operator's designation lives in fleet-update.sh (re-runnable per update,
+#    env-driven, convergent), NOT in the migration (a migration runs once — an
+#    env change after apply would never converge). Static guard, structure-derived.
+VE_GRANT_STEP=$(grep -c 'TASKS_VERIFIER_ROLES' "${REPO_DIR}/ops/scripts/fleet-update.sh" || true)
+VE_GRANT_TYPO=$(grep -c 'TASKS_VERIFIER_ROLES=.*myc c' "${REPO_DIR}/ops/scripts/fleet-update.sh" || true)
+VE_V018_REG=$(grep -c 'v018__verify-no-self-grade' "${REPO_DIR}/ops/scripts/fleet-update.sh" || true)
+[ "$VE_GRANT_STEP" -ge 2 ] && [ "$VE_GRANT_TYPO" = "0" ] && [ "$VE_V018_REG" = "1" ] \
+  && pass "v018: fleet-update carries register + env designation step (roles unspaced, register=1)" \
+  || fail "v018: fleet-update designation missing/typo'd (step=$VE_GRANT_STEP typo=$VE_GRANT_TYPO reg=$VE_V018_REG)"
 
 echo ""
 echo "═══ Summary ═══"

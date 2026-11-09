@@ -56,5 +56,34 @@ check_transition contradiction — ADV-14378-1, fixed in the plan before build).
 
 `fleet-update.sh` applies v017 to the host's mycortex DB (version-gated
 runner): schema_version 16 → 17; tasks_verifier role created; existing
-mycortex_reader_esther granted tasks_verifier membership; the six-profile
+cortex_reader_esther granted tasks_verifier membership; the six-profile
 EXECUTE widening lands where those roles exist.
+
+## v018 addendum (2026-11-09 — designated verifiers, non-own work only)
+
+- **Plan correction driven by the battery RED:** the CLEAN-reviewed v018 plan
+  collapsed the tiers (v017 de-named is_orchestrator to tasks_verifier
+  membership, so a designated verifier WAS "is_orchestrator" and the
+  no-self-grade branch was dead code). Measured live: `red-v018-tier-collapse.txt`
+  (probe granted tasks_verifier verified its OWN slice; trigger allowed the raw
+  UPDATE). Correction reviewed CLEAN after three rounds (future-as-fact wording,
+  measurement grounding, and the branch-2 contract — the per-slice grant is
+  intentionally NOT created_by-gated but cannot be self-issued: authorize_verify
+  is orchestrator-only and records authorized_by + note).
+- **Tier separation:** `tasks_orchestrator` (core, moses/esther by default) is
+  the meaning of is_orchestrator restored; `tasks_verifier` is the designated
+  tier (operator env TASKS_VERIFIER_ROLES → fleet-update GRANT every update,
+  tasks_verifier only — a designated verifier never becomes a core
+  orchestrator). verify_capable_for: orchestrator OR per-slice grant OR
+  (tasks_verifier AND created_by <> caller) — one predicate in verify_slice AND
+  check_transition (both layers, ADV-14378-1 discipline).
+- **GREEN:** `green-v018-161.txt` — 161 passed / 0 failed. Prior 150-green stays
+  green + 11 new AC-L1-28 checks (tier check, dispatched verification with zero
+  asks, own-work refusal on function + trigger, own-work via recorded grant,
+  no-capability refusal, orchestrator branch, helper access, fleet-update
+  designation step + register static guards, migration typo guard now covering
+  all v0NN files — with the multi-file grep -c fix: a per-file list never
+  equals the literal 0).
+- Live host after deploy: schema_version 18; tasks_orchestrator created; esther
+  holds tasks_orchestrator + tasks_verifier; the designation step runs with
+  TASKS_VERIFIER_ROLES unset (skipped) on this host.

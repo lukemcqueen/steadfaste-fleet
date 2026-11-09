@@ -88,6 +88,7 @@ names are the contract — never invent a new name without checking here first
 | `LLM_CRON_MODEL` | Cron LLM model. Controls **installer pinning only** — an unpinned cron RUNS on the main model (`model.default`), not on this value. Provider-specific id form (`deepseek/deepseek-v4.1-flash` on openrouter) |
 | `LLM_CRON_PROVIDER` | Cron LLM provider (`openrouter`), same scope as above. Never a free tier that can stop resolving — a dead free pin falls through to a PAID route while reporting `ok` |
 | `HERMES_CRON_TIMEOUT` | Cron timeout budget |
+| `TASKS_VERIFIER_ROLES` | **tasks v018: designated verifier roles** — comma-separated reader role names (e.g. `mycortex_reader_titus`) the host GRANTs `tasks_verifier` to on EVERY fleet-update (convergent: a migration applies once, so the grant lives in the deploy step). A designated verifier may verify any review slice EXCEPT ones it created itself; own work still closes via `task-db.py verify-grant`. Absent roles warn + skip. Recorded revocation: `REVOKE tasks_verifier FROM <role>` |
 | `HERMES_TIMEZONE` | Fleet timezone (Asia/Seoul, KST) |
 | `IS_ORCHESTRATOR` | Orchestrator flag (host-derived) |
 | `IS_SERVER` | Server-mode flag |

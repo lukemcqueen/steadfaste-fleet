@@ -471,6 +471,13 @@ register "ops/services/tasks/schema/v016__task-upsert-plan.sql" "${CORTEX_DEPLOY
 # in review on a worker host no longer waits forever for an orchestrator session
 # that does not exist on that host.
 register "ops/services/tasks/schema/v017__verify-delegation-capability.sql" "${CORTEX_DEPLOY_HOME}/services/tasks/schema/v017__verify-delegation-capability.sql"
+# v018: designated verifiers verify NON-OWN work only (no self-grading — the
+# no-self-grade predicate verify_capable_for backs verify_slice AND the
+# trigger). Who BECOMES a verifier is data: TASKS_VERIFIER_ROLES env → GRANT
+# tasks_verifier on every update (see the designation step below the migrate
+# call). Operator steer 2026-11-09: "does Titus have to ask for a grant?" →
+# designated verifiers close dispatched work with zero asks.
+register "ops/services/tasks/schema/v018__verify-no-self-grade.sql" "${CORTEX_DEPLOY_HOME}/services/tasks/schema/v018__verify-no-self-grade.sql"
 # learnings ledger (F-001) — schema + version-gated runner, orchestrator-only
 # (the bus Postgres that hosts learnings exists only on Moses/Esther; workers
 # write via the HTTP collector path and never need this schema locally).
@@ -3348,6 +3355,31 @@ main() {
     else
       error "tasks migrate.py FAILED — task workflow will be dead on this host (retried next update)"
       _DEFERRED_FAILURES+=("tasks schema (${tasks_migrate})")
+    fi
+    # ── v018: designated verifiers (TASKS_VERIFIER_ROLES, comma-separated reader
+    # role names). Runs EVERY update on purpose: a migration applies once (the
+    # version-gated runner skips it), so an env change after apply would never
+    # converge if the GRANT lived in SQL. Role names are operator-set config
+    # (mycortex_reader_<agent>); an absent role warns visibly — a host that
+    # does not create the role is legitimately skipped, never failed. The
+    # recorded revocation for a role removed from the env is
+    # `REVOKE tasks_verifier FROM <role>` (documented in docs/env-vars.md).
+    if [[ -n "${TASKS_VERIFIER_ROLES:-}" ]]; then
+      IFS=',' read -r -a _vr_roles <<<"$TASKS_VERIFIER_ROLES"
+      for _vr in "${_vr_roles[@]}"; do
+        _vr="${_vr// /}"
+        if docker exec -i mycortex-postgres psql -U mycortex -d mycortex -t -A \
+             -c "SELECT 1 FROM pg_roles WHERE rolname='${_vr}';" 2>/dev/null | grep -qx 1; then
+          if docker exec -i mycortex-postgres psql -U mycortex -d mycortex -v ON_ERROR_STOP=1 \
+               -c "GRANT tasks_verifier TO ${_vr};" >/dev/null 2>&1; then
+            info "  ✓ designated verifier: ${_vr} granted tasks_verifier"
+          else
+            warn "  ⚠ GRANT tasks_verifier TO ${_vr} FAILED — check the role name"
+          fi
+        else
+          warn "  ⚠ designated verifier role ${_vr} does not exist on this host — skipped"
+        fi
+      done
     fi
   fi
 

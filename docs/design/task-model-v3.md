@@ -327,3 +327,46 @@ expires and is inert.
 grant, trigger refusal, self-authorize refusal, validation refusals, grant
 flow + consumption, one-shot, slice-scope, expiry, raw-with-grant, reject
 consumption, capability de-name, helper access, migration typo guard).
+
+---
+
+## 11. Designated verifiers — non-own work only (v018)
+
+**Operator steer** (2026-11-09, replying to "does Titus have to ask for a
+grant?"): per-slice grants alone are the wrong flow for routine work; the
+chosen policy is *the best practical option that doesn't reduce quality* — a
+**designated verifier** (tasks_verifier membership) verifies any review slice
+**except ones it created itself**. v014's no-self-grading guard survives;
+dispatched/fleet work closes with zero asks.
+
+**One predicate, both layers** (the ADV-14378-1 lesson: the trigger must
+carry the same rule as the function):
+
+```sql
+tasks.verify_capable_for(p_role, p_slice_id)
+    = is_orchestrator(p_role)                                   -- moses/esther
+   OR verify_grant_active(p_slice_id, p_role)                   -- v017 per-slice grant
+   OR (pg_has_role(p_role, 'tasks_verifier', 'MEMBER')
+       AND created_by(slice) <> profile_of(p_role))             -- no self-grading
+```
+
+`verify_slice` and `check_transition` both call it — a designated verifier's
+own work stays closed on EVERY write path (function `false` + trigger
+refusal), and closes only through the v017 recorded grant (the sanctioned
+self-closure route with `authorized_by` + note).
+
+**Who becomes a verifier is DATA, not code:** the default members are the
+orchestrator reader roles; the operator designates more via
+`TASKS_VERIFIER_ROLES` (comma-separated reader role names, e.g.
+`mycortex_reader_titus`) in the host env. fleet-update.sh GRANTs
+`tasks_verifier` to each named role on EVERY update (a migration applies
+once, so the grant deliberately lives in the deploy step — re-runnable and
+convergent). An absent role warns visibly and is skipped. The recorded
+revocation is `REVOKE tasks_verifier FROM <role>`.
+
+**Tests:** `tests/test-tasks-schema.sh` AC-L1-28 (8 checks: capability closes
+non-own work with zero asks; own work refused on function AND trigger paths;
+own work closes via a recorded grant; no-capability refusal intact;
+orchestrator branch unchanged; helper callable in INVOKER context with
+verify_grants unreadable; fleet-update designation step + register guarded
+statically).

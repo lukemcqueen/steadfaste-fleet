@@ -67,18 +67,25 @@ pending → (claim) → in_progress → (report) → review → (verify) → com
   L2 fleet test uses to apply schema) and the worker then verifies THAT slice itself.**
   `task-db.py verify-grant <id> --verifier mycortex_reader_<agent> --note "<why>"` — slice-scoped,
   short-lived (1h default), one-shot (consumed on the first verify decision, approve or reject),
-  audited (authorized_by + note). For a host with no verifier route at all, escalate to the operator.
-- **Widening WHO may verify WAS the schema decision, made at v017 — capability + recorded grants,
-  never a config tweak.** `is_orchestrator` is now `pg_has_role(p_role, 'tasks_verifier', 'MEMBER')`
-  (the NOLOGIN role is granted by default to the orchestrator reader roles; the old moses/esther
-  name list is gone — adding a permanent verifier is `GRANT tasks_verifier TO <role>`, a data
-  operation). `verify_slice` EXECUTE is widened to every profile role, and `authorize_verify`
-  (orchestrator-only) records the grant row that lets a worker close a slice. The reason `review`
-  exists is intact: a worker's OWN verify still requires an orchestrator-recorded authorization —
-  every completion now carries a recorded authorization (authorized_by + note) or falls into the
+  audited (authorized_by + note). **v018 (2026-11-09, operator steer "does Titus have to ask for a
+  grant?"): a DESIGNATED verifier needs no grant at all for work it did NOT create** — the operator
+  sets `TASKS_VERIFIER_ROLES=mycortex_reader_titus` (comma-separated) in the host env; fleet-update
+  GRANTs `tasks_verifier` every update, and the no-self-grade predicate (verify_capable_for: same
+  rule in verify_slice AND the trigger) lets that session close any dispatch with zero asks while
+  STILL refusing its own slices. The per-slice grant remains the only route for verifying your own
+  work. For a host with no verifier route at all, escalate to the operator.
+- **Widening WHO may verify WAS the schema decision, made at v017/v018 — capability + recorded
+  grants, never a config tweak.** `is_orchestrator` is now `pg_has_role(p_role, 'tasks_verifier',
+  'MEMBER')` (the NOLOGIN role is granted by default to the orchestrator reader roles; the old
+  moses/esther name list is gone — adding a permanent verifier is a GRANT, a data operation, via
+  the operator's `TASKS_VERIFIER_ROLES` env). `verify_slice` EXECUTE is widened to every profile
+  role, and `authorize_verify` (orchestrator-only) records the grant row that lets a worker close
+  a slice. The reason `review` exists is intact: a designated verifier cannot grade its OWN slice
+  — every closure carries a recorded authorization (the capability excludes self-created slices —
+  created_by <> profile_of(caller) — or the grant row's authorized_by + note) or falls into the
   refused class — so DON'T bypass the grant by completing your own slice: the
-  trigger refuses review→completed on every write path unless the caller is a capability holder or
-  the slice has a live grant naming that caller.
+  trigger refuses review→completed on every write path unless verify_capable_for admits the
+  caller for that slice.
 
 ## Worker commands (any agent)
 
