@@ -214,6 +214,77 @@ rm -f ~/hermes-cortex ~/.hermes-cortex
 (The `has_hermes_cortex:` fields and the enforcer's dual-URL accept list are intentional string
 matches, not path loads — they do not require the symlink.)
 
+## cortex→fleet — Pi-host completion (extensions + MCP servers)
+
+> **What this is.** The 2026-11-06 P2/P3 sweep renamed the cortex packages to fleet
+> (`cortex_gateway → fleet_gateway`, `cortex_doctor → fleet_doctor`, `cortex_lib → fleet_lib`,
+> and the flat `cortex-*.py` / `cortex-*.sh` scripts to `fleet-*`). `fleet-update.sh` syncs the
+> **deployed tree** to the repo and removes the old-name scripts, but it does **not** touch the
+> Pi harness's own config — that is Pi-owned, non-repo, and must be hand-edited per host. This
+> section is the per-Pi-host completion step for that sweep. It mirrors §1–§8 above: a repo
+> commit changes the sources, not the live harness config.
+>
+> **Status (titus host, 2026-11-09):** completed in governance cycle #9218; doctor 489 pass / 12
+> warn / 1 fail / 7 info, `fleet-context` MCP server + extension live, `cortex-context` gone from
+> both config files. The authoritative matrix (all surfaces) lives in
+> `docs/plans/cortex-to-fleet-rename-plan.md` §"Pi harness".
+
+### Symptom (if you skip this)
+
+A Pi agent that does `git pull origin main` + `fleet-update.sh` and stops there hits:
+
+```text
+Error: Command failed: python3 /Users/luke/.steadfaste-fleet/scripts/cortex-context.py
+```
+
+or missing `fleet-context` MCP tools, or a `cortex-context` MCP server that fails to start.
+The deployed script no longer exists (the sweep renamed it to `fleet-context.py`), but the Pi
+config still points at the old name.
+
+### Steps (Per-Pi-host, after `git pull` + `fleet-update.sh`)
+
+**1. Extensions — `~/.pi/agent/settings.json`**
+
+The `extensions` array must list only the `fleet-*.ts` harness extensions; the `cortex-*.ts`
+entries are stale duplicates (the old extensions invoke `cortex-context.py`, which no longer
+exists). Remove the two `cortex-*` lines:
+
+```json
+{
+  "extensions": [
+    "/Users/luke/.steadfaste-fleet/harnesses/pi/extensions/fleet-context.ts",
+    "/Users/luke/.steadfaste-fleet/harnesses/pi/extensions/fleet-governance.ts"
+  ]
+}
+```
+
+**2. MCP servers — `~/.pi/agent/mcp.json`**
+
+Remove the `cortex-context` server block (it points at the deleted
+`scripts/cortex-context-mcp.py`); `fleet-context` (→ `scripts/fleet-context-mcp.py`) is the
+registered replacement:
+
+```json
+"fleet-context": {
+  "command": "/Users/luke/.hermes/hermes-agent/venv/bin/python3",
+  "args": ["/Users/luke/.steadfaste-fleet/scripts/fleet-context-mcp.py"],
+  "env": { "AGENT_NAME": "titus" },
+  "exposure": "direct",
+  "description": "Cortex context: mem_profile/search/context/conclude + session_checkpoint/restore/list/search/note/close."
+}
+```
+
+**3. Verify**
+
+```bash
+python3 -c "import json; json.load(open('$HOME/.pi/agent/settings.json')); json.load(open('$HOME/.pi/agent/mcp.json'))"
+grep -c cortex-context ~/.pi/agent/settings.json ~/.pi/agent/mcp.json   # expect 0
+```
+
+A Pi restart is required to re-read the harness config (extensions + MCP servers load at start).
+On the next session, `fleet-context` tools (`mem_context`, `session_restore`, …) are available
+under their fleet names; `cortex-context` appears nowhere.
+
 ## What is deliberately kept
 
 The names below are stable identifiers, not stale paths — do **not** sweep them:

@@ -1,0 +1,35 @@
+# Pi cortex→fleet harness-config completion (titus, 2026-11-09, cycle #9218)
+
+## Symptom fixed
+`Error: Command failed: python3 /Users/luke/.steadfaste-fleet/scripts/cortex-context.py`
+— the 2026-11-06 P2/P3 sweep renamed `cortex-context.py` → `fleet-context.py` and
+fleet-update.sh removed the old script, but the Pi harness config still pointed at it.
+
+## Root cause
+fleet-update.sh syncs the deployed tree (scripts/mcp-servers) but does NOT touch
+Pi-owned, non-repo harness config: `~/.pi/agent/settings.json` (extensions) and
+`~/.pi/agent/mcp.json` (MCP servers). Both still registered the cortex-* names.
+
+## Fix applied
+1. settings.json — removed stale extension entries:
+   - cortex-context.ts, cortex-governance.ts (invoke deleted scripts)
+   Kept: fleet-context.ts, fleet-governance.ts  (matches ops/install/harnesses/registry.yaml)
+2. mcp.json — removed stale `cortex-context` MCP server block
+   (args pointed at deleted scripts/cortex-context-mcp.py)
+   Kept: fleet-context → scripts/fleet-context-mcp.py (registered replacement)
+
+## Verification (post-fix, this session)
+settings extensions: ['fleet-context.ts', 'fleet-governance.ts']
+mcp servers: ['AbletonMCP', 'agent-bus', 'deepseek', 'executor', 'fleet-context',
+               'loop-governance', 'review', 'tasks']
+grep -c cortex-context ~/.pi/agent/settings.json ~/.pi/agent/mcp.json = 0
+Both files parse as valid JSON.
+
+## Doc added
+docs/runbooks/fleet-local-dir-rename.md — new section
+"cortex→fleet — Pi-host completion (extensions + MCP servers)":
+symptom, per-host steps for settings.json + mcp.json, verify commands, restart note.
+Mirrors the existing hermes-cortex→steadfaste-fleet per-host completion sections (§1–§8).
+
+## Note
+A Pi restart is required to reload the harness config (extensions + MCP servers load at start).
