@@ -8092,10 +8092,10 @@ def _session_identity(args: dict | None = None) -> CallToolResult:
                     "is_mine": _lock_is_mine(own_id, sid, shared),
                 })
         # Same preference the gate applies: an interactive lock outranks cron/bg.
-        # GUARDED: `covering_ids[0]` below is only reached when the list is
-        # non-empty (an empty covering_ids must resolve lock_sid="" and fall to
-        # the no-covering-lock / ownership:"none" branch — never raise IndexError,
-        # which the broad except would mislabel as lock_state_unknown).
+        # Empty covering_ids -> lock_sid stays "" and reaches the no-covering-lock
+        # / ownership:"none" branch. No `covering_ids[0]` anywhere: an empty list
+        # can never raise IndexError (which the broad except would mislabel as a
+        # lock-state unknown), so this is structurally safe under every caller.
         lock_sid = ""
         for sid in covering_ids:
             if not sid.startswith(("cron_", "bg_")):
