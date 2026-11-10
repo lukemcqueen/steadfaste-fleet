@@ -1,0 +1,59 @@
+# doctor pull-latest 2026-11-09 (pull 2, titus) — HEAD 6e276b4d5
+
+## git head vs origin
+6e276b4d5 (origin/main, fast-forward from cb2d4cfe7)
+behind-origin: 0
+20 files changed, 1616 insertions(+), 459 deletions(-) — enforcer rewrite
+(plugins/governance-enforcer/__init__.py), write_class.py / loop-gov-classify.py,
+reload/hermetic + write-class parity tests, verify-extension.mjs, checks.py, etc.
+
+## working tree
+clean before pull; only this evidence file added by this cycle.
+
+## fleet-update.sh deploy
+Ran explicitly after the post-merge auto-deploy hook hit the 120s bash timeout
+(deploy was still completing; no fleet-update process remained, so re-ran the
+script to completion).
+- doctor after deploy: 491 pass / 12 warn / 1 fail / 7 info (rc=2) — 1 fail is
+  the pre-existing cross-repo AGENTS.md (steadfaste) staleness (see below);
+  all warn/info entries carry existing dispositions (owner titus).
+- deployed gate smoke PASS, deploy sync PASS (deployed commit == HEAD).
+
+## doctor (fleet-doctor.py, deployed fleet venv python)
+491 pass / 12 warn / 1 fail / 7 info — exit 2.
+Full-strength run (fleet venv, yaml+mcp imports available) matches the
+weak-interpreter run 1:1 on the FAIL, so no check was weakened into hiding.
+
+### remaining FAIL (1) — pre-existing, chronic, cross-repo
+- AGENTS.md (steadfaste) — FAIL: ~/steadfaste/AGENTS.md stale (mtime
+  2026-11-03 < last commit 2026-11-05).
+  - NOT introduced by this update; identical FAIL in prior evidence
+    (doctor-pull-latest-2026-10-23.txt, doctor-pull-latest-2026-11-09.txt).
+  - Lives in the ~/steadfaste repo, whose commits run the same global hooks.
+    A fix = a governed commit in THAT repo (update AGENTS.md with recent
+    patterns: ledger CLI, e2e/pipeline driver), which requires a governance
+    lock covering /Users/luke/steadfaste — this session holds only the
+    steadfaste-fleet lock (check_repo_lock(/Users/luke/steadfaste) =
+    covered:false), and begin_change refuses while unclosed cycles exist.
+    One action that clears it: a session in ~/steadfaste updates+commits
+    its AGENTS.md; until then the doctor reports rc=2.
+
+## newly-pulled code verification
+The 5 tests added/changed by this pull run GREEN from the deployed venv:
+- tests/test_write_class_parity.py, test_loop_gov_classify.py,
+  test_enforcer_reload_hermetic.py, test_enforcer_mycortex_readonly.py,
+  test_pi_integration_audit.py → 264 passed, 1 warning (pre-existing
+  SyntaxWarning in a test comment) in 12.16s.
+
+## services / crons / skills (RULE 8 step 5)
+- fleet gateway daemon: running (PID 69759, fleet_gateway/daemon.py --config gateway.yaml)
+- loop-gov MCP servers: running (3 pids, loop-gov-mcp.py roles loop-governance/review)
+- crons: 53 active via `hermes cron list`; doctor Crons total 59 registered,
+  Cron manifest drift PASS, Script integrity PASS
+- always-skills deployed: task-orient, execute-right, verify-and-ship present
+  in deployed tree; Skills loadable PASS
+- Task DB / bus: Bus health ok (pgmq), Bus self send→read→archive PASS
+
+## dispositions
+No new dispositions recorded this cycle — the 12 warn + 7 info all carry
+existing titus dispositions (validated 2026-11-09, pull 1).

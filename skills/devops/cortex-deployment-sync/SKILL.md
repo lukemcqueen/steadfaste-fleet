@@ -80,6 +80,19 @@ date) — investigate those warnings; do not assume the enforcer is current.
      `--disposition "nightly-handoff.py"` (real name `Stale deploy: scripts/nightly-handoff.py`) each
      refused. Read the exact name from the UNDISPOSED list and paste it; check the name of an
      already-disposed item from the doctor's own line (it prints `[deferred (owner, since date)]`).
+   - **The UNDISPOSED text block TRUNCATES at ~12 entries (`… and N more`) — read the FULL list from
+     `--json`, never the text view.** The text hides most of what needs deciding (measured: 65
+     undisposed, only 12 printed). Dump `fleet-doctor.py --json > <file>` and list every WARN/INFO
+     check — name precedes status in each object, so `grep -B1 -e '"status": "WARN"' -e '"status":
+     "INFO"' <file>` prints each one — then batch them by CLASS (cron extras vs stale deploys vs
+     skill drift vs harness) and fix or dispose per class, not one at a time. Triaging the text view
+     alone under-reports and you close believing the list was a dozen long. (Keep the two `-e` flags
+     separate: a quoted `"WARN|INFO"` alternation is write-class to the terminal classifier.)
+   - **`Repo sync` as the LAST undisposed item right after your OWN deploy is not a warning to
+     disposition — a peer pushed during the deploy.** Re-pull once (`git pull --rebase origin main`,
+     the post-merge hook deploys again) and it converges; on a busy stream this repeats until the
+     peers pause. Deferring it hides a genuine behind-origin state (Pitfall 12) and the next deploy
+     re-flags it anyway.
    - **A warning a freshly-installed optional layer created is a deliberate artifact of that install,
      not a defect to "fix" by removing the file.** If the installer is the one that placed the file
      (e.g. a kit's own tool copied into `~/.steadfaste-fleet/scripts/` but absent from the deploy map,
