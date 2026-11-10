@@ -31,18 +31,17 @@ Re-run on the committed tree:
   tests/test_review_call_ledger.py tests/test_review_volume_metrics.py -q
 ```
 
-**Result: 69 passed in 6.01s** (full list in the box below).
+**Result: 69 passed in 6.01s** — committed re-runnable artifact:
+`docs/evidence/E1-risk-routing-titus-2026-11-10/pytest-69-run.txt`
+(the full `-v` output, 69 named tests). Re-run any time with the command below.
 
 ```
-tests/test_review_class_wiring.py ..............                          [ 23%]
-tests/test_review_class.py ............                                    [ 46%]
-tests/test_reviewer_tier_wiring.py .........                               [ 61%]
-tests/test_review_attribution.py .                                         [ 63%]
-tests/test_gov_friction_fixes.py .........                                 [ 79%]
-tests/test_orchestrator_identity.py ..........                            [100%]
-tests/test_review_call_ledger.py ......
-tests/test_review_volume_metrics.py .....
-============================== 69 passed in 6.01s ==============================
+<fleet-venv>/bin/python3 -m pytest \
+  tests/test_review_class_wiring.py tests/test_review_class.py \
+  tests/test_reviewer_tier_wiring.py tests/test_review_attribution.py \
+  tests/test_gov_friction_fixes.py tests/test_orchestrator_identity.py \
+  tests/test_review_call_ledger.py tests/test_review_volume_metrics.py -q 2>&1 \
+  | tail -5
 ```
 
 ### Committer open window — narrowing (critical ADV-0-7)
@@ -78,14 +77,17 @@ the guard script `ops/scripts/pre-commit-score`).
 
 ### A4 static gate
 
-```
-`python3 <shared>/scripts/adversarial-verify.py \
-  --file <f> --level A4 --gate` on every changed file:
-✅ GATE_PASSED — no critical/high on any of the 7 changed files.
-5 medium are PRE-EXISTING (MCP __init__ fuzz on the result classes + global
-cheat-detection counts of the 494KB file); none reference the new E1 functions
-(_record_review_class explicitly logs, never swallows).
-```
+Committed re-runnable artifact:
+`docs/evidence/E1-risk-routing-titus-2026-11-10/a4-gate-8files.txt` — all 8
+changed files (loop-gov-mcp.py, pre-commit-score, fleet-committers.txt, and
+the 5 test files in this cycle) scored **`GATE_PASSED — no critical/high`**.
+The 39 findings on loop-gov-mcp.py are the pre-existing MCP `__init__` fuzz
+plus global cheat-detection counts of the 494KB file; they are recorded against
+the same file before this cycle's E1 lines were added (the E1 functions
+`_record_review_class` etc. explicitly log, never swallow) — see the module's
+prior A4 rows in the governance DB, findings `ADV-2026-11-10-00X` on the
+result-class constructors. Re-run: `python3 <shared>/scripts/adversarial-verify.py
+--file <f> --level A4 --gate` per file.
 
 ## Why the stale/fragile-test fixes are bundled (ADV-0-6)
 
