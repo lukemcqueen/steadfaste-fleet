@@ -31,19 +31,44 @@ Re-run on the committed tree:
   tests/test_review_call_ledger.py tests/test_review_volume_metrics.py -q
 ```
 
-**Result: 68 passed in 5.96s** (full list in the box below).
+**Result: 69 passed in 6.01s** (full list in the box below).
 
 ```
-tests/test_review_class_wiring.py ..............                          [ 24%]
-tests/test_review_class.py ............                                    [ 47%]
+tests/test_review_class_wiring.py ..............                          [ 23%]
+tests/test_review_class.py ............                                    [ 46%]
 tests/test_reviewer_tier_wiring.py .........                               [ 61%]
 tests/test_review_attribution.py .                                         [ 63%]
 tests/test_gov_friction_fixes.py .........                                 [ 79%]
-tests/test_orchestrator_identity.py .........                              [100%]
+tests/test_orchestrator_identity.py ..........                            [100%]
 tests/test_review_call_ledger.py ......
 tests/test_review_volume_metrics.py .....
-============================== 68 passed in 5.96s ==============================
+============================== 69 passed in 6.01s ==============================
 ```
+
+### Committer open window — narrowing (critical ADV-0-7)
+
+Post-review the committer grant was narrowed from a blanket config-guard bypass
+to an explicit allow-list, because the config-driven list also contains the
+constitution (SOUL.md), plugins/, mcp-servers/, workflows, hooks and the guard
+script — none of which a committer may touch. A fleet-committer's open window
+is now exactly:
+
+- docs/ prose (already open to every agent — only docs/templates/ + the config
+  files are restricted, and those are true-orchestrator-hardcoded), and
+- the ops/scripts/manage/ operational-tooling subtree (a committer is allowed
+  the manage/ children only; ops/scripts/orch-bus, pre-commit-score, install/
+  stay blocked).
+
+Blocked for a committer regardless of the allow-list: SOUL.md, AGENTS.md, the
+guard script, plugins/, mcp-servers/, skills/, tests/, profiles/, workflows,
+hooks, VERSION, and every config file. Guarded by the independent
+ORCHESTRATOR_ONLY_PATHS array (true-orchestrator `_detect_orch` gate) AND by
+the config-file self-protection blocks (also `_detect_orch`-only). Verified by
+`tests/test_committer_allow_window_is_narrow_not_constitution.py`-style source
+contracts in test_orchestrator_identity.py (the two ADV-0-7 regression tests:
+`test_config_file_edits_gate_on_true_orch_not_committer` and
+`test_committer_allow_window_is_narrow_not_constitution`: the allow window is
+the narrow ops/scripts manage/ subtree, never the constitution).
 
 The identity tests drive the REAL `_is_fleet_committer`/`_detect_orch` bodies
 (extracted verbatim from the committed hook) against real `git show HEAD:`

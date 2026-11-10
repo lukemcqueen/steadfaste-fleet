@@ -754,13 +754,17 @@ if echo "$STAGED_FILES" | grep -q "^docs/fleet-committers.txt"; then
   ORCH_VIOLATION=1
 fi
 # Orchestrator identity is host-derived (hostname + home-dir), never env.
-# A fleet-committer (Titus) gets the SAME orchestrator-only-path write
-# privilege via the directory-services home row in docs/fleet-committers.txt
-# (committed, host-derived, never env). AGENT_ID is no longer required and
-# grants no privileges.
+# AGENT_ID is no longer required and grants no privileges.
 IS_ORCH=0
 _detect_orch && IS_ORCH=1
-_is_fleet_committer && IS_ORCH=1   # committer capability (2026-11-10)
+# A fleet-committer (Titus) is NOT a true orchestrator (IS_ORCH stays 0). It is
+# granted a NARROW explicit allow-list below (docs/ + ops/scripts/manage/), and
+# remains BLOCKED by everything else the config-driven guard restricts — the
+# constitution (AGENTS.md, SOUL.md), the guard script, plugins/, mcp-servers/,
+# skills/, tests/, profiles/, workflows, hooks, VERSION. A committer must never
+# get a blanket bypass of the config guard: that would open SOUL.md etc. (ADV-0-7).
+_IS_COMMITTER=0
+_is_fleet_committer && _IS_COMMITTER=1
 if [[ "$IS_ORCH" != "1" ]]; then
   # A claimed orchestrator identity on a non-orch host is an impersonation attempt
   case "${AGENT_ID:-}" in
@@ -780,8 +784,29 @@ if [[ "$IS_ORCH" != "1" ]]; then
       [[ -z "$orch_path" ]] && continue
       orch_path="${orch_path%/}"
       if echo "$STAGED_FILES" | grep -q "^${orch_path}"; then
-        ORCH_VIOLATION=1
-        echo "   ❌  $orch_path/ — orchestrator only"
+        # A committer is exempt ONLY for its explicit narrow allow-list.
+        # docs/ prose is NOT in the config guard (only docs/templates/ + the
+        # config files are, and those are hardcoded separately below), so it is
+        # already open to every agent. The ONLY broad config entry a committer
+        # may partially bypass is ops/scripts/ — and ONLY its own /manage/
+        # subtree (operational tooling), never ops/scripts/orch-bus,
+        # ops/scripts/pre-commit-score, install/, etc. Every other orchestrator-
+        # only path stays blocked for a committer (ADV-0-7).
+        _COMMITTER_ALLOWED=""
+        if [[ "$_IS_COMMITTER" -eq 1 && "$orch_path" == "ops/scripts" ]]; then
+          # allow iff EVERY staged file matching ops/scripts/ is under manage/
+          _violating=$(
+            echo "$STAGED_FILES" | grep "^ops/scripts/" \
+              | grep -v "^ops/scripts/manage/" || true
+          )
+          if [[ -z "$_violating" ]]; then
+            _COMMITTER_ALLOWED=1
+          fi
+        fi
+        if [[ -z "$_COMMITTER_ALLOWED" ]]; then
+          ORCH_VIOLATION=1
+          echo "   ❌  $orch_path/ — orchestrator only"
+        fi
       fi
     done <<< "$ORCH_CONFIG"
   fi

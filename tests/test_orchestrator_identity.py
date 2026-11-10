@@ -192,11 +192,18 @@ def test_config_file_edits_gate_on_true_orch_not_committer():
         needle = f'grep -q "^{fname}"'
         idx = src.find(needle)
         assert idx != -1, f"{fname}: guard line not found"
-        block = src[idx: idx + 700]
+        # Bound the window to the guard's own block: the next standalone `fi`
+        # (the guard close brace) — so later IS_ORCH/committer code isn't read
+        # in as part of this config-file decision.
+        close = src.find("\nfi\n", idx)
+        if close == -1 or close - idx > 500:
+            close = idx + 500  # fallback bound
+        block = src[idx: close + 4]
         assert "_detect_orch" in block, f"{fname} guard must gate on _detect_orch (true orch)"
-        # The widened IS_ORCH (committer-widened at l.739) must not be consulted
+        # The committer-widened IS_ORCH / _IS_COMMITTER must not be consulted
         # inside the config-guard decision; only true-orch _detect_orch decides.
         assert "IS_ORCH" not in block, f"{fname} guard must not use the committer-widened IS_ORCH"
+        assert "_IS_COMMITTER" not in block, f"{fname} guard must not use _IS_COMMITTER (committer)"
         # and ORCH_VIOLATION must still be set for the sanctioned/skip bookkeeping.
         assert "ORCH_VIOLATION" in block, f"{fname} guard must still set ORCH_VIOLATION"
 
@@ -224,3 +231,39 @@ def test_committer_cannot_edit_the_guard_script_second_gate():
     assert "_detect_orch" in gate_block, "array gate must consult _detect_orch"
     assert "IS_ORCH" not in gate_block, \
         "array gate must not use the committer-widened IS_ORCH (that would open the guard to committers)"
+
+
+def test_committer_allow_window_is_narrow_not_constitution():
+    """ADV-0-7 critical regression: a fleet-committer's exemption inside the
+    config-driven guard is a NARROW allow-list, NOT a blanket IS_ORCH bypass.
+    The constitution (SOUL.md), plugins/, mcp-servers/, skills/, tests/,
+    profiles/, workflows, hooks and the guard script must all remain blocked.
+    The previous design (`_is_fleet_committer && IS_ORCH=1`) opened every
+    config-driven path including SOUL.md — the reviewer flagged it critical."""
+    src = HOOK.read_text()
+    # 1. The committer predicate must NOT set IS_ORCH (no blanket bypass).
+    committer_grant = src.split("_IS_COMMITTER=1\nif [[ \"$IS_ORCH\"", 1)
+    assert "_is_fleet_committer && IS_ORCH=1" not in src, \
+        "committer must not set IS_ORCH (blanket bypass is the ADV-0-7 hole)"
+    # 2. The committer exemption lives inside the config-driven guard loop and
+    #    is limited to the ops/scripts allow-window (manage/ subtree).
+    #    Constitution/config paths never qualify.
+    grant_idx = src.find("_COMMITTER_ALLOWED=\"\"")
+    assert grant_idx != -1, "committer allow-list not found"
+    allow_block = src[grant_idx: grant_idx + 600]
+    assert "_IS_COMMITTER" in allow_block and "ops/scripts" in allow_block, \
+        "committer exemption must be the narrow ops/scripts allow-list"
+    # 3. The allow-list can only ever let a committer pass for the manage/
+    #    subtree; a staged file outside manage/ keeps ORCH_VIOLATION=1.
+    violating_clause = src[grant_idx: grant_idx + 900]
+    assert "manage/" in violating_clause, \
+        "committer ops/scripts exemption must be scoped to the manage/ subtree"
+    # 4. The config-driven list still contains the constitution; a committer
+    #    bypassing it for those is impossible because the exemption is absent.
+    assert "SOUL.md" in src, "SOUL.md must remain in the config-driven guard"
+    # The committer exemption branch must ONLY trigger for ops/scripts, so
+    # SOUL.md/plugins/mcp-servers/etc. never become committer-writable.
+    assert "ops/scripts" in allow_block, \
+        "only the ops/scripts entry has a committer exemption"
+    # The non-exempt path still fails closed.
+    assert "ORCH_VIOLATION=1" in src and "_COMMITTER_ALLOWED" in src
