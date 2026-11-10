@@ -1,0 +1,25 @@
+
+── mcp-servers/loop-gov-mcp.py ──
+   Level: A4
+   Attack Surface:
+     ⚠️ Inputs: 193 item(s)
+     ⚠️ State: 102 item(s)
+     ⚠️ Dependencies: 54 item(s)
+     ⚠️ Concurrency: 22 item(s)
+   Functions: 23
+     - __init__(type, text)
+     - __init__(content, is_error)
+     - __init__(tools)
+     - __init__(*args, **kwargs)
+     - stdio_server()
+     ... and 18 more
+   Fuzz inputs generated: 360
+
+📊 Summary: 1 file(s), 39 finding(s)
+   🟡 Medium: 5
+   🔵 Low: 4
+   ⚪ Info: 30
+
+🟡 Medium findings — fix before shipping.
+
+✅ GATE_PASSED — no critical/high findings

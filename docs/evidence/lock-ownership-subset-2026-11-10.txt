@@ -1,0 +1,23 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/esther/steadfaste-fleet
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 184 items
+
+tests/test_lock_ownership_labels.py .............                        [  7%]
+tests/test_lock_truth.py .............                                   [ 14%]
+tests/test_lock_liveness_activity.py ............                        [ 20%]
+tests/test_check_repo_lock_scoping.py ......                             [ 23%]
+tests/test_loop_gov_mcp_nonblocking.py ......                            [ 27%]
+tests/test_loop_gov_mcp_startup.py ..                                    [ 28%]
+tests/test_non_hermes_session_id.py ....                                 [ 30%]
+tests/test_harness_session_id_env.py ........                            [ 34%]
+tests/test_gateway_new_session.py ....................                   [ 45%]
+tests/test_session_scoped_review.py ........................             [ 58%]
+tests/test_enforcer_plan_review_carveout.py ..........................   [ 72%]
+tests/test_enforcer_reload_hermetic.py ...                               [ 74%]
+tests/test_loop_gov_classify.py .............................            [ 90%]
+tests/test_loop_gov_review_repo.py ..................                    [100%]
+
+============================= 184 passed in 34.88s =============================
