@@ -1072,6 +1072,7 @@ register "ops/scripts/manage/jev-router-pools.py"   "${CORTEX_DEPLOY_HOME}/scrip
 register "config/jev-router-models.json"             "${CORTEX_DEPLOY_HOME}/config/jev-router-models.json"
 register "ops/scripts/manage/agent-push-metrics.sh"     "${CORTEX_DEPLOY_HOME}/scripts/agent-push-metrics.sh"
 register "ops/scripts/manage/cron-cost-metrics.py"      "${CORTEX_DEPLOY_HOME}/scripts/cron-cost-metrics.py"
+register "ops/scripts/manage/review-volume-metrics.py"  "${CORTEX_DEPLOY_HOME}/scripts/review-volume-metrics.py"
 register "ops/scripts/manage/orch-weekly-cost-report.py" "${CORTEX_DEPLOY_HOME}/scripts/orch-weekly-cost-report.py"
 register "ops/scripts/manage/setup-push-metrics-cron.sh" "${CORTEX_DEPLOY_HOME}/scripts/setup-push-metrics-cron.sh"
 register "ops/scripts/manage/agent-setup-metrics.sh" "${CORTEX_DEPLOY_HOME}/scripts/agent-setup-metrics.sh"
