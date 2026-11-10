@@ -59,6 +59,28 @@ the same volume on v3.2 for the cheap class ~ $0.84/day. Caveat: per-review
 token shape is MODELED, not measured — blob_reviews carries no token columns;
 daily $ figures are directionally right, not ledger-accurate.
 
+## Superseded — the ledger (2026-11-10, commit e635af74)
+
+The modeled caveat above is now historical. `review_calls` is a per-call token
+ledger written at BOTH reviewer call sites (loop-gov close reviews,
+source='close'; adversarial-review plan reviews, source='plan') from the
+provider's OWN `usage` in the API response. One row per model call, review_id
+uuid4; a retry is a new spend and gets a new row. Telemetry only — a ledger
+write failure logs and the review proceeds.
+
+Ledger-accurate cost = SUM(review_calls.prompt_tokens) × live prompt price +
+SUM(review_calls.completion_tokens) × live completion price. New
+measurements should read review_calls, not the modeled $ above.
+
+Deploy note: the table materializes on each host at the NEXT loop-gov daemon
+spawn (schema-init runs on first _db() call; the running gateway daemon keeps
+its old code until restart — the documented deployed ≠ loaded boundary). Code
+verified deployed on esther (module loads, `_record_review_call` present),
+moses (grep hit in deployed tree, HEAD e635af74), titus (UPDATE_REQUEST
+rvm2-titus dispatched; EXEC still healthy). Plan pre-reviewed CLEAN by the
+governed adversarial reviewer (cycle 14416); 6 tests (RED→GREEN); A4 gate
+passed on all three files.
+
 ## Re-run
 
     AGENT_NAME=<host> python3 ~/.steadfaste-fleet/scripts/review-volume-metrics.py --json-summary
