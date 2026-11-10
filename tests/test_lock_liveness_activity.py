@@ -112,6 +112,12 @@ def test_an_idle_lock_still_ages_out(tmp_path, monkeypatch):
         "started_at": "2020-01-01T00:00:00Z",
         "heartbeat_at": "2020-01-01T00:00:00Z",
         "ttl_seconds": 3600,
+        # Pin an author that can never commit anywhere: liveness-as-activity
+        # falls back to this host's REAL agent author when `agent` is absent,
+        # and this host's actual commits since 2020 would renew a fabricatable-
+        # stale lock instead of letting it expire (same class as the lock_truth
+        # stale-lock test). A no-such-author keeps the test hermetic on every host.
+        "agent": "no-such-author-hermetic",
     }
     lock.write_text(json.dumps(state))
     assert mod._is_lock_stale(state) is True, "no repo, no commits, no rescue: it expires"

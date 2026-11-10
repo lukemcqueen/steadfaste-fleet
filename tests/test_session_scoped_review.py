@@ -47,6 +47,21 @@ MY_SESSION = "20261019_133021_41df6e34"
 OTHER_SESSION = "20261019_090000_deadbeef"
 
 
+def _sandbox_hooks(repo: Path) -> None:
+    """Point a THROWAWAY fixture repo's hooks AWAY from the host's global hooksPath.
+
+    This host sets core.hooksPath globally to the fleet hooks, so a real-git
+    fixture inherits the pre-commit gate — which refuses the bare fixture commits
+    and fails every assertion that needs ones (the same fragility fixed for the
+    friction/attribution suites). A test repo is deliberately governance-free; set
+    its own repo-level hooksPath (never per-invocation -c, which the enforcer
+    treats as a bypass). These tests exercise TRAILER EXCLUSION logic and _must_
+    let the commits land.
+    """
+    subprocess.run(["git", "config", "core.hooksPath", str(repo / ".git" / "hooks")],
+                   cwd=repo, capture_output=True, text=True)
+
+
 def _git(repo: Path, *args: str) -> str:
     r = subprocess.run(["git", "-C", str(repo), *args], capture_output=True,
                        text=True, check=True)
@@ -57,6 +72,7 @@ def _init_repo(tmp_path: Path) -> Path:
     repo = tmp_path / "proj"
     repo.mkdir()
     _git(repo, "init", "-q")
+    _sandbox_hooks(repo)
     # ONE identity for both sessions — that is the whole problem.
     _git(repo, "config", "user.email", "the-agent@example.com")
     _git(repo, "config", "user.name", "the-agent")

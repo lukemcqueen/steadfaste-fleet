@@ -92,7 +92,14 @@ def test_stale_and_unparseable_files_are_not_reported_as_truth(tmp_path, monkeyp
     delete what you cannot parse — and never report it either)."""
     m = _mcp()
     monkeypatch.setattr(m, "GOVERNANCE_STATE_DIR", tmp_path)
-    _write_lock(tmp_path, "sess_STALE", heartbeat_at="2000-01-01T00:00:00Z")
+    # The staleness judgement consults liveness-as-activity: a "busy" agent that
+    # has committed since the heartbeat is renewed rather than aged out
+    # (_session_worked_anywhere_since). A fabricated lock whose agent is a REAL
+    # author on this host (e.g. esther) would find the host's actual commits and
+    # stay alive forever — so the stale lock is pinned to an author that cannot
+    # commit anywhere, keeping the test hermetic on every host.
+    _write_lock(tmp_path, "sess_STALE", heartbeat_at="2000-01-01T00:00:00Z",
+                agent="no-such-author-hermetic")
     (tmp_path / ".governance-midwrite.json").write_text("{not json")
 
     assert m._live_locks() == []

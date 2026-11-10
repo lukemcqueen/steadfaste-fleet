@@ -600,6 +600,54 @@ def _env_session_id() -> tuple[str, str]:
     return "", ""
 
 
+def _identity_source(args: dict | None) -> tuple[str, str, bool]:
+    """(source_label, own_id, shared) describing WHICH identity resolved THIS caller.
+
+    2026-11-10 lock-ownership hardening (Titus Pi session-confusion incident). When a
+    caller asks "is this lock mine?" the answer is only trustworthy if the caller's id
+    is UNIQUE to its session. The three resolutions in ``get_session_id`` divide on that:
+
+      * ``injected``      — per-call session_id the Hermes enforcer injected. One per
+                            Hermes session -> unique -> ownership test by equality is sound.
+      * ``env``           — CORTEX_SESSION_KEY / PI_SESSION_ID from this process's
+                            environment. One MCP child serves one session, so an env value
+                            is a correct discriminator (get_session_id Priority 0e) ->
+                            unique -> equality is sound.
+      * ``per-repo``      — the per-repo FALLBACK id (get_session_id Priority 1,
+                            ``state/.session-<slug>.id``). Emitted when a non-Hermes caller
+                            supplied NO env value. It is ONE id per repo BY CONSTRUCTION —
+                            every session in that repo that lacks an env value resolves the
+                            SAME id, so a lock found under it may be a PEER's. Ownership
+                            here is NEVER claimable: ``shared=True`` and callers must fail
+                            closed (read-only posture, do not treat as own). This is the
+                            exact case that misled Titus (checks saw his shared per-repo id
+                            ``sess_a955…`` as his own while his real runtime id was a
+                            different ``PI_SESSION_ID``).
+    """
+    sid = _injected_session_id(args)
+    if sid:
+        return "injected", sid, False
+    env_var, env_raw = _env_session_id()
+    if env_var and env_raw:
+        _safe = _sanitise_session_component(env_raw)
+        if _safe:
+            return f"env:{env_var}", f"sess_{_ENV_SESSION_ID_LABELS[env_var]}_{_safe}", False
+    return "per-repo", get_session_id(args), True
+
+
+def _lock_is_mine(own_sid: str, lock_sid: str, shared: bool) -> bool:
+    """Ownership: this lock is THIS caller's only when the id is unique AND equal.
+
+    ``shared`` means the caller resolved a shareable (per-repo) id, so an equal
+    session_id is NOT proof of ownership — another session in the same repo
+    resolves the same id and may own it. Fail CLOSED: only a unique id whose
+    value matches is claimable; anything else is treated as NOT mine.
+    """
+    if shared:
+        return False
+    return bool(own_sid) and bool(lock_sid) and own_sid == lock_sid
+
+
 def _session_repo_env_path() -> Optional[Path]:
     """The repo named by ``CORTEX_SESSION_REPO`` — the documented per-harness
     session identity (``docs/runbooks/context-integration.md``).
@@ -7915,7 +7963,7 @@ def _receipt_close_note(receipt_fail: str | None) -> str:
     )
 
 
-def _live_locks() -> list[dict]:
+def _live_locks(own_sid: str | None = None, shared: bool = True) -> list[dict]:
     """Every LIVE lock on disk, whatever session owns it.
 
     `_read_lock` is session-scoped, so a bare `check_lock()` answered
@@ -7926,6 +7974,12 @@ def _live_locks() -> list[dict]:
 
     Stale locks are excluded (they are not live) and an unparseable file is
     skipped: a mid-write file is not truth, and it is not deleted either (P1-A).
+
+    2026-11-10 lock-ownership hardening (Titus Pi incident): when ``own_sid`` is
+    supplied, each lock gains an ``is_mine`` field (via ``_lock_is_mine``) so a
+    caller scanning the WHOLE array can filter to its own locks without guessing
+    which id is really shared. Additive: a caller that passes neither keeps the
+    exact pre-hardening shape (no ``is_mine`` key).
     """
     locks: list[dict] = []
     if not GOVERNANCE_STATE_DIR.exists():
@@ -7940,7 +7994,7 @@ def _live_locks() -> list[dict]:
             continue
         if _is_lock_stale(state, mtime):
             continue
-        locks.append({
+        entry = {
             "task_id": state.get("task_id", "unknown"),
             "session_id": state.get("session_id", "unknown"),
             "agent": state.get("agent", "unknown"),
@@ -7950,7 +8004,10 @@ def _live_locks() -> list[dict]:
             "started_at": state.get("started_at"),
             "heartbeat_at": state.get("heartbeat_at"),
             "file": lock_file.name,
-        })
+        }
+        if own_sid is not None:
+            entry["is_mine"] = _lock_is_mine(own_sid, entry["session_id"], shared)
+        locks.append(entry)
     return locks
 
 
@@ -8007,6 +8064,7 @@ def _session_identity(args: dict | None = None) -> CallToolResult:
     args = args or {}
     repo = str(args.get("repo_path") or args.get("repo") or Path.cwd())
     own = get_session_id(args)
+    id_source, own_id, shared = _identity_source(args)
 
     covering_ids: list[str] = []
     resolved = ""
@@ -8037,13 +8095,38 @@ def _session_identity(args: dict | None = None) -> CallToolResult:
     except Exception as exc:  # noqa: BLE001 — an answer is required, never a crash
         note = f"could not read the lock state ({exc}); using this caller's own id"
 
+    # LOCK-OWNERSHIP HARDENING (2026-11-10, Titus Pi incident): the coverage a
+    # lock gives THIS caller is separate from which caller HOLD that id. A lock is
+    # "mine" only when the resolved id is unique to this session (injected/env)
+    # and equal to the covering lock's — a per-repo fallback id is SHARED by every
+    # session in the repo, so it never proves ownership (fail closed).
+    mine = _lock_is_mine(own_id, lock_sid, shared)
+    if lock_sid and not mine:
+        if shared:
+            note = (note + " " if note else "") + (
+                f"identity resolved via the per-repo fallback ({id_source}) — that id is "
+                "SHARED by every session in this repo, so the covering lock's session_id "
+                "is NOT proof you own it. Read as another session's lock (not yours). "
+                "effective_session_id is still correct for evidence-keying, but it does not "
+                "grant you the lock.")
+        else:
+            note = (note + " " if note else "") + (
+                f"the covering lock's session_id ({lock_sid}) differs from this caller's "
+                f"own ({id_source} id {own_id}). It is ANOTHER session's lock (not yours). "
+                "effective_session_id is still correct for evidence-keying, but it does not "
+                "grant you the lock.")
+
     return CallToolResult(content=[TextContent(type="text", text=json.dumps({
         "session_id": own,
+        "identity_source": id_source,
+        "shared_identity": shared,
         "repo_path": resolved,
         "repo_slug": _derive_slug(args),
         "lock_session_id": lock_sid or None,
         "covering_locks": covering_ids,
+        "lock_is_mine": mine,
         "effective_session_id": lock_sid or own,
+        "ownership": "mine" if mine else "other-session-not-mine",
         "note": note,
     }, indent=2))])
 
@@ -8165,15 +8248,33 @@ def _check_lock(args: dict | None = None) -> CallToolResult:
     Updates heartbeat on every call to prevent staleness.
     Auto-releases locks whose heartbeat has exceeded TTL.
     Proactively purges stale locks from other sessions (GAP #9).
+
+    LOCK-OWNERSHIP (2026-11-10, Titus Pi incident): ``active`` says "a lock file
+    named for the id this caller resolves exists" — it does NOT, by itself, mean
+    "this caller owns it". When the caller resolved a SHARED per-repo id (no
+    env/injected discriminator), that file may be a PEER's lock. Read the explicit
+    ``lock_is_mine`` and ``ownership`` fields before acting: ``mine`` = this session
+    is the owner; ``other-session-not-mine`` = treat as NOT your lock (read-only,
+    never release). Each entry in ``locks[]`` also carries its own ``is_mine``.
     """
     _purge_stale_locks()
     state = _read_lock(args)
-    live = _live_locks()
+    id_source, own_id, shared = _identity_source(args)
+    # LOCK-OWNERSHIP HARDENING (2026-11-10, Titus Pi incident): `_read_lock` reads
+    # THIS session's lock, but when the caller resolved a SHARED (per-repo) id the
+    # file it points to may be a peer's. Every live lock now carries its own
+    # `is_mine`, and the "active" lock's is_mine is labelled explicitly so a caller
+    # never mistakes a peer's-or-shared lock for its own.
+    live = _live_locks(own_id, shared)
     if state is None:
         return CallToolResult(content=[TextContent(
             type="text", text=json.dumps({
                 "active": False,
                 "lock": None,
+                "identity_source": id_source,
+                "shared_identity": shared,
+                "lock_is_mine": False,
+                "ownership": "other-session-not-mine",
                 "live_lock_count": len(live),
                 "locks": live,
             }, indent=2)
@@ -8209,6 +8310,10 @@ def _check_lock(args: dict | None = None) -> CallToolResult:
                 "auto_released": True,
                 "cycle_closed_unscored": bool(task_id_closed),
                 "released_lock": stale,
+                "identity_source": id_source,
+                "shared_identity": shared,
+                "lock_is_mine": False,
+                "ownership": "other-session-not-mine",
                 "live_lock_count": len(live),
                 "locks": live,
             }, indent=2)
@@ -8218,11 +8323,23 @@ def _check_lock(args: dict | None = None) -> CallToolResult:
     state["heartbeat_at"] = _now_iso()
     _write_lock(state, args)
 
+    # LOCK-OWNERSHIP HARDENING (2026-11-10): `state` is the lock read from THIS
+    # session's file — but when the caller resolved a SHARED per-repo id, that file
+    # may be A PEER's lock (both sessions with no env discriminator share it). So
+    # `active:true` alone must never be read as "this is my lock": the explicit
+    # `lock_is_mine` says whether THIS caller is the owner, and "ownership" carries
+    # the one-word verdict a caller can branch on.
+    this_mine = _lock_is_mine(own_id, str(state.get("session_id") or ""), shared)
+
     return CallToolResult(content=[TextContent(
         type="text",
         text=json.dumps({
             "active": True,
             "lock": state,
+            "identity_source": id_source,
+            "shared_identity": shared,
+            "lock_is_mine": this_mine,
+            "ownership": "mine" if this_mine else "other-session-not-mine",
             "file": str(_session_lock_path(state.get("session_id", ""))),
             "live_lock_count": len(live),
             "locks": live,
