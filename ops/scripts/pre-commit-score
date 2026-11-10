@@ -757,58 +757,83 @@ fi
 # AGENT_ID is no longer required and grants no privileges.
 IS_ORCH=0
 _detect_orch && IS_ORCH=1
-# A fleet-committer (Titus) is NOT a true orchestrator (IS_ORCH stays 0). It is
-# granted a NARROW explicit allow-list below (docs/ + ops/scripts/manage/), and
-# remains BLOCKED by everything else the config-driven guard restricts — the
-# constitution (AGENTS.md, SOUL.md), the guard script, plugins/, mcp-servers/,
-# skills/, tests/, profiles/, workflows, hooks, VERSION. A committer must never
-# get a blanket bypass of the config guard: that would open SOUL.md etc. (ADV-0-7).
+# A fleet-committer (Titus) is NOT a true orchestrator (IS_ORCH stays 0). Per
+# the operator's decision (2026-11-10, Luke) the committer boundary is a DENY
+# LIST, not an allow-list: a committer may write ANY fleet path EXCEPT the
+# governance spine + review pipeline + instruction/CI surfaces listed in
+# _COMMITTER_DENY_*. Everything else (new mcp-servers/* components, ops/install/,
+# ops/scripts/manage/, docs/, tests/) is committer-writable so the capability can
+# do its own job. Plain non-orch agents (not committers) stay FULLY restricted by
+# the config-driven list below — unchanged.
+# REVIEW PIPELINE is deny-listed (ADV-14431-8): adversarial-review.py (the sole
+# reviewer writer), record-review.py (verdict-as-input writer, forgeable),
+# plan-review-check.py (gate reader), review-provenance-check.py (provenance gate).
+# A committer editing any of these could mint or waive review receipts.
 _IS_COMMITTER=0
 _is_fleet_committer && _IS_COMMITTER=1
+# Deny-list: exact files a committer may never write (fixed-string, whole-line).
+_COMMITTER_DENY_FILES=(
+  # core fleet MCP servers (run in agent runtimes — orchestrator-authored)
+  "mcp-servers/loop-gov-mcp.py"      "mcp-servers/fleet-bus-mcp.py"
+  "mcp-servers/fleet-context-mcp.py"  "mcp-servers/fleet-sandbox-mcp.py"
+  "mcp-servers/task-mcp.py"           "mcp-servers/executor-mcp.py"
+  # deploy/guard scripts + review pipeline
+  "ops/scripts/pre-commit-score"      "ops/scripts/fleet-update.sh"
+  "ops/scripts/pre-push-pull"         "ops/scripts/cortex-update.sh"
+  "ops/scripts/orch-bus/adversarial-review.py"
+  "ops/scripts/manage/record-review.py"
+  "ops/scripts/plan-review-check.py"
+  "ops/scripts/quality/review-provenance-check.py"
+  # self-defining config (already true-orch hardcoded; carried again, defence-in-depth)
+  "docs/fleet-committers.txt"         "docs/orchestrator-only-paths.txt"
+  # constitution
+  "AGENTS.md"                         "SOUL.md"
+)
+# Deny-list: directory prefixes a committer may never write under.
+_COMMITTER_DENY_DIRS=("skills/" "plugins/" "profiles/" ".github/workflows/")
 if [[ "$IS_ORCH" != "1" ]]; then
   # A claimed orchestrator identity on a non-orch host is an impersonation attempt
   case "${AGENT_ID:-}" in
     moses|esther) _log_impersonation "$AGENT_ID" ;;
   esac
-  # Non-orch agent — read the COMMITTED version of the config file
-  # Using git show HEAD: ensures a tampered working copy can't bypass
-  # Repo-aware: a repo without docs/orchestrator-only-paths.txt (neither at
-  # HEAD nor on disk) has NO orchestrator-only restrictions. The || true keeps
-  # the read from failing the whole script under set -euo pipefail — a missing
-  # config means "nothing restricted", never "block all commits". (Repos without
-  # the config hit this: git show AND cat both fail → silent exit 1.)
-  ORCH_CONFIG=$(git show HEAD:"${ORCH_PATHS_FILE#$REPO_ROOT/}" 2>/dev/null || cat "$ORCH_PATHS_FILE" 2>/dev/null || true)
-  if [[ -n "$ORCH_CONFIG" ]]; then
-    while IFS= read -r orch_path || [[ -n "$orch_path" ]]; do
-      [[ "$orch_path" =~ ^#.*$ ]] && continue
-      [[ -z "$orch_path" ]] && continue
-      orch_path="${orch_path%/}"
-      if echo "$STAGED_FILES" | grep -q "^${orch_path}"; then
-        # A committer is exempt ONLY for its explicit narrow allow-list.
-        # docs/ prose is NOT in the config guard (only docs/templates/ + the
-        # config files are, and those are hardcoded separately below), so it is
-        # already open to every agent. The ONLY broad config entry a committer
-        # may partially bypass is ops/scripts/ — and ONLY its own /manage/
-        # subtree (operational tooling), never ops/scripts/orch-bus,
-        # ops/scripts/pre-commit-score, install/, etc. Every other orchestrator-
-        # only path stays blocked for a committer (ADV-0-7).
-        _COMMITTER_ALLOWED=""
-        if [[ "$_IS_COMMITTER" -eq 1 && "$orch_path" == "ops/scripts" ]]; then
-          # allow iff EVERY staged file matching ops/scripts/ is under manage/
-          _violating=$(
-            echo "$STAGED_FILES" | grep "^ops/scripts/" \
-              | grep -v "^ops/scripts/manage/" || true
-          )
-          if [[ -z "$_violating" ]]; then
-            _COMMITTER_ALLOWED=1
-          fi
-        fi
-        if [[ -z "$_COMMITTER_ALLOWED" ]]; then
+  if [[ "$_IS_COMMITTER" == "1" ]]; then
+    # Committer: blocked ONLY by the deny-list (exact files + protected dirs).
+    # grep -Fxq = fixed-string literal whole-line (a dot in a filename is NOT a
+    # wildcard); a staged file that IS an exact deny entry, or lives under a
+    # deny dir, is a denial; anything else passes.
+    _denied=""
+    for _deny in "${_COMMITTER_DENY_FILES[@]}"; do
+      if echo "$STAGED_FILES" | grep -Fxq "$_deny"; then _denied="$_deny"; break; fi
+    done
+    if [[ -z "$_denied" ]]; then
+      for _dir in "${_COMMITTER_DENY_DIRS[@]}"; do
+        if echo "$STAGED_FILES" | grep -q "^${_dir}"; then _denied="$_dir"; break; fi
+      done
+    fi
+    if [[ -n "$_denied" ]]; then
+      echo "   ❌  $_denied — governance spine: orchestrator only"
+      ORCH_VIOLATION=1
+    fi
+  else
+    # PLAIN non-orch agent — read the COMMITTED version of the config file
+    # Using git show HEAD: ensures a tampered working copy can't bypass
+    # Repo-aware: a repo without docs/orchestrator-only-paths.txt (neither at
+    # HEAD nor on disk) has NO orchestrator-only restrictions. The || true keeps
+    # the read from failing the whole script under set -euo pipefail — a missing
+    # config means "nothing restricted", never "block all commits". (Repos without
+    # the config hit this: git show AND cat both fail → silent exit 1.)
+    ORCH_CONFIG=$(git show HEAD:"${ORCH_PATHS_FILE#$REPO_ROOT/}" 2>/dev/null || cat "$ORCH_PATHS_FILE" 2>/dev/null || true)
+    if [[ -n "$ORCH_CONFIG" ]]; then
+      while IFS= read -r orch_path || [[ -n "$orch_path" ]]; do
+        [[ "$orch_path" =~ ^#.*$ ]] && continue
+        [[ -z "$orch_path" ]] && continue
+        orch_path="${orch_path%/}"
+        if echo "$STAGED_FILES" | grep -q "^${orch_path}"; then
           ORCH_VIOLATION=1
           echo "   ❌  $orch_path/ — orchestrator only"
         fi
-      fi
-    done <<< "$ORCH_CONFIG"
+      done <<< "$ORCH_CONFIG"
+    fi
   fi
   if [[ "$SANCTIONED_PIPELINE" != "1" && "$ORCH_VIOLATION" -eq 1 ]]; then
     echo ""
@@ -1444,15 +1469,23 @@ done
 if [[ -n "$BLOCKED" ]]; then
   # Orchestrator identity is host-derived (hostname + home-dir), never env.
   # AGENT_ID is no longer required and grants no privileges.
+  # A fleet-committer (Titus) passes this gate TOO (2026-11-10 deny-list): the
+  # array's paths (tests/, skills/, AGENTS.md, docs/templates/, install/…) are
+  # open to committers by the operator's decision; the 16 files the array named
+  # that a committer must still NOT touch (pre-commit-score, fleet-update.sh,
+  # pre-push-pull, cortex-update.sh) are now enforced by the _COMMITTER_DENY_*
+  # deny-list instead. Only plain non-orch agents are refused here.
   AGENT_TYPE="server"
   if _detect_orch; then
     AGENT_TYPE="orchestrator"
+  elif _is_fleet_committer; then
+    AGENT_TYPE="committer"   # committers may write the array's paths (deny-list covers the spine)
   else
     case "${AGENT_ID:-}" in
       moses|esther) _log_impersonation "$AGENT_ID" ;;
     esac
   fi
-  if [[ "$AGENT_TYPE" != "orchestrator" ]]; then
+  if [[ "$AGENT_TYPE" != "orchestrator" && "$AGENT_TYPE" != "committer" ]]; then
     echo ""
     echo "❌  Orchestrator-only path blocked: ${BLOCKED}"
     echo "    Detected agent type: ${AGENT_TYPE}"
@@ -1460,7 +1493,9 @@ if [[ -n "$BLOCKED" ]]; then
     echo "      docs/templates/  profiles/  AGENTS.md"
     echo "      pre-commit-score  install/  fleet-update.sh"
     echo "      fleet_doctor/  skills/  tests/"
-    echo "    Commit this change from an orchestrator agent (moses or esther)."
+    echo "    Commit this change from an orchestrator agent (moses or esther),"
+    echo "    or — if you are a recognised fleet-committer — from your host's"
+    echo "    directory-services home row in docs/fleet-committers.txt."
     echo ""
     exit 1
   fi

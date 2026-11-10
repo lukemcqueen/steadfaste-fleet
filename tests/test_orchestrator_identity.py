@@ -212,62 +212,96 @@ def test_config_file_edits_gate_on_true_orch_not_committer():
         assert "ORCH_VIOLATION" in block, f"{fname} guard must still set ORCH_VIOLATION"
 
 
-def test_committer_cannot_edit_the_guard_script_second_gate():
-    """ADV-0-1 regression (post-review): a fleet-committer must be unable to
-    edit the guard script itself (ops/scripts/pre-commit-score), AGENTS.md,
-    skills/, tests/ — the ORCHESTRATOR_ONLY_PATHS array re-covers these and its
-    gate consults `_detect_orch` (TRUE orchestrator), which a committer does not
-    satisfy. Without this independent layer, a committer could rewrite
-    `_is_fleet_committer`/`_detect_orch` to grant itself orchestrator rights."""
+def test_committer_deny_list_blocks_the_guard_script():
+    """ADV-0-1 + deny-list regression: a fleet-committer's boundary is now a
+    DENY LIST. The guard script (ops/scripts/pre-commit-score) must be IN
+    `_COMMITTER_DENY_FILES` — a committer editing it could rewrite
+    `_is_fleet_committer`/`_detect_orch` to grant itself orchestrator rights.
+    The SECOND gate (ORCHESTRATOR_ONLY_PATHS array) is now RELAXED for
+    committers (they may write tests/, skills/, AGENTS.md), so the deny-list is
+    the ONLY layer keeping a committer off the guard script / deploy spine."""
     src = HOOK.read_text()
-    assert "ORCHESTRATOR_ONLY_PATHS=(" in src
-    array = src.split("ORCHESTRATOR_ONLY_PATHS=(", 1)[1].split("\n)", 1)[0]
-    # The sensitive self-editing surface must be in the array:
-    for pattern in ("^ops/scripts/pre-commit-score$", "^AGENTS\\.md$",
-                    "^skills/", "^tests/", "test_.*\\.py$"):
-        assert pattern in array, \
-            f"ORCHESTRATOR_ONLY_PATHS must cover {pattern} (committer self-edit block)"
-    # The array gate's identity decision must use _detect_orch, never the
-    # committer-widened IS_ORCH (committers pass IS_ORCH but fail _detect_orch).
-    gate_idx = src.find("AGENT_TYPE=\"server\"")
-    assert gate_idx != -1
-    gate_block = src[gate_idx: gate_idx + 400]
-    assert "_detect_orch" in gate_block, "array gate must consult _detect_orch"
-    assert "IS_ORCH" not in gate_block, \
-        "array gate must not use the committer-widened IS_ORCH (that would open the guard to committers)"
-
-
-def test_committer_allow_window_is_narrow_not_constitution():
-    """ADV-0-7 critical regression: a fleet-committer's exemption inside the
-    config-driven guard is a NARROW allow-list, NOT a blanket IS_ORCH bypass.
-    The constitution (SOUL.md), plugins/, mcp-servers/, skills/, tests/,
-    profiles/, workflows, hooks and the guard script must all remain blocked.
-    The previous design (`_is_fleet_committer && IS_ORCH=1`) opened every
-    config-driven path including SOUL.md — the reviewer flagged it critical."""
-    src = HOOK.read_text()
-    # 1. The committer predicate must NOT set IS_ORCH (no blanket bypass).
-    committer_grant = src.split("_IS_COMMITTER=1\nif [[ \"$IS_ORCH\"", 1)
+    assert "_COMMITTER_DENY_FILES=(" in src, "deny-list files array missing"
+    deny_files = src.split("_COMMITTER_DENY_FILES=(", 1)[1].split("\n)", 1)[0]
+    for spine in ("mcp-servers/loop-gov-mcp.py", "ops/scripts/pre-commit-score",
+                  "ops/scripts/fleet-update.sh", "ops/scripts/pre-push-pull",
+                  "ops/scripts/cortex-update.sh", "AGENTS.md", "SOUL.md",
+                  "docs/fleet-committers.txt", "docs/orchestrator-only-paths.txt",
+                  # review pipeline (ADV-14431-8): a committer editing these
+                  # could mint or waive receipts
+                  "ops/scripts/orch-bus/adversarial-review.py",
+                  "ops/scripts/manage/record-review.py",
+                  "ops/scripts/plan-review-check.py",
+                  "ops/scripts/quality/review-provenance-check.py"):
+        assert spine in deny_files, f"deny-list must cover {spine}"
+    # The committer's exact-file match must be literal (dot not a wildcard):
+    assert "grep -Fxq" in src, "committer deny match must use fixed-string grep"
+    # The committer predicate must NOT set IS_ORCH (no blanket bypass).
     assert "_is_fleet_committer && IS_ORCH=1" not in src, \
-        "committer must not set IS_ORCH (blanket bypass is the ADV-0-7 hole)"
-    # 2. The committer exemption lives inside the config-driven guard loop and
-    #    is limited to the ops/scripts allow-window (manage/ subtree).
-    #    Constitution/config paths never qualify.
-    grant_idx = src.find("_COMMITTER_ALLOWED=\"\"")
-    assert grant_idx != -1, "committer allow-list not found"
-    allow_block = src[grant_idx: grant_idx + 600]
-    assert "_IS_COMMITTER" in allow_block and "ops/scripts" in allow_block, \
-        "committer exemption must be the narrow ops/scripts allow-list"
-    # 3. The allow-list can only ever let a committer pass for the manage/
-    #    subtree; a staged file outside manage/ keeps ORCH_VIOLATION=1.
-    violating_clause = src[grant_idx: grant_idx + 900]
-    assert "manage/" in violating_clause, \
-        "committer ops/scripts exemption must be scoped to the manage/ subtree"
-    # 4. The config-driven list still contains the constitution; a committer
-    #    bypassing it for those is impossible because the exemption is absent.
-    assert "SOUL.md" in src, "SOUL.md must remain in the config-driven guard"
-    # The committer exemption branch must ONLY trigger for ops/scripts, so
-    # SOUL.md/plugins/mcp-servers/etc. never become committer-writable.
-    assert "ops/scripts" in allow_block, \
-        "only the ops/scripts entry has a committer exemption"
-    # The non-exempt path still fails closed.
-    assert "ORCH_VIOLATION=1" in src and "_COMMITTER_ALLOWED" in src
+        "committer must not set IS_ORCH (the old ADV-0-7 hole)"
+
+
+def test_committer_deny_dirs_cover_instruction_surfaces():
+    """ADV-0-1 regression: the committer deny-list must keep a committer OFF
+    the instruction/CI surfaces that would inject fleet-wide instructions or
+    run CI code (skills/, plugins/, profiles/, .github/workflows/)."""
+    src = HOOK.read_text()
+    assert "_COMMITTER_DENY_DIRS=(" in src, "deny-list dirs array missing"
+    deny_dirs = src.split("_COMMITTER_DENY_DIRS=(", 1)[1].split(")", 1)[0]
+    for d in ("skills/", "plugins/", "profiles/", ".github/workflows/"):
+        assert d in deny_dirs, f"deny-dirs must cover {d}"
+
+
+def test_committer_can_write_own_component_not_spine():
+    """The POINT of the deny-list (Luke 2026-11-10): a committer may write its
+    own new component (a NEW mcp-servers/* file, ops/install/, tests/, docs/),
+    but the governance spine stays blocked. Extract the real deny arrays and
+    the real matching loop from the hook and drive them."""
+    for staged, denied in [
+        ("mcp-servers/deepseek-review-mcp.py", False),      # NEW component: open
+        ("mcp-servers/loop-gov-mcp.py", True),              # core MCP: spine
+        ("ops/scripts/fleet-update.sh", True),              # deploy: spine
+        ("ops/scripts/pre-commit-score", True),             # guard: spine
+        ("ops/scripts/manage/record-review.py", True),      # writer: spine
+        ("tests/test_x.py", False),                          # tests: open to committer
+        ("ops/install/harnesses/pi/ADDON-deepseek-mcp.md", False),  # harness: open
+        ("docs/external/mcp-deepseek-review.md", False),     # docs: open
+        ("skills/x/SKILL.md", True),                          # instruction surface
+        ("plugins/x/__init__.py", True),
+        (".github/workflows/ci.yml", True),
+        ("AGENTS.md", True),
+        ("SOUL.md", True),
+        ("ops/scripts/fleet-update.sh.bak", False),          # exact only, not prefix
+        ("ops/scripts/fleet-updateXsh", False),              # exact literal, dot no wildcard
+    ]:
+        rc = _run_deny(staged)
+        assert (rc == "DENIED") == denied, \
+            f"staged '{staged}': expected {'DENIED' if denied else 'ALLOWED'}, got {rc}"
+
+
+def _run_deny(staged: str) -> str:
+    """Run the hook's REAL deny-list arrays + matching loop against one staged
+    file. Returns 'DENIED' or 'ALLOWED'."""
+    src = HOOK.read_text()
+    deny_files = src.split("_COMMITTER_DENY_FILES=(", 1)[1].split("\n)", 1)[0]
+    deny_dirs = src.split("_COMMITTER_DENY_DIRS=(", 1)[1].split(")", 1)[0]
+    # Re-serialize the arrays (bash) then the EXACT matching loop the hook uses.
+    script = f"""#!/bin/bash
+_COMMITTER_DENY_FILES=(
+{deny_files}
+)
+_COMMITTER_DENY_DIRS=({deny_dirs})
+STAGED_FILES='{staged}'
+denied=""
+for _deny in "${{_COMMITTER_DENY_FILES[@]}}"; do
+  if echo "$STAGED_FILES" | grep -Fxq "$_deny"; then denied="$_deny"; break; fi
+done
+if [[ -z "$denied" ]]; then
+  for _dir in "${{_COMMITTER_DENY_DIRS[@]}}"; do
+    if echo "$STAGED_FILES" | grep -q "^$_dir"; then denied="$_dir"; break; fi
+  done
+fi
+if [[ -n "$denied" ]]; then echo DENIED; else echo ALLOWED; fi
+"""
+    p = subprocess.run(["bash", "-c", script], capture_output=True, text=True)
+    return p.stdout.strip()
