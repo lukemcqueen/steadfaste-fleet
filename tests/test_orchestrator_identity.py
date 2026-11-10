@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Part 2 identity gate tests — the fleet-committer orchestration predicate.
 
-Titus (host worker-4, directory-services home /luke) may update otherwise
+Titus (host worker-4, directory-services home /Users/luke) may update otherwise
 orchestrator-only fleet paths. The gate is HOST-DERIVED (home, never env),
 EXACT-match, fail-closed, and must NOT grant the config-authorship escalation
 (SOLID: the guard's config-file self-protection is true-orchestrator-only).
@@ -156,7 +156,11 @@ def test_committers_doc_contains_luke_row():
     rows = [ln.strip() for ln in doc.splitlines()
             if ln.strip() and not ln.strip().startswith("#")
             and not ln.strip().startswith("@")]
-    assert rows == ["/luke"], f"committers doc must contain exactly '/luke', got {rows}"
+    # Titus's verified directory-services home (macOS NFSHomeDirectory):
+    # /Users/luke — the row must match it EXACTLY or the capability never fires
+    # but fails silent. See docs/evidence/cortex-update-3-final-2026-10-14.txt
+    # and enforcement-plumbing-verify-2026-10-23.md for /Users/luke as the home.
+    assert rows == ["/Users/luke"], f"committers doc must contain exactly '/Users/luke', got {rows}"
 
 
 def test_hook_uses_only_absolute_command_paths_for_identity():
