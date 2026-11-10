@@ -27,19 +27,22 @@ Re-run on the committed tree:
 <fleet-venv>/bin/python3 -m pytest \
   tests/test_review_class_wiring.py tests/test_review_class.py \
   tests/test_reviewer_tier_wiring.py tests/test_review_attribution.py \
-  tests/test_gov_friction_fixes.py tests/test_orchestrator_identity.py -v
+  tests/test_gov_friction_fixes.py tests/test_orchestrator_identity.py \
+  tests/test_review_call_ledger.py tests/test_review_volume_metrics.py -q
 ```
 
-**Result: 57 passed in 4.95s** (full list in the box below).
+**Result: 68 passed in 5.96s** (full list in the box below).
 
 ```
 tests/test_review_class_wiring.py ..............                          [ 24%]
-tests/test_review_class.py ............                                    [ 46%]
+tests/test_review_class.py ............                                    [ 47%]
 tests/test_reviewer_tier_wiring.py .........                               [ 61%]
 tests/test_review_attribution.py .                                         [ 63%]
 tests/test_gov_friction_fixes.py .........                                 [ 79%]
 tests/test_orchestrator_identity.py .........                              [100%]
-============================== 57 passed in 4.95s ==============================
+tests/test_review_call_ledger.py ......
+tests/test_review_volume_metrics.py .....
+============================== 68 passed in 5.96s ==============================
 ```
 
 The identity tests drive the REAL `_is_fleet_committer`/`_detect_orch` bodies
