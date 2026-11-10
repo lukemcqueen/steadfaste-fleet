@@ -690,6 +690,21 @@ does not apply.
    then remove — and prove it by running the installer and asserting the count
    did not grow.
 
+## Building a NEW deployable instrument: measure first, then ship it fleet-wide
+
+When a question needs data that only EXISTS on other hosts' local state (cost, review volume, doctor output), the answer is never a guess and never a one-off message to the peer: ship a small READ-ONLY instrument through the register map, then EXEC it on every host. The cost4 crew proved the pattern with `cron-cost-metrics.py`; a sibling for governance review volume is `review-volume-metrics.py` (2026-11-10). The full sequence, with the traps each step carries:
+
+1. **Write the script mirroring `cron-cost-metrics.py`'s shape**: host-derived identity from `agent.env` (AGENT_NAME — the bus EXEC passes no `--agent`), read-only sqlite (`mode=ro`), and an unreadable store reported as an ERROR (exit 2), never as a zero. Empty tables on an older host = `absent`, not `0`.
+2. **Register it in `fleet-update.sh`** beside its sibling (`register "ops/scripts/manage/<name>.py" "${CORTEX_DEPLOY_HOME}/scripts/<name>.py"`). A new shared file is NOT deployed unless registered.
+3. **Deploy the repo copy** (`bash ops/scripts/fleet-update.sh`), then verify the DEPLOYED copy runs and matches the repo copy modulo the SOURCE header: `diff` shows only the 3 header lines the deploy prepends.
+4. **Write a test** — the TDD gate refuses production code without one. The file name carries DASHES (deploy convention), so a plain `import review_volume_metrics` fails: load by `importlib.util.spec_from_file_location` like `dogfood-reviewer-tiering.py` does, expose the module as a pytest fixture.
+5. **Commit, then close the governed cycle (end_change) to mint the receipt, then push** — the full push gate sequence applies like any other change.
+6. **Dispatch UPDATE_REQUEST to the worker hosts** (they pull the new script via their fleet-update), then `fleet exec <host> <script>.py --json-summary` (the deployed-copy path on THEIR host; round-trip can be 150s+ on macOS workers). The script must exist under `~/.steadfaste-fleet/scripts/` on the TARGET.
+
+**The commit message file belongs in `$HOME/.hermes/cache/scratch/`, not `/tmp`.** The scratch dir is what the environment keeps for the session; `/tmp` gets cleaned mid-session and the message file vanishes between the message-write and the commit, failing the commit with an opaque `fatal: could not read log file`. Write it once into scratch and reuse the same path for retries.
+
+**The commit-scope guard splits on newlines, so a multi-line `-m` body reads as BARE even with pathspecs present.** The remedy is the documented one: `git commit -F <message-file> -- <paths>` — and note the `-- <paths>` after `-F`, which the pathspec parser needs to see on the SAME segment. Put the message in the file, not the command line.
+
 ## Fleet-Active Push Races (verified 2026-09-01)
 
 On a busy fleet, other agents push between your fetch and your push.
