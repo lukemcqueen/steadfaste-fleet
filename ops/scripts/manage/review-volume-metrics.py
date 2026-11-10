@@ -90,6 +90,47 @@ def _table_volume(conn, table: str, window_days: int) -> dict:
     }
 
 
+def _ledger(conn, window_days: int) -> dict:
+    """review_calls ledger — MEASURED tokens (2026-11-10).
+
+    blob_reviews has no token columns, so pre-ledger review cost was MODELED.
+    This reads the per-call ledger both caller sites now write; from the first
+    day it has rows, cost = SUM(prompt_tokens)*live_in + SUM(completion_tokens)
+    *live_out — no modeling. A host whose daemon has not respawned yet reports
+    present=False (the table materializes at the next loop-gov spawn).
+    """
+    absent = {"present": False, "by_source": [], "per_day": [], "total": None}
+    try:
+        by_source = conn.execute(
+            "SELECT source, COUNT(*) AS n,"
+            " SUM(prompt_tokens) AS p, SUM(completion_tokens) AS c,"
+            " SUM(reasoning_tokens) AS r, MIN(ts) AS first_ts, MAX(ts) AS last_ts"
+            " FROM review_calls GROUP BY 1 ORDER BY n DESC"
+        ).fetchall()
+        per_day = conn.execute(
+            "SELECT substr(ts,1,10) AS d, COUNT(*) AS n,"
+            " SUM(prompt_tokens) AS p, SUM(completion_tokens) AS c"
+            " FROM review_calls WHERE ts IS NOT NULL AND ts != ''"
+            " GROUP BY 1 ORDER BY d DESC LIMIT ?",
+            (window_days,),
+        ).fetchall()
+    except sqlite3.DatabaseError:
+        return absent
+    return {
+        "present": True,
+        "by_source": [
+            {"source": s, "n": n, "prompt_tokens": p, "completion_tokens": c,
+             "reasoning_tokens": r, "first_ts": first_ts, "last_ts": last_ts}
+            for s, n, p, c, r, first_ts, last_ts in by_source
+        ],
+        "per_day": [
+            {"date": d, "n": n, "prompt_tokens": p, "completion_tokens": c}
+            for d, n, p, c in per_day
+        ],
+        "total": sum(r[1] for r in by_source),
+    }
+
+
 def build_summary(agent: str, db_path: Path, window_days: int) -> dict:
     try:
         conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=5)
@@ -103,6 +144,7 @@ def build_summary(agent: str, db_path: Path, window_days: int) -> dict:
             "window_days": window_days,
             "blob_reviews": _table_volume(conn, "blob_reviews", window_days),
             "adversarial_reviews": _table_volume(conn, "adversarial_reviews", window_days),
+            "review_calls": _ledger(conn, window_days),
         }
     finally:
         conn.close()
@@ -147,6 +189,19 @@ def main() -> int:
         print("  per-day (newest first):")
         for row in block["per_day"]:
             print(f"    {row['date']}  {row['n']}")
+    ledger = summary.get("review_calls", {})
+    if ledger.get("present"):
+        print(f"\n== review_calls (MEASURED tokens): total={ledger['total']}")
+        for row in ledger["by_source"]:
+            print(f"  {row['source']:6s} n={row['n']:4d}  prompt={row['prompt_tokens']}  "
+                  f"completion={row['completion_tokens']}  reasoning={row['reasoning_tokens']}")
+        print("  per-day (newest first):")
+        for row in ledger["per_day"]:
+            print(f"    {row['date']}  n={row['n']}  prompt={row['prompt_tokens']}  "
+                  f"completion={row['completion_tokens']}")
+    else:
+        print("\n== review_calls: (ledger not present yet — table materializes at the "
+              "next loop-gov daemon spawn)")
     return 0
 
 

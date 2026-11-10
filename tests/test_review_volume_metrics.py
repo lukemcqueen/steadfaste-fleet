@@ -114,6 +114,50 @@ def test_missing_table_reported_absent_not_zero(tmp_path, rvm):
     assert summary["adversarial_reviews"]["present"] is False
     assert summary["adversarial_reviews"]["total"] is None
     assert summary["adversarial_reviews"]["by_model"] == []
+    # A pre-ledger host: review_calls absent, never a zero
+    assert summary["review_calls"]["present"] is False
+    assert summary["review_calls"]["total"] is None
+
+
+def test_ledger_reads_measured_tokens(tmp_path, rvm):
+    """review_calls sums the MEASURED tokens by source and by day."""
+    db = tmp_path / "loop-governance.db"
+    con = sqlite3.connect(str(db))
+    con.executescript(
+        """
+        CREATE TABLE review_calls (
+            review_id TEXT PRIMARY KEY, source TEXT NOT NULL,
+            reviewer_model TEXT NOT NULL, reviewer_id TEXT,
+            prompt_tokens INTEGER, completion_tokens INTEGER,
+            reasoning_tokens INTEGER, ts TEXT NOT NULL
+        );
+        """
+    )
+    con.executemany(
+        "INSERT INTO review_calls (review_id, source, reviewer_model, prompt_tokens,"
+        " completion_tokens, reasoning_tokens, ts) VALUES (?,?,?,?,?,?,?)",
+        [
+            ("a", "close", "deepseek/deepseek-v4-pro-0813", 3456, 789, 200,
+             "2026-11-09T09:00:00Z"),
+            ("b", "close", "deepseek/deepseek-v4-pro-0813", 1000, 500, 0,
+             "2026-11-09T10:00:00Z"),
+            ("c", "plan", "deepseek/deepseek-v4-pro", 2000, 300, 0,
+             "2026-11-08T09:00:00Z"),
+        ],
+    )
+    con.commit()
+    con.close()
+    summary = rvm.build_summary("testagent", db, window_days=5)
+    ledger = summary["review_calls"]
+    assert ledger["present"] is True
+    assert ledger["total"] == 3
+    by_source = {r["source"]: r for r in ledger["by_source"]}
+    assert by_source["close"]["prompt_tokens"] == 4456      # 3456 + 1000
+    assert by_source["close"]["completion_tokens"] == 1289  # 789 + 500
+    assert by_source["plan"]["prompt_tokens"] == 2000
+    per_day = {r["date"]: r for r in ledger["per_day"]}
+    assert per_day["2026-11-09"]["n"] == 2
+    assert per_day["2026-11-09"]["prompt_tokens"] == 4456
 
 
 def test_cli_json_summary_roundtrip(tmp_db, monkeypatch):
