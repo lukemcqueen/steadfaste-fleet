@@ -275,6 +275,50 @@ Checklist before shipping anything agent-facing:
 
 Reference: `docs/design/agent-interop.md`.
 
+### Migrating a host-bound capability so ALL hosts reach it — and rule changes load without a host restart
+
+A capability that lives only inside one harness's plugin (the enforcement gate, memory, context)
+has **no access layer for other agents** — only that harness reaches it, and its code is frozen at
+that host's startup, so a rule change forces a host restart (the "deploy ≠ load" trap). To expose
+it to N heterogeneous coding agents AND make a rule change live on the next call instead of a
+restart, follow the order that was proven on the governance write-gate:
+
+1. **Extract the semantics into a host-neutral contract** under `ops/services/<name>/<module>.py`
+   — stdlib-only, no harness import, loadable via `importlib.util.spec_from_file_location`.
+   Register it in the deploy map (`fleet-update.sh`) beside the established
+   `ops/services/mycortex-mem/context_tools.py` contract. This is the ONE implementation both the
+   current host plugin and every adapter call.
+2. **Build the PARITY gate first, before integrating.** The migration arbiter is a test that loads
+   the ORIGINAL implementation from its real file (importlib) and asserts the contract returns the
+   identical verdict on a corpus spanning the whole surface — the allowlists, the write-class
+   rules, every sanctioned lane, and the evasions. "Works as well as X" is then a test, not a
+   promise. When a corpus expectation diverges from parity, the ORIGINAL is the spec: correct the
+   TEST, not the extraction — the divergence is normally a latent quirk of the original (below),
+   not a loss.
+3. **Reach the contract by subprocess on the decision path** — a fresh CLI invocation per call
+   (a `loop-gov.py`-style CLI over the one dispatch). A new process always loads the current file,
+   so a rule change takes effect on the next call with no host restart. This is the mechanism that
+   actually removes "restart the gateway to load new enforcement rules"; it is the same shape
+   pi's adapter already uses, and it is why no long-lived daemon is needed (rule 13).
+4. **Make every host a thin adapter** over the contract; a host with no matching interception hook
+   is declared in the harness registry (`ops/install/harnesses/registry.yaml`) WITH a reason, never
+   left silently ungated.
+
+Pitfalls that cost a cycle here:
+- **An allowlist that anchors the head command couples the subcommand's position.** A rule
+  `systemctl (status|show|...)` matches only when the subcommand comes immediately after
+  `systemctl`; `systemctl --user show x` is therefore write-class in BOTH the original and the
+  contract. Preserve the limitation in the migration — parity is the goal, not improved
+  classification — and do not "fix" it as part of a faithful extraction.
+- **Corpus fixtures must not carry a `/home/`-prefixed literal path, even a generic one.** The PII
+  guard refuses the `write_file` on it. Use `~` verbatim or a `/var`/`/srv`/`/tmp` path when a
+  fixture needs a filesystem shape.
+- **An adapter that classifies locally still carries governance semantics.** "The adapter delegates
+  the X decision" and "the adapter has no semantics of its own" are different claims: a local
+  classifier (an allowlist, a decision rule) IS a governance semantic even when it forwards the
+  lock check to the shared impl. State precisely which decision is delegated and which is still
+  implemented locally, or a plan review (and the migration) will contradict itself.
+
 ## Common Pitfalls
 
 ### ❌ "I sent a message to inbox_esther, why didn't she respond?"

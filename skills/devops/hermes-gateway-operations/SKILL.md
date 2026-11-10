@@ -88,6 +88,15 @@ If the gateway is connected but messages don't reach the user:
 The gateway **holds the MCP servers it spawned**, so new governance/enforcer code
 is not loaded until the gateway restarts. Two independent failure modes:
 
+> **What this coupling IS — and what it is NOT.** The half that forces a gateway
+> restart for a code change is the in-process ENFORCEMENT/PLUGIN layer
+> (governance-enforcer plugin, the loop-gov/`review` MCP, mycortex-*). It is NOT the
+> messaging transport: the poll→dispatch→reply loop is already decoupled to the
+> standalone `fleet-gateway.service`, so a `hermes gateway restart` is never about
+> messaging. When asked "why must we still restart the hermes gateway?", point at the
+> plugin/MCP layer and the deploy≠load mechanism, never at the already-standalone
+> messaging.
+
 1. **Restarting from inside the gateway is blocked by design — and the block matches the COMMAND,
    so deferring it is not an escape.** A restart issued from inside a Hermes session (a tool call) is
    refused because the gateway would SIGTERM the command before it completed. Wrapping it to run

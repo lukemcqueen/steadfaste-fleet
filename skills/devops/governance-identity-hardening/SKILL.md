@@ -103,6 +103,30 @@ Pattern:
 **PII rule:** the hostname→agent mapping is infrastructure. It must NEVER be
 committed to the public repo — provision agent.env per machine instead.
 
+## Partial Privileges: a committer is NOT an orchestrator — keep predicates separate
+
+When a non-orch host is allowed to do SOME orch-only things (Titus updates the
+fleet repo), give it its OWN predicate (`_is_fleet_committer`) read from a
+committed `docs/fleet-committers.txt` — do NOT fold it into the grand
+`_detect_orch`. The full predicate carries checks the committer FAILS: it
+forces `AGENT_NAME == hostname` (a mac host named `worker-4` whose agent is
+`titus` fails that equality), and it may grant unrelated higher powers (enforcer
+auto-deploy). Route the committer only into the specific IS_ORCH gate whose
+paths it may touch; leave entirely separate privileges (self-edit of the guard,
+enforcer dogfood) on true-orchestrator-only.
+
+**Self-protection before the file exists:** a config file read via
+`git show HEAD:path` cannot see itself in the very commit that creates it — a
+non-orch could add its own home row in that first commit. Pin both config files
+as hardcoded orchestrator-only in the guard from commit one, so the bootstrap
+window is closed before the HEAD-read guard is live.
+
+**Unexpected git failures must not masquerade as "file absent".** When reading
+the committed committer list, a git error that is not "does not exist"/"exists on
+disk, but not in" must emit an observable stderr line — otherwise a broken
+git silently answers "not a committer" and the guard fails closed for a reason
+the operator never sees.
+
 ## Spoofable Unlock Tokens
 
 `hermes-plugin-lock unlock --cortex-update` historically accepted the token
@@ -115,6 +139,31 @@ root-owned, and be <60s old. `--orchestrator` stays account-bound
 
 ## Pitfalls
 
+- **Pin every identity command to an ABSOLUTE path — a bare `hostname`/`id`/
+  `getent`/`dscl`/`git` is a PATH-shadowing spoof.** An agent can prepend a fake
+  `bin/` to `PATH` that returns whatever `_detect_orch` expects (a forged home,
+  a fake hostname) and climb into orchestrator identity. Define `_G_ID=/usr/bin/id`,
+  `_G_HOSTNAME=/bin/hostname`, `_G_GETENT=/usr/bin/getent`, `_G_GIT=/usr/bin/git`,
+  … and call only those. `$HOME` and `$USER` are env claims too — resolve the
+  directory-services home via `getent passwd`/`dscl`, and fail CLOSED (return
+  non-privileged) when resolution is incomplete, never fall back to `$HOME`.
+- **Match the committed committer row EXACTLY, never by prefix or env.** A home
+  `$HOME` prefix match lets a neighbouring user in; the row must equal the
+  resolved home byte-for-byte.
+- **A wrong row fails CLOSED SILENTLY — the worst failure mode.** An exact-match
+  gate with a wrong committed value looks configured (file present, row plausibly
+  shaped) but never fires: every fleet-path edit is blocked with no signal the
+  anchor is wrong. "Fail closed" is a safety property, not a license to skip
+  verifying the row. Always confirm the committed value against the live host's
+  OWN directory-services output (`dscl . -read /Users/$USER NFSHomeDirectory` on
+  macOS, `getent passwd $USER` elsewhere) — never infer it from a path seen in
+  someone's log or EXEC output. And add a sync/tether test asserting the committed
+  row equals the expected literal (`assert rows == ["/Users/luke"]`), so a wrong
+  value fails LOUDLY in CI instead of silently in the hook.
+- **macOS home is `/Users/<user>`, not `/<user>`.** A member of the fleet sees
+  `/Users/luke` on mac, `/home/luke` on Linux — same "/luke" tail, different
+  prefix. A row written from a Linux example silently never matches the mac
+  host's `dscl`-resolved home; anchor the row to the host's real platform.
 - **Piped git pull masks failure:** `git pull ... | tail && git commit`
   continues after a FAILED pull because `&&` sees the pipe's last command
   (tail) exit 0. Capture pull status separately or verify

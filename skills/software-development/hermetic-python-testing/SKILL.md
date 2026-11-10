@@ -302,6 +302,28 @@ unit seams cannot. Two rules keep that test honest and durable:
   after the real output changes and fails only when the guess was wrong. That is the difference from
   rule 5: the collaborator runs for real, on fixture inputs.
 
+### 12. Real-git test fixtures must sandbox their OWN hooks — the host's global `core.hooksPath` runs inside them
+
+A test that creates a real git repo in `tmp_path` inherits the host's GLOBAL
+`core.hooksPath`. On a governed host that points it at the fleet hooks
+(`~/.steadfaste-fleet/hooks`), the fleet pre-commit hook runs INSIDE the
+throwaway repo and refuses the fixture's bare commits (no pathspec) with a
+non-zero exit. When the fixture's commit helper swallows the return code (the
+standard `subprocess.run([...]).stdout` pattern), the repo silently stays
+EMPTY and every assertion that needs real commits fails with confusing,
+unrelated symptoms: `base...HEAD HEAD HEAD`, `git log: no commits yet`, the
+provenance block still empty.
+
+- **Set the throwaway repo's OWN repo-level `core.hooksPath` right after init:**
+  `git config core.hooksPath <repo>/.git/hooks`. Repo-level is the sanctioned
+  escape (the enforcer's own message says "a repo that should NOT have this
+  check sets its own core.hooksPath"); per-invocation `-c core.hooksPath=` is a
+  BLOCKED bypass.
+- **Assert the fixture commit actually LANDED** (`git rev-list --count HEAD`
+  or the commit returncode) — a swallow-error commit helper hides the refusal
+  and leaves only empty repos. A refused fixture fails the SEED, not the later
+  assertions, so the red run names the real cause.
+
 ## Verification
 
 - `pytest tests/test_<module>_unit.py -q` → all pass
@@ -532,6 +554,14 @@ unit seams cannot. Two rules keep that test honest and durable:
   — run the victim alone, pair it with each candidate that touches the module,
   then bisect the failing group — and for what to do when the failure will not
   reproduce at all.
+- **A test that references a DELIBERATELY-REMOVED symbol is stale, not a bug in the
+  feature.** When a sibling suite fails on a constant that no longer exists in code
+  (e.g. a reviewer-model constant the operator reversed out of existence), the test
+  asserts the OLD contract — rewrite it to assert the CURRENT behavior (default →
+  canonical model; env override → cheaper), do NOT "repair" it by re-adding the
+  constant. Re-adding a constant a reversal deleted is how a reverted decision creeps
+  back in. Confirm via `git log -S '<symbol>' -- <file>` that the removal was
+  deliberate before concluding it is stale drain rather than a live regression.
 - **A regression test whose SEED stage fails silently passes trivially — guard the seed
   before the exercise step.** A rename test that seeded the legacy entry by cloning a key
   that a prior stage had already deleted died with KeyError, and the assertions that

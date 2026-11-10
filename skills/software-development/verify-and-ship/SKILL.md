@@ -81,6 +81,19 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   design that must work — write "AC-L1-28 asserts own work is refused on the
   function AND the raw-UPDATE trigger path" so the reviewer sees it is
   verified by test, not asserted by plan.
+  **The PLAN reviewer judges the MATERIAL, and it files on internal
+  contradictions and bare prose.** A design bullet that contradicts a test
+  expectation listed in the SAME plan is filed fabrication — word the design
+  to say exactly what the test asserts ("a retry is a new spend and records a
+  new row", never "INSERT OR REPLACE prevents double-counting" beside a test
+  that expects two rows). A prose-only plan with no code is filed
+  unverified-claim: the reviewer wants the committed diff + executed test
+  output IN the material, so the loop is RED-test-first, commit, then
+  re-review with the diffstat and the test run appended — same shape as the
+  close-gate rule below. Re-review the SAME cycle with `--re-review
+  --review --reviewer-id <new>` — it supersedes the prior verdict into the
+  append-only history and records the fresh one; loop until CLEAN (info
+  findings are non-blocking).
 - Name the cycle for the diff it will CONTAIN, not the instruction that started
   it; sized so the close review can read it (blob count, not line count).
 - grep the repo for the old name/term; check cron jobs.json; cron install
@@ -127,6 +140,13 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   run it red-and-green, and re-review citing that committed test as the proof.
   A reviewer will accept 'asserted by test X, runnable with pytest' where it
   will never accept 'verified: offsets were compared'.
+- **The CLOSE gate is a per-blob reviewer with a limited window — pin the test's
+  SUBJECT inside the test.** A test importing module internals from a file the
+  close reviewer cannot see is filed FABRICATION; hardcoded expectations are
+  filed unverified-claim. Assert the subject file exists + functions callable,
+  derive expectations from the in-range source of truth, and exit a refused
+  close via `rereview_change` (NEW note + evidence), never an unchanged
+  `end_change`. Mechanics: `references/close-gate-review.md`.
 
 **Phase 2 — multi-OS:** hardcoded paths → portability helpers; systemctl vs
 launchctl vs brew by host.

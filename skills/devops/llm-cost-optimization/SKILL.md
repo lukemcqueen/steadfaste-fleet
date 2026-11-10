@@ -163,7 +163,7 @@ compaction/rewrites fire (those bust cache worse than a fresh start).
 Every change that crosses a governed gate's complexity bar pays for a full model
 call, and a looping cycle pays repeatedly — on a busy fleet that is often the
 largest single LLM line item, and it is invisible in cron/session telemetry.
-Three always-on rules before proposing any lever on it:
+Always-on rules before proposing any lever on it:
 
 1. **Measure the gate's DECISION, not its declared tiers.** A tier that changes
    transport or wait budget while resolving the SAME judge model is a no-op for
@@ -180,6 +180,27 @@ Three always-on rules before proposing any lever on it:
    as "reviewer unavailable" and uses to refuse a valid close; trimming what the
    reviewer reads past the point where it can judge manufactures unanswerable
    findings. Each costs a full re-review — the expensive outcome dressed as thrift.
+4. **Review spend is a PER-HOST measurement, never a one-host extrapolation.**
+   Every host owns its own loop-governance store, so "how much do reviews cost"
+   answered from one host's DB can miss half the fleet — a peer host's review
+   volume routinely matches or exceeds the measuring host's. Count EVERY host
+   with the registered instrument (`review-volume-metrics.py`, deployed via the
+   register map): `fleet exec <host> review-volume-metrics.py --json-summary`
+   (or ssh for a host like moses; the instrument must first reach a host via an
+   UPDATE_REQUEST). It reports blob_reviews + adversarial_reviews by judge model
+   and per-day volume, plus the `review_calls` ledger of MEASURED per-call tokens.
+   Cost = SUM(prompt_tokens)×live_prompt_price + SUM(completion_tokens)×live_
+   completion_price — measured, never modeled. A host whose loop-gov daemon
+   predates the ledger reports the ledger `present: False` (the table
+   materializes at the next daemon spawn — the deployed≠loaded boundary applies
+   to schema-init tables, not only to code); a pre-ledger host is "not yet
+   measured", never "costs zero". Ledger mechanics and why it is a separate
+   table: `references/review-gate-spend.md` §2.1.
+5. **A judge-migration is only real on a host whose recorded reviewer_model row
+   says so.** The code default flipping to a cheaper judge changes nothing on a
+   host that still records the old model for its reviews — verify the per-host
+   model column, not the constant, and re-check each host after telling the fleet
+   the migration is done.
 
 Where the verdicts are recorded, how to count them read-only, and the fail-closed
 rules for a skip-class: `references/review-gate-spend.md`.

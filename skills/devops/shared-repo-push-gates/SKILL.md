@@ -174,6 +174,16 @@ and invalidates the receipt, so push immediately after closing. Full detail:
   prune` plus reflog expiry is enough to lose a landing nobody pushed. Check first that
   your files are untouched upstream (`git log <base>..origin/main -- <your paths>` empty):
   if a peer edited them the cherry-pick conflicts and the landing branch is the wrong tool.
+  **A merge TIMEOUT can still have COMMITTED — the message file vanished, not the merge.**
+  `git merge origin/main -m "…"` that hits the caller's timeout may have already produced the
+  merge commit (the post-merge hook — a full fleet deploy + doctor — is what kept running past
+  the deadline), leaving `.git/MERGE_HEAD` stale while `HEAD` shows the 2-parent commit.
+  Diagnose before concluding you must restart: `git show -s --format="%H %P" HEAD` (TWO parents
+  = the merge landed) and `git merge-base --is-ancestor <origin-tip> HEAD` (origin already
+  inside). If both hold, the state is clean except the leftover marker: `git merge --quit`
+  clears exactly that (never a `git reset`, which would drop the landed merge). The merge commit
+  itself needs NO second commit — the merge created it; just verify `git status` reads clean and
+  continue to deploy/close/push.
 - **A GENERATED file that both sides regenerated resolves by REGENERATING, never by
   hand-merging the conflict.** Git can auto-merge such a file into a state that looks
   merged and is inconsistent — one side's row beside the other side's count. Run the

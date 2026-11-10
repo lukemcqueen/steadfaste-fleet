@@ -24,6 +24,10 @@ deleted the entire scoring subsystem (the heart of loop governance), and a
 careless `git commit` swept another session's staged work into the wrong commit.
 Both were trust-destroying, user-corrected mistakes (2026-08-03).
 
+For widening an enforcement grant to a lesser-privileged role (committers),
+sandboxing real-git test fixtures, and proving enforcement changes to the
+close-gate reviewer, see `references/enforcement-widening.md`.
+
 ## Rule 1: NEVER Decrease Enforcement to Fix a Warning
 
 When an issue says "remove the stale X block so the warning stops printing":

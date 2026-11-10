@@ -118,6 +118,122 @@ allowed, with no restart) while the banner still read restart-required.
   without the observation behind it: a doc that makes the next agent wait for a restart
   it does not need costs more than the restart would have.
 
+## 2c. Severing the Write-Gate — the in-process plugin is the coupling to move
+
+"Restart the Hermes gateway to load new enforcer code" happens because the enforcer
+is a Hermes PLUGIN loaded in-process at gateway startup (deploy ≠ load, 2b). Decoupling
+it so the changing RULES reload by restarting OUR unit, not the incumbent, is pinned by
+one architectural fact:
+
+- **An MCP server cannot take over the write-gate.** MCP servers PROVIDE their own
+  tools; they never intercept (block) the gateway's native `terminal`/`write_file`/
+  `patch` calls. So "make the enforcer a standalone MCP server" is not a viable shape
+  for a PRE-write block — only commit/push-time hooks fire outside the gateway, and
+  those lose the pre-write lock discipline. Do not plan S2c-style "MCP-ify the enforcer"
+  on that model; it cannot gate the native tools.
+- **Prior art FIRST — check whether the adapter already exists before designing one.**
+  A one-implementation/per-host-adapter pattern is usually already in the tree: a
+  shared CLI + MCP surface over one module, at least one host wired to it, and a
+  harness registry declaring each host's capability. Grep for the predicate the gate
+  needs (a `check_repo_lock`-shaped one) and for a per-host adapter directory BEFORE
+  writing anything. When a sibling host is already an adapter, the work is *make this
+  host the next adapter*, not *build a service* — a plan that says "build" where
+  "extend" was correct overstates the change and invites standing up a second
+  implementation of something live.
+- **Viable shape: a thin, stable in-process shim that delegates the allow/deny
+  decision OUT OF the host process.** The shim keeps the plugin hook (so native writes
+  stay gated as they happen) and must change almost never; the RULES + DB logic — the
+  part that actually changes — live outside the host process. The trade-off to surface
+  to the owner: keeping the in-process shim means one small dependency on the incumbent
+  remains; dropping it to a hooks-only gate loses pre-write enforcement. Settle which
+  with the owner before building — it is a security semantic, not a style choice.
+- **PREFER a subprocess-per-decision over a daemon — that is what makes the reload
+  automatic.** A fresh subprocess per gate call always loads the current file, so a
+  rule change takes effect on the NEXT call with no restart of ANY unit; a long-lived
+  daemon reaches the same freshness only by restarting its own unit, and adds a port, a
+  health check and a listener to secure for no extra benefit. A daemon is the fallback
+  when per-call spawn cost is measured to matter, never the default.
+- **The sanctioned RECOVERY command's recognition must stay FROZEN in-process and be
+  checked BEFORE the delegated call — the recovery lane must not depend on the system
+  it recovers.** When the classify/lock decision moves out of process and fails closed
+  (contract missing, CLI unreachable), fail-closed would also block the sanctioned
+  `fleet-update.sh` invocation itself — recreating the DOGFOOD deadlock the lane exists
+  to cure. Keep ONE tiny, stable, exact-match regex for the recovery invocation in the
+  plugin, evaluated before the subprocess. It never changes, so it does not undermine
+  the reload goal. Acceptance: with the contract deleted and the CLI unreachable, the
+  recovery invocation still passes and a non-recovery write still blocks — both
+  directions asserted.
+- **The delegated subprocess must be a fast, stdlib-only access layer — never the full
+  governance CLI.** A governance CLI that imports the whole MCP server module per call
+  costs hundreds of ms on the hot path; the classifier CLI must import ONLY the
+  contract (stdlib-only) so one cold start stays in the tens of ms. Measure the
+  cold-start-to-verdict latency (p50/p95 over ~20 runs, recorded in the commit) and
+  GATE the subprocess-per-call wiring on it (a 150 ms p50 bound is a sane gate) — do
+  not adopt the architecture on an unverified "it's fast" estimate; data-driven rules
+  with an mtime-fingerprint refresh (the skills.yaml manifest pattern) is the fallback
+  when the cost measures badly.
+- **Look for the SECOND implementation before extracting the first.** An adapter that
+  correctly delegates the lock/coverage decision can still carry its own copy of a
+  DIFFERENT gate — a read-only command allowlist, a write-class classifier, a path
+  matcher. Two tables that must agree, with nothing asserting that they do, is a live
+  drift risk; it is in scope for the extraction, so unify it and add a drift test that
+  drives BOTH against one corpus.
+- **Extract with a PARITY gate FIRST — the original is the spec.** Before wiring anything,
+  build a test that loads the ORIGINAL enforcer from its real file (importlib) and asserts the
+  extracted contract returns the identical verdict on a corpus spanning the whole surface
+  (allowlists, write-class rules, every sanctioned lane, the evasions, tool-name dispatch).
+  "Works as well as the enforcer" is then a passing test, not a promise. When a corpus case
+  diverges and parity otherwise holds, the ORIGINAL is the spec: fix the test case, not the
+  extraction — the diverging case is usually a latent quirk of the original (e.g. an allowlist
+  that anchors the subcommand position, so a flag between the head and the subcommand keeps a
+  read command write-class) that the migration must PRESERVE. Full ordering:
+  cross-agent-design's migrate-a-host-bound-capability section.
+- **Verify the severance by observation, same as 2b:** when a rules change lands via
+  fleet-update.sh, the load-bearing symptom is the new rule firing (or the old one
+  still firing) — never "I restarted our unit so it must be live."
+- **Keep function NAMES as thin delegating wrappers — gate tests import internals by
+  NAME, and removing a name breaks pytest collection before a table ever would.**
+  Test files bind module internals at import time (`_is_terminal_write =
+  enforcer._is_terminal_write`, `enforcer.WRITE_COMMAND_PATTERNS`); delete a name and
+  the whole file dies with `AttributeError` during collection, fast and before any
+  assertion runs. When a table moves to the contract, keep every exported predicate
+  as a small delegating wrapper over the new source (same name, same call shape), and
+  purge the now-dead imports from the tests as part of the SAME move — a symbol
+  imported but never used still kills collection if it is gone.
+- **Count parents from the PLUGIN's own depth when resolving a sibling CLI — the
+  plugin file is three levels under the repo root.** `plugins/governance-enforcer/
+  __init__.py` is `parent` -> `plugins/`, `parent.parent` -> the repo root, so a
+  `parent.parent` from the plugin file actually lands in `plugins/` and the sibling
+  never resolves. Failure fingerprint: the resolver returns None, the delegation
+  fails CLOSED, and every classification test fails in about a second with
+  "loop-gov-classify.py not found" in the log — a fast, silent, misleading red.
+  Repo candidate from the plugin = `parent.parent.parent`; keep the deployed copy
+  as the second candidate for hosts where the plugin was copied rather than
+  symlinked (resolve() follows the symlink on symlinked hosts, so this belt is
+  real).
+- **Doctor source-grep coverage checks move WITH the code — re-point them in the same
+  change.** The doctor's bypass-coverage check greps the enforcer source for closure
+  markers (`python3 -c`, `bash -c`, script-exec, passwd-group patterns). Move a
+  table to the contract and the markers vanish from the enforcer, so the doctor
+  FAILs the deploy that ships the move. Re-point the check at the new home, then
+  verify with the DEPLOYED doctor (`~/.steadfaste-fleet/scripts/fleet-doctor.py` —
+  `ops/scripts/manage/fleet_doctor.py` is a package, not a CLI entry) AFTER
+  redeploying: editing the repo checks.py changes nothing the deployed doctor reads
+  until fleet-update.sh runs.
+- **Doctor coverage checks do SUBSTRING matching, not regex search — quote the
+  marker text AS THE SOURCE WRITES IT, escape-for-regex silently fails.** The check
+  is `r"...\s" in src`-shaped: the pattern string is matched literally against
+  the source, so a marker the source spells `\s` (one backslash) must be written
+  `\s` in the check — writing the regex-source escape `\\s` (two backslashes)
+  matches nothing and the check fails while looking correct. When a re-pointed
+  check still reports a gap, `cat -A` the contract line and compare the literal
+  backslash count before touching the logic.
+- **After an enforcer commit, every FOLLOW-UP commit is DOGFOOD-blocked until the
+  deploy lands.** The pre-commit hook refuses any further commit while the deployed
+  enforcer differs from the repo source. Sequence it: commit the enforcer change,
+  run `fleet-update.sh` immediately (it is the sanctioned lock-free lane), THEN make
+  the follow-up commits — never a gap of enforcer-commit-first, fix-later.
+
 ---
 
 ## 3. The Skills-Loaded Marker Race (FIXED — per-session files, 2026-08-01)
@@ -302,9 +418,12 @@ THEMSELVES. Three moves, in order:
    impossible demand for the identity the gate itself targets. Naming your carve-out
    and its rationale in the same comment block is what keeps the next editor from
    widening it.
-2. **The refusal message must carry the exact self-serve command.** Deployed path
-   (`~/.steadfaste-fleet/scripts/...`, NOT the orchestrator-tree `ops/scripts/orch-bus/`
-   path — that forces the worker into the wrong checkout), the `--material-file`
+2. **The refusal message must carry the exact self-serve command, with the script path
+   RESOLVED at run time — never one hardcoded location.** The deployed
+   (`~/.steadfaste-fleet/scripts/...`) and in-repo (`ops/scripts/orch-bus/...`) copies
+   are not both present on every host, so resolve the first candidate that EXISTS and
+   never print a path you have not confirmed — a worker handed a path that cannot
+   resolve concludes the gate is unsatisfiable and loops. Then the `--material-file`
    form (never `--material "$(cat ...)"` — the `$(...)` is itself write-class and
    breaks the exact-match lane), and a plain statement that the agent runs it
    themselves with no orchestrator and no second lock. An agent looping "why can't
@@ -361,7 +480,14 @@ it that way). Nothing is ever deleted; a superseded FINDINGS stays recoverable.
    what the sanctioned alternative is.** "never DELETE rows... use --re-review" with
    the deployed-path command named, not a generic lock refusal. Every gate that can
    block a real worker must tell it how to proceed; an agent looping on a gate is
-the gate giving a wrong path or an impossible-looking remedy.
+   the gate giving a wrong path or an impossible-looking remedy.
+5. **A `--review` run can exit 0 and print NOTHING while still having recorded a
+   verdict — never read empty output as "no review happened".** Read the row back
+   from the store before acting on the silence: the row is the record of what
+   happened, stdout is not. A re-review is quiet too — it prints one supersede line
+   and the fresh verdict exists only in the row. A re-review is for material you
+   IMPROVED, never to shop for a verdict you disagree with. Invocation, the read-back
+   query, the column list and the history table: `references/adversarial-review-lane.md`.
 
 ## 11. The Lock-Free Lane Extends to Scratch Deletion — Resolve, Don't Trust the Text
 
@@ -407,6 +533,16 @@ HEAD — new mediums are your change's fault, an unchanged count is pre-existing
   what still holds security-wise, and the explicit **do-not-change** list. Read it before touching
   the write-classifier or a gate's timing: most friction is TIMING (the gate fires at the write
   while the information needed to satisfy it arrives late), not strictness.
+- `references/adversarial-review-lane.md` — how to invoke the single-cycle adversarial reviewer and
+  READ ITS VERDICT BACK from the store: the resolved CLI path across candidate roots, the flags
+  (and which one does not exist), the read-only query that returns the row and its columns, the
+  history table a re-review moves the superseded row into, and the verdict/finding shape. Load it
+  before recording or interpreting a plan review.
+- `references/rule-delegation-reload.md` — the hermetic acceptance test for "a rule change needs
+  no restart": copy-the-contract + wrapper-CLI `--contract` seam + monkeypatch the resolver, both
+  directions (rule edit reloads, broken contract fails closed while the recovery lane survives),
+  plus the close-gate pins that keep the test self-verifying. Load it when writing or reviewing
+  the delegation acceptance test or extending the delegation pattern in §2c.
 - `plugins/governance-enforcer/__init__.py` — the enforcer itself
 - `docs/orchestrator-only-paths.txt` — restricted paths
 - `ops/scripts/pre-commit-score` — pre-commit hook with orchestrator guard
