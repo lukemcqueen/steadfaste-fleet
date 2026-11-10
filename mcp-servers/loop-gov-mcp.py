@@ -8249,13 +8249,14 @@ def _check_lock(args: dict | None = None) -> CallToolResult:
     Auto-releases locks whose heartbeat has exceeded TTL.
     Proactively purges stale locks from other sessions (GAP #9).
 
-    LOCK-OWNERSHIP (2026-11-10, Titus Pi incident): ``active`` says "a lock file
-    named for the id this caller resolves exists" — it does NOT, by itself, mean
-    "this caller owns it". When the caller resolved a SHARED per-repo id (no
-    env/injected discriminator), that file may be a PEER's lock. Read the explicit
-    ``lock_is_mine`` and ``ownership`` fields before acting: ``mine`` = this session
-    is the owner; ``other-session-not-mine`` = treat as NOT your lock (read-only,
-    never release). Each entry in ``locks[]`` also carries its own ``is_mine``.
+    LOCK-OWNERSHIP (2026-11-10, Titus Pi incident): ``active`` is now TRUE exactly
+    when this caller OWNS the lock (a unique id equal to the caller's). A lock the
+    caller cannot prove it owns — a peer's lock, or one under the SHARED per-repo
+    fallback id (no env/injected discriminator) — reports ``active:false`` while
+    remaining FULLY disclosed: ``lock_exists:true`` carries the lock, ``locks[]``
+    lists every live lock each with its own ``is_mine``, and ``ownership`` gives
+    the word a caller can branch on (``mine`` | ``other-session-not-mine``).
+    Treat ``other-session-not-mine`` as NOT your lock: read-only, never release.
     """
     _purge_stale_locks()
     state = _read_lock(args)
@@ -8326,15 +8327,20 @@ def _check_lock(args: dict | None = None) -> CallToolResult:
     # LOCK-OWNERSHIP HARDENING (2026-11-10): `state` is the lock read from THIS
     # session's file — but when the caller resolved a SHARED per-repo id, that file
     # may be A PEER's lock (both sessions with no env discriminator share it). So
-    # `active:true` alone must never be read as "this is my lock": the explicit
-    # `lock_is_mine` says whether THIS caller is the owner, and "ownership" carries
-    # the one-word verdict a caller can branch on.
+    # `active` must NEVER be true for a lock this caller cannot prove it owns:
+    # `active:true` is what misled Titus into believing a peer's lock was his (his
+    # durable rule: a lock is mine only when lock.session_id == my unique id). We
+    # fail CLOSED — active stays true exactly when `this_mine`, i.e. when the id is
+    # unique AND equal. The lock itself is still disclosed under `lock`/`locks[]`
+    # with its is_mine and a `lock_exists` marker, so a caller that keys on `locks[]`
+    # (not `active`) still sees the full store.
     this_mine = _lock_is_mine(own_id, str(state.get("session_id") or ""), shared)
 
     return CallToolResult(content=[TextContent(
         type="text",
         text=json.dumps({
-            "active": True,
+            "active": this_mine,
+            "lock_exists": True,
             "lock": state,
             "identity_source": id_source,
             "shared_identity": shared,

@@ -140,7 +140,12 @@ def test_check_lock_labels_a_shared_id_lock_as_not_mine(tmp_path, monkeypatch):
     _write_lock(tmp_path, "sess_shared")
 
     got = json.loads(m._check_lock({}).content[0].text)
-    assert got["active"] is True, got
+    # THE Titus fix: a lock exists, but this caller cannot PROVE it owns it (its
+    # id is the shared per-repo one) — so active is FALSE (fail closed). The lock
+    # is still fully disclosed via lock_exists:true + locks[] for a caller that
+    # keys on the array, and lock_is_mine says it is NOT this caller's.
+    assert got["active"] is False, got
+    assert got["lock_exists"] is True, got
     assert got["identity_source"] == "per-repo"
     assert got["shared_identity"] is True
     assert got["lock_is_mine"] is False, got
