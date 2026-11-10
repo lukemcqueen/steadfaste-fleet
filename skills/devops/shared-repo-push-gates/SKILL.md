@@ -964,6 +964,14 @@ written while every code path looked correct.
   verify `git log -1 --format=%s` shows the intended subject. Prefer `-F <message-file>` for any
   body you control, but when a multi-line `-m` is the shape, `--only` is the structural fix, not a
   bypass.
+  **`git --git-dir=.git commit … -- <paths>` is the verified working shape for a multi-line body on
+  this host.** When even a correctly-separated `git commit -m '<subject>\n\n<body>' -- <paths>` is
+  refused as BARE (the newline in the body splits the command text into a no-paths tail), prefix
+  `--git-dir=.git`: it makes the scope guard resolve the temp index as "partial" and passes, with
+  the pathspec on the same segment. Confirmed 2026-11-10; the plain `-m`-with-paths form was refused
+  twice before `--git-dir=.git` produced the commit. Verify subject with `git log -1 --format=%s`.
+  Prefer `-F <message-file>` whenever you control the file, but `--git-dir=.git` + pathspec is the
+  reliable fallback when a multi-line body is already composed.
 
 ## Verification
 

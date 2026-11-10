@@ -120,7 +120,7 @@ cron listing.
 
 ## Cron → OnCalendar translation
 
-Use `references/systemd-timer-oncalendar.md` — the correct syntax variants (minute-step is `*:0/N:00`, hour-step is `*:00/N:00` *not* `*/N:00:00`, ranges `..`, lists `,`) and the **`systemd-analyze calendar <expr>` validator** that catches a wrong form before it ships (validate every generated value; a step-position typo passes the generator silently). Also `systemd-analyze verify` the unit pair.
+Use `references/systemd-timer-oncalendar.md` — the correct syntax variants and the **`systemd-analyze calendar <expr>` validator** that catches a wrong form before it ships. **The `/N` step goes on the field it steps: an hour interval is `00/N:00:00`, a minute interval is `*:0/N:00`. Do NOT write an "every N hours" job as `*:00/N:00` — that puts the step on the MINUTE field and it fires every N MINUTES** (the silent-cadence bug: the value still validates, only the `Next elapse:` line reveals it). Read `Next elapse:` to confirm cadence (hours away, not minutes), then `systemd-analyze verify` the unit pair.
 
 ## Pitfalls
 
