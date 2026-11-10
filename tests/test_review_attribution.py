@@ -62,11 +62,28 @@ def _git(repo: Path, *args: str, author: str | None = None) -> str:
     return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, env=env).stdout
 
 
+def _sandbox_hooks(repo: Path) -> None:
+    """Point this throwaway repo's hooks AWAY from the fleet's global hooksPath.
+
+    The host sets core.hooksPath globally to ~/.steadfaste-fleet/hooks, so a
+    real-git fixture here would run the fleet pre-commit hook INSIDE the temp
+    repo — which refuses the bare fixture commits (no pathspec) and leaves the
+    test repo empty, failing every assertion that needs real commits. A test
+    repo is deliberately free of governance hooks: it is throwaway, and the
+    enforcer's own guidance is that a repo which should not inherit the checks
+    sets its own core.hooksPath. Set it at the REPO level (never per-invocation
+    -c, which the enforcer blocks as a bypass).
+    """
+    subprocess.run(["git", "config", "core.hooksPath", str(repo / ".git" / "hooks")],
+                   cwd=repo, capture_output=True, text=True)
+
+
 def _repo(tmp: Path) -> tuple[Path, str]:
     """Real repo: c1 setup (OWN) → c2 foreign peer → c3 OWN. Returns (repo, base=c1)."""
     repo = tmp / "r"
     repo.mkdir(parents=True)
     _git(repo, "init", "-q")
+    _sandbox_hooks(repo)
     _git(repo, "config", "user.email", OWN)
     _git(repo, "config", "user.name", "esther")
     (repo / "f.txt").write_text("setup\n")

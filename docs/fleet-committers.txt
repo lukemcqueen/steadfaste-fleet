@@ -1,0 +1,20 @@
+# Host-derived fleet-committer identities — the directory-services home of each
+# host that may update the otherwise-orchestrator-only fleet repo paths.
+#
+# @format: one <directory-services-home> per line, EXACT match only.
+# Canonical orchestrators (moses, esther) are granted via pre-commit-score's
+# hostname+home case; a committer host is granted the SAME write privilege via
+# its home here.
+#
+# Identity anchor (2026-11-10): the DIRECTORY-SERVICES home — resolved by
+# /usr/bin/getent passwd (Linux) or /usr/bin/dscl (macOS) — matched EXACTLY,
+# like the orchestrator case. NOT env (HOME/USER/hostname), never a prefix.
+# The list is read via `git show HEAD:` (committed copy), so an agent cannot
+# edit its way in — the file is itself an orchestrator-only path.
+#
+# ⚠️  SOUL P17 de-naming: this is a CAPABILITY, not a role-name list — but the
+# host-derived home is the verifiable anchor the predicate matches (a named
+# home is the capability token here, exactly as orchestrator hostnames are).
+#
+# Committer hosts (one directory-services home per line):
+/luke

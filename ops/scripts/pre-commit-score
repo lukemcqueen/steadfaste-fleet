@@ -324,17 +324,65 @@ fi
 # AGENT_ID / AGENT_TYPE env vars grant NO privileges here — a
 # non-orchestrator host cannot impersonate an orchestrator by
 # setting them (that is the hole this replaces).
+# ── Identity resolution — ABSOLUTE PATH only (ADV-0-1 rounds 2-3) ──────────
+# Identity commands are pinned to /usr/bin|/bin so an agent cannot shadow them
+# via PATH. $HOME is never consulted for identity (an agent can set it); the
+# directory-services home cannot be spoofed without root. A failure to resolve
+# fails CLOSED (returns 1 = not a committer/orchestrator).
+_G_ID=/usr/bin/id; _G_GETENT=/usr/bin/getent; _G_DSCL=/usr/bin/dscl
+_G_HOSTNAME=/bin/hostname; _G_GIT=/usr/bin/git; _G_CUT=/usr/bin/cut
+_G_AWK=/usr/bin/awk; _G_GREP=/usr/bin/grep; _G_HEAD=/usr/bin/head; _G_RM=/bin/rm
+
+_read_dir_home() {
+  local _u
+  _u=$("$_G_ID" -un 2>/dev/null) || return 1
+  if [[ -x "$_G_GETENT" ]]; then
+    "$_G_GETENT" passwd "$_u" 2>/dev/null | "$_G_CUT" -d: -f6
+  elif [[ -x "$_G_DSCL" ]]; then
+    "$_G_DSCL" . -read "/Users/$_u" NFSHomeDirectory 2>/dev/null | "$_G_AWK" '{print $2}'
+  else
+    printf '%s' ""
+  fi
+}
+
 _detect_orch() {
-  local _host _home _user
-  _host=$(hostname -s 2>/dev/null || echo "unknown")
-  _user=$(id -un 2>/dev/null || echo "$USER")
-  _home=$(getent passwd "$_user" 2>/dev/null | cut -d: -f6)
-  _home="${_home:-$HOME}"
+  local _host _home
+  _host=$("$_G_HOSTNAME" -s 2>/dev/null || echo "unknown")
+  _home=$(_read_dir_home)
+  [[ -z "$_home" ]] && return 1
   case "$_host" in
     moses|esther)
       [[ "$_home" == "/home/$_host" ]] && return 0
       ;;
   esac
+  return 1
+}
+
+# ── Fleet committer (Titus capability, 2026-11-10) ──────────────
+# A NON-orchestrator host may still be a fleet-committer: it can update the
+# fleet repo paths that are otherwise orchestrator-only. Identity is HOST-DERIVED
+# (hostname + directory-services home), never env, and matches the COMMITTED
+# docs/fleet-committers.txt (reread from HEAD, never the working copy) EXACTLY.
+# Unlike a true orchestrator, a committer does NOT get AGENT_NAME==hostname
+# forced (Titus's hostname is worker-4 but its identity is titus) — the
+# directory-services home row IS the binding. Any doubt/absent list -> no.
+_is_fleet_committer() {
+  local _home _committers
+  _home=$(_read_dir_home)
+  [[ -z "$_home" ]] && return 1
+  # Read the COMMITTED list. Missing file = empty = fail closed. An unexpected
+  # git error is surfaced, not silently masked (ADV-0-2).
+  _committers=$("$_G_GIT" show HEAD:docs/fleet-committers.txt 2>/tmp/fleet-committers.err || true)
+  if [[ -z "$_committers" && -s /tmp/fleet-committers.err ]] \
+     && ! "$_G_GREP" -qE 'does not exist|exists on disk, but not in' /tmp/fleet-committers.err; then
+    echo "[fleet-committers] unexpected read error: $("$_G_HEAD" -1 /tmp/fleet-committers.err)" >&2
+  fi
+  "$_G_RM" -f /tmp/fleet-committers.err
+  [[ -z "$_committers" ]] && return 1
+  while IFS=$'\n' read -r _row || [[ -n "$_row" ]]; do
+    [[ "$_row" =~ ^#.*$ || -z "$_row" ]] && continue
+    [[ "$_home" == "$_row" ]] && return 0     # EXACT home match
+  done <<< "$_committers"
   return 1
 }
 
@@ -667,15 +715,28 @@ ORCH_VIOLATION=0
 STAGED_FILES=$(git diff --cached --name-only 2>/dev/null)
 
 # Self-protection: the config file itself is always restricted
-# (hardcoded because it's self-referential — can't read from itself)
+# (hardcoded because it's self-referential — can't read from itself).
+# Two files are self-protecting this way: the orchestrator-only path list and
+# the fleet-committers list (AGENTS/committer capability). docs/fleet-committers.txt
+# is hardcoded from the FIRST commit so a non-orch agent cannot introduce its own
+# home row in the commit that creates the file (the HEAD-read guard cannot yet see
+# a file that does not exist at HEAD — the hardcode is what closes that window).
 if echo "$STAGED_FILES" | grep -q "^docs/orchestrator-only-paths.txt"; then
   ORCH_VIOLATION=1
   echo "   ❌  docs/orchestrator-only-paths.txt — orchestrator only"
 fi
+if echo "$STAGED_FILES" | grep -q "^docs/fleet-committers.txt"; then
+  ORCH_VIOLATION=1
+  echo "   ❌  docs/fleet-committers.txt — orchestrator/committer list, orchestrator only"
+fi
 # Orchestrator identity is host-derived (hostname + home-dir), never env.
-# AGENT_ID is no longer required and grants no privileges.
+# A fleet-committer (Titus) gets the SAME orchestrator-only-path write
+# privilege via the directory-services home row in docs/fleet-committers.txt
+# (committed, host-derived, never env). AGENT_ID is no longer required and
+# grants no privileges.
 IS_ORCH=0
 _detect_orch && IS_ORCH=1
+_is_fleet_committer && IS_ORCH=1   # committer capability (2026-11-10)
 if [[ "$IS_ORCH" != "1" ]]; then
   # A claimed orchestrator identity on a non-orch host is an impersonation attempt
   case "${AGENT_ID:-}" in

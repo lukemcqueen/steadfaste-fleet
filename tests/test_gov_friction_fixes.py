@@ -33,6 +33,20 @@ _mcp_spec = importlib.util.spec_from_file_location("loop_gov_mcp_ff", _MCP_PATH)
 mcp = importlib.util.module_from_spec(_mcp_spec)
 _mcp_spec.loader.exec_module(mcp)
 
+
+def _sandbox_hooks(repo: Path) -> None:
+    """Point a throwaway fixture repo's hooks AWAY from the host's global hooksPath.
+
+    This host sets core.hooksPath globally to ~/.steadfaste-fleet/hooks, so a
+    real-git fixture inherits the fleet pre-commit hook — which refuses the bare
+    fixture commits (no pathspec) and leaves the repo empty, failing every
+    assertion that needs real commits. A throwaway test repo is deliberately
+    free of governance hooks; set its own repo-level core.hooksPath (never
+    per-invocation -c, which the enforcer blocks as a bypass).
+    """
+    subprocess.run(["git", "config", "core.hooksPath", str(repo / ".git" / "hooks")],
+                   cwd=repo, capture_output=True, text=True)
+
 _ENF_PATH = Path(__file__).resolve().parents[1] / "plugins" / "governance-enforcer" / "__init__.py"
 _enf_spec = importlib.util.spec_from_file_location("governance_enforcer_ff", _ENF_PATH)
 enf = importlib.util.module_from_spec(_enf_spec)
@@ -225,6 +239,7 @@ def test_review_range_scoped_to_authored_commits():
         repo = Path(td) / "repo"
         repo.mkdir()
         _git(repo, "init", "-q")
+        _sandbox_hooks(repo)
         # This repo's identity == "our" agent.
         _git(repo, "config", "user.email", "esther-agent@hermes.local")
         _git(repo, "config", "user.name", "esther-agent")
@@ -290,6 +305,7 @@ def test_foreign_always_review_commit_still_triggers():
         repo = Path(td) / "repo"
         repo.mkdir()
         _git(repo, "init", "-q")
+        _sandbox_hooks(repo)
         _git(repo, "config", "user.email", "esther-agent@hermes.local")
         _git(repo, "config", "user.name", "esther-agent")
 

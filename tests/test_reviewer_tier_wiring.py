@@ -37,6 +37,9 @@ def gov(monkeypatch):
     """The module on the DEFAULT backend, with the llm call captured instead of made."""
     mod = _load()
     monkeypatch.setenv("ADVERSARIAL_REVIEW_BACKEND", "llm")
+    # Hermetic: a host-level ADVERSARIAL_REVIEW_LIGHT_MODEL must not leak into
+    # the default-resolution assertions below.
+    monkeypatch.delenv("ADVERSARIAL_REVIEW_LIGHT_MODEL", raising=False)
     calls = []
 
     def _fake_llm(prompt, *, model=None, timeout=None):
@@ -54,15 +57,32 @@ def gov(monkeypatch):
     return mod, calls
 
 
-def test_the_default_backend_reaches_the_cheap_model(gov):
-    """THE regression: on the default `llm` backend, a light change must actually spend less."""
+def test_the_default_backend_reaches_the_canonical_model_for_a_light_change(gov):
+    """THE regression (post-10-18 reversal): on the default `llm` backend, a
+    light change judges with the CANONICAL model unless the operator EXPLICITLY
+    sets ADVERSARIAL_REVIEW_LIGHT_MODEL. The 2026-10-18 operator decision
+    ('FLASH SHOULD NOT BE THE REVIEWER DEFAULT') removed
+    REVIEWER_LIGHT_MODEL_DEFAULT — a second constant is where a cheap default
+    creeps back (commit 08db5f50)."""
     mod, calls = gov
     mod._call_reviewer("prompt", cx=LIGHT_CX)
     assert calls, "the reviewer was never called"
-    assert calls[0]["model"] == mod.REVIEWER_LIGHT_MODEL_DEFAULT, (
-        f"a light change ran on {calls[0]['model']} — the cheap tier is not wired, which is exactly "
-        "the defect this file exists to prevent"
+    assert calls[0]["model"] == mod.REVIEWER_MODEL_DEFAULT, (
+        f"a light change ran on {calls[0]['model']} — the canonical default was "
+        "not preserved; this is exactly the flash-default the operator reversed"
     )
+
+
+def test_an_explicit_light_model_is_honoured(gov, monkeypatch):
+    """The operator can still spend less by NAMING a cheaper light model —
+    the env is honoured strictly, but it is never the default."""
+    mod, calls = gov
+    monkeypatch.setenv("ADVERSARIAL_REVIEW_LIGHT_MODEL", "deepseek/deepseek-v3.2")
+    mod._call_reviewer("prompt", cx=LIGHT_CX)
+    assert calls and calls[0]["model"] == "deepseek/deepseek-v3.2"
+    calls.clear()
+    mod._call_reviewer("prompt", cx=HEAVY_CX)  # heavy ignores the light model
+    assert calls and calls[0]["model"] == mod.REVIEWER_MODEL_DEFAULT
 
 
 def test_an_always_review_change_still_gets_the_deep_model(gov):
@@ -92,11 +112,12 @@ def test_the_recorded_reviewer_matches_the_one_that_ran(gov):
 
 def test_an_agent_backend_host_still_avoids_the_agent_for_a_light_change(gov, monkeypatch):
     """The tier's ORIGINAL purpose must survive: on an agent host, a light change dodges the slow
-    agent (and the 300s client ceiling) rather than waiting on it."""
+    agent (and the 300s client ceiling) rather than waiting on it — but it still judges with
+    the canonical model (10-18 reversal), never a silent cheap default."""
     mod, calls = gov
     monkeypatch.setenv("ADVERSARIAL_REVIEW_BACKEND", "agent")
     mod._call_reviewer("prompt", cx=LIGHT_CX)
-    assert calls and calls[0]["model"] == mod.REVIEWER_LIGHT_MODEL_DEFAULT
+    assert calls and calls[0]["model"] == mod.REVIEWER_MODEL_DEFAULT
     calls.clear()
     mod._call_reviewer("prompt", cx=HEAVY_CX)  # must now go to the agent
     assert calls and calls[0]["model"] == "agent", (
@@ -104,10 +125,15 @@ def test_an_agent_backend_host_still_avoids_the_agent_for_a_light_change(gov, mo
     )
 
 
-def test_the_cheap_and_deep_models_are_actually_different():
+def test_the_canonical_judge_is_used_by_default_and_light_only_via_env():
+    """Post-10-18 reversal: the light tier resolves the CANONICAL model by default;
+    a cheaper light judge is reachable ONLY through an explicit ADVERSARIAL_REVIEW_LIGHT_MODEL.
+    This pins that the resolver returns REVIEWER_MODEL_DEFAULT when no env is set."""
     mod = _load()
-    assert mod.REVIEWER_LIGHT_MODEL_DEFAULT != mod.REVIEWER_MODEL_DEFAULT, (
-        "a tier that costs the same as the untiered path saves nothing"
+    # The generic resolver (no operator env) must return the canonical model.
+    assert mod._light_reviewer_model() == mod.REVIEWER_MODEL_DEFAULT, (
+        "the light resolver must default to the canonical reviewer (10-18 reversal) — "
+        "a cheaper default is exactly what the operator removed"
     )
 
 

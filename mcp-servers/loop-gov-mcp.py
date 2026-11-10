@@ -3609,6 +3609,11 @@ def _ensure_schema(conn: sqlite3.Connection) -> None:
         log.warning("SQL migration: unscored_reason already exists — expected")
         pass
 
+    # E1 (2026-11-10): review_class records WHICH risk class each cycle's
+    # review decision used (see _ensure_review_class_col). Guarded by the
+    # real-column membership test so a migration failure is visible.
+    _ensure_review_class_col(conn)
+
     # Add per-blob review verdicts (2026-10-16): the ONE whole-range verdict made a
     # wide range unshippable — the reviewer is a single call, so an 8-file/381-line
     # range exhausted a reasoning model's output budget and the close could not
@@ -5337,6 +5342,12 @@ def _complexity(repo: Path, started_at: str, dirty_at_start=None,
         "always_review": bool(always),
         "always_paths": sorted(set(always)),
         "numstat": numstat.strip(),
+        # E1 (2026-11-10): the measured path set + uncommitted-code flag feed
+        # _review_class — the class is computed FROM the diff, never a note.
+        # The uncommitted flag reuses the already-computed worktree set
+        # (untracked new files joined at l.5299) instead of re-running git.
+        "paths": sorted(set(non_noise)),
+        "has_uncommitted_code": bool(worktree_files),
         # The audited range alone — the basis the material's diff body uses, so the
         # reviewer's "Diff stat" can never name a path whose diff is absent.
         "range_numstat": range_numstat.strip(),
@@ -6894,6 +6905,85 @@ def _review_class(paths: list, *, has_uncommitted_code: bool = False) -> str:
     return _REVIEW_CLASS_UNCLASSIFIED
 
 
+def _class_for_cx(cx: Optional[dict]) -> str:
+    """The risk class for a MEASURED change dict (cx from _complexity).
+
+    E1 wiring (2026-11-10): the pure classifier answers from the measured
+    change's own inputs — the path set and the uncommitted-code flag — never
+    from a note. A cx with no readable path set (None, {}, a missing key)
+    answers C: fail closed, exactly like the pure classifier on an empty set.
+    """
+    if not isinstance(cx, dict):
+        return _REVIEW_CLASS_UNCLASSIFIED
+    paths = cx.get("paths")
+    if not isinstance(paths, list):
+        return _REVIEW_CLASS_UNCLASSIFIED
+    return _review_class(paths, has_uncommitted_code=bool(
+        cx.get("has_uncommitted_code", False)))
+
+
+def _review_skip_needed(cx: Optional[dict]) -> tuple[bool, str]:
+    """(skip, class) for a measured change — the E1 judge decision.
+
+    Wired into end_change's review entry (l. 7286): the class is computed
+    FIRST and recorded; then the skip decision is:
+      - simple (below the size threshold)  -> skip, as before E1
+      - A0 (docs-only, clean predicate)    -> skip the model judge (NO call)
+      - B / C complex                      -> review (B routes to the
+        operator-set light judge; C to the canonical judge)
+    A0 skipping a COMPLEX-sized docs range is the E1 saving; every A0 skip is
+    recorded with its inputs (the caller records — see _record_review_class).
+    """
+    cls = _class_for_cx(cx)
+    if not isinstance(cx, dict):
+        return True, cls
+    if not cx.get("is_complex"):
+        return True, cls          # simple — the pre-E1 size skip
+    if cls == "A0":
+        return True, cls          # docs-only — deterministic gate only
+    return False, cls             # B / C — a model judge runs
+
+
+def _record_review_class(cycle_id: int, cls: str, inputs: Optional[dict] = None,
+                         conn: sqlite3.Connection | None = None) -> None:
+    """Record WHICH class a cycle's review decision used, with its inputs.
+
+    Plan §3 rule 6: a skip is a DECISION, never an absence — a later reader
+    can recompute why no judge ran. Written to loop_cycles.review_class
+    (JSON: the class + the predicate's own inputs). Telemetry: a write
+    failure logs and never blocks the close.
+    """
+    own = conn if conn is not None else _db()
+    try:
+        try:
+            own.execute("UPDATE loop_cycles SET review_class=? WHERE id=?",
+                        (json.dumps({"class": cls, "inputs": inputs or {}}),
+                         int(cycle_id)))
+            own.commit()
+        except sqlite3.Error as e:  # noqa: BLE001 — telemetry must not block the close
+            log.warning("loop-gov: could not record review_class for cycle %s (%s) — "
+                        "the review decision still stands", cycle_id, e)
+    finally:
+        if conn is None:
+            own.close()
+
+
+def _ensure_review_class_col(conn: sqlite3.Connection) -> None:
+    """Add loop_cycles.review_class for stores that predate E1 (2026-11-10).
+
+    Guarded by a membership test on the REAL columns (the rules_rev pattern,
+    l. 3597) so a failure to migrate is visible. Existing rows keep NULL,
+    which the reader treats as 'decision predates E1' — never as A0.
+    """
+    try:
+        _cols = {r[1] for r in conn.execute("PRAGMA table_info(loop_cycles)")}
+        if "review_class" not in _cols:
+            conn.execute("ALTER TABLE loop_cycles ADD COLUMN review_class TEXT")
+    except sqlite3.Error as e:  # noqa: BLE001 — a store hiccup must not stop the server
+        log.warning("loop-gov: could not add loop_cycles.review_class (%s) — "
+                    "class recording disabled (decisions are never treated as A0)", e)
+
+
 def _bound_per_file(sections: list, budget: int, total: int,
                     docs_only: bool) -> str:
     """Allocate the budget ACROSS the changed files so no file is invisible.
@@ -7283,12 +7373,24 @@ def _adversarial_review_gate(lock: dict, cycle: dict,
                 "  cycle there and land the change with a commit in that repo."
             ))])
 
-    if not cx["is_complex"]:
-        log.info("self-adversarial review: cycle %s simple (%s lines, %s files) — skip",
-                 cycle.get("id"), cx["lines"], cx["files"])
+    # E1 (2026-11-10): the RISK CLASS decides before the size skip. Record
+    # the class + its inputs on the cycle (plan §3 r.6: a skip is a decision,
+    # never an absence), then skip for simple changes AND for A0 (docs-only —
+    # the deterministic gates are the whole gate for prose; the model judge
+    # would have nothing executable to falsify). B/C complex ranges review.
+    _skip, _cls = _review_skip_needed(cx)
+    _record_review_class(int(cycle.get("id") or 0), _cls, {
+        "paths": cx.get("paths") or [],
+        "has_uncommitted_code": bool(cx.get("has_uncommitted_code", False)),
+        "is_complex": bool(cx.get("is_complex", False)),
+    })
+    if _skip:
+        log.info("self-adversarial review: cycle %s %s (%s lines, %s files, "
+                 "class %s) — no model judge", cycle.get("id"),
+                 "A0 docs-only" if _cls == "A0" else "simple",
+                 cx["lines"], cx["files"], _cls)
         return None
 
-    # Complex: build the review material and run the reviewer.
     task_id = lock.get("task_id", "")
     description = lock.get("description", "")
     outcome_note = cycle.get("outcome_note") or "(no note)"
