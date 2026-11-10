@@ -1283,6 +1283,44 @@ def _record_blob_reviews(blobs: dict, verdict: str, findings_json: str = "[]",
             own.close()
 
 
+def _record_review_call(source: str, model: str, usage: Optional[dict] = None,
+                        reviewer_id: str = "") -> None:
+    """Write ONE ledger row per reviewer model call (2026-11-10).
+
+    The fleet review-cost figure was MODELED (~20K in / 4K out) because
+    blob_reviews stores no token counts. This table is the honest per-call
+    ledger: one review_id (uuid4, fresh per call) carries the provider's OWN
+    usage for that HTTP request. A retry is a new spend and records a new row.
+
+    TELEMETRY, NOT ENFORCEMENT: a ledger write failure is logged and the
+    review proceeds — the review refusal/skip logic is untouched
+    (enforcement-change-safety Rule 1). The refused (empty-content) path also
+    records: it is the expensive no-verdict spend the ledger exists to measure.
+    """
+    own = None
+    try:
+        own = _db()
+        try:
+            usage = usage or {}
+            own.execute(
+                "INSERT OR REPLACE INTO review_calls"
+                " (review_id, source, reviewer_model, reviewer_id,"
+                "  prompt_tokens, completion_tokens, reasoning_tokens, ts)"
+                " VALUES (?,?,?,?,?,?,?,?)",
+                (str(uuid.uuid4()), source, model, reviewer_id or "",
+                 usage.get("prompt_tokens"), usage.get("completion_tokens"),
+                 (usage.get("completion_tokens_details") or {})
+                 .get("reasoning_tokens"),
+                 _now_iso()),
+            )
+            own.commit()
+        finally:
+            own.close()
+    except sqlite3.Error as e:  # noqa: BLE001 — telemetry must never fail the review
+        log.warning("loop-gov: review_calls write failed (%s, %s) — telemetry only, "
+                    "review proceeds: %s", source, model, e)
+
+
 def _rules_rev(prompt_text: str) -> str:
     """A short fingerprint of the RULES a verdict was produced under (2026-10-20).
 
@@ -3600,6 +3638,22 @@ def _ensure_schema(conn: sqlite3.Connection) -> None:
     except sqlite3.Error as e:  # noqa: BLE001 — a store hiccup must not stop the server
         log.warning("loop-gov: could not add blob_reviews.rules_rev (%s) — stored verdicts "
                     "will be treated as unverifiable and re-judged", e)
+    # review_calls (2026-11-10): per-call token ledger for ledger-accurate review cost.
+    # One row per model call carries the provider's OWN usage; blob_reviews has no token
+    # columns because one call can spread verdicts across N blobs (per-blob caching), so
+    # the per-call unit is the honest one. Telemetry only — see _record_review_call.
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS review_calls (
+            review_id        TEXT PRIMARY KEY,
+            source           TEXT NOT NULL,
+            reviewer_model   TEXT NOT NULL,
+            reviewer_id      TEXT,
+            prompt_tokens    INTEGER,
+            completion_tokens INTEGER,
+            reasoning_tokens INTEGER,
+            ts               TEXT NOT NULL
+        )"""
+    )
     # Task events table (harness v3)
     conn.execute(
         """CREATE TABLE IF NOT EXISTS task_events (
@@ -5707,6 +5761,11 @@ def _call_reviewer_llm(prompt: str, *, model: Optional[str] = None,
     with _hard_deadline(timeout, "reviewer"):
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read())
+    # Ledger-accurate review cost (2026-11-10): record the provider's OWN usage for
+    # this call BEFORE the content check, so the refused (empty-content) path is
+    # also measured — it is the expensive no-verdict spend the ledger exists to
+    # capture. Telemetry: a write failure never fails the review.
+    _record_review_call("close", model, data.get("usage"))
     choices = data.get("choices") or []
     content = ((choices[0].get("message") or {}) if choices else {}).get("content")
     if not isinstance(content, str) or not content.strip():

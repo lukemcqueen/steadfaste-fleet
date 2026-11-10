@@ -129,7 +129,53 @@ def _material_for(row: dict) -> str:
     )
 
 
-def _call_model(prompt: str) -> str:
+def _record_review_call(db_path: Path, source: str, model: str,
+                        usage: dict | None = None) -> None:
+    """Write ONE ledger row per model call (2026-11-10).
+
+    The plan-review sweep is a separate cost surface from the close gate; the
+    per-call token ledger (same review_calls table the close gate writes)
+    makes the full fleet review bill measured, not modeled. review_id is a
+    fresh uuid4 per call — a retry is a new spend and gets a new row.
+    TELEMETRY, NOT ENFORCEMENT: a write failure is printed and the review
+    proceeds (enforcement-change-safety Rule 1).
+    """
+    conn = None
+    try:
+        conn = sqlite3.connect(str(db_path), timeout=30)
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS review_calls ("
+            " review_id TEXT PRIMARY KEY,"
+            " source TEXT NOT NULL,"
+            " reviewer_model TEXT NOT NULL,"
+            " reviewer_id TEXT,"
+            " prompt_tokens INTEGER,"
+            " completion_tokens INTEGER,"
+            " reasoning_tokens INTEGER,"
+            " ts TEXT NOT NULL)"
+        )
+        usage = usage or {}
+        conn.execute(
+            "INSERT OR REPLACE INTO review_calls"
+            " (review_id, source, reviewer_model, reviewer_id,"
+            "  prompt_tokens, completion_tokens, reasoning_tokens, ts)"
+            " VALUES (?,?,?,?,?,?,?,?)",
+            (str(uuid.uuid4()), source, model, "",
+             usage.get("prompt_tokens"), usage.get("completion_tokens"),
+             (usage.get("completion_tokens_details") or {})
+             .get("reasoning_tokens"),
+             datetime.now(timezone.utc).isoformat()),
+        )
+        conn.commit()
+    except sqlite3.Error as e:  # noqa: BLE001 — telemetry must never fail the review
+        print(f"  [review-queue-sweep] review_calls write failed ({source}, {model}): {e}",
+              file=sys.stderr)
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+def _call_model(prompt: str, db_path: str | None = None) -> str:
     model = os.environ.get("ADVERSARIAL_REVIEWER_MODEL",
                            "deepseek/deepseek-v4-pro-0813")
     api_key = os.environ.get("OPENROUTER_API_KEY")
@@ -162,6 +208,10 @@ def _call_model(prompt: str) -> str:
     )
     with urllib.request.urlopen(req, timeout=300) as resp:
         data = json.loads(resp.read())
+    # Ledger-accurate plan-review cost (2026-11-10): record the provider's OWN
+    # usage. Telemetry — a write failure never fails the review.
+    _record_review_call(Path(db_path or DEFAULT_DB).expanduser(), "plan", model,
+                        data.get("usage"))
     return data["choices"][0]["message"]["content"]
 
 
