@@ -721,13 +721,37 @@ STAGED_FILES=$(git diff --cached --name-only 2>/dev/null)
 # is hardcoded from the FIRST commit so a non-orch agent cannot introduce its own
 # home row in the commit that creates the file (the HEAD-read guard cannot yet see
 # a file that does not exist at HEAD — the hardcode is what closes that window).
+#
+# Enforcement note (2026-11-10, ADV-0-3): both config files are editable ONLY
+# by a TRUE orchestrator (moses/esther via _detect_orch) — NOT by a fleet-
+# committer. A committer must never edit the very files that define its
+# capability: editing orchestrator-only-paths.txt could lift a restriction and
+# editing fleet-committers.txt could add a home row (privilege escalation).
+# So this guard checks _detect_orch directly, independent of the committer
+# IS_ORCH grant below (which deliberately widens path writes, not config authorship).
 if echo "$STAGED_FILES" | grep -q "^docs/orchestrator-only-paths.txt"; then
+  if ! _detect_orch; then
+    [ "$SANCTIONED_PIPELINE" = "1" ] || {
+      echo ""
+      echo "❌  docs/orchestrator-only-paths.txt — the restriction list is editable"
+      echo "    ONLY by canonical orchestrators (moses/esther). A fleet-committer"
+      echo "    may not rewrite the paths it is permitted to write (no escalation)."
+      exit 1
+    }
+  fi
   ORCH_VIOLATION=1
-  echo "   ❌  docs/orchestrator-only-paths.txt — orchestrator only"
 fi
 if echo "$STAGED_FILES" | grep -q "^docs/fleet-committers.txt"; then
+  if ! _detect_orch; then
+    [ "$SANCTIONED_PIPELINE" = "1" ] || {
+      echo ""
+      echo "❌  docs/fleet-committers.txt — the committer list is editable ONLY by"
+      echo "    canonical orchestrators (moses/esther). A committer may not edit the"
+      echo "    very list that grants its capability (privilege escalation)."
+      exit 1
+    }
+  fi
   ORCH_VIOLATION=1
-  echo "   ❌  docs/fleet-committers.txt — orchestrator/committer list, orchestrator only"
 fi
 # Orchestrator identity is host-derived (hostname + home-dir), never env.
 # A fleet-committer (Titus) gets the SAME orchestrator-only-path write
