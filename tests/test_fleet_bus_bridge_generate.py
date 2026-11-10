@@ -23,7 +23,12 @@ _spec.loader.exec_module(gen)
 @pytest.mark.parametrize("expr,expected", [
     ("0 3 * * *", "*-*-* 03:00:00"),
     ("*/10 * * * *", "*-*-* *:0/10:00"),
-    ("0 */2 * * *", "*-*-* *:00/2:00"),
+    # 0 */N * * * = every N HOURS at minute 0 → hour-step (00/N) so systemd
+    # fires every N hours, not every N minutes. Regression: the generator used
+    # to emit *:00/N:00 (minute step) which made a 6h job run every 6 MINUTES
+    # (the 'nonstop' governance-auditor spam, 2026-11-10).
+    ("0 */2 * * *", "*-*-* 00/2:00:00"),
+    ("0 */6 * * *", "*-*-* 00/6:00:00"),
     ("30 9-17 * * 1-5", "Mon..Fri *-*-* 09..17:30:00"),
     ("0 4 * * 1", "Mon *-*-* 04:00:00"),
     ("0 23 * * 6", "Sat *-*-* 23:00:00"),
@@ -39,8 +44,10 @@ def test_cron_to_oncalendar_unsupported_returns_none(expr):
 
 
 @pytest.mark.parametrize("sched,expected", [
-    ({"kind": "every", "every": "2h"}, "*-*-* *:00/2:00"),
-    ({"every": "360m"}, "*-*-* *:00/6:00"),
+    # 'every Nh' = every N hours → hour-step (00/N), NOT minute step *:00/N
+    ({"kind": "every", "every": "2h"}, "*-*-* 00/2:00:00"),
+    # 360m = 6h → hour-step 00/6
+    ({"every": "360m"}, "*-*-* 00/6:00:00"),
     ({"every": "10m"}, "*-*-* *:0/10:00"),
     ({"display": "every 5m"}, "*-*-* *:0/5:00"),
     ({"every": "70m"}, None),            # does not divide 60 -> refused

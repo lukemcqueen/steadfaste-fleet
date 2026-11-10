@@ -107,11 +107,13 @@ def cron_to_oncalendar(expr: str) -> str | None:
     m = re.fullmatch(r"\*/(\d+)", minute)
     if m and hour == "*" and dom == "*" and mon == "*" and dow == "*":
         return f"*-*-* *:0/{m.group(1)}:00"
-    #   0 */N * * * -> every N hours at minute 0 (systemd hourly step is
-    #   '*-*-* *:00/N:00' — fires on every Nth hour at :00)
+    #   0 */N * * * -> every N hours at minute 0. systemd hour-step is
+    #   '*-*-* 00/N:00:00' (the /N goes on the HOUR field) — fires on every
+    #   Nth hour (0,6,12,18...). Regression 2026-11-10: was '*:00/N:00'
+    #   (minute step) which ran a 6h job every 6 MINUTES.
     m2 = re.fullmatch(r"\*/(\d+)", hour)
     if m2 and minute in ("*", "0") and dom == "*" and mon == "*" and dow == "*":
-        return f"*-*-* *:00/{m2.group(1)}:00"
+        return f"*-*-* 00/{m2.group(1)}:00:00"
     #   M * * * * / 0 * * * * -> every hour at minute M (systemd *:MM:00)
     if re.fullmatch(r"\d+", minute) and hour == "*" \
             and dom == "*" and mon == "*" and dow == "*":
@@ -185,14 +187,15 @@ def instance_interval(schedule: dict) -> str | None:
         return None
     n, unit = int(m.group(1)), m.group(2)
     if unit == "h":
-        return f"*-*-* *:00/{n}:00"
+        # every Nh = every N hours -> HOUR step '00/N' (fires hours 0,N,2N...)
+        return f"*-*-* 00/{n}:00:00"
     if unit == "m":
         # >=60m that divides into whole hours (e.g. every 360m = 6h) -> hourly
-        # step. Otherwise systemd supports minute-step '*:0/N:00' (fires every
-        # N minutes on the :00 phase) — reliable when N divides 60; refuse
+        # step '00/N'. Otherwise systemd supports minute-step '*:0/N:00' (fires
+        # every N minutes on the :00 phase) — reliable when N divides 60; refuse
         # non-dividing N (e.g. 70) rather than under-fire.
         if n >= 60 and n % 60 == 0:
-            return f"*-*-* *:00/{n // 60}:00"
+            return f"*-*-* 00/{n // 60}:00:00"
         if 60 % n == 0:
             return f"*-*-* *:0/{n}:00"
         return None

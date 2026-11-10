@@ -10,6 +10,7 @@ component-hermes-separation scope 2, slice S2a. Proves the bridge:
 """
 import importlib.util
 import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -44,7 +45,8 @@ def test_generator_maps_common_cron_forms():
         "0 1 * * *": "*-*-* 01:00:00",
         "15 3 * * *": "*-*-* 03:15:00",
         "*/5 * * * *": "*-*-* *:0/5:00",
-        "0 */6 * * *": "*-*-* *:00/6:00",
+        # 0 */6 = every 6 HOURS → hour-step 00/6 (not minute-step *:00/6)
+        "0 */6 * * *": "*-*-* 00/6:00:00",
         "17 * * * *": "*-*-* *:17:00",
         "0 9-18 * * 1-5": "Mon..Fri *-*-* 09..18:00:00",
         "0 11,17 * * 6": "Sat *-*-* 11,17:00:00",
@@ -56,8 +58,8 @@ def test_generator_maps_common_cron_forms():
 def test_generator_maps_interval_forms():
     g = _load("fleet-bus-bridge-generate")
     assert g.instance_interval({"kind": "every", "every": "5m"}) == "*-*-* *:0/5:00"
-    assert g.instance_interval({"kind": "every", "every": "2h"}) == "*-*-* *:00/2:00"
-    assert g.instance_interval({"kind": "every", "every": "360m"}) == "*-*-* *:00/6:00"
+    assert g.instance_interval({"kind": "every", "every": "2h"}) == "*-*-* 00/2:00:00"
+    assert g.instance_interval({"kind": "every", "every": "360m"}) == "*-*-* 00/6:00:00"
 
 
 def test_generator_skips_unsupported():
@@ -194,10 +196,25 @@ def test_runner_hermes_free():
 # UPDATE_REQUESTs consumed, none updated, all four answered only at the 30-min
 # sweep timeout.
 def _service_body() -> str:
-    """The [Service] section of the unit the generator would write."""
+    """The [Service] section of the unit the generator would write.
+
+    The generator builds its unit template inline in main(); there is no
+    `unit_text` helper (the old one was refactored away). Assert against the
+    generator's own template so the test tracks the real emitted unit instead
+    of a dead API.
+    """
     g = _load("fleet-bus-bridge-generate")
-    service, _ = g.unit_text("j-daily", "x.py", "/repo/ops/scripts/fleet-bus-bridge-run.py")
-    return service
+    src = Path(g.__file__).read_text()
+    # Extract the service_text f-string body: from 'service_text = ' up to the
+    # next 'timer_text = ' assignment.
+    m = re.search(r"service_text = f\"\"\"(.*?)\"\"\"\n\s*timer_text",
+                  src, re.DOTALL)
+    assert m, "generator service_text template not found"
+    body = m.group(1) if m.group(1) is not None else ""
+    # The template carries {_KILLMODE_LINE}, which the generator substitutes
+    # from its module constant at write time — expand it so the test asserts
+    # on the real emitted value, not a placeholder.
+    return body.replace("{_KILLMODE_LINE}", g._KILLMODE_LINE)
 
 
 def test_generated_service_sets_killmode_process():
