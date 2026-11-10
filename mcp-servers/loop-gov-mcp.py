@@ -8071,6 +8071,7 @@ def _session_identity(args: dict | None = None) -> CallToolResult:
     resolved = ""
     lock_sid = ""
     note = ""
+    lock_state_unknown = False
     try:
         verdict = json.loads(_check_repo_lock({"repo_path": repo}).content[0].text)
         resolved = str(verdict.get("repo_path") or "")
@@ -8099,13 +8100,19 @@ def _session_identity(args: dict | None = None) -> CallToolResult:
             lock_sid = covering_ids[0]
     except Exception as exc:  # noqa: BLE001 — an answer is required, never a crash
         note = f"could not read the lock state ({exc}); using this caller's own id"
+        # ADV-0-4 (2026-11-10): a failed read is NOT "no lock". Must be reported as
+        # UNKNOWN, never as an assurance that nothing is held (a caller would trust
+        # `ownership: none` to write).
+        lock_state_unknown = True
 
     # LOCK-OWNERSHIP HARDENING (2026-11-10, Titus Pi incident): the coverage a
     # lock gives THIS caller is separate from which caller HOLD that id. A lock is
     # "mine" only when the resolved id is unique to this session (injected/env)
     # and equal to the covering lock's — a per-repo fallback id is SHARED by every
     # session in the repo, so it never proves ownership (fail closed).
-    if lock_sid:
+    if lock_state_unknown:
+        mine = False
+    elif lock_sid:
         mine = _lock_is_mine(own_id, lock_sid, shared)
     else:
         # NO covering lock: there is nothing another session holds over this repo,
@@ -8126,7 +8133,7 @@ def _session_identity(args: dict | None = None) -> CallToolResult:
                 f"own ({id_source} id {own_id}). It is ANOTHER session's lock (not yours). "
                 "effective_session_id is still correct for evidence-keying, but it does not "
                 "grant you the lock.")
-    elif not lock_sid:
+    elif not lock_sid and not lock_state_unknown:
         note = (note + " " if note else "") + (
             "no covering lock for this repo — effective_session_id is this caller's own id. "
             "Nothing is held.")
@@ -8141,9 +8148,11 @@ def _session_identity(args: dict | None = None) -> CallToolResult:
         "covering_locks": covering_ids,
         "covering_locks_owned": covering_locks,
         "lock_is_mine": mine,
+        "lock_state_unknown": lock_state_unknown,
         "effective_session_id": lock_sid or own,
-        "ownership": ("mine" if (lock_sid and mine) else
-                      ("other-session-not-mine" if lock_sid else "none")),
+        "ownership": ("unknown" if lock_state_unknown else
+                      ("mine" if (lock_sid and mine) else
+                       ("other-session-not-mine" if lock_sid else "none"))),
         "note": note,
     }, indent=2))])
 

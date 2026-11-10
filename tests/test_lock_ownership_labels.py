@@ -235,6 +235,30 @@ def test_session_identity_no_lock_uses_own_id_and_is_mine(tmp_path, monkeypatch)
     assert "no covering lock" in got["note"]
 
 
+def test_session_identity_read_failure_is_unknown_not_none(tmp_path, monkeypatch):
+    """ADV-0-4 (2026-11-10): a failed lock-state read must report `ownership: unknown`,
+    never a false 'no covering lock / nothing is held' assurance a caller would trust
+    to write. effective_session_id still falls back to the caller's own id."""
+    m = _mcp()
+    monkeypatch.setattr(m, "GOVERNANCE_STATE_DIR", tmp_path)
+    monkeypatch.setenv("PI_SESSION_ID", "01a1c490-2f30-")
+    own = m.get_session_id({})
+
+    # _check_repo_lock raises -> the lock-state read path fails.
+    def boom(args=None):
+        raise RuntimeError("store unavailable")
+    monkeypatch.setattr(m, "_check_repo_lock", boom)
+    monkeypatch.setattr(m, "_live_locks", lambda *a, **k: [])
+
+    got = json.loads(m._session_identity({"repo_path": str(REPO)}).content[0].text)
+    assert got["lock_state_unknown"] is True, got
+    assert got["ownership"] == "unknown", got
+    assert got["lock_is_mine"] is False, got
+    assert got["effective_session_id"] == own   # evidence-keying fallback intact
+    assert "could not read the lock state" in got["note"], got
+    assert "Nothing is held" not in got["note"], got
+
+
 if __name__ == "__main__":
     import pytest
     raise SystemExit(pytest.main([__file__, "-v"]))
