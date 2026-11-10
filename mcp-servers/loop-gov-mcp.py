@@ -8308,7 +8308,8 @@ def _check_lock(args: dict | None = None) -> CallToolResult:
                 "caller_session_id": own_id,
                 "lock_session_id": None,
                 "lock_is_mine": False,
-                "ownership": "other-session-not-mine" if live else "none",
+                "ownership": "none",
+                "note": "this caller holds no lock (any other live locks are listed in locks[])",
                 "live_lock_count": len(live),
                 "locks": live,
             }, indent=2)
@@ -8329,6 +8330,9 @@ def _check_lock(args: dict | None = None) -> CallToolResult:
                 "lock_session_id": str(state.get("session_id") or ""),
                 "lock_is_mine": False,
                 "ownership": "other-session-not-mine",
+                "note": ("the lock this caller resolved is ANOTHER session's (or under the "
+                         "shared per-repo id). Treat it read-only: do NOT refresh, release "
+                         "or build on it."),
                 "file": str(_session_lock_path(state.get("session_id", ""))),
                 "live_lock_count": len(live),
                 "locks": live,

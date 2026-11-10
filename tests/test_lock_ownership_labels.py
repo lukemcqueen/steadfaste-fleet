@@ -180,6 +180,24 @@ def test_check_lock_no_lock_is_not_mine(tmp_path, monkeypatch):
     assert got["lock_exists"] is False
     assert got["lock_is_mine"] is False
     assert got["ownership"] == "none"   # no locks at all — honest "none", not a peer implication
+    assert "holds no lock" in got["note"]
+
+
+def test_check_lock_peers_locked_but_callers_state_none_is_still_none(tmp_path, monkeypatch):
+    """ADV-14434-1: ownership is ABOUT THIS CALLER. A peer's live lock does not make
+    this caller's ownership 'other-session' — this caller holds NO lock, so it is
+    'none'. The peer's lock is reported separately in locks[] with is_mine:false."""
+    m = _mcp()
+    monkeypatch.setattr(m, "GOVERNANCE_STATE_DIR", tmp_path)
+    monkeypatch.setenv("PI_SESSION_ID", "01a1c490-2f30-")  # this caller has a unique id
+    _write_lock(tmp_path, "sess_PEER")                     # a peer's lock lives on disk
+    got = json.loads(m._check_lock({}).content[0].text)
+    assert got["active"] is False
+    assert got["lock_exists"] is False
+    assert got["ownership"] == "none", got                 # no caller lock -> none
+    assert got["live_lock_count"] == 1, got                # peer lock still disclosed
+    assert got["locks"][0]["session_id"] == "sess_PEER"
+    assert got["locks"][0]["is_mine"] is False, got
 
 
 # ── _session_identity: effective_session_id is the EVIDENCE key, not ownership ─
