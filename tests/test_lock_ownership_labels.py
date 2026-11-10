@@ -165,6 +165,8 @@ def test_check_lock_labels_own_env_lock_as_mine(tmp_path, monkeypatch):
     assert got["active"] is True
     assert got["identity_source"] == "env:PI_SESSION_ID"
     assert got["shared_identity"] is False
+    assert got["caller_session_id"] == own
+    assert got["lock_session_id"] == own
     assert got["lock_is_mine"] is True, got
     assert got["ownership"] == "mine", got
     assert got["locks"][0]["is_mine"] is True, got
@@ -175,8 +177,9 @@ def test_check_lock_no_lock_is_not_mine(tmp_path, monkeypatch):
     monkeypatch.setattr(m, "GOVERNANCE_STATE_DIR", tmp_path)
     got = json.loads(m._check_lock({}).content[0].text)
     assert got["active"] is False
+    assert got["lock_exists"] is False
     assert got["lock_is_mine"] is False
-    assert got["ownership"] == "other-session-not-mine"
+    assert got["ownership"] == "none"   # no locks at all — honest "none", not a peer implication
 
 
 # ── _session_identity: effective_session_id is the EVIDENCE key, not ownership ─
@@ -199,6 +202,8 @@ def test_session_identity_foreign_covering_lock_is_not_mine(tmp_path, monkeypatc
     assert got["ownership"] == "other-session-not-mine", got
     assert got["lock_session_id"] == "sess_OTHERINTERACTIVE"
     assert got["identity_source"] == "env:PI_SESSION_ID"
+    # the is_mine-marked per-lock array is present with the correct labelling
+    assert {"session_id": "sess_OTHERINTERACTIVE", "is_mine": False} in got["covering_locks_owned"], got
     assert "ANOTHER session's lock" in got["note"], got
 
 
@@ -223,10 +228,11 @@ def test_session_identity_no_lock_uses_own_id_and_is_mine(tmp_path, monkeypatch)
     got = json.loads(m._session_identity({"repo_path": str(REPO)}).content[0].text)
     assert got["lock_session_id"] is None
     assert got["effective_session_id"] == own
-    # no covering lock -> there is nothing for THIS caller to own; lock_is_mine
-    # must NOT read as "I hold a lock" (fail closed, honest null)
+    # no covering lock -> nothing is held; ownership must be "none", not a false
+    # implication that another session holds it
     assert got["lock_is_mine"] is False, got
-    assert got["ownership"] == "other-session-not-mine", got
+    assert got["ownership"] == "none", got
+    assert "no covering lock" in got["note"]
 
 
 if __name__ == "__main__":
