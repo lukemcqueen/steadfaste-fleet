@@ -277,6 +277,24 @@ def test_session_identity_read_failure_is_unknown_not_none(tmp_path, monkeypatch
     assert "Nothing is held" not in got["note"], got
 
 
+def test_session_identity_covering_ids_empty_never_index_errors(tmp_path, monkeypatch):
+    """Re-review finding ADV-14434-1: an empty covering_ids must NOT raise IndexError
+    (the `[0]` access is guarded by `if not lock_sid and covering_ids`) and must reach
+    ownership:"none", NOT be mislabelled lock_state_unknown by a swallowed exception."""
+    m = _mcp()
+    monkeypatch.setattr(m, "GOVERNANCE_STATE_DIR", tmp_path)
+    monkeypatch.setenv("PI_SESSION_ID", "01a1c490-2f30-")
+    own = m.get_session_id({})
+
+    got = json.loads(m._session_identity({"repo_path": str(REPO)}).content[0].text)
+    # covering_ids empty (no locks at all) + lock-state read OK:
+    assert got["covering_locks"] == [], got
+    assert got["lock_state_unknown"] is False, got         # NOT mislabelled unknown
+    assert got["ownership"] == "none", got                 # no-covering-lock branch
+    assert got["effective_session_id"] == own
+    assert "no covering lock" in got["note"], got
+
+
 if __name__ == "__main__":
     import pytest
     raise SystemExit(pytest.main([__file__, "-v"]))
