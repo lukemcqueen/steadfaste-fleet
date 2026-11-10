@@ -5220,7 +5220,7 @@ def check_task_lifecycle_v2(res):
                 f"health probe failed: {type(e).__name__}: {e}",
                 "Check the telegram_notify state file")
 
-    # ── 4. Stale inbox tasks (WARN — sweep should have paused them) ──
+    # ── 4. Stale inbox tasks (WARN — sweep should have returned them) ──
     try:
         stale = tdb.psql(
             "SELECT count(*) FROM tasks.tasks WHERE source = 'inbox' "
@@ -5229,9 +5229,9 @@ def check_task_lifecycle_v2(res):
         if stale.strip() and int(stale) > 0:
             res.add("Task Lifecycle v2 stale inbox", "WARN",
                     f"{stale.strip()} inbox task(s) stuck in_progress > 1h "
-                    "(stale sweep should have paused them)",
+                    "(stale sweep should have returned them to pending)",
                     "Check agent-message-handler cron ran task_stale_sweep; "
-                    "or pause manually: task-db.py update <id> --status paused")
+                    "or return manually: task-db.py update <id> --status pending")
         else:
             res.add("Task Lifecycle v2 stale inbox", "PASS",
                     "no stale inbox tasks (sweep healthy)")

@@ -249,3 +249,34 @@ def test_mcp_documents_the_release_path():
     assert re.search(r"pending|assignee|handed", tools, re.I), (
         "the unclaim tool description does not mention releasing an assigned "
         "PENDING slice, so an agent has no reason to use it for that")
+
+
+# ── the stale sweep must stop parking rows to paused (queue/2) ──────────────
+
+_HANDLER = _REPO / "ops" / "scripts" / "agent" / "agent-message-handler.py"
+
+
+def test_stale_sweep_returns_to_pending_not_paused():
+    """Diagnosis 2026-10 remedy 3: the sweep that parked stale inbox rows to
+    `paused` was the source of the parked-row class (nothing ever resumed them).
+    The sweep must now return them to `pending` so they re-enter the claim pool."""
+    src = _HANDLER.read_text()
+    # Arm 1 target: the stale in_progress row must go to pending, not paused.
+    assert re.search(
+        r'task_transition_by_correlation\(corr, "pending",\s*reason="stale-return"\)',
+        src, re.S), "Arm 1 no longer returns stale inbox rows to 'pending'"
+    assert not re.search(
+        r'task_transition_by_correlation\(corr, "paused",\s*reason="stale"\)',
+        src), "Arm 1 still parks to 'paused' — the parked-row source is unfixed"
+
+
+def test_stale_sweep_has_a_re_return_routine():
+    """Diagnosis 2026-10 remedy 2 "make it a routine": parked `paused` inbox rows
+    must be drained back to `pending` on every tick, or the class refills."""
+    src = _HANDLER.read_text()
+    assert re.search(
+        r"WHERE source = 'inbox' AND status = 'paused'", src), (
+        "the re-return routine is gone — parked paused rows refill forever")
+    assert re.search(
+        r'task_transition_by_correlation\(corr, "pending",\s*reason="re-return"\)',
+        src, re.S), "parked paused rows are not returned to 'pending' (re-return)"

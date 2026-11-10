@@ -227,7 +227,8 @@ guaranteed no active slices) — never by hand.
   owned by `mycortex`, validates caller profile, sets `by=profile_of(caller)`.
   App roles have INSERT via function only; no direct UPDATE/DELETE grants →
   forge-proof audit (Security R-1).
-- **Reason values:** `'switch'` (pause/resume), `'stale'` (sweep),
+- **Reason values:** `'switch'` (pause/resume), `'stale-return'` (sweep:
+  stale in_progress → pending), `'re-return'` (sweep: parked paused → pending),
   `'story_auto_complete'`, `'reopen'`, NULL otherwise.
 - **Retention:** events CASCADE with task delete; `task_prune()` prunes
   events of pruned archived rows in the same transaction. No unbounded growth
@@ -256,8 +257,11 @@ rejected.
 
 **Stale sweep (R-16, M-2, M-7):**
 - Bus tasks (`source='inbox'`): > threshold (default 1h, configurable) in
-  `in_progress` → sweep to **paused** with `reason='stale'` — NOT cancelled
-  (preserves the arc, matches D-2; a human/next-run resolves). Allowlist
+  `in_progress` → sweep to **pending** with `reason='stale-return'` — NOT
+  paused, NOT cancelled (returns to the claim pool; paused was the source of
+  the parked-row class — diagnosis 2026-10 remedy 3). A parallel **re-return
+  routine** drains parked `paused` inbox rows back to `pending`
+  (`reason='re-return'`) so the parked class never refills. Allowlist
   (`target`/`project` in config) exempts legitimately long EXEC/fleet-update.
   Runs on the handler tick — no new infra, idempotent. Emits event + notify.
 - Manual tasks (`source='manual'`): > 24h in `in_progress` → **FLAG only**

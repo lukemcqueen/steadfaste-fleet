@@ -419,10 +419,12 @@ def task_transition_by_correlation(correlation_id: str, status: str,
 
 
 def task_stale_sweep(max_hours: float = 1.0) -> int:
-    """Pause inbox tasks stuck in_progress beyond the threshold (S4).
+    """Return stale inbox tasks to the pool, and drain the parked class (S4).
 
     Runs on the handler tick. Bus tasks (source='inbox') older than
-    max_hours in in_progress → paused with reason='stale' (R-16/M-2).
+    max_hours in in_progress → pending with reason='stale-return' — NOT
+    paused (R-16/M-2; diagnosis 2026-10 remedy 3: parking to 'paused' was
+    the source of the parked-row class, since nothing ever resumed them).
     Also completes pending inbox rows older than max_hours whose
     correlation_id is in the handler's processed_ids — the handler
     demonstrably processed the message (create-before-archive, corr in
@@ -446,7 +448,10 @@ def task_stale_sweep(max_hours: float = 1.0) -> int:
         spec.loader.exec_module(tdb)
         swept = 0
 
-        # Arm 1 (existing): in_progress older than threshold → paused
+        # Arm 1: in_progress older than threshold → pending (return to pool).
+        # Parking to 'paused' was the source of the parked-row class — nothing
+        # ever resumed a paused row (diagnosis 2026-10, remedy 3). Returning to
+        # 'pending' re-enters the claim pool instead of dead-ending the row.
         sql = (
             "SELECT correlation_id FROM tasks.tasks "
             "WHERE source = 'inbox' AND status = 'in_progress' "
@@ -456,7 +461,8 @@ def task_stale_sweep(max_hours: float = 1.0) -> int:
         raw = tdb.psql(tdb.build_query(sql, [max_hours]))
         corrs = [ln.strip() for ln in raw.splitlines() if ln.strip()]
         for corr in corrs:
-            if task_transition_by_correlation(corr, "paused", reason="stale"):
+            if task_transition_by_correlation(corr, "pending",
+                                              reason="stale-return"):
                 swept += 1
 
         # Arm 2 (gisu PROPOSAL 2026-08-13): pending rows whose corr the
@@ -508,9 +514,29 @@ def task_stale_sweep(max_hours: float = 1.0) -> int:
             except SystemExit:
                 pass  # transition refused (already moved) — non-fatal
 
+        # Arm 4 (re-return routine — diagnosis 2026-10 remedy 2 "make it a
+        # routine"): return parked 'paused' inbox rows to 'pending' so the
+        # parked class drains and never refills. These are report-type rows
+        # (PROPOSAL/ISSUES) a cron session claimed and timed out on; the
+        # pre-fix sweep parked them to 'paused' with nothing to resume them.
+        # source='inbox' is the auto-parked discriminator (untrusted ==
+        # source='inbox', task-db.py pending JSON). Returning them re-enters
+        # the claim pool for a future inbox_read session.
+        sql4 = (
+            "SELECT correlation_id FROM tasks.tasks "
+            "WHERE source = 'inbox' AND status = 'paused' "
+            "LIMIT 50;"
+        )
+        raw4 = tdb.psql(sql4)
+        for corr in (ln.strip() for ln in raw4.splitlines() if ln.strip()):
+            if task_transition_by_correlation(corr, "pending",
+                                              reason="re-return"):
+                swept += 1
+
         if swept:
-            log(f"🧹 stale sweep: closed {swept} inbox task(s) "
-                f"(> {max_hours}h)")
+            log(f"🧹 stale sweep: swept {swept} inbox task(s) "
+                f"(> {max_hours}h: stale→pending, paused→pending re-return, "
+                f"review→in_progress)")
         return swept
     except Exception as e:
         log(f"stale sweep error: {type(e).__name__}: {e}")

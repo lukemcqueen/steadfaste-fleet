@@ -143,9 +143,11 @@ should be one consolidated pass — merge before you add a third slot.
 > `tasks.tasks` row (`source='inbox'`, by correlation_id) for EXEC/
 > UPDATE_REQUEST/TASK_REQUEST/PROPOSAL/ISSUES/IMPROVEMENTS **before**
 > archiving (create-before-archive), (2) drives the lifecycle
-> pending→in_progress→completed at Result-receipt, and (3) runs a **stale
+> pending→in_progress→completed at Result-receipt, (3) runs a **stale
 > sweep** every tick: inbox tasks stuck `in_progress` > 1h (`TASKS_STALE_HOURS`)
-> → `paused` with reason='stale'. Task events notify Telegram via
+> → `pending` with reason='stale-return' (returned to the pool, NOT paused),
+> plus a re-return routine that drains parked `paused` inbox rows back to
+> `pending`. Task events notify Telegram via
 > `lib/telegram_notify.py` (entry + completed; `TASKS_NOTIFY_MUTE` /
 > `TASKS_NOTIFY_QUIET` tune volume). No new cron — the handler tick hosts it.
 | `agent-service-recovery` | `*/5 * * * *` | no_agent | `agent-service-recovery.py` | origin |
