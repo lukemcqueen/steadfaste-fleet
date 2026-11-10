@@ -1202,6 +1202,8 @@ Confirm before touching anything: compare the alert timestamp with the deploy's 
 
 Do NOT "fix" this by deleting the check or by relocking during a deploy — relocking mid-run breaks the deploy, and removing the check removes the detection that catches a genuine unlock.
 
+**Second, distinct root cause of the SAME spam (2026-11-10): the reporter runs too often.** If the warnings arrive *nonstop* (every ~6 minutes, not every 6 hours), the auditor's systemd timer is firing on a *minute* step rather than an *hour* step. `fleet-bus-bridge-generate.py` used to map `0 */N * * *` (and `every Nh` / `every 360m`) to `OnCalendar=*-*-* *:00/N:00` — the `/N` lands on the MINUTE field, so a 6-hour job fired every 6 minutes. The gate itself is fine; the scheduler is wrong. Verify with `systemctl --user cat cortex-bridge-agent-governance-auditor.timer` — a correct 6h unit shows `OnCalendar=*-*-* 00/6:00:00`. Fix: correct the generator's three hour-step branches to put `/N` on the HOUR field (`00/N:00:00`), re-generate or edit the deployed timer units in place (migrated jobs are no longer in jobs.json, so only an in-place fix reaches them), then `systemctl --user daemon-reload`. Affected 2026-11-10: auditor, memory-to-brain-sync, pending-cycle-watchdog, learning-collector, auto-save-sessions, secret-leak-watchdog, orch-bus-confirmation-alert.
+
 ---
 
 ## The fleet venv: a launcher dies with "line N: No such file or directory"
