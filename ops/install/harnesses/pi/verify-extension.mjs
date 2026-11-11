@@ -206,6 +206,48 @@ if (typeof hooks["before_agent_start"] === "function") {
        "a fresh session (no snapshot) still receives the pre-ship checklist");
   note(!freshPrompt.includes("Session context"),
        "…while an empty snapshot injects no resume block");
+
+  // ── session identity: the extension must give the governance MCP child a
+  // UNIQUE, stable CORTEX_SESSION_KEY from Pi's own session id. Without it every
+  // Pi session in a repo shares the per-repo fallback id and one lock. Drive the
+  // REAL handler with a ctx that exposes sessionManager.getSessionId() and assert
+  // what it put in process.env — a grep could see the code; only running it
+  // proves the value lands where the resolver reads it.
+  const savedKey = process.env.CORTEX_SESSION_KEY;
+  delete process.env.CORTEX_SESSION_KEY;
+  try {
+    await hooks["before_agent_start"]({ systemPrompt: "BASE" }, {
+      sessionManager: { getSessionId: () => "hc-pi-marker-session" },
+    });
+  } catch (err) {
+    note(false, `before_agent_start (with ctx) threw: ${err}`);
+  }
+  note(process.env.CORTEX_SESSION_KEY === "hc-pi-marker-session",
+       `before_agent_start sets CORTEX_SESSION_KEY from ctx.sessionManager.getSessionId() (got ${JSON.stringify(process.env.CORTEX_SESSION_KEY)})`);
+  // Only-if-unset: an operator/gateway pin must win over the extension.
+  process.env.CORTEX_SESSION_KEY = "hc-pi-pinned";
+  try {
+    await hooks["before_agent_start"]({ systemPrompt: "BASE" }, {
+      sessionManager: { getSessionId: () => "hc-pi-marker-session" },
+    });
+  } catch (err) {
+    note(false, `before_agent_start (pinned) threw: ${err}`);
+  }
+  note(process.env.CORTEX_SESSION_KEY === "hc-pi-pinned",
+       "an existing CORTEX_SESSION_KEY pin is NOT overwritten (only-if-unset)");
+  if (savedKey === undefined) delete process.env.CORTEX_SESSION_KEY;
+  else process.env.CORTEX_SESSION_KEY = savedKey;
+
+  // A ctx with no sessionManager (or a getSessionId that returns nothing) must
+  // set nothing and not throw — the extension runs on every harness shape.
+  const beforeEmpty = process.env.CORTEX_SESSION_KEY;
+  try {
+    await hooks["before_agent_start"]({ systemPrompt: "BASE" }, {});
+  } catch (err) {
+    note(false, `before_agent_start (no sessionManager) threw: ${err}`);
+  }
+  note(process.env.CORTEX_SESSION_KEY === beforeEmpty,
+       "a ctx without sessionManager sets nothing and does not throw");
 }
 
 if (typeof hooks["turn_end"] === "function") {

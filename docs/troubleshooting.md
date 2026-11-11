@@ -841,6 +841,19 @@ serves one session, so that value is both a correct discriminator and stable
 across a child restart. A caller with no such variable keeps the per-repo
 fallback (restart stability for the CLI), so the sharing can still occur there.
 
+**Why Pi still shared one id (fixed 2026-11-11).** Step 0e only helps if the
+harness actually PUTS the value in the MCP child's environment — and Pi does not.
+Pi injects `PI_SESSION_ID` only into bash/powershell-tool commands, never onto its
+own `process.env`; its MCP client spawns the loop-gov child with
+`{...process.env, ...mcp.json env}`, and `mcp.json`'s `env` carries only
+`AGENT_NAME`. So a Pi session's loop-gov child saw neither key and fell through to
+the per-repo id — every Pi session in a repo shared it. The Pi extension now sets
+`CORTEX_SESSION_KEY` from `ctx.sessionManager.getSessionId()` at
+`before_agent_start` (before the MCP child spawns), so a Pi session resolves a
+unique, stable id. Fix + execution guard:
+`ops/install/harnesses/pi/extensions/fleet-context.ts` /
+`ops/install/harnesses/pi/verify-extension.mjs`.
+
 ```bash
 # Which id did this session get? One clean read, no lock needed:
 ls ~/.steadfaste-fleet/state/.governance-*.json
@@ -852,7 +865,9 @@ ls ~/.steadfaste-fleet/state/.governance-*.json
   records an empty repo, which is the unclosable-lock class.
 - Or set `CORTEX_SESSION_KEY` in the harness/MCP `env` block (the
   fleet-gateway `command` backend already pins it per chat).
-- Verify without an LLM turn: `python3 tests/test_harness_session_id_env.py`.
+- Verify without an LLM turn: `python3 tests/test_harness_session_id_env.py`
+  (resolver) and `node ops/install/harnesses/pi/verify-extension.mjs` (the Pi
+  extension setting the key).
 
 ### Task queries show me nothing (`task_pending` returned `[]`)
 

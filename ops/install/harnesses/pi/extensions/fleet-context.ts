@@ -242,7 +242,31 @@ async function gateSessionKey(): Promise<string> {
 
 export default function (pi: any) {
   // ── 1. Session start: RESUME + checklist, injected via the return value ──
-  pi.on("before_agent_start", async (event: any) => {
+  pi.on("before_agent_start", async (event: any, ctx: any) => {
+    // Give the governance MCP child a UNIQUE, STABLE session identity.
+    //
+    // WHY: Pi does NOT export PI_SESSION_ID on its own process.env — it injects
+    // it only into bash/powershell-tool commands (bash.js deletes it from the
+    // inherited env, then re-adds it per command). The loop-governance MCP child
+    // is spawned by Pi's MCP client with `{...process.env, ...mcp.json env}` and
+    // mcp.json's env block carries only AGENT_NAME, so get_session_id() sees no
+    // CORTEX_SESSION_KEY / PI_SESSION_ID and falls through to the PER-REPO id
+    // (state/.session-<slug>.id) — ONE id shared by every Pi session in that
+    // repo, so a new session "picks up" an existing session's lock. Measured:
+    // with no env value the resolver answers ("per-repo", shared=True); with
+    // CORTEX_SESSION_KEY it answers ("env:CORTEX_SESSION_KEY", shared=False).
+    //
+    // The fix is here because this is the harness adapter, and the session id IS
+    // the unique, stable discriminator (stable across a Pi/MCP-child restart,
+    // unique per --session-id). It is set BEFORE the MCP child spawns (the child
+    // connects lazily on the first tool call), so the child inherits it via the
+    // env merge above. Only-if-unset: an operator/gateway pin (which already
+    // sets it to the same session id) must win.
+    const sessionId = ctx?.sessionManager?.getSessionId?.();
+    if (sessionId && !process.env.CORTEX_SESSION_KEY) {
+      process.env.CORTEX_SESSION_KEY = String(sessionId);
+      note(`CORTEX_SESSION_KEY=${sessionId}\n`);
+    }
     const snap = parse<Restored>(await cortex("session_restore", {}), { restored: null }).restored;
     let resume = "";
     if (!snap) {
