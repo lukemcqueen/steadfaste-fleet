@@ -130,7 +130,7 @@ their domain.
 | `meme-generation` | 2.0.0 | Create meme PNGs from templates with Pillow text overlay. | `skill_view(name='meme-generation')` |
 | `pixel-art` | 2.0.0 | Pixel art w/ era palettes (NES, Game Boy, PICO-8). | `skill_view(name='pixel-art')` |
 
-## Devops (163 skills)
+## Devops (164 skills)
 
 | Skill | Version | Purpose | Load With |
 |-------|---------|---------|-----------|
@@ -157,6 +157,7 @@ their domain.
 | `ci-pipeline-hardening` | 1.0.0 | Fix CI gates: bounded subsets, parity, coverage baselines. | `skill_view(name='ci-pipeline-hardening')` |
 | `cleanup-commit-regression-check` | 1.0.0 | When scripts fail with NameError after a mass-edit commit. | `skill_view(name='cleanup-commit-regression-check')` |
 | `codebase-portability` | 1.0.0 | Systematically find and fix hardcoded absolute paths across scripts, docs, and configs. Ensures codebases w... | `skill_view(name='codebase-portability')` |
+| `concurrent-session-isolation` | 1.0.0 | Use when two or more agent sessions share one host. | `skill_view(name='concurrent-session-isolation')` |
 | `config-drift-diagnostics` | 1.0.0 | DEPRECATED alias — merged into deploy-load-verification. Load deploy-load-verification instead. | `skill_view(name='config-drift-diagnostics')` |
 | `cortex-bus` | 1.3.0 | Agent Bus (PGMQ) operations — queue inspection, DLQ management, message recovery, auth, and health diagnost... | `skill_view(name='cortex-bus')` |
 | `cortex-bus-automation` | 1.0.0 | DEPRECATED alias — merged into cortex-bus. Load cortex-bus instead. | `skill_view(name='cortex-bus-automation')` |
