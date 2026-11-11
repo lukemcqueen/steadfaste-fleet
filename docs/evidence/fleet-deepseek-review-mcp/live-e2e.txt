@@ -1,0 +1,2 @@
+LIVE model-echo head: <!-- DeepSeek response (deepseek/deepseek-v4-pro-0813) in 0.9s -->  PROBE_OK
+LIVE_OK

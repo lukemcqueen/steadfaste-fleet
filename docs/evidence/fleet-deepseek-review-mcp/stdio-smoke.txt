@@ -1,0 +1,5 @@
+PASS initialize: steadfaste-fleet-deepseek
+PASS tools/list: ['review', 'ask_deepseek', 'list_available_models']
+PASS failing call returns isError: Error: review: plan_text is required
+PASS unknown tool returns isError
+SMOKE_OK

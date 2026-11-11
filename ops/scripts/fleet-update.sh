@@ -431,6 +431,8 @@ register "ops/scripts/manage/mcp_wiring.py"               "${CORTEX_DEPLOY_HOME}
 register "ops/install/requirements.txt"                   "${CORTEX_DEPLOY_HOME}/install/requirements.txt"
 register "mcp-servers/task-mcp.py"                      "${CORTEX_DEPLOY_HOME}/scripts/task-mcp.py"
 register "mcp-servers/executor-mcp.py"                  "${CORTEX_DEPLOY_HOME}/scripts/executor-mcp.py"
+# Fleet-owned DeepSeek adversarial-review MCP server (default model v4-pro-0813).
+register "mcp-servers/deepseek-review-mcp.py"        "${CORTEX_DEPLOY_HOME}/scripts/deepseek-review-mcp.py"
 register "mcp-servers/fleet-sandbox-mcp.py"           "${CORTEX_DEPLOY_HOME}/scripts/fleet-sandbox-mcp.py"
 register "ops/scripts/sandbox/fleet-sandbox.py"        "${CORTEX_DEPLOY_HOME}/scripts/sandbox/fleet-sandbox.py"
 register "ops/services/tasks/migrate.py"                "${CORTEX_DEPLOY_HOME}/services/tasks/migrate.py"

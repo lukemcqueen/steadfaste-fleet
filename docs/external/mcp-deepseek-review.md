@@ -4,8 +4,9 @@
 
 > **The tool is named `review`.** It was `review_experimental_plan`, which is narrower than
 > what it does — it reviews a memo, a plan, or a results summary. The rename is **automated**
-> (see [Keeping the name current](#keeping-the-name-current-automated)); do not hand-edit the
-> server, and do not copy its source into `steadfaste-fleet`.
+> (see [Keeping the name current](#keeping-the-name-current-automated)). This file is
+> source-of-record for the fleet copy; edit `mcp-servers/deepseek-review-mcp.py` rather than
+> forking yet another server.
 
 ---
 
@@ -30,7 +31,7 @@ The agent never sees the `OPENROUTER_API_KEY`. The server process reads `.env` d
 scripts/util/mcp_deepseek_server.py      # The MCP stdio server
 ```
 
-**The server lives in a PRODUCT repo, not in `steadfaste-fleet`.** `ops/install/harnesses/pi/ADDON-deepseek-mcp.md` names the canonical path and forbids copying it here — a second copy of a server is the phantom this tree exists to prevent.
+**The fleet owns a copy: `mcp-servers/deepseek-review-mcp.py`** (operator ruling 2026-11-11), registered in `fleet-update.sh` and deployed to `~/.steadfaste-fleet/scripts/deepseek-review-mcp.py`. The same server also lives in a product repo (`~/Developer/AI/steadfaste-s1-model/scripts/util/mcp_deepseek_server.py`), and the pi `deepseek` entry may point at either copy — but this repo no longer depends on a product checkout existing. One model rule for every copy: default `deepseek/deepseek-v4-pro-0813`, never plain `v4-pro` or `chat-v3` (cost ruling 2026-11-11). See `ops/install/harnesses/pi/ADDON-deepseek-mcp.md`.
 
 ## .pi/mcp.json (project override)
 
@@ -125,4 +126,4 @@ Default: `deepseek/deepseek-v4-pro-0813`.
 - **Never log the key.** Sanitize before printing any API response.
 - **User-level `~/.pi/agent/mcp.json` is the preferred location** for the server definition with the key.
 - **Project `.pi/mcp.json` should only contain overrides** (`enabled`, `exposure`) — no secrets.
-- **Never copy the server into `steadfaste-fleet`** — it lives in a product repo and calls a paid API. Moving it is an owner decision.
+- **The fleet copy is source-of-record** (`mcp-servers/deepseek-review-mcp.py`) — change it here and deploy with fleet-update.sh. Keep the default model pinned to `deepseek/deepseek-v4-pro-0813`.
