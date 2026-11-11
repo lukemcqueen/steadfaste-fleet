@@ -28,7 +28,8 @@ from pathlib import Path
 
 MCP_PATH = Path(__file__).resolve().parents[1] / "mcp-servers" / "loop-gov-mcp.py"
 
-_ENV_KEYS = ("CORTEX_SESSION_KEY", "PI_SESSION_ID")
+_ENV_KEYS = ("CORTEX_SESSION_KEY", "PI_SESSION_ID",
+             "CLAUDE_CODE_SESSION_ID", "CODEX_SESSION_ID")
 
 
 def _fresh_module(state_dir):
@@ -93,6 +94,39 @@ def test_pi_session_id_is_used_and_deterministic():
             _restore_env(saved)
         assert value in first, f"PI_SESSION_ID not honoured: {first}"
         assert first == second, "the id must survive an MCP-child restart"
+
+
+def test_claude_code_and_codex_session_ids_are_used_and_disjoint():
+    """Claude Code and Codex each carry their own session id — honoured, stable,
+    and namespaced so they cannot collide with each other or with a Pi/Hermes id."""
+    with tempfile.TemporaryDirectory() as td:
+        saved = _with_env({"CLAUDE_CODE_SESSION_ID": "claude-sess-1"})
+        try:
+            a = _fresh_module(td).get_session_id(None)
+        finally:
+            _restore_env(saved)
+        assert a == "sess_claude_session_claude-sess-1", f"claude id wrong: {a}"
+
+        saved = _with_env({"CODEX_SESSION_ID": "codex-sess-1"})
+        try:
+            b = _fresh_module(td).get_session_id(None)
+        finally:
+            _restore_env(saved)
+        assert b == "sess_codex_session_codex-sess-1", f"codex id wrong: {b}"
+
+        assert a != b, "claude and codex ids must be disjoint"
+
+
+def test_claude_code_wins_over_codex_when_both_set():
+    """Precedence within the source list: an earlier name wins when several are set."""
+    with tempfile.TemporaryDirectory() as td:
+        saved = _with_env({"CLAUDE_CODE_SESSION_ID": "cc-1",
+                           "CODEX_SESSION_ID": "cx-1"})
+        try:
+            sid = _fresh_module(td).get_session_id(None)
+        finally:
+            _restore_env(saved)
+        assert sid == "sess_claude_session_cc-1", f"wrong precedence: {sid}"
 
 
 def test_cortex_session_key_wins_over_pi_session_id():

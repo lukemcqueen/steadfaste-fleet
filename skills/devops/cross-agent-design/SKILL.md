@@ -194,6 +194,32 @@ Rules, each of which is a bug that actually happened:
    a skill or a doc. Pi's first adapter failed TWICE, silently: the handler's
    first parameter is the event (not a ctx), and prompt injection is the RETURN
    VALUE (there is no ctx method). Both were masked by optional chaining.
+
+   Same rule when an adapter's session-uniqueness depends on env propagation:
+   a variable's presence on the host is NOT proof it reaches the consumer that
+   matters — inspect the propagation seam for the EXACT consumer, never a source
+   map or a documented merge. Two variants dead-end a resolver's env read: an
+   MCP `env` block that REPLACES the child environment (strips the harness's own
+   session id), and the subtler one — the merge is fine but the harness never
+   exports the id to its OWN process.env (Pi injects `PI_SESSION_ID` only into
+   bash-tool commands, so the governor's MCP child inherits nothing); verify on
+   the host which one you are facing. A static MCP `env` block cannot hold a
+   per-session value, so set the identity in the harness's lifecycle hook from
+   its own session manager (`ctx.sessionManager.getSessionId()`), which runs
+   BEFORE the consumer spawns and writes the env var the resolver reads
+   (measured: resolver answers "per-repo, shared" with no key and "env,
+   unique" once the key is set).
+
+   **The env-var NAME differs per harness — survey the exact name, never guess.**
+   Verified (2026-11-11) from each harness's own source: Claude Code injects
+   `CLAUDE_CODE_SESSION_ID` (note `CODE` in the middle — `CLAUDE_SESSION_ID` is
+   NOT set) into stdio MCP children since v2.1.154; Codex sets `CODEX_SESSION_ID`
+   but does NOT forward it to MCP children by default (shell commands only), so it
+   needs a `[mcp_servers..env]` pin or an upstream change. The resolver honours all
+   of them (`_ENV_SESSION_ID_SOURCES` in loop-gov-mcp.py), so a harness that reaches
+   the MCP child with its own id gets a unique session with no adapter — and a
+   harness that does not silently shares the per-repo id (fail-closed since
+   2026-11-10).
 7. **Never let the model own a lifecycle guarantee.** Triggers (`turn_end`, stop
    hooks, crons) belong to the host — "remember to save" is not a mechanism.
 8. **A registry, not per-host prose.** At N hosts the failure mode is N docs that

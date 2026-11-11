@@ -564,16 +564,34 @@ def _injected_session_id(args: dict | None) -> str:
 
 
 # ── Session identity a NON-Hermes harness supplies through the ENVIRONMENT ──
-# Order matters: the first non-empty value wins. Both names are SURVEYED from the
-# fleet, never invented — CORTEX_SESSION_KEY is the documented per-session key
-# (docs/runbooks/context-integration.md; the fleet-gateway `command` backend
-# pins it per chat in ops/scripts/fleet_gateway/agents.py), and PI_SESSION_ID is
-# Pi's own "Current session ID" (its packaged docs/environment-variables.md).
+# Order matters: the first non-empty value wins. Every name is SURVEYED from the
+# harness's own source, never invented:
+#   CORTEX_SESSION_KEY       — our documented per-session key
+#                              (docs/runbooks/context-integration.md; the
+#                              fleet-gateway `command` backend pins it per chat in
+#                              ops/scripts/fleet_gateway/agents.py; the Pi
+#                              extension sets it from ctx.sessionManager.getSessionId()).
+#   PI_SESSION_ID            — Pi's own "Current session ID" (its packaged
+#                              docs/environment-variables.md). NOTE: Pi injects it
+#                              only into bash-tool commands, NOT its own process.env,
+#                              so it does not reach the MCP child by itself — that is
+#                              why the extension writes CORTEX_SESSION_KEY instead.
+#   CLAUDE_CODE_SESSION_ID   — Claude Code's session id, injected into stdio MCP
+#                              children since v2.1.154 (note "CODE" in the middle;
+#                              CLAUDE_SESSION_ID is NOT set — verified via
+#                              github.com/anthropics/claude-code + third-party reports).
+#   CODEX_SESSION_ID         — OpenAI Codex's session id (codex-rs
+#                              shell_environment.rs CODEX_SESSION_ID_ENV_VAR). Codex
+#                              does NOT forward it to MCP children by default (shell
+#                              commands only), so it needs a [mcp_servers..env] pin or
+#                              an upstream change — honouring it is still correct.
 # One MCP child serves ONE session, which is why an env value is a correct
 # discriminator — the same premise the process-scoped fallback below relies on.
 _ENV_SESSION_ID_SOURCES = (
     ("CORTEX_SESSION_KEY", "session_key"),
     ("PI_SESSION_ID", "pi_session_id"),
+    ("CLAUDE_CODE_SESSION_ID", "claude_session"),
+    ("CODEX_SESSION_ID", "codex_session"),
 )
 _ENV_SESSION_ID_LABELS = dict(_ENV_SESSION_ID_SOURCES)
 
