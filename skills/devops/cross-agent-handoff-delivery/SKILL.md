@@ -137,6 +137,21 @@ only as good as its measurements. Never `git apply` it blind, and never relay it
 6. **Deliver the evaluation, not just the fix**: per patch, what you measured, what you
    rejected and why, which of the sender's claims do not hold — and any claim of your OWN you
    had to retract.
+7. **Verify a peer's "already written / deployed as a stub" claim before believing it.** A
+   working-tree stub on their host is invisible to you until it is pushed; search YOUR repo for the
+   named files and read them before assuming they exist — the claim can be true on their box and
+   false on yours.
+8. **Run the peer's own stated verify step before landing — a prompt-redaction pass can leave
+   literal placeholder tokens that are syntax errors in the file.** A redaction artifact
+   (`API_KEY = [SECRET]"..."`) is real file bytes, so the draft fails the compiler even though the
+   prose around it reads complete and "already tested". Executing the sender's own stated check
+   (syntax compile, a model-pin grep, the named test run) surfaces it immediately instead of leaving
+   it to the pull-request gate. **The compiler is not the target interpreter** — a draft can pass
+   `py_compile` yet import a library surface the deploy env lacks (an inherited SDK's
+   `from mcp.server.lowlevel.server import Server`, a nonexistent `import mcp_types` where the
+   fleet serves from `mcp.server.Server` + `mcp.types`), which kills the module at load on every
+   host. Import/run the draft under the venv that will actually serve it, not the one that merely
+   compiles it, before calling the peer's "code is written" claim true.
 
 ## Pitfalls
 
@@ -152,6 +167,11 @@ only as good as its measurements. Never `git apply` it blind, and never relay it
 - **Reading the wrong queue.** You can read `inbox_<you>`; you get 403 (or the
   orchestrator gives 403 on artifacts) reading `inbox_orchestrator` as a
   non-orchestrator. Use your own inbox + archives for the follow-up signal.
+- **Reproducing a peer's cited "operator/cost ruling <date>" without verifying it exists.** A doc
+  edit that asserts a ruling on a specific date states a false authority if that date is not on
+  record (search history/memory first). Ground the citation on the real approval date, and when the
+  change reverses a rule the docs mark as "owner decision", get that owner's explicit sign-off
+  first — never take the peer's assertion for it.
 
 ## Verification
 

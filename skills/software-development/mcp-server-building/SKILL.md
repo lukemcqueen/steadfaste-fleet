@@ -273,6 +273,14 @@ When an MCP server fails with "Connection closed":
    ```bash
    echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | timeout 5 python3 server.py 2>&1 | head -1
    ```
+   A SCRIPTED drive (several messages, not one `echo`) hangs on the first read even though the
+   server answered unless you launch UNBUFFERED and `select()` before reading: Python block-
+   buffers stdout on a pipe, so a small JSON-RPC response never flushes until the buffer fills.
+   Use `python3 -u server.py` and wrap each `readline()` in `select.select([proc.stdout], [], [], deadline)`.
+   A hyphen-named server file (`foo-bar.py`, the deploy convention) cannot be imported by name for a
+   unit test either — load it with `importlib.util.spec_from_file_location` or drive it as this real
+   process. A module that passes its handler tests can still hang on the wire, so this is a real-
+   process proof, not a redundant one.
 4. **Check stderr for errors:** Run the server directly and look for output on stderr.
 5. **Verify `hermes mcp test`:** `hermes mcp test server-name` shows connection and available tools.
 6. **Re-register if code changed:** `hermes mcp remove server-name` then re-add fresh — stale config causes "Connection closed".
@@ -312,6 +320,7 @@ yes | hermes mcp add server-name --command python3 --args /path/to/server.py
 | `ModuleNotFoundError` | Missing dependency | Install the missing package |
 | `Permission denied` | File not executable | `chmod +x server.py` |
 | `Tool not found` | Wrong tool name in call | Check `hermes mcp test` output for exact names |
+| Pyright `No parameter named "inputSchema"` / `"isError"` (`reportCallIssue`) | mcp.types constructors take the MCP-camelCase name; pyright's stubs lag the runtime and store the field snake_case (`.input_schema`, `.is_error`) | Keep the camelCase constructor args — every fleet server uses them. Prove the RUNTIME: `inspect.signature(CallToolResult)` lists `isError`, and construct + `model_dump(by_alias=True)` emits `{"isError": true}`. Do not "fix" the spellings to silence pyright |
 
 ---
 

@@ -218,8 +218,9 @@ Rules, each of which is a bug that actually happened:
    needs a `[mcp_servers..env]` pin or an upstream change. The resolver honours all
    of them (`_ENV_SESSION_ID_SOURCES` in loop-gov-mcp.py), so a harness that reaches
    the MCP child with its own id gets a unique session with no adapter — and a
-   harness that does not silently shares the per-repo id (fail-closed since
-   2026-11-10).
+   a harness that does not silently shares the per-repo id (fail-closed since
+   2026-11-10). Per-harness session-id table (which env var, and whether it
+   reaches the MCP child): `references/harness-session-identity.md`.
 7. **Never let the model own a lifecycle guarantee.** Triggers (`turn_end`, stop
    hooks, crons) belong to the host — "remember to save" is not a mechanism.
 8. **A registry, not per-host prose.** At N hosts the failure mode is N docs that
