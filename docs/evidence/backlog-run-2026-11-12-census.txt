@@ -1,0 +1,26 @@
+# Backlog census — orch-bus-worker F-023, 2026-11-12 (repo=ALL)
+# host identity: esther (orchestrator), session cron_1954deb5ad76_20261112_082152
+# tool: ops/scripts/manage/task-db.py list --status <s> --repo ALL  (same store the MCP tasks tools read)
+
+status=pending rows=36
+status=in_progress rows=0
+status=paused rows=0
+status=blocked rows=1
+status=waiting rows=0
+status=review rows=0
+
+# untrusted priority-0 rows (returned parked class signature):
+6a4857d3-4f3d-4d07-9ffd-cbb8d6e082ab   esther     personal  pending      0   -      ISSUES
+46028a58-dc45-48f7-9b3f-a2794d47eece   esther     personal  pending      0   -      ISSUES
+c9308ff8-6401-4355-8b9b-f68f68f02039   esther     personal  pending      0   -      ISSUES
+4bb4279b-42a5-4933-b35e-c8bf8bc450ed   esther     personal  pending      0   -      ISSUES
+d3599670-659f-4978-ac16-5eec2934441d   esther     personal  pending      0   -      ISSUES
+553b853f-f143-4d49-a053-f141a9691dd8   esther     personal  pending      0   -      ISSUES
+c686252d-4e1b-446c-89ad-c91cad16fc55   esther     personal  pending      0   -      PROPOSAL
+60d96bbe-38f6-42eb-89c4-9f66c5ac1fc3   esther     personal  pending      0   -      PROPOSAL
+c80c0ecb-08e6-4b11-add4-8634044ec7d9   esther     personal  pending      0   -      PROPOSAL
+8e594ae7-6f04-429c-887f-d49af85b97cb   esther     personal  pending      0   -      PROPOSAL
+9764f306-9c11-45f8-8132-49e96d917858   esther     personal  pending      0   -      ISSUES
+3653a5c3-77e1-499c-b517-40050b90b775   esther     personal  pending      0   -      ISSUES
+337b0619-3fad-4ac1-8852-63e1b17652ed   esther     personal  pending      0   -      ISSUES
+d946b8e5-b314-4999-8ffa-8089094c7b69   esther     personal  pending      0   -      PROPOSAL: Land orchestrator-blocked fixes for joseph fix-all-doctor-items: (1) ops/scripts/manage/cortex_doctor/checks.py hoist _p
