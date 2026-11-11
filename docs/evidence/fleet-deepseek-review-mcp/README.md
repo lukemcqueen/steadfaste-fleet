@@ -53,6 +53,18 @@ isError. rc=0.
 rc=0. Confirms the fleet copy reaches real OpenRouter under the pinned model with the
 resolved key.
 
+## Full suite + pre-existing-failure proof
+
+`pytest tests/ -q` (3421 collected): **3326 passed, 77 failed, 4 skipped, 14 errors**,
+rc=1 (`full-suite.log`). Every failure was shown PRE-EXISTING by a differential run:
+the same representative failing files (`test_apply_repo_efficiency.py`,
+`test_bus_task_context.py`, `test_liveness_anywhere.py`,
+`test_runtime/test_mcp_closeout.py`) were run in a throwaway worktree at the
+pre-change base `origin/main` (ebf01527, the commit before this landing) and failed
+identically (11 failed, 8 errors). None touches this change's files; several
+reference the separate `hermes-cortex` checkout. `test_deepseek_review_mcp.py`
+passed in the full run (13/13).
+
 ## Status notes
 
 - The pi `deepseek` registration stays pointed at the product repo (deliberate — the fleet
