@@ -282,7 +282,21 @@ def _run_pi_guard(node: str, workdir: Path, extra_env: dict | None = None):
 
 
 def _routine_stderr_lines(stderr: str) -> list[str]:
-    return [line for line in stderr.splitlines() if line.startswith("CORTEX_")]
+    """Return ONLY routine `CORTEX_` lines, excluding genuine failures.
+
+    The extension writes two kinds of `CORTEX_` line to stderr: `note()` output
+    (routine — must NOT reach the prompt area unless CORTEX_CONTEXT_DEBUG=1) and
+    `fail()` output (a genuine failure that SHOULD be on the prompt area). The
+    verify guard deliberately exercises the failure paths, so a healthy run still
+    carries the failure markers; counting them here would flag a routine-leak check
+    for lines that are supposed to be there. Keep only the routine ones.
+    """
+    _FAILURE_MARKERS = ("CORTEX_FAIL", "CORTEX_GOV_SESSION", "NOT RECORDED", "FAILED")
+    return [
+        line for line in stderr.splitlines()
+        if line.startswith("CORTEX_")
+        and not any(m in line for m in _FAILURE_MARKERS)
+    ]
 
 
 def _leaky_variant(tmp_path: Path) -> Path:

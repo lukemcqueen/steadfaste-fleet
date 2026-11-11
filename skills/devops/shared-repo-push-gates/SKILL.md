@@ -662,6 +662,15 @@ does not apply.
      skill still teaching a rule the operator has since overturned, or a rule dropped from one file
      in favour of a better home. Say which removals were rewrites in the commit message, so a
      reviewer reading a `-30` diff does not read it as loss.
+     **A pipeline-written lesson is a SUMMARY, and its forward references may dangle — make them
+     self-contained when you backport.** The deployed addition can cite `see <skill> pitfall N`
+     (or "full diagnostic in <skill>") where the target does not exist — the pipeline wrote the
+     lesson but not the pitfall it points at (a deployed lesson once cited a non-existent pitfall
+     12 in a skill that had 11). Copying it verbatim bakes a dead cross-reference into the fleet's
+     docs. When a backported lesson carries such a reference, either write the missing target in
+     the SAME pass (if it is yours to author) or drop/repoint the pointer — never ship the
+     dangling link, and never duplicate the full text into the second skill purely to resolve a
+     numbering habit: make the reference name the skill, not a pitfall number that shifts.
    - **A `❌ Checksum: <file>` you did not cause by committing late is a RACE:
      you edited a registered file while the deploy was still copying it.** The
      doctor compares repo source to the deployed copy, so an edit that lands
