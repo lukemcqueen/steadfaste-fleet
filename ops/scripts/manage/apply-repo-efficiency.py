@@ -25,9 +25,26 @@ import sys
 from pathlib import Path
 
 MARKER = "<!-- Hermes fleet efficiency block"
-# repo/ops/scripts/manage/apply-repo-efficiency.py -> repo root is parent x4
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-BLOCK_PATH = _REPO_ROOT / "docs" / "templates" / "repo-efficiency-block.md"
+
+
+def _resolve_template(script_dir: Path) -> Path:
+    """Locate repo-efficiency-block.md — depth-agnostic.
+
+    The deployed copy lives one level under the deploy home, with the template
+    beside it at <deploy>/templates/ (fleet-update.sh registers it there); the
+    source copy lives at docs/templates/ under the repo root (three levels up
+    from ops/scripts/manage/). A fixed 4-parent count resolved the deployed
+    copy's "repo root" to /home, and the template is NOT under the deploy home's
+    ancestors — so resolve the two known layouts explicitly instead of counting
+    parents.
+    """
+    deployed = script_dir.parent / "templates" / "repo-efficiency-block.md"
+    if deployed.is_file():
+        return deployed
+    return script_dir.parents[2] / "docs" / "templates" / "repo-efficiency-block.md"
+
+
+BLOCK_PATH = _resolve_template(Path(__file__).resolve().parent)
 
 
 def find_git_repos(base: Path) -> list[Path]:

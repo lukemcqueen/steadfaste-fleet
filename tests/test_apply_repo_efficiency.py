@@ -92,6 +92,31 @@ def test_dry_run_writes_nothing():
         assert (repo / "AGENTS.md").read_text() == before, "dry-run must not write"
 
 
+def test_resolve_template_deployed_layout():
+    # Deployed: script at <deploy>/scripts/, template at <deploy>/templates/.
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        (root / "templates").mkdir()
+        (root / "templates" / "repo-efficiency-block.md").write_text("BLOCK", encoding="utf-8")
+        got = _mod._resolve_template(root / "scripts")
+        assert got == root / "templates" / "repo-efficiency-block.md"
+
+
+def test_resolve_template_source_layout():
+    # Source: script at <repo>/ops/scripts/manage/, template at <repo>/docs/templates/.
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        (root / "docs" / "templates").mkdir(parents=True)
+        (root / "docs" / "templates" / "repo-efficiency-block.md").write_text("BLOCK", encoding="utf-8")
+        got = _mod._resolve_template(root / "ops" / "scripts" / "manage")
+        assert got == root / "docs" / "templates" / "repo-efficiency-block.md"
+
+
+def test_source_module_resolves_repo_template():
+    # The module loaded from the real source tree must point at the repo template.
+    assert _mod.BLOCK_PATH == _REPO / "docs" / "templates" / "repo-efficiency-block.md"
+
+
 if __name__ == "__main__":
     import traceback
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
