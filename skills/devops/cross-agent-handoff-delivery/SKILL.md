@@ -152,6 +152,14 @@ only as good as its measurements. Never `git apply` it blind, and never relay it
    fleet serves from `mcp.server.Server` + `mcp.types`), which kills the module at load on every
    host. Import/run the draft under the venv that will actually serve it, not the one that merely
    compiles it, before calling the peer's "code is written" claim true.
+9. **Secret-redaction is INTENDED on any transferred prompt — treat `[SECRET]` as deliberate, not a
+   sender error.** Secrets never travel in-band between agents, so any prompt is redacted as a matter
+   of course. When the redaction removed code the receiver needs (the exact key-resolution call),
+   reconstruct it from the documented intent (an env var name, a `.env` path, the fleet's convention)
+   and resolve the credential from env/`.env` at runtime — never ask the sender to re-send the secret,
+   and never report "the redaction corrupted the code" as a defect. The redaction is security working;
+   only an OUTPUT it left as literal bytes (a code span that fails to parse) is worth flagging, and
+   then by executing the sender's stated check (rule 8), not by re-requesting the secret.
 
 ## Pitfalls
 
