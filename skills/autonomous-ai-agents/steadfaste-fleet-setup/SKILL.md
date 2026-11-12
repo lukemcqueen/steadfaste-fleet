@@ -27,7 +27,7 @@ behavioral_principles:
  - The health-vector.py service must run on port 8905 (127.0.0.1). This is what the deployed nginx `upstream health_backend` block expects. Do not change the port unless the nginx config explicitly defines a different upstream.
  - After the `src/` → `ops/` repo migration (July 2026), many deployed scripts retained stale `src/` paths. When fixing a script that references `src/scripts/` or `src/loop-governance/`, check if the file moved to `ops/scripts/` or `runtime/loop-governance/`. The old `src/` tree was completely removed. Grep for `src/` references in any script you patch as a matter of course.
  - Bus on 8903, health-vector on 8905. Never conflate them. The bus ExecStart must use the Hermes venv python (has uvicorn), not /usr/bin/python3.
- - Name the bus service file cortex-bus.service, not cortex-bus.service. The doctor checks for exactly cortex-bus.service.
+ - Name the bus service file cortex-bus.service — the doctor checks for exactly that name.
  - Verify bus setup at three layers: (1) systemctl is-active cortex-bus.service, (2) curl :8903/health returns backend pgmq, (3) nginx upstream cortex_bus_backend matches :8903. A running process on a port is not enough.
  - After fleet-update , check ~/.hermes/scripts/ for symlinks that point outside the scripts dir. Cron's no_agent runtime rejects symlinks. Replace with real `cp` copies.
  - no_agent cron scripts don't inherit Hermes env vars. If a script needs CORTEX_BUS_TOKEN or CORTEX_BUS_URL, ensure they're set in `~/steadfaste-fleet/.env` — the ONE canonical fleet env (there is no deploy-dir `.env`; `~/.hermes/.env` is Hermes-owned and never merged).
@@ -35,7 +35,7 @@ behavioral_principles:
  - When patching a no_agent cron script that uses `docker`, always wrap with `sg docker -c`. The cron runtime doesn't have docker group access even if the agent's shell does.
  - After fleet-update , verify deployed cron scripts in ~/.hermes/scripts/ are real file copies, not symlinks to the repo. Cron runtime rejects symlinks that resolve outside ~/.hermes/scripts/.
  - When running fleet-update.sh from its deployed location at ~/.hermes/scripts/, always export REPO_DIR=$HOME/steadfaste-fleet first. The script auto-detects REPO_DIR from $(dirname "${BASH_SOURCE[0]}") which resolves to ~/.hermes/scripts/ — not a git repo — and fails with "✗ Not a git repository".
-trigger: User asks to install, set up, deploy, or bootstrap Steadfaste Fleet, or mentions 'cortex setup', 'install cortex', 'steadfaste-fleet components'. The cron health report shows an agent as 🔴 unreachable — the fix is often missing health server + agent registry on that machine.
+trigger: User asks to install, set up, deploy, or bootstrap Steadfaste Fleet, or mentions 'fleet setup', 'fleet components'. The cron health report shows an agent as 🔴 unreachable — the fix is often missing health server + agent registry on that machine.
 ---
 
 # Steadfaste Fleet Setup
@@ -46,7 +46,7 @@ Walkthrough for installing the core Steadfaste Fleet components on a Linux (or m
 
 - Linux or macOS host
 - `curl`, `git`, `python3`, `unzip` available
-- Hermes Agent installed (the cortex skill set layers on top)
+- Hermes Agent installed (the fleet skill set layers on top)
 - Target repo cloned: `git clone https://github.com/nousresearch/steadfaste-fleet.git ~/steadfaste-fleet`
 
 ## Installation Steps
@@ -406,7 +406,7 @@ mkdir -p "${HOME}/brain/lessons"
 ### 10. Copy Skills, Hooks, and Loop Governance Tools
 
 ```bash
-# Skills + hooks — deploy from the repo source. The Cortex repo no longer
+# Skills + hooks — deploy from the repo source. The fleet repo no longer
 # carries a .steadfaste-fleet/ directory (removed 2026-10-07: inside ~/steadfaste-fleet
 # that name shadowed the runtime dir ~/.steadfaste-fleet and made a governance
 # marker indistinguishable from repo state). fleet-update.sh installs both
@@ -594,12 +594,12 @@ Changing an LLM cron's model has TWO layers of truth; editing only the live pin 
 
 **Fallback chain is GLOBAL, not per-cron** — config.yaml `fallback_providers`, consumed by cron sessions via `get_fallback_chain`. `hermes fallback add/remove/clear` are TTY-interactive only. Non-interactive path: `hermes config set fallback_providers '<json list>'` (current `set_config_value` parses structured list values). This chain is operator-owned — set it directly; no installer script writes it (the env-driven `install-fallback-providers.py` writer was removed 2026-09-09).
 
-**Env file location (2026-10, single-env refactor; updated 2026-10-17):** every script sources `~/steadfaste-fleet/.env` — the **ONE canonical cortex env** (gitignored). Concretely:
-- The deployed dir `~/.steadfaste-fleet/.env` is the **sanctioned back-compat symlink → the canonical env** (kept so legacy readers keep resolving the deploy-dir path). A **real file** (not a symlink) there is unowned — a doctor FAIL. The old `cortex-bus.conf` name was **retired 2026-10-17**; `consolidate-env.sh` migrates any leftover to the `.env` symlink.
+**Env file location (2026-10, single-env refactor; updated 2026-10-17):** every script sources `~/steadfaste-fleet/.env` — the **ONE canonical fleet env** (gitignored). Concretely:
+- The deployed dir `~/.steadfaste-fleet/.env` is the **sanctioned back-compat symlink → the canonical env** (kept so legacy readers keep resolving the deploy-dir path). A **real file** (not a symlink) there is unowned — a doctor FAIL. The old `cortex-bus.conf` name (STALE, retired 2026-10-17) was migrated away; `consolidate-env.sh` migrates any leftover to the `.env` symlink.
 - `~/.hermes/.env` is **Hermes-owned** (provider keys, Telegram) and is never merged.
-- All `cortex-bus.conf` references were swept to `.env`; if you find one, it's a regression — the only legitimate references are `ops/scripts/manage/consolidate-env.sh` (which performs the migration) and the doctor's `check_fleet_env` (which enforces the retirement).
+- All `cortex-bus.conf` references (STALE name) were swept to `.env`; if you find one, it's a regression — the only legitimate references are `ops/scripts/manage/consolidate-env.sh` (which performs the migration) and the doctor's `check_fleet_env` (which enforces the retirement).
 - Migrating a legacy host: just run `fleet-update.sh` — it runs `consolidate-env.sh` first (idempotent), which seeds the canonical env from the old conf if needed and creates the `.env` symlink. Verify with `bash ~/.steadfaste-fleet/scripts/consolidate-env.sh --check`.
-- The doctor has a `fleet env` check that FAILs on a missing canonical env, a real-file deploy-dir `.env`, a missing/misdirected sanctioned symlink, or a leftover `cortex-bus.conf` — and points at this fix.
+- The doctor has a `fleet env` check that FAILs on a missing canonical env, a real-file deploy-dir `.env`, a missing/misdirected sanctioned symlink, or a leftover `cortex-bus.conf` (STALE) — and points at this fix.
 
 **opencode provider tiers** (verified 2026-08-31): `opencode-free` = keyless free tier (aliases `free`, no account needed); `opencode-zen` = paid, needs `OPENCODE_ZEN_API_KEY` (aliases `opencode`/`zen`); `opencode-go` = needs `OPENCODE_GO_API_KEY`. The free tier currently has NO working deepseek: `deepseek-v4-flash-free` was delisted (completion POST → `server_error: "Model is unavailable"`; keys ship as commented+EMPTY placeholders in `~/.hermes/.env`), and no `deepseek-v4-pro-free` exists. The live `GET /zen/v1/models` list can still show delisted models — verify availability with a real chat-completions POST, never trust the list. Full verification recipe: `references/llm-cron-model-fallback.md`.
 
@@ -696,30 +696,31 @@ See `references/health-endpoint-formats.md`
 - Nginx proxy patterns: `references/nginx-proxy-patterns.md` (port convention, SSL, port conflict fix)
 - Health endpoint formats: `references/health-endpoint-formats.md` (compact vector vs full JSON)
 - Health vector troubleshooting: `references/health-vector-troubleshooting.md` (systematic debug — PATH, service names, cron errors)
-- Agent Bus troubleshooting: `references/cortex-bus-troubleshooting.md` (token verification, missing X-Forwarded-User header, runtime path mismatch, queue verification, systemd service template)
+- Agent Bus troubleshooting: `references/agent-bus-troubleshooting.md` (token verification, missing X-Forwarded-User header, runtime path mismatch, queue verification, systemd service template)
 - Stale paths audit guide: `references/stale-paths-audit-guide.md` (systematic methodology for auditing docs after repo restructures)
 - Docker without sudo patterns: `references/docker-no-sudo.md` (sg docker -c, group management)
 
-### 16. Set Up Cortex Dashboard
+### 16. Set Up Steadfaste Fleet Dashboard
 
-The Cortex Dashboard is a Flask app at `ops/services/dashboard/server.py`. It shows system health, cron status, and agent info. No Docker needed.
+The Steadfaste Fleet Dashboard is a Flask app at `ops/services/dashboard/server.py`. It shows system health, cron status, and agent info. No Docker needed.
 
 ```bash
 # Install Flask (in Hermes venv)
 ~/.hermes/hermes-agent/venv/bin/pip3 install flask
 
-# Create systemd user service
-cat > ~/.config/systemd/user/cortex-dashboard.service << 'EOF'
+# Create systemd user service (unit name: hermes-cortex-dashboard.service — the
+# dashboard service deliberately keeps its pre-rename name)
+cat > ~/.config/systemd/user/hermes-cortex-dashboard.service << 'EOF'
 [Unit]
 Description=Steadfaste Fleet Dashboard
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=/home/<user>/.hermes/hermes-agent/venv/bin/python3 \\
+ExecStart=/home/<user>/.hermes/hermes-agent/venv/bin/python3 \\\
  /home/<user>/steadfaste-fleet/ops/services/dashboard/server.py
 Environment=HOME=/home/<user>
-Environment=CORTEX_DASHBOARD_PORT=8901
+Environment=PATH=/home/<user>/.hermes/hermes-agent/venv/bin:/usr/local/bin:/usr/bin:/bin
 Restart=on-failure
 RestartSec=5
 
@@ -728,8 +729,8 @@ WantedBy=default.target
 EOF
 
 systemctl --user daemon-reload
-systemctl --user enable cortex-dashboard.service
-systemctl --user start cortex-dashboard.service
+systemctl --user enable hermes-cortex-dashboard.service
+systemctl --user start hermes-cortex-dashboard.service
 
 # Verify
 curl -s http://127.0.0.1:8901/ | head -5
