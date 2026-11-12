@@ -11,6 +11,7 @@ import time
 from .results import Results
 from .jev import check_jev_layer
 from .mcp_names import check_mcp_role_names
+from .stale_hermes_cortex import check_stale_hermes_cortex_home
 from .checks import (
     check_repo,
     check_deployed_gate_smoke,
@@ -126,6 +127,7 @@ def main():
         check_install_sh_refs,
         check_stale_deploys,
         check_repo_local_cortex_dir,
+        check_stale_hermes_cortex_home,
         check_stale_skills,
         check_deploy_checksums,
         check_script_naming,
