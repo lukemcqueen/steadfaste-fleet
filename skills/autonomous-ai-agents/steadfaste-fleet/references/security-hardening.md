@@ -2,6 +2,11 @@
 
 # Steadfaste Fleet — Security Hardening Reference
 
+> **Scope:** this reference hardens the host RUNNING the fleet, which includes
+> the Hermes Agent runtime the fleet runs on. `~/.hermes/` paths below are the
+> Hermes Agent home (kept name — Hermes is a separate live product); everything
+> else is the fleet's own stack.
+
 Commands and patterns for hardening a Steadfaste Fleet installation on macOS.
 
 ## Permission Audit
@@ -46,7 +51,7 @@ Clean output means no user services are exposed. macOS system services that are 
 - `com.docke` — Docker Desktop internal ports (`*:port`) — Docker Desktop's own management plane, not user containers
 - `rapportd` — Apple Remote Desktop / AirDrop helper
 
-If a Cortex service appears (e.g. `Python *:8901`), it's binding to 0.0.0.0. Fix:
+If a fleet service appears (e.g. `Python *:8901`), it's binding to 0.0.0.0. Fix:
 - **Flask**: `app.run(host="127.0.0.1", ...)` in the server code
 - **Ollama**: `OLLAMA_HOST=127.0.0.1` in its launchd plist EnvironmentVariables
 - **Docker port mappings**: In docker-compose.yml, use `127.0.0.1:3001:3000` not `3001:3000`
@@ -95,15 +100,15 @@ Required services (all should show a PID, not `-`):
 |-------|---------|-------|
 | `com.ollama.serve` | Ollama LLM server | `~/Library/LaunchAgents/com.ollama.serve.plist` |
 | `com.legacy-brain.sync-watch` | legacy auto-sync daemon | `~/Library/LaunchAgents/com.legacy-brain.sync-watch.plist` |
-| `com.hermes.cortex-dashboard` | Cortex companion dashboard | `~/Library/LaunchAgents/com.hermes.fleet-dashboard.plist` |
-| `ai.hermes.gateway` | Hermes messaging gateway | `~/Library/LaunchAgents/ai.hermes.gateway.plist` |
+| `com.hermes.cortex-dashboard` | Companion dashboard (kept name — the dashboard unit keeps its pre-rename identifier) | `~/Library/LaunchAgents/com.hermes.cortex-dashboard.plist` |
+| `ai.hermes.gateway` | Hermes Agent messaging gateway (Hermes = the live runtime, kept name) | `~/Library/LaunchAgents/ai.hermes.gateway.plist` |
 | `com.docker.docker` | Docker Desktop (triggers container restart) | `~/Library/LaunchAgents/com.docker.docker.plist` |
 
 Each plist must have `<key>RunAtLoad</key><true/>` to auto-start on boot.
 
 ### Docker Container Restart Policies
 
-Verify all Cortex containers survive Docker Desktop restart:
+Verify all fleet containers survive Docker Desktop restart:
 
 ```bash
 for c in $(docker ps -a -q); do
