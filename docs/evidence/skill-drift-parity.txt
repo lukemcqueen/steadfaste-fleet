@@ -19,14 +19,11 @@ A file under no repo-owned skill dir is a Hermes default and stays skipped.
 
 | Measure | Value |
 |---|---|
-| Stranded in place (path in repo, content only deployed) | 1 |
+| Stranded in place (path in repo, content only deployed) | 0 |
 | Absent from the repo (deployed under a repo-owned skill) | 0 |
 |   ↳ path dropped from repo history | 0 |
 |   ↳ path never committed | 0 |
-| Files in sync | 995 |
+| Files in sync | 996 |
 | Skipped (Hermes defaults, or repo ahead) | 547 |
 
-**Verdict: FAIL**
-
-Stranded in place:
-- devops/cron-job-management/SKILL.md
+**Verdict: PASS**
