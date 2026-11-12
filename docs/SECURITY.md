@@ -100,7 +100,7 @@ These services only listen on your own machine. Other computers on your network 
 
 | Port | Service | Safe? |
 |------|---------|-------|
-| **8901** | Cortex Dashboard | ✅ Local only |
+| **8901** | Fleet Dashboard | ✅ Local only |
 | **3000** | Langfuse Web UI | ✅ Local only |
 | **5432** | PostgreSQL database | ✅ Local only |
 | **6379** | Redis cache | ✅ Local only |

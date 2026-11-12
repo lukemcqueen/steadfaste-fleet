@@ -47,7 +47,7 @@ Create these three files to give your agent immediate context:
 |---------|------|-----------|
 | Ollama | 11434 | launchd/systemd (localhost only) |
 | Langfuse | 3000 | Docker Desktop |
-| Cortex Dashboard | 8901 | launchd/systemd |
+| Fleet Dashboard | 8901 | launchd/systemd |
 | Legacy Sync | — | launchd/systemd (120s interval) |
 ```
 

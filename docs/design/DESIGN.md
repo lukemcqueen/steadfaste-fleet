@@ -7,7 +7,7 @@
 * Generous whitespace over density
 * Consistency > creativity
 
-**Dark mode variant** (Cortex Dashboard): Uses `--bg: #0a0e17`, `--card: #111827`, zinc-950 base with SF Mono/JetBrains Mono font stack. All spacing, color, and typography rules from this document apply with inverted luminance.
+**Dark mode variant** (Fleet Dashboard): Uses `--bg: #0a0e17`, `--card: #111827`, zinc-950 base with SF Mono/JetBrains Mono font stack. All spacing, color, and typography rules from this document apply with inverted luminance.
 
 ---
 

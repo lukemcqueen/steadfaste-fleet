@@ -302,7 +302,7 @@ docker: 3 GB VM, stable with 6 containers → /brain m docker
 ```
 See `docs/agent-memory-pointer-pattern.md` for the full guide.
 
-### 18. Memory got wiped after a cortex update / "Checksum: MEMORY.seed.md" FAIL
+### 18. Memory got wiped after a fleet update / "Checksum: MEMORY.seed.md" FAIL
 
 **Symptom (2026-08-05):** `MEMORY.md`/`USER.md` lost all custom notes after
 every deploy (7 clobbers in one day). The doctor showed `❌ Checksum:
@@ -324,7 +324,7 @@ seeds, registers, or checksums memory files at all (removed 2026-08-05):
   **fails CLOSED** on any register target under `/memories/` or `~/.hermes/`
   (physical guard in `_assert_register_dest_safe()`), so a re-add aborts the
   deploy with a clear error instead of silently overwriting user data.
-- `install.sh` step 9 no longer seeds a cortex-side memory copy.
+- `install.sh` step 9 no longer seeds a fleet-side memory copy.
 - The doctor never content-compares memory files.
 
 **If your memory was wiped:** restore from
@@ -984,7 +984,7 @@ python3 ~/steadfaste-fleet/ops/scripts/manage/fleet-doctor.py --quiet | grep 'St
 See the `fleet-deployment-sync` skill, **Pitfall 26**, for the full diagnosis
 (including how to spot sibling orphans from the same rename sweep).
 
-## 🍎 macOS-Specific Cortex Update Issues
+## 🍎 macOS-Specific Fleet Update Issues
 
 Issues that appear when running `pull latest` + `fleet-update.sh` on a macOS host (all verified on macOS 14, arm64, 2026-07-31). **Titus is the fleet's only macOS host** (`LAM2`, the developer machine), so this section is his — every other host is Linux. These are distinct from the Linux service-layer differences — they break the update **script itself**.
 

@@ -39,7 +39,7 @@ installer script or its sub-scripts.
 | Hermes Agent | MIT | [GitHub](https://github.com/nousresearch/hermes-agent) | ✅ Yes | The host agent for this installer project. MIT-licensed. |
 | Bun | MIT (core) + LGPL-2 (JavaScriptCore) | [GitHub](https://github.com/oven-sh/bun) | ✅ Yes (core) | Bun itself is MIT. It **statically links** JavaScriptCore (WebKit), which is LGPL-2. The LGPL applies only if you modify or re-distribute the Bun binary. Steadfaste Fleet simply installs and invokes it. |
 | sqlite-vec (pip) | MIT / Apache 2.0 (dual) | [GitHub](https://github.com/asg017/sqlite-vec) | ✅ Yes | Dual-licensed; choose either. Used for vector search in web cache. |
-| Flask (pip) | BSD 3-Clause | [GitHub](https://github.com/pallets/flask) | ✅ Yes | Used for the Cortex Dashboard. BSD-3 requires preservation of copyright notice in redistributions. |
+| Flask (pip) | BSD 3-Clause | [GitHub](https://github.com/pallets/flask) | ✅ Yes | Used for the Fleet Dashboard. BSD-3 requires preservation of copyright notice in redistributions. |
 | requests (pip) | Apache 2.0 | [GitHub](https://github.com/psf/requests) | ✅ Yes | Used in web cache and utility scripts. |
 | nginx (Homebrew) | 2-Clause BSD | [nginx.org](https://nginx.org/LICENSE) | ✅ Yes | Used as a reverse proxy. The 2-Clause BSD license requires preservation of copyright notice in redistributions. |
 
@@ -48,7 +48,7 @@ installer script or its sub-scripts.
 ## Python Packages (pip)
 
 These are installed inside a virtual environment by `install.sh` (Step 11 —
-Web Cache) or referenced in the Cortex Dashboard setup:
+Web Cache) or referenced in the Fleet Dashboard setup:
 
 | Component | License | Notes |
 |-----------|---------|-------|

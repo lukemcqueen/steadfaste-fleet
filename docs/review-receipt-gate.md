@@ -259,7 +259,7 @@ left behind. That empty shell is what reappeared.
 
 | Situation | Result |
 |---|---|
-| absent | `PASS — absent — correct for the Cortex repo` |
+| absent | `PASS — absent — correct for the Fleet repo` |
 | present (empty) | `FAIL`, names the path and its entries |
 | present with `.governance-lock` | `FAIL`, and says governance state is being written inside the repo |
 

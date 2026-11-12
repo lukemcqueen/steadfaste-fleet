@@ -13,7 +13,7 @@
        │                                  │
        ▼                                  ▼
 ┌──────────────┐  ┌──────────────────┐  ┌────────────┐  ┌──────────────┐  ┌────────────────┐
-│   Langfuse   │  │  Cortex Dashboard│  │  Web Cache │  │   Mycortex     │  │  Agent Bus     │
+│   Langfuse   │  │  Fleet Dashboard│  │  Web Cache │  │   Mycortex     │  │  Agent Bus     │
 │  (LLM Obs.)  │  │   (Flask + JS)   │  │ (sqlite-vec│  │ (Knowledge)  │  │  (PGMQ Queue)  │
 │ local:3000   │  │  local:8901      │  │  + Ollama) │  │ local:15432  │  │ local:8903     │
 │ ext:13002    │  │  ext:13001       │  │  ~200MB    │  │  pgvector)  │  │ ext:13004     │
@@ -23,7 +23,7 @@
        ▼                   ▼                    ▼              ▼                ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │              nginx Reverse Proxy (macOS Host)                        │
-│  :13001 → Cortex Dashboard (port 8901, HTTPS)                       │
+│  :13001 → Fleet Dashboard (port 8901, HTTPS)                       │
 │  :13002 → Langfuse (port 3000, HTTPS)                               │
 │  :13004 → Agent Bus (port 8903, HTTPS) — PGMQ message queue         │
 │  :13007 → Health Server (port 8905, HTTPS)                         │
@@ -44,7 +44,7 @@ The repository is organized into three distinct layers, each with a well-defined
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│                    CORTEX CORE                                  │
+│                    FLEET CORE                                  │
 │  Canonical schemas, workflow state, policy, identity.          │
 │  Zero runtime dependency — types and contracts only.           │
 │                                                                │
@@ -52,7 +52,7 @@ The repository is organized into three distinct layers, each with a well-defined
 │  core/schemas/       — WorkflowRun, Policy, KnowledgeRecord    │
 │  core/identity/      — Agent identity contracts                │
 ├────────────────────────────────────────────────────────────────┤
-│                    CORTEX RUNTIME ADAPTER                       │
+│                    FLEET RUNTIME ADAPTER                       │
 │  Hermes Agent integration — plugins, MCPs, hooks, skills.     │
 │  Thin bridge: policies from Core → enforcement in Runtime.     │
 │                                                                │
@@ -60,7 +60,7 @@ The repository is organized into three distinct layers, each with a well-defined
 │  mcp-servers/— Inbox & governance MCP servers          │
 │  skills/              — Hermes skill definitions                │
 ├────────────────────────────────────────────────────────────────┤
-│                    CORTEX OPERATIONS                            │
+│                    FLEET OPERATIONS                            │
 │  Installers, monitors, services, offline stack, fleet mgmt.   │
 │  Self-healing, silent-when-good, offline-first.                │
 │                                                                │
@@ -83,7 +83,7 @@ Adapter layer — the Core schemas and Ops infrastructure stay unchanged.
 | Layer | Tool | Purpose |
 |-------|------|---------|
 | **Agent** | Hermes Agent | Self-improving runtime with learning loop, subagents, cron, Telegram interface |
-| **Observability** | Langfuse + Cortex Dashboard | Trace inspection, session replay, LLM evaluation scoring, system health monitoring |
+| **Observability** | Langfuse + Fleet Dashboard | Trace inspection, session replay, LLM evaluation scoring, system health monitoring |
 | **Cache** | Web Cache (sqlite-vec) | Local semantic cache for web_search results. Cuts API costs, enables offline fallback |
 || **Memory** | Mycortex | Long-term knowledge graph via Markdown files across 4 sources (luke, amy, shared, default). **Postgres + pgvector** engine with Ollama embeddings. Sync daemon. Queryable by any agent via `:15432` |
 | **Offline** | kiwix ZIM + Code Corpus | Zero-internet operation: medical, travel, education, language, code generation. All local |
@@ -104,7 +104,7 @@ Adapter layer — the Core schemas and Ops infrastructure stay unchanged.
 | Ollama | 11434 | Local LLM serving (localhost-only) | Native macOS, launchd-managed |
 | Hermes Gateway | — | Agent runtime | Python, gateway.run, launchd |
 | Langfuse | 3000 | LLM trace observability | Node.js standalone, launchd |
-| Cortex Dashboard | 8901 | System + Langfuse companion | Flask + pure JS/HTML |
+| Fleet Dashboard | 8901 | System + Langfuse companion | Flask + pure JS/HTML |
 | Health Server | 8905 | System health endpoint | Flask, launchd |
 | Agent Bus | **8903** | Agent Bus (PGMQ) — inter-agent messaging. Health endpoint, web dashboard, pub/sub REST API. nginx proxy on port 13004 with `auth_basic` | FastAPI + Postgres PGMQ |
 || nginx | 13001–13007 | Reverse proxy for all services | Homebrew, launchd |
@@ -130,7 +130,7 @@ rate-limited by nginx + fail2ban (4 jails, ban escalation 1h→4wk):
 
 | Port | Service | Auth Required | Notes |
 |------|---------|--------------|-------|
-| 13001 | Cortex Dashboard (HTTPS) | Yes (Basic Auth) | nginx rate-limit 20/5r/s + conn-limit 10/IP |
+| 13001 | Fleet Dashboard (HTTPS) | Yes (Basic Auth) | nginx rate-limit 20/5r/s + conn-limit 10/IP |
 | 13002 | Langfuse (HTTPS) | Yes (Basic Auth) | nginx rate-limit + _next/static excluded from auth limiter |
 | 13007 | Health Server | **No auth** (health endpoint, Moses polls this) | Strict rate-limit 6r/m, conn-limit 5/IP |
 

@@ -121,7 +121,7 @@ PII-never-bleeds. The adapter layer must NOT bypass any of it:
 ## 4. The Execution Controller (router)
 
 ```
-                  CORTEX CORE
+                  FLEET CORE
                 task / agent / policy
                        │
                        ▼
@@ -221,7 +221,7 @@ them **today**. The executor abstraction is therefore a **fourth MCP
 server**, not a new framework:
 
 ```
-                    CORTEX CORE (MCP servers — runtime-agnostic)
+                    FLEET CORE (MCP servers — runtime-agnostic)
    ┌───────────────┬───────────────┬───────────────┬────────────────┐
    ▼               ▼               ▼               ▼                ▼
 agent-bus        loop-gov        tasks          executor        mycortex

@@ -34,7 +34,7 @@ Local/private-first — this enables migration when needed, not a replacement fo
 | Inbound | 22 | Your IP | SSH |
 | Inbound | 80 | 0.0.0.0/0 | HTTP (for Let's Encrypt ACME challenge) |
 | Inbound | 443 | 0.0.0.0/0 | HTTPS |
-| Inbound | 13001 | Fleet IPs or internal CIDR | Cortex Dashboard |
+| Inbound | 13001 | Fleet IPs or internal CIDR | Fleet Dashboard |
 | Inbound | 13002 | Fleet IPs or internal CIDR | Langfuse |
 | Inbound | 13004 | Fleet IPs or internal CIDR | Agent Bus API (previously Agent Inbox) |
 | Inbound | 13005 | Fleet IPs or internal CIDR | Hermes UI |

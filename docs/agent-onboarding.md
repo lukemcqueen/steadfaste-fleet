@@ -410,7 +410,7 @@ and check one of:
    ```
    A dict with `vector` + `ts` means your latest ping was drained and recorded.
 
-3. **Dashboard** — open the Cortex Dashboard URL. Your agent card should appear
+3. **Dashboard** — open the Fleet Dashboard URL. Your agent card should appear
    alongside the other agents, green if all services are 1.
 
 ### Advanced: Rich format (optional)
