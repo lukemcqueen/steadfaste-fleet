@@ -24,6 +24,56 @@ does this touch? Did the SYMPTOM resolve? Did I check siblings? Did I run the
 doctor? Did I push so the fleet benefits? Run the self-critique BEFORE
 delivering anything; run the checklist before any end_change().
 
+## ⚡ MANDATORY GATE — independent review before user submission
+
+**Moderately complex changes MUST get an independent gap/improvement review
+BEFORE the solution is submitted to the user.** This is a gate, not advice —
+it exists because the author's own self-audit (the reflexion below) is exactly
+the judgment that overclaiming slips past, and it is why Luke put this in the
+always-loaded skill.
+
+**What makes a change "moderately complex" (any one of):**
+- touches more than one file, or more than one subsystem, or a shared/upstream
+  surface;
+- changes behaviour an OPERATOR relies on (deploy, config, cron, gateway,
+  enforcement, governance, security, backup/restore);
+- carries a load-bearing claim to the user ("fixed", "verified", "deployed",
+  "cleaned up", "works") beyond a single trivial command;
+- any error would cost the user materially (data, availability, trust).
+
+A genuinely trivial change — one file, no operator-facing behaviour, no
+load-bearing claim — is exempt. When in doubt between trivial and moderately
+complex, treat it as moderately complex.
+
+**Run the gate BEFORE presenting the solution to the user:**
+1. Get an INDEPENDENT second read — not your own second pass. In order:
+   (a) the open-cycle adversarial review —
+   `ops/scripts/orch-bus/adversarial-review.py --cycle-id <id> --review`;
+   (b) a delegated fresh-session reviewer via `delegate_task` with an
+   adversarial brief ("You did NOT do this work; find real gaps and errors,
+   not praise; flag any claim you cannot verify as UNVERIFIED"); (c) a peer
+   agent. Never a self-review by the author — that is the reflexion, and it is
+   NOT this gate.
+2. Give the reviewer the CHANGE material (plan, diff, or the claim being
+   delivered) AND, where the claim is behaviour, the session tool log / the
+   evidence refs that would substantiate it — so it judges substantiation, not
+   internal consistency.
+3. Fold every real finding in BEFORE submitting. A review that returns only
+   praise was not adversarial — do not treat it as clearance.
+4. Show the review to the user when you submit:
+   `↗ Reviewed independently for gaps (N findings, all resolved)` — or, if a
+   true independent read was not possible (no peer, no reviewer, structural
+   bar), say so and mark the gap:
+   `↗ Independent review NOT possible — own-work only, treat claims as UNVERIFIED`.
+
+**Two hard rules:**
+- An independent review MUST happen before the solution reaches the user. If
+  you are one tool call from submitting with no review done, stop and get one.
+- A review the AUTHOR writes is not the gate. Either it is genuinely
+  independent (fresh session / peer / established reviewer), or the submission
+  carries the `↗ Independent review NOT possible` marker and its load-bearing
+  claims are labeled UNVERIFIED. There is no middle state.
+
 ## The eight reflexion questions
 
 1. **Did I complete everything the user asked?** Re-read the original request,
