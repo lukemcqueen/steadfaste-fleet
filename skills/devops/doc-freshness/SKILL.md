@@ -226,8 +226,10 @@ The broadcast script outputs an inbox message template. The orchestrator (Moses)
 ### 3. Adding a New Mandatory Section / Fleet-Wide Core Value
 
 A new principle that must govern EVERY agent (excellence, a safety rule, a
-quality bar) is not done when it lands in one file. Non-Hermes coding agents
-(Claude/Codex/pi) read **only AGENTS.md** (they have no user.md), the herd
+quality bar) is not done when it lands in one file. Each harness reads only the convention file its tool loads: **AGENTS.md**
+(Pi, Codex, AGENTS-standard harnesses), **CLAUDE.md** (Claude Code), and
+**SOUL.md reaches Hermes agents ONLY** — it is invisible to every non-Hermes
+harness, so it can never be the carrier of a fleet-wide behavior fix. The herd
 reads AGENTS.md + SOUL.md, and project agents read the seed. A fleet-wide value
 propagates through FOUR surfaces in one change, or it reaches a subset:
 
@@ -247,13 +249,16 @@ so the boundary is explicit, and drop engineering-preference stubs (e.g. a
 **Propagation is NOT uniform — pair each non-auto-syncing surface with a doctor
 WARN so agents are told to reconcile.** AGENTS.md is PER-REPO — the fleet
 template seeds each repo via `seed-project.sh`, and there is NO auto-sync to a
-global `~/.hermes/AGENTS.md` (removed 2026-11-04). `fleet-update` auto-syncs
-SOUL.md (soul-merge/soul-sync) and skills; it does NOT touch CLAUDE.md copies
-already installed in dev repos, and it NEVER touches USER.md
-(`~/.hermes/memories/`, Hermes-owned, deliberately unregistered so a deploy
-cannot clobber a personalized copy). So "agents pull + fleet-update get the
-new value" is only true for two surfaces — the others silently keep the old
-content unless a check flags them. For each non-auto-syncing surface add
+global `~/.hermes/AGENTS.md` (removed 2026-11-04). `fleet-update` auto-syncs skills and
+deploy-map files only — since 2026-11-04 it no longer syncs SOUL.md
+(soul-merge/soul-sync removed; `~/.hermes/SOUL.md` is Hermes-owned, so an edit
+to `docs/templates/SOUL.md` reaches no agent's identity on its own). It does
+NOT touch CLAUDE.md copies already installed in dev repos, and it NEVER
+touches USER.md (`~/.hermes/memories/`, Hermes-owned, deliberately
+unregistered so a deploy cannot clobber a personalized copy). So none of the
+convention surfaces propagates to an existing agent on its own — each keeps
+the old content until the agent pulls + reconciles, or a doctor check flags
+it. For each non-auto-syncing surface add
 a doctor check that WARNs (never auto-overwrites — both are user/project-owned),
 and size the PROBE to how the file personalizes:
 - **User-owned file (USER.md) → mtime-newer nudge, never a content compare.** A
@@ -329,11 +334,28 @@ This means even if broadcast is missed, the gap is closed within 24 hours.
 - **Don't add one-off session artifacts as mandatory sections** — a section must apply to every agent, not just today's task
 - **A fleet-wide value landing in only ONE of its four surfaces is a partial
   propagation** — AGENTS.md, AGENTS.seed.md, SOUL.md, and CLAUDE.md each reach a
-different audience (non-Hermes agents read only AGENTS.md). Adding a section
+different audience (non-Hermes agents read only the convention file their
+harness loads — AGENTS.md or CLAUDE.md, never SOUL.md). Adding a section
 solely to the main AGENTS.md skips every fresh project and the non-Hermes
 dev agent. Land all four in one change and reconcile the wording across them;
 seeding an outdated copy (e.g. the older "prefer over-engineering" bullet)
 means the deployed agents and the fresh-project agents disagree on the rule.
+- **Convention files written as absolutes breed hesitation.** A rule file that
+  reads like an incident catalog — "RULE", "Mandatory", "Nothing below is
+  optional" — makes agents over-generalize from "don't mutate" to "don't
+  touch": they start asking permission for read-only work (grepping, checking
+  env vars, inspecting prod) that no rule ever gated. The cure is a structural
+  scope preamble at the very top, before every rule: rules govern *changes*;
+  investigation is always permitted without asking; an action policy (reads
+  free, writes gated, irreversible writes ask first); a claims policy (cite a
+  source — "I think" is not one); and a session-handoff rule (scope-qualified
+  labels, never bare). Apply the same preamble to every surface an agent reads
+  (AGENTS.md, CLAUDE.md, AGENTS.seed.md) AND fix the checkpoint label
+  convention — rule text alone is undone by bare handoff labels and vice
+  versa. Ready text: `templates/scope-preamble.md`.
+- **A top-of-file preamble must not say "defined above"** — the gates it
+  references live BELOW it; write "defined in this file", which stays true
+  wherever the preamble lands.
 - **Seed/template content must be SELF-CONTAINED** — AGENTS.seed.md and
   CLAUDE.md are read by non-Hermes coding agents (Claude/Codex/pi) that load
   NO SOUL.md and often no memory. A cross-reference to another file's principle
