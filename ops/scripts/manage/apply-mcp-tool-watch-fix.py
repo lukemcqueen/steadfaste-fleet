@@ -38,6 +38,9 @@ from pathlib import Path
 
 HERMES_AGENT = Path.home() / ".hermes" / "hermes-agent"
 MCP_TOOL = HERMES_AGENT / "tools" / "mcp_tool.py"
+# Upstream refactored the stdio watchdog out of mcp_tool.py into
+# mcp_tool_handlers.py (2026-09-02) — the probe code now lives there.
+MCP_TOOL_HANDLERS = HERMES_AGENT / "tools" / "mcp_tool_handlers.py"
 
 # The buggy probe (as shipped upstream) and the fixed probe.
 BUGGY = (
@@ -82,6 +85,21 @@ def _is_probe_removed(src: str) -> bool:
     return "_watch_children" not in src and "mcp_death_supervisor" in src
 
 
+def _is_natively_fixed_upstream() -> bool:
+    """Positive evidence that the watchdog moved out of mcp_tool.py and is
+    fixed upstream in the sibling handler file.
+
+    The 2026-09-02 refactor moved the probe into mcp_tool_handlers.py, where
+    upstream lands the native fix as ``inspect.iscoroutinefunction(_watch_children)``
+    (probe the FUNCTION, never invoke it). Require BOTH the moved symbol and
+    the native probe spelling — a buggy sibling is NOT evidence of a fix.
+    """
+    if not MCP_TOOL_HANDLERS.exists():
+        return False
+    src = MCP_TOOL_HANDLERS.read_text(encoding="utf-8", errors="replace")
+    return "_watch_stdio_children" in src and "iscoroutinefunction(_watch_children)" in src
+
+
 def _apply() -> bool:
     if not MCP_TOOL.exists():
         print(f"SKIP: {MCP_TOOL} not found", file=sys.stderr)
@@ -93,6 +111,12 @@ def _apply() -> bool:
     if _is_probe_removed(src):
         # Upstream refactored the probe out of this file — nothing to patch.
         print("SKIP: mcp_tool.py probe mechanism removed upstream — nothing to fix")
+        return True
+    if _is_natively_fixed_upstream():
+        # The probe moved to mcp_tool_handlers.py AND is natively fixed there —
+        # patching mcp_tool.py would inject a fix into a file that no longer
+        # carries the bug. Nothing to patch.
+        print("SKIP: watch probe moved to mcp_tool_handlers.py and is natively fixed upstream — nothing to patch")
         return True
     if BUGGY not in src:
         print(
@@ -123,6 +147,9 @@ def _status() -> int:
         return 0
     if _is_probe_removed(src):
         print("STATUS: probe mechanism removed upstream — nothing to fix")
+        return 0
+    if _is_natively_fixed_upstream():
+        print("STATUS: probe moved to mcp_tool_handlers.py and is natively fixed upstream — nothing to fix")
         return 0
     if BUGGY in src:
         print("STATUS: BUGGY (isawaitable-invocation probe) — fix needed")

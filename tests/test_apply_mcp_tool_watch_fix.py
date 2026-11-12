@@ -54,6 +54,9 @@ def fake_mcp_tool(tmp_path, monkeypatch):
         encoding="utf-8",
     )
     monkeypatch.setattr(_mod, "MCP_TOOL", target)
+    # Hermetic: the REAL host sibling (natively fixed) must not leak in and
+    # turn the buggy-state tests into SKIPs.
+    monkeypatch.setattr(_mod, "MCP_TOOL_HANDLERS", tmp_path / "nope" / "mcp_tool_handlers.py")
     return target
 
 
@@ -92,4 +95,52 @@ def test_apply_unknown_pattern_fails(monkeypatch, tmp_path):
     target = tmp_path / "mcp_tool.py"
     target.write_text("# totally different content\n", encoding="utf-8")
     monkeypatch.setattr(_mod, "MCP_TOOL", target)
+    # No sibling handler evidence either: an unrelated file must NOT read as
+    # "probe moved upstream" (the real host file would leak in otherwise).
+    monkeypatch.setattr(_mod, "MCP_TOOL_HANDLERS", tmp_path / "nope" / "mcp_tool_handlers.py")
     assert _mod._apply() is False
+
+
+def test_moved_handlers_natively_fixed_skips(monkeypatch, tmp_path):
+    """Upstream moved the probe out of mcp_tool.py into mcp_tool_handlers.py
+    and fixed it natively (iscoroutinefunction probe). Positive evidence in
+    the sibling file must make apply SKIP (True) and status return 0."""
+    target = tmp_path / "tools" / "mcp_tool.py"
+    target.parent.mkdir(parents=True)
+    target.write_text(
+        "# no watch-probe code here anymore\n"
+        + "                    result = await _call_coro\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(_mod, "MCP_TOOL", target)
+    sibling = tmp_path / "tools" / "mcp_tool_handlers.py"
+    sibling.write_text(
+        "# upstream native code\n"
+        "    _watch_children = getattr(server, \"_watch_stdio_children\", None)\n"
+        "    if not (inspect.iscoroutinefunction(_watch_children) and asyncio.iscoroutine(_call_coro)):\n"
+        "    watch_task = asyncio.ensure_future(_watch_children())\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(_mod, "MCP_TOOL_HANDLERS", sibling)
+    assert _mod._apply() is True
+    assert _mod._status() == 0
+    # The buggy pattern must not be injected anywhere
+    assert "isawaitable(_watch_children())" not in target.read_text(encoding="utf-8")
+
+
+def test_moved_handlers_without_native_fix_still_fails(monkeypatch, tmp_path):
+    """A sibling handler file WITHOUT the native fix is not evidence of a fix —
+    the unknown content must still FAIL rather than silently skip."""
+    target = tmp_path / "mcp_tool.py"
+    target.write_text("# no probe here\n", encoding="utf-8")
+    monkeypatch.setattr(_mod, "MCP_TOOL", target)
+    sibling = tmp_path / "mcp_tool_handlers.py"
+    sibling.write_text(
+        "# upstream code, STILL BUGGY\n"
+        "    _watch_children = getattr(server, \"_watch_stdio_children\", None)\n"
+        "    if not (inspect.isawaitable(_watch_children()) and asyncio.iscoroutine(_call_coro)):\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(_mod, "MCP_TOOL_HANDLERS", sibling)
+    assert _mod._apply() is False
+    assert _mod._status() == 2
