@@ -83,7 +83,7 @@ The public repo ships bootstrapping templates:
 
 These exist in `docs/templates/` as **reference only**. Memory files are
 Hermes-owned: Hermes reads `~/.hermes/memories/MEMORY.md` directly and
-creates the file on its first memory write. Cortex does NOT copy, seed, or
+creates the file on its first memory write. Fleet does NOT copy, seed, or
 deploy memory templates (since 2026-08-05 — a deploy-registered seed
 clobbered live memory on every fleet-update).
 
@@ -106,4 +106,4 @@ Two dedicated steps enforce the architecture:
 
 - **Don't gitignore retroactively** — .gitignore only prevents untracked files from being tracked. If MEMORY.md is already tracked in a repo, you need `git rm --cached` first.
 - **Don't merge memory across machines** — MEMORY.md is per-instance. Never copy from one Hermes to another. The pointer destinations are different.
-- **Don't commit seed templates as instance memory** — templates live in `docs/templates/`, not in `~/.hermes/memories/`. Cortex never copies them there (Hermes bootstraps its own memory on first write).
+- **Don't commit seed templates as instance memory** — templates live in `docs/templates/`, not in `~/.hermes/memories/`. Fleet never copies them there (Hermes bootstraps its own memory on first write).

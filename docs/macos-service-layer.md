@@ -1,7 +1,7 @@
 # macOS Service Layer (launchd) — fleet service map
 
 macOS counterpart of [`docs/linux-service-layer.md`](linux-service-layer.md). Every Hermes
-Cortex service on a Mac is a **user LaunchAgent** in `~/Library/LaunchAgents/`, loaded with
+Fleet service on a Mac is a **user LaunchAgent** in `~/Library/LaunchAgents/`, loaded with
 `launchctl`. There is no systemd on macOS; the templates live in `docs/templates/*.plist`.
 
 > **Titus is the fleet's only macOS host** (hostname `LAM2`, the developer machine — client
@@ -44,7 +44,7 @@ docs audit, which both pointed at this file before it existed.
 
 - Cortex-side services run the **fleet venv** (`~/.steadfaste-fleet/venv/bin/python3`), the
   interpreter `fleet-update.sh` registers every MCP server against. **Never `/usr/bin/python3`**
-  for a cortex service, and never the Hermes venv.
+  for a fleet service, and never the Hermes venv.
 - A service that needs the fleet venv sources the shared launcher guard first, so a missing
   venv/daemon lands in its log as `NO INTERPRETER at <path> …` with the fix (rc 78) instead of
   an unexplained exec failure:

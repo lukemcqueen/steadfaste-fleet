@@ -187,7 +187,7 @@ child, not to your own stdout:
    hang) when no server is reachable.
 2. **A TUI harness's stderr IS the user's prompt area.** Routine diagnostics written
    there scribble over the input line. Route them to a BOUNDED log file under the
-   cortex tree (`~/.steadfaste-fleet/logs/<component>.log`, mode 0600, rotate to `<log>.1`
+   fleet tree (`~/.steadfaste-fleet/logs/<component>.log`, mode 0600, rotate to `<log>.1`
    at a size cap) — the same shape `mcp-servers/loop-gov-mcp.py` uses — with the whole
    write wrapped so a logging failure can never change what the tool does. Keep GENUINE
    failures LOUD on stderr (a silent failure reads as "the feature had no data", a
@@ -207,7 +207,7 @@ child, not to your own stdout:
   `Result:` verdict, `[SILENT]` empty state, cost footer).
 - **Human chat replies**: unchanged — AXI governs agent-consumed surfaces.
 
-## Cortex retrofit quick map (priority order)
+## Fleet retrofit quick map (priority order)
 
 1. `fleet` list/peek → TOON with totals (highest-frequency agent CLI)
 2. MCP list tools (tasks, agent-bus) → trim default schemas + totals
@@ -230,6 +230,6 @@ child, not to your own stdout:
 
 ## Sources
 
-- Full distillation + Cortex mapping: `~/steadfaste-fleet/docs/axi-agent-ergonomics.md`
+- Full distillation + Fleet mapping: `~/steadfaste-fleet/docs/axi-agent-ergonomics.md`
 - Benchmarks + catalog: `references/axi-source-notes.md`
 - Original: AXI by Kun Chen (MIT) — github.com/kunchenguid/axi

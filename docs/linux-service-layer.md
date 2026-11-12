@@ -1,7 +1,7 @@
 # Linux Service Layer (systemd) — fleet service map
 
 Linux counterpart of [`docs/macos-service-layer.md`](macos-service-layer.md). Every Hermes
-Cortex service on Linux is a **user unit** in `~/.config/systemd/user/`, managed with
+Fleet service on Linux is a **user unit** in `~/.config/systemd/user/`, managed with
 `systemctl --user`. The templates live in `docs/templates/*.service`.
 
 > **Every fleet host except Titus is Linux.** Titus is the only macOS host (hostname `LAM2`,

@@ -1,7 +1,7 @@
 # Context integration runbook — memory + session for any coding agent
 
 **Who this is for:** an agent asked to *wire a harness* (Pi, Hermes, Claude Code,
-Codex, steadfaste-tui) to the cortex context store, or to verify an existing
+Codex, steadfaste-tui) to the fleet context store, or to verify an existing
 wiring is real.
 
 **What you are wiring:** one store (`mycortex_mem` in the mycortex Postgres
@@ -146,7 +146,7 @@ fleet-context mem_context '{}'      # or: python3 ~/steadfaste-fleet/ops/scripts
 ```
 
 Expect JSON with `"card": [...]`. If you get
-`memory unavailable — the cortex store is not reachable from this host`, fix that
+`memory unavailable — the fleet store is not reachable from this host`, fix that
 first (`MYCORTEX_MEM_PASSWORD` in `~/steadfaste-fleet/.env`; is the
 `mycortex-postgres` container up?). Do not debug the harness while the store is
 down — you will chase a phantom.
@@ -173,7 +173,7 @@ flags needed at launch** (pi ≥ 1.0; `pi --version` to confirm).
 The harness installer deploys the extension to
 `~/.steadfaste-fleet/harnesses/pi/extensions/fleet-context.ts` (repo source:
 `ops/install/harnesses/pi/extensions/fleet-context.ts`). Register it and the
-cortex tools in `~/.pi/agent/settings.json` — `+name` entries in `defaultTools`
+fleet tools in `~/.pi/agent/settings.json` — `+name` entries in `defaultTools`
 add to the inherited default set (`read, bash, edit, write`):
 
 ```json
@@ -189,7 +189,7 @@ add to the inherited default set (`read, bash, edit, write`):
 }
 ```
 
-A bare `pi` now has every cortex tool. Verify by asking the running agent to
+A bare `pi` now has every fleet tool. Verify by asking the running agent to
 list its tools — expect `mem_context`, `session_restore`, etc. in the output.
 
 Override rules: a CLI `--tools` allowlist still overrides `defaultTools` for

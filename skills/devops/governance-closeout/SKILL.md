@@ -103,7 +103,7 @@ turns a refusal into a loop.
 whatever cap it is given and returns EMPTY content (`finish_reason=length`), so no blob is ever
 credited and every close burns the whole client window: measured, effort `low` returned nothing at
 caps 16k, 32k and 128k, while effort `none` returned a verdict in seconds on the same material. Both
-values are read at CALL time from the cortex `.env`, so no restart is needed to change them.
+values are read at CALL time from the fleet `.env`, so no restart is needed to change them.
 
 ## The reviewer's demands are scoped by claim type
 
@@ -821,10 +821,10 @@ Only the gate's own log separates those, and the gate writes **two** places:
 
 - **`~/.steadfaste-fleet/logs/loop-governance.log`** — the fleet-owned record
   (bounded: rotates at 5 MB, 3 backups). **Read this one first**: it is ours, it
-  sits with the other cortex logs, and it does not depend on Hermes's rotation.
+  sits with the other fleet logs, and it does not depend on Hermes's rotation.
 - `~/.hermes/logs/mcp-stderr.log` — stderr, captured by the harness. Useful for
   live debugging, and it interleaves every gateway-spawned server, so prefer the
-  cortex log when asking "what did the gate decide".
+  fleet log when asking "what did the gate decide".
 
 | Line | What actually happened |
 |---|---|
@@ -840,7 +840,7 @@ ship unreviewed, so fix the credential path instead of reworking the change:
 call — a public catalog endpoint returns 200 for a revoked key and wastes the cycle) and
 the resolution order to check.
 
-Cheap check before claiming "the gate passed": search **both** logs (the cortex log AND
+Cheap check before claiming "the gate passed": search **both** logs (the fleet log AND
 `~/.hermes/logs/mcp-stderr.log`) for the CYCLE ID and for **both** wordings —
 `adversarial review: cycle` (the verdict/pass line) and `self-adversarial review: cycle`
 (the skip/annotate lines) — plus `triage:`. A zero-hit grep on ONE wording is not
@@ -1023,7 +1023,7 @@ as `.txt` mean the ignored `.log` was the wrong filename, not a missing ignore r
   against the reasoning, treat `length`-with-empty-content as a BUDGET failure and retry once at
   a larger budget, and never fold it into the unavailable-reviewer message: one means "ask again
   with more room", the other means the reviewer is down.
-  **Keep the cap a KNOB, not a constant.** Read it per call from the cortex `.env`
+  **Keep the cap a KNOB, not a constant.** Read it per call from the fleet `.env`
   (`REVIEWER_MAX_TOKENS`) rather than as an import-time constant: a close blocked by a starved
   reviewer must be clearable by setting one variable, because the alternative — a code change plus a
   daemon restart — is not a knob anyone can turn at the moment the close is stuck. Validate the
@@ -1157,7 +1157,7 @@ as `.txt` mean the ignored `.log` was the wrong filename, not a missing ignore r
     non-Hermes caller** (pi, Claude Code, Codex CLI): Hermes injects the session's repo through
     the enforcer plugin, but a harness that merely spawns the MCP server injects nothing — so a
     resolver that falls through to the host-canonical repo tags a PROJECT-repo session as the
-    shared cortex checkout. The close gate then refuses with *"the lock's repo cannot contain
+    shared fleet checkout. The close gate then refuses with *"the lock's repo cannot contain
     this session's work"*, there is no injector to repair it, and every `end_change` retry
     re-runs the whole review; in practice the OPERATOR deletes
     `~/.steadfaste-fleet/state/.governance-<session>.json` by hand. The rule: resolve the repo from
@@ -1187,7 +1187,7 @@ as `.txt` mean the ignored `.log` was the wrong filename, not a missing ignore r
   push.** A mis-tagged lock wrote its secondary marker to
   `<repo_path>/.steadfaste-fleet/.governance-lock`, dropping governance state into a repo it
   did not govern — including the upstream Hermes checkout, which the pre-push dogfood gate
-  then fails on (`Cortex must not edit ~/.hermes/hermes-agent`), blocking a push for a
+  then fails on (`Fleet must not edit ~/.hermes/hermes-agent`), blocking a push for a
   change that is otherwise fine.
 
   **The durable fix is that the marker is GONE: locks are runtime-only. Removing the
