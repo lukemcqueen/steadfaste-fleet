@@ -37,6 +37,12 @@ def main():
         timeout=60,
     )
 
+    # Exit-code contract with agents-doc-audit.py --prune --json (dry-run,
+    # no --apply): exit 0 = no prune candidates, exit 2 = candidates found —
+    # BOTH emit a valid JSON report on stdout and are success cases here. Any
+    # other exit is a genuine script failure (e.g. 1 = error, missing --repo).
+    # Verified in agents-doc-audit.py (~line 746): `sys.exit(2 if not
+    # args.apply else 0)` on the dry-run prune path.
     if result.returncode not in (0, 2):
         # Non-zero in unexpected way — report error
         print(f"ERROR: audit script failed (exit {result.returncode}):", file=sys.stderr)
