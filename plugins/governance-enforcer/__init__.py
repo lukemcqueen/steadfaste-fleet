@@ -1017,13 +1017,6 @@ def _write_session_marker(hermes_session_id: str) -> None:
     except OSError as e:
         log.warning("Cannot write PID-scoped session marker: %s", e)
 
-    try:
-        hermes_session_path = Path.home() / ".hermes" / "session.id"
-        hermes_session_path.parent.mkdir(parents=True, exist_ok=True)
-        hermes_session_path.write_text(hermes_session_id)
-    except OSError as e:
-        log.warning("Cannot write fallback session.id cache: %s", e)
-
 
 def _session_repo_hint_path(session_id: str) -> Path:
     """Per-session file recording the repo this session was last seen using."""

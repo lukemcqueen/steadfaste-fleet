@@ -101,9 +101,11 @@ is still invisible for the TTL window.
 PID-scoped bridge. They are never removed.
 
 **Verified (2026-09-17):** `ls ~/.steadfaste-fleet/state/.hermes-session-*.id` returned hundreds of
-files spanning PIDs from the low hundreds to the millions. The current-session markers
-(`.hermes-session-current.id`, `~/.hermes/session.id`) hold the live session ID; the PID-scoped
-ones are inert fallbacks.
+files spanning PIDs from the low hundreds to the millions. The current-session marker
+(`.hermes-session-current.id`) holds the live session ID; the PID-scoped
+ones are inert fallbacks. **Update 2026-11-12:** the `~/.hermes/session.id`
+cache was removed — it had been write-only since the 2026-09-29 non-Hermes
+session-id scoping fix.
 
 **Root cause.** The enforcer (`plugins/governance-enforcer/__init__.py`) writes a PID-scoped
 marker on every `pre_tool_call` (documented as the legacy fallback bridge in the plugin README),

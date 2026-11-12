@@ -416,30 +416,30 @@ The enforcer plugin receives the Hermes session ID via the `pre_tool_call` hook'
   through invoke_hook → tool executor → `mcp_tool._handler` →
   `session.call_tool(arguments=args)`, so the server sees the real session on every
   call — fully transparent to the agent session.
-2. **Writes the ID to marker files** (fallback for legacy/non-Hermes callers):
-  - **Fixed-path marker** (`.hermes-session-current.id`) — fallback. The MCP server
-    reads this by a known path, no PID arithmetic needed.
-  - **PID-scoped marker** (`.hermes-session-{PID}.id`) — legacy fallback for MCP
-    versions that predate the fixed path.
-  - **`~/.hermes/session.id`** — Hermes config directory cache, final fallback
-    for MCP when both state-directory markers are absent (e.g. on the very first
-    tool call of a session before the enforcer has fired).
+2. **Writes the ID to marker files** (legacy bridge, write-only since 2026-09-29):
+  - **Fixed-path marker** (`.hermes-session-current.id`) — written into the
+    governance state dir.
+  - **PID-scoped marker** (`.hermes-session-{PID}.id`) — written per process.
+  - **Note:** the MCP server no longer READS any marker file — since the
+    2026-09-29 non-Hermes session-id scoping fix, `get_session_id()` resolves
+    only from the injected args, the caller's environment, or its own
+    per-repo id. The bridge writes are legacy and write-only. The
+    `~/.hermes/session.id` cache (written by both the enforcer and the MCP
+    server) was removed 2026-11-12 — it had no readers.
 
 The per-call injection was introduced (2026-08-02) because the marker bridge was
 racy: concurrent sessions overwrite the shared fixed-path marker, so the MCP server
 could resolve the WRONG session and write locks the enforcer couldn't find. The
 injection carries the session ID with each call, eliminating the shared-file race.
 
-The marker bridge still exists for backward compatibility — the MCP server's
-`get_session_id()` resolves in this order:
+The MCP server's `get_session_id()` resolves in this order (current code):
 
 ```python
 def get_session_id(args=None):
-    # Priority 0: args["session_id"] — injected by the enforcer per call
-    # Priority 1: ~/.steadfaste-fleet/state/.hermes-session-current.id (fixed path)
-    # Priority 2: ~/.steadfaste-fleet/state/.hermes-session-{PID}.id (PID scan)
-    # Priority 3: ~/.hermes/session.id (cached fallback)
-    # Priority 4: generate new UUID (no enforcer present)
+    # Priority 0:  args["session_id"] — injected by the enforcer per call
+    # Priority 0e: the caller's own env (CORTEX_SESSION_* / AGENT_NAME ...)
+    # Priority 1:  per-repo process id, persisted at state/.session-<slug>.id
+    #              (new UUID only if persistence fails)
 ```
 
 The fixed-path approach was introduced because the MCP server is NOT a direct child
@@ -470,8 +470,10 @@ next write tool fires
 ```
 
 If no session ID is in the args (legacy caller, direct MCP invocation), the MCP
-falls back to the fixed-path marker, then PID scan, then cached `~/.hermes/session.id`,
-then generates a new UUID. Phase 2 (repo_slug scan) covers any remaining mismatch
+reads the caller's own environment (`CORTEX_SESSION_*`), then falls back to its
+per-repo process id (persisted at `state/.session-<slug>.id`), generating a new
+UUID only if persistence fails. It no longer reads any marker file or the removed
+`~/.hermes/session.id` cache. Phase 2 (repo_slug scan) covers any remaining mismatch
 for backward compat with old MCP locks.
 
 ### Checked By
@@ -854,10 +856,11 @@ is accepted by the new enforcer as valid — you can finish your work and call
 11. **Fail-closed design** — if the enforcer encounters an internal error, it blocks ALL writes. Uncertainty defaults to blocking, not allowing. Recovery requires checking logs and restarting the session.
 12. **Per-call session-ID injection is the primary bridge** — the enforcer injects
   `args["session_id"]` into every `mcp__loop_governance__*` call (Priority 0 for the
-  MCP). It ALSO writes the session ID to three marker locations (fixed-path marker,
-  PID-scoped marker, `~/.hermes/session.id`) as legacy fallback for direct MCP
-  callers. The injection exists because the shared marker files are racy — concurrent
-  sessions overwrite them, so the MCP server could resolve the wrong session.
+  MCP). It ALSO writes the session ID to the legacy bridge markers (fixed-path marker,
+  PID-scoped marker) — write-only since 2026-09-29; the MCP reads none of them. The
+  `~/.hermes/session.id` cache was removed 2026-11-12 (it had no readers). The injection
+  exists because the shared marker files are racy — concurrent sessions overwrite them,
+  so the MCP server could resolve the wrong session.
 
 ## Session ID Handoff Architecture
 
@@ -872,16 +875,14 @@ Hermes session starts
  → kwargs['session_id'] = 'sess_20260724_123456_abc123' (with 'sess_' prefix)
  → Enforcer pre_tool_call fires on every tool call
   → INJECTS args['session_id'] = 'sess_...' into every mcp__loop_governance__* call
-  → _write_session_marker(hermes_session_id) writes (fallback only):
+  → _write_session_marker(hermes_session_id) writes (legacy bridge, NOT read by the MCP):
     1. ~/.steadfaste-fleet/state/.hermes-session-current.id (fixed-path bridge)
     2. ~/.steadfaste-fleet/state/.hermes-session-{pid}.id   (PID fallback)
-    3. ~/.hermes/session.id                (MCP cache fallback)
- → MCP get_session_id(args) reads:
+  → MCP get_session_id(args) reads:
     0. args['session_id']         ← PRIMARY (injected per call, never racy)
-    1. .hermes-session-current.id  ← fixed-path bridge (legacy)
-    2. .hermes-session-{pid}.id   ← PID scan (legacy fallback)
-    3. ~/.hermes/session.id     ← cached (final fallback)
-    4. Generate new UUID       ← no enforcer present (first tool call?)
+    0e. caller env (CORTEX_SESSION_*) ← per-harness discriminator
+    1. per-repo process id        ← persisted at state/.session-<slug>.id
+       (new UUID only if persistence fails)
 ```
 
 ### Critical rules

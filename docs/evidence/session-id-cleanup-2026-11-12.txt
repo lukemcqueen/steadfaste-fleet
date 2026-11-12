@@ -1,0 +1,35 @@
+# Evidence — session.id cleanup (cycle #14500, 2026-11-12)
+
+## Command: python3 ops/scripts/quality/probe-gate-logic.py (repo + deployed)
+RESULT: PASS, 46 checks, PROBE_EXIT=0 / DEPLOYED_PROBE_EXIT=0
+
+## Command: .steadfaste-fleet/venv/bin/python3 -m pytest <affected set> -q
+tests: test_non_hermes_session_id, test_non_hermes_repo_identity,
+test_loop_gov_review_repo, test_loop_gov_mcp_nonblocking,
+test_governance_lock_lifecycle_claims, test_check_repo_lock_scoping,
+test_lock_review_split
+RESULT: 46 passed, 2 failed in 17.78s
+- test_non_hermes_repo_identity.py::test_begin_change_writes_the_session_repo_into_the_lock
+- test_lock_review_split.py::test_the_light_tier_spends_less_and_the_env_still_wins
+BASELINE (worktree at HEAD f9d31632, pre-change): SAME 2 failed — PRE-EXISTING,
+not caused by this change. Note: test_lock_review_split resolves gov_split from
+~/hermes-cortex (stale tree) — separate environment defect, flagged for follow-up.
+
+## Command: adversarial-verify.py --level A4 --gate (both changed .py files)
+RESULT: GATE_PASSED both (loop-gov: 0 critical/high, 5 med/4 low/30 info;
+enforcer: 0 critical/high, 4 med/3 low/21 info — whole-file pre-existing pattern noise)
+
+## Command: grep -rn 'session\.id' mcp-servers/ plugins/ ops/ docs/ skills/
+RESULT: remaining hits all classified:
+- loop-gov-mcp.py:274,377 — past-tense history comments (the removed behavior)
+- README.md:427,476,861 — the new "removed 2026-11-12" notes
+- probe-gate-logic.py:135 — corrected comment (write-only cache)
+- enforcer-known-issues.md:106 — dated Update line
+- claude-governance.md:171 — past-tense ("fell back")
+- hermes-home-cleanup SKILL.md:53 — new REMOVED-vestige row
+- code-corpus/dhh-rails — third-party Ruby examples (unrelated)
+
+## Doctor (post-deploy): DOGFOOD PASSED, 0 fail (warnings pre-existing/deferred)
+
+## Plan review: adversarial-review cycle #14500 → FINDINGS (ADV-0-1 high:
+unsubstantiated line claims) → material grounded with quotes → re-review → CLEAN.

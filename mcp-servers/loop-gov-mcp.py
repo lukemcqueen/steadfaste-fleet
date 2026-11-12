@@ -266,7 +266,6 @@ except (ImportError, TypeError) as _sdk_err:  # pragma: no cover — no SDK, or 
         raise RuntimeError("the MCP SDK is not installed — run the CLI adapter instead")
 
 HOME = Path.home()
-SESSION_FILE = HOME / ".hermes" / "session.id"
 
 # Process-scoped session id for NON-Hermes callers (2026-09-29).
 #
@@ -387,8 +386,6 @@ def get_session_id(args: dict | None = None) -> str:
     # Priority 0: per-call session ID injected by the enforcer plugin
     sid = _injected_session_id(args)
     if sid:
-        SESSION_FILE.parent.mkdir(parents=True, exist_ok=True)
-        SESSION_FILE.write_text(sid)
         return sid
 
     # Priority 0e: the caller's OWN environment. One MCP child serves one
