@@ -25,7 +25,7 @@ FLEET = REPO / "ops" / "scripts" / "fleet" / "fleet.py"
 
 
 def _load_fleet():
-    spec = importlib.util.spec_from_file_location("hc_under_test", FLEET)
+    spec = importlib.util.spec_from_file_location("fleet_under_test", FLEET)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -311,7 +311,7 @@ def test_end_to_end_without_pi_exits_zero_and_says_why(tmp_path):
     assert "not a fault" in r.stdout
 
 
-def test_end_to_end_bad_subcommand_keeps_hc_usage_exit_code(tmp_path):
+def test_end_to_end_bad_subcommand_keeps_fleet_usage_exit_code(tmp_path):
     env = dict(os.environ, HOME=str(tmp_path), HC_AGENT="testagent")
     r = subprocess.run([sys.executable, str(FLEET), "pi", "nonsense"],
                        capture_output=True, text=True, env=env, timeout=120)

@@ -114,6 +114,18 @@ else
   bad "bare hc CLI invocations remain:"; echo "$bad_cli"
 fi
 
+# B6. no stale hc-branded TEST FILENAMES — the content patterns above cannot see a
+#     filename, so this guards the class (tests were renamed test_hc_* -> test_fleet_*
+#     on 2026-11-12; a new test_hc_* file is a regression, not a record)
+stale_tests=$(
+  find "$REPO/tests" -maxdepth 1 -type f \( -name 'test_hc_*' -o -name '*_hc_*' -o -name '*-hc-*' \) 2>/dev/null
+)
+if [ -z "$stale_tests" ]; then
+  ok "no hc-branded test filenames in tests/"
+else
+  bad "stale hc test filenames:"; echo "$stale_tests"
+fi
+
 echo
 echo "== RESULT: $pass ok, $fails failed =="
 [ $fails -eq 0 ]

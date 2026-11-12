@@ -30,7 +30,7 @@ TOOLS_PY = REPO / "ops/services/mycortex-mem/context_tools.py"
 
 def _harness_module():
     """The CLI's own module — the derivation is unit-testable without spawning it."""
-    spec = importlib.util.spec_from_file_location("hc_harness_mod", HARNESS_CMD)
+    spec = importlib.util.spec_from_file_location("fleet_harness_mod", HARNESS_CMD)
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -38,7 +38,7 @@ def _harness_module():
 
 
 def _contract_tool_names() -> set[str]:
-    spec = importlib.util.spec_from_file_location("ctx_tools_for_hc_test", TOOLS_PY)
+    spec = importlib.util.spec_from_file_location("ctx_tools_for_fleet_test", TOOLS_PY)
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -305,7 +305,7 @@ def test_the_cli_reports_could_not_verify_when_no_interpreter_can_import_yaml(tm
     assert "could not verify" in combined or "no interpreter" in combined, combined[-600:]
 
 
-def test_hc_entrypoint_dispatches_harness():
+def test_fleet_entrypoint_dispatches_harness():
     """`fleet harness` must work through the real CLI entrypoint, not just the module."""
     r = subprocess.run([sys.executable, str(REPO / "ops/scripts/fleet/fleet.py"), "harness", "list"],
                        capture_output=True, text=True, timeout=90)

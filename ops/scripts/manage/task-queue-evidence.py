@@ -256,7 +256,7 @@ def main() -> int:
                         "pytest (python-with-module.sh exit 3)", "not-run")
         env = {**os.environ, "PYTHONHASHSEED": "0",
                "PYTEST_ADDOPTS": "-p no:cacheprovider"}
-        r = subprocess.run([py, "-m", "pytest", "tests/test_hc_harness.py",
+        r = subprocess.run([py, "-m", "pytest", "tests/test_fleet_harness.py",
                             "-q"], cwd=cwd, capture_output=True, text=True,
                            timeout=300, env=env)
         full = (r.stdout or "") + (r.stderr or "")
@@ -299,7 +299,7 @@ def main() -> int:
     # passes under the current 3.14 — so a gate on "old tree fails" would flap
     # with the interpreter and could never be reproduced, exactly the
     # live-ambient-state trap. Both revisions are named so a reader can re-run.
-    check("test_hc_harness passes on the current tree",
+    check("test_fleet_harness passes on the current tree",
           with_changes_outcome == "pass",
           f"now ({_rev()}): {with_changes} · pinned baseline {baseline[:12]} "
           f"({_rev(baseline)}): {clean_tree} [outcome {clean_outcome}] — reproduced "
@@ -325,7 +325,7 @@ def main() -> int:
     # Full raw output for the load-bearing claim (that the harness tests are green
     # now and were RED before the fix). A one-line paste is not evidence a reviewer
     # can check.
-    print("\n## Raw test output — `tests/test_hc_harness.py`\n")
+    print("\n## Raw test output — `tests/test_fleet_harness.py`\n")
     print("`fleet harness` and its registry were failing their own tests before this fix;")
     print("the same file is re-run at the parent of the commit that last touched it, so")
     print("the claim is a measured before/after rather than an assertion.\n")

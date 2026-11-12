@@ -1446,7 +1446,7 @@ def cmd_pi(cfg: dict, args: list):
         print("  (none — Pi sees no skills)")
     # This command reports the registration and delegates the VISIBILITY verdict to the
     # installer's own --check, so how Pi sees a tree stays defined there (not here). The
-    # delegation is pinned by tests/test_hc_pi.py's skills-delegation cases.
+    # delegation is pinned by tests/test_fleet_pi.py's skills-delegation cases.
     path = _resolve_script("install-pi-integration.sh")
     if path is None:
         print("fleet pi: install-pi-integration.sh not found — run fleet-update.sh",
