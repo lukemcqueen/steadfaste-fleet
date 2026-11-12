@@ -42,8 +42,10 @@ fi
 # ── Guard: abort on stale git state before touching anything ───
 if git -C "$CORTEX_REPO" rev-parse --git-dir &>/dev/null; then
   if git -C "$CORTEX_REPO" rebase --show-current &>/dev/null 2>&1; then
-    if ! git -C "$CORTEX_REPO" rebase --abort 2>/dev/null; then
-      log "could not abort a stale rebase (rc=$?)"
+    _ABORT_RC=0
+    git -C "$CORTEX_REPO" rebase --abort 2>/dev/null || _ABORT_RC=$?
+    if [ "$_ABORT_RC" -ne 0 ]; then
+      log "could not abort a stale rebase (rc=$_ABORT_RC)"
     else
       log "aborted a stale rebase"
     fi
@@ -55,10 +57,12 @@ fi
 # A scheduler run may start on a lagging checkout — pull other agents' commits
 # first so the reconcile baseline is fresh (and we never re-strand work they
 # already committed). ff-only: never create a merge here. A failed pull is
-# surfaced in the log (a stale baseline could re-strand a peer's committed
+# surfaced with the real rc (a stale baseline could re-strand a peer's committed
 # work); the cycle still proceeds so a transient network blip retries next run.
-if ! git -C "$CORTEX_REPO" pull --ff-only >/dev/null 2>&1; then
-  log "git pull --ff-only failed (rc=$?) — proceeding on the local baseline"
+_PULL_RC=0
+git -C "$CORTEX_REPO" pull --ff-only >/dev/null 2>&1 || _PULL_RC=$?
+if [ "$_PULL_RC" -ne 0 ]; then
+  log "git pull --ff-only failed (rc=$_PULL_RC) — proceeding on the local baseline"
 fi
 
 # ── Snapshot the skill tree before, so we can stage ONLY the delta ──
@@ -66,19 +70,25 @@ SCOPE="skills/ docs/evidence/ docs/SKILLS-MANIFEST.md"
 BEFORE=$(cd "$CORTEX_REPO" && git status --porcelain --untracked-files=all -- $SCOPE 2>/dev/null || true)
 
 # ── Recover the safe (pure-superset) strand class ────────────────
-# A failed reconcile is SURFACED (not swallowed): if the reconciler breaks
-# (missing dep, permission, corrupt state), the run would otherwise silently
-# find "no changes" and mask a broken pipeline. We log it and continue — a
-# transient failure retries next cycle without crashing the watchdog.
-if ! (cd "$CORTEX_REPO" && python3 ops/scripts/manage/reconcile-stranded-skills.py --apply >/dev/null 2>&1); then
-  log "reconcile-stranded-skills.py --apply failed (rc=$?) — no recovery this cycle"
+# A failed reconcile is SURFACED (not swallowed) and STOPS the cycle with a
+# clear log line — proceeding would print a misleading "no new strands" and
+# mask a broken reconciler. A transient failure retries next cycle with no
+# side effects. Capture rc BEFORE logging (a bare `$?` after `if !` is 0).
+_RECONCILE_RC=0
+(cd "$CORTEX_REPO" && python3 ops/scripts/manage/reconcile-stranded-skills.py --apply >/dev/null 2>&1) || _RECONCILE_RC=$?
+if [ "$_RECONCILE_RC" -ne 0 ]; then
+  log "reconcile-stranded-skills.py --apply failed (rc=$_RECONCILE_RC) — leaving recovery to the next cycle"
+  rmdir "$_LOCK" 2>/dev/null || true
+  exit 0
 fi
 # A recovered strand that touches a skill's frontmatter description makes the
 # skills manifest stale — regenerate it so the doc-audit gate stays green. A
-# failed regen leaves the manifest stale and is logged (it could trip the
-# doc-audit gate on the commit below).
-if ! (cd "$CORTEX_REPO" && bash ops/scripts/manage/gen-skills-manifest.sh >/dev/null 2>&1); then
-  log "gen-skills-manifest.sh failed (rc=$?) — manifest may be stale for this commit"
+# failed regen is logged with its real rc; the pre-commit doc-audit gate is the
+# backstop that refuses a stale-manifest commit.
+_MANIFEST_RC=0
+(cd "$CORTEX_REPO" && bash ops/scripts/manage/gen-skills-manifest.sh >/dev/null 2>&1) || _MANIFEST_RC=$?
+if [ "$_MANIFEST_RC" -ne 0 ]; then
+  log "gen-skills-manifest.sh failed (rc=$_MANIFEST_RC) — manifest may be stale for this commit"
 fi
 
 AFTER=$(cd "$CORTEX_REPO" && git status --porcelain --untracked-files=all -- $SCOPE 2>/dev/null || true)
@@ -100,8 +110,10 @@ cd "$CORTEX_REPO"
   printf '%s\n' "$AFTER"
 } | awk '{print $2}' | while IFS= read -r p; do
   [ -n "$p" ] || continue
-  if ! git add -- "$p" 2>/dev/null; then
-    log "could not stage $p (rc=$?) — path may be missing or unreadable"
+  _ADD_RC=0
+  git add -- "$p" 2>/dev/null || _ADD_RC=$?
+  if [ "$_ADD_RC" -ne 0 ]; then
+    log "could not stage $p (rc=$_ADD_RC) — path may be missing or unreadable"
   fi
 done
 
