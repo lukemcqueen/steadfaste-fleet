@@ -2,7 +2,8 @@
 """Part 2 identity gate tests — the fleet-committer orchestration predicate.
 
 Titus (host worker-4, directory-services home /Users/luke) may update otherwise
-orchestrator-only fleet paths. The gate is HOST-DERIVED (home, never env),
+orchestrator-only fleet paths, including skills/ (committer skill-update grant,
+Luke 2026-11-12). The gate is HOST-DERIVED (home, never env),
 EXACT-match, fail-closed, and must NOT grant the config-authorship escalation
 (SOLID: the guard's config-file self-protection is true-orchestrator-only).
 
@@ -242,14 +243,20 @@ def test_committer_deny_list_blocks_the_guard_script():
 
 
 def test_committer_deny_dirs_cover_instruction_surfaces():
-    """ADV-0-1 regression: the committer deny-list must keep a committer OFF
-    the instruction/CI surfaces that would inject fleet-wide instructions or
-    run CI code (skills/, plugins/, profiles/, .github/workflows/)."""
+    """A committer must stay OFF the CI/plugin/embedding surfaces that would
+    run CI code or inject non-skill instructions (plugins/, profiles/,
+    .github/workflows/). skills/ is deliberately NOT required here: since
+    2026-11-12 (Luke) a fleet-committer may update skills (the drift-recovery
+    and lesson path), so deny-dirs must NOT cover skills/ — assert it stays
+    ABSENT so a later restore of the old deny cannot regress the grant
+    silently."""
     src = HOOK.read_text()
     assert "_COMMITTER_DENY_DIRS=(" in src, "deny-list dirs array missing"
     deny_dirs = src.split("_COMMITTER_DENY_DIRS=(", 1)[1].split(")", 1)[0]
-    for d in ("skills/", "plugins/", "profiles/", ".github/workflows/"):
+    for d in ("plugins/", "profiles/", ".github/workflows/"):
         assert d in deny_dirs, f"deny-dirs must cover {d}"
+    assert "skills/" not in deny_dirs, \
+        "skills/ must NOT be in the committer deny-dirs (2026-11-12 operator grant)"
 
 
 def test_committer_can_write_own_component_not_spine():
@@ -266,7 +273,7 @@ def test_committer_can_write_own_component_not_spine():
         ("tests/test_x.py", False),                          # tests: open to committer
         ("ops/install/harnesses/pi/ADDON-deepseek-mcp.md", False),  # harness: open
         ("docs/external/mcp-deepseek-review.md", False),     # docs: open
-        ("skills/x/SKILL.md", True),                          # instruction surface
+        ("skills/x/SKILL.md", False),  # committer-writable since 2026-11-12 (Luke)
         ("plugins/x/__init__.py", True),
         (".github/workflows/ci.yml", True),
         ("AGENTS.md", True),

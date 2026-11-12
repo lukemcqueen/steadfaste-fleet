@@ -6,6 +6,9 @@
 # trees is automatically protected. Add more specific globs only when needed.
 #
 # Scripts, plugins, hooks, skills, tools — all orchestrator-only
+# (skills/ remains listed here for PLAIN agents; fleet-committers may write
+# skills/ via the pre-commit deny-list carve-out — AGENTS.md §Orchestrator-Only
+# Domains, 2026-11-12)
 # NOTE: these are REPO-RELATIVE prefixes (pre-commit-score matches them with
 # `grep "^<entry>"` against `git diff --cached --name-only`). Do NOT write a
 # `~/.steadfaste-fleet/...` entry here: it can never match a staged path, so the

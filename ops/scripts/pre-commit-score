@@ -760,11 +760,14 @@ _detect_orch && IS_ORCH=1
 # A fleet-committer (Titus) is NOT a true orchestrator (IS_ORCH stays 0). Per
 # the operator's decision (2026-11-10, Luke) the committer boundary is a DENY
 # LIST, not an allow-list: a committer may write ANY fleet path EXCEPT the
-# governance spine + review pipeline + instruction/CI surfaces listed in
-# _COMMITTER_DENY_*. Everything else (new mcp-servers/* components, ops/install/,
-# ops/scripts/manage/, docs/, tests/) is committer-writable so the capability can
-# do its own job. Plain non-orch agents (not committers) stay FULLY restricted by
-# the config-driven list below — unchanged.
+# governance spine + review pipeline + CI/plugin surfaces listed in
+# _COMMITTER_DENY_*. skills/ was REMOVED from the deny-dirs 2026-11-12 (Luke):
+# a committer may update skills/ (skill-drift recovery + lesson backports) —
+# such a commit still passes the full gate chain (adversarial scan, review
+# receipt, doctor, PII). Everything else (new mcp-servers/* components,
+# ops/install/, ops/scripts/manage/, docs/, tests/) is committer-writable so
+# the capability can do its own job. Plain non-orch agents (not committers)
+# stay FULLY restricted by the config-driven list below — unchanged.
 # REVIEW PIPELINE is deny-listed (ADV-14431-8): adversarial-review.py (the sole
 # reviewer writer), record-review.py (verdict-as-input writer, forgeable),
 # plan-review-check.py (gate reader), review-provenance-check.py (provenance gate).
@@ -790,7 +793,9 @@ _COMMITTER_DENY_FILES=(
   "AGENTS.md"                         "SOUL.md"
 )
 # Deny-list: directory prefixes a committer may never write under.
-_COMMITTER_DENY_DIRS=("skills/" "plugins/" "profiles/" ".github/workflows/")
+# skills/ was removed 2026-11-12 (Luke) — committers may update skills;
+# the remaining dirs (plugins, profiles, CI workflows) stay orchestrator-only.
+_COMMITTER_DENY_DIRS=("plugins/" "profiles/" ".github/workflows/")
 if [[ "$IS_ORCH" != "1" ]]; then
   # A claimed orchestrator identity on a non-orch host is an impersonation attempt
   case "${AGENT_ID:-}" in

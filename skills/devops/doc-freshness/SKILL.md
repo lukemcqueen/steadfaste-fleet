@@ -26,7 +26,7 @@ A cross-document freshness system that ensures AGENTS.md (fleet coordination rul
 |-------|------|----------|-----------|
 | **Weekly audit** | `agents-doc-audit.py` checks all SOUL.md + AGENTS.md for mandatory section *presence* | Moses (orchestrator) | Monday 7am KST |
 | **Post-update broadcast** | Moses sends inbox message to all agents after modifying AGENTS.md | Moses (orchestrator) | On change |
-| **Daily gap fill** | `orch-skill-lifecycle` cron (orchestrator) evaluates agent data, patches skills/SOUL.md. Non-orchestrators use the bus to submit learning reports. | Per-agent | Daily 04:00 (orchestrator) |
+| **Daily gap fill** | `orch-skill-lifecycle` cron (orchestrator) evaluates agent data, patches skills/SOUL.md. Non-orchestrators use the bus to submit learning reports; fleet-committers (hosts in `docs/fleet-committers.txt`) may patch `skills/` directly (2026-11-12, Luke) — SOUL.md stays orchestrator-only. | Per-agent | Daily 04:00 (orchestrator) |
 | **Session-start check** | Every agent reads AGENTS.md + own SOUL.md at session start | Each agent | Every session |
 
 **Key insight:** SOUL.md identity is now the agent's own to maintain (Hermes-owned); the weekly audit catches anything structurally slipped, the daily gap fill auto-recovers, and the session-start check is the last resort. The `template-diff-check.py` auto-drift layer was removed 2026-11-04.
