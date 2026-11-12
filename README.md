@@ -91,7 +91,7 @@ This is a working enterprise-grade agentic harness, not just a skill pack. Each 
 
 ---
 
-## 🚀 Install
+## 🚀 Quick start — Install
 
 > **🔒 Before installing:** Read the [Security Guide](docs/SECURITY.md).
 
