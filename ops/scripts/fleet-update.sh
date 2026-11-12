@@ -3083,7 +3083,7 @@ main() {
       # held lock the wrapper returns 1 and we refuse below; on success it returns
       # the inner deploy's rc.
       if "${CORTEX_DEPLOY_HOME}/venv/bin/python3" "$_mutex_py" --guard \
-           "${CORTEX_DEPLOY_HOME}/state/cortex-update.lock" "$0" "$@"; then
+           "${CORTEX_DEPLOY_HOME}/state/fleet-update.lock" "$0" "$@"; then
         _mutex_rc=0
       else
         _mutex_rc=$?
