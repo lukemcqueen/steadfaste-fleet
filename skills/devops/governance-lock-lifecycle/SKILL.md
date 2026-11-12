@@ -356,6 +356,28 @@ a test driving `_inject_session_context` under the new name, deploy, reload/rest
 lock minted under the derived id with `advance_task_state new_state=cancelled`. Full recipe:
 `rename-sweep` → `references/mcp-server-name-rename.md`.
 
+### Pitfall 10: A session's governance identity can FREEZE onto the wrong repo — the exit is a FRESH session
+
+Governance is SESSION-scoped. The session id arrives from the Hermes conversation
+(`kwargs['session_id']`, README "Session ID Handoff Architecture") and the governed repo
+is resolved from that session together with the call's cwd/args. A session that once
+resolved the WRONG repo can therefore re-tag that same wrong repo on every later
+`begin_change` — so the failure is whole-session, not one bad call: the lock's
+`repo_path`/`repo_slug` name a tree that is not yours, the agent identity can read
+`unknown`, and work in the correct repo keeps being governed against the wrong one.
+
+- **Try the sanctioned escapes first**: run governance from inside your checkout, or
+  pass a `workdir` / `--repo <path>` that points into it, so the call resolves the right
+  repo on its own terms before you conclude the session is stuck.
+- **A restart is NOT a remedy.** The identity is keyed to the conversation session, not
+  to the process, so restarting the gateway or the host does not clear it. Do not burn
+  cycles re-running `begin_change` or rebooting, expecting a different tag.
+- **The reliable exit is a NEW conversation (`/new`).** A fresh session mints a clean
+  session id and re-resolves the repo from scratch. Before you leave, record the frozen
+  session's state — SHAs, and anything left STAGED (a staged change survives in the
+  index and the next session can commit it) — so the follow-on session finishes the work
+  instead of rediscovering it.
+
 ### A wide close judges a WAVE of blobs per pass — concurrency, never a longer window
 
 A close refused with **"N blob(s) of the push range still carry no review verdict"** names the exact
