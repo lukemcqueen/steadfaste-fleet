@@ -186,7 +186,7 @@ should be one consolidated pass — merge before you add a third slot.
 | `agent-swap-refresh` | `0 5 * * *` | no_agent | `agent-swap-refresh.py` | origin |
 | `agent-skill-drift-reconcile` | `0 */2 * * *` | no_agent | `manage/agent-skill-drift-reconcile.sh` | local |
 | `agent-md-prune-scan` | `0 4 * * 1` | no_agent | `agent-md-prune-scan.py` | local |
-| `agent-agents-md-prune-apply` | `30 4 * * 1` | LLM | (prompt) | telegram |
+| `agent-md-prune-apply` | `30 4 * * 1` | LLM | (prompt) | telegram |
 | `cortex-bus-workday` | `0 8,20 * * 1-5` | LLM | session-active-guard.py | telegram |
 | ~~`cortex-bus-evening`~~ | ~~`0 20,22 * * 1-5`~~ | ~~LLM~~ | ~~(prompt)~~ | ~~telegram~~ | ⚠️ **REMOVED 2026-11-07** — consolidated into `cortex-bus-workday` (2×/day) |
 | ~~`cortex-bus-overnight`~~ | ~~`0 23 * * 1-5`~~ | ~~LLM~~ | ~~(prompt)~~ | ~~telegram~~ | ⚠️ **REMOVED 2026-11-07** — consolidated into `cortex-bus-workday` |

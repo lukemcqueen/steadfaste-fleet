@@ -118,7 +118,7 @@ These run on every agent in the fleet. Created by `install-crons.sh`.
 | `agent-llm-judge-scorer-weekday` | `30 13,20 * * 1-5` | no_agent | `llm-judge-scorer.py` | local | the fleet owner |
 | `agent-llm-judge-scorer-weekend` | `0 22 * * 0,6` | no_agent | `llm-judge-scorer.py` | local | the fleet owner |
 | `agent-md-prune-scan` | `0 4 * * 1-6` | no_agent | `agent-md-prune-scan.py` | local | the fleet owner |
-| `agent-agents-md-prune-apply` | `30 4 * * 1-6` | LLM | — | origin | the fleet owner |
+| `agent-md-prune-apply` | `30 4 * * 1-6` | LLM | — | origin | the fleet owner |
 | `agent-auto-save-sessions` | `every 360m` | no_agent | `agent-auto-save-sessions.py` | local | the fleet owner |
 
 > **Accountability note:** the `Accountable` column names the human operator

@@ -304,7 +304,7 @@ of input tokens per run.
 | `orch-skill-evaluate` | `skill-vetting` | `terminal, file` |
 | `local-weekly-loop-eval` | `loop-governance` | `terminal, file` |
 | `local-daily-soul-refinement` | `soul-refinement` | `terminal, file` |
-| `agent-agents-md-prune-apply` | `documentation-scope` | `terminal, file` |
+| `agent-md-prune-apply` | `documentation-scope` | `terminal, file` |
 | `agent-memory-pruning` | (self-contained prompt) | `terminal, file` |
 | `local-daily-sustainability-briefing` | `content-production`, `content-humanizer` | `web, terminal, file` |
 | `agent-daily-bible-reading` | `agent-daily-bible-reading` | (none) |
@@ -519,6 +519,7 @@ While in the rename, update downstream TOKEN-MATCHERS that key on the OLD name o
 - **Ask before bulk operations.** Renaming 10+ crons at once without confirmation will likely get undone. Batch at most 3-4 in a turn, or step through each group with user sign-off between batches. The user may reject the whole convention after seeing it applied — confirm early.
 - **Undo is cheaper to prevent than to revert.** A batch of 22 renames takes 3-4 turns to undo because the cronjob tool has no rollback. Check with the user before applying a convention change to the entire cron table.
 - **Doctor truth source = uninstall array.** `fleet-doctor.py` reads expected cron names from the uninstall arrays in `install-crons.sh` and `install-orch-crons.sh`. If a cron name in the `create_cron` block doesn't match the uninstall array — or is missing from it entirely — the doctor reports false failures. Every rename MUST update BOTH the create block and the uninstall array. Run `fleet-doctor.py --quiet` after any rename to verify sync. See the "Critical: uninstall array = doctor truth source" section under Naming Convention above for the function-level detail.
+- **A no_agent cron's SCRIPT name must match its cron name — `check_script_naming` WARNs otherwise.** The doctor compares a no_agent job's script basename to its cron name: they must share a base AND the script must carry the same scope prefix (`agent-`/`orch-`/`local-`). A descriptively-named but mismatched script (cron `agent-skill-drift-reconcile` running `reconcile-skill-drift-auto.sh`) triggers both `Script naming: <cron>` and `Script prefix: <cron>` WARNs and forces a rename. Name the deployable script `<cron-name>.sh` from the start; for a script that deploys to `scripts/manage/`, put the `manage/` prefix in the `create_cron` script field (`manage/agent-skill-drift-reconcile.sh`) so the resolver finds it. LLM jobs (no_agent=false) are exempt — they may attach a shared context-injection script with an unrelated name.
 - **Patch the repo, then deploy — never patch execution paths directly.** The cron execution paths (`~/.steadfaste-fleet/scripts/` and `~/.hermes/scripts/`) are hardlinked to each other but are **separate inodes** from the repo source (e.g. `steadfaste-fleet/ops/scripts/manage/`). All deployed scripts are registered in `fleet-update.sh` via `register()`. The correct fix workflow is:
  1. Patch the repo source file (e.g. `~/steadfaste-fleet/ops/scripts/manage/script.sh`)
  2. Run `bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh ` to deploy

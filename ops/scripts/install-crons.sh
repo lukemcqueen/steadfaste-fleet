@@ -560,8 +560,8 @@ if $UNINSTALL; then
   echo ""
   printf "${CYAN}━━━ Uninstalling Hermes Cron Jobs ━━━${RESET}\n\n"
   for job in \
-    "agent-agents-md-prune-apply" \
     "agent-md-prune-scan" \
+    "agent-md-prune-apply" \
     "agent-auto-save-sessions" \
     "agent-bus-retry-sweep" \
     "agent-cron-failure-watchdog" \
@@ -1147,9 +1147,9 @@ create_cron "agent-md-prune-scan" "0 4 * * 1" \
   "true"
 
 # Phase 2: LLM review + apply — reads scan output via context_from
-create_cron "agent-agents-md-prune-apply" "30 4 * * 1" \
+create_cron "agent-md-prune-apply" "30 4 * * 1" \
   "" \
-  "Review the AGENTS.md pruning scan report injected below (via context_from=agents-md-prune-scan).
+  "Review the AGENTS.md pruning scan report injected below (via context_from=agent-md-prune-scan).
 If candidates exist and look correct, apply them by running:
   python3 ~/.steadfaste-fleet/scripts/agents-doc-audit.py --repo ~/steadfaste-fleet --prune --apply
 Then commit and push the changes.
