@@ -722,7 +722,7 @@ When a question needs data that only EXISTS on other hosts' local state (cost, r
 
 **The commit message file belongs in `$HOME/.hermes/cache/scratch/`, not `/tmp`.** The scratch dir is what the environment keeps for the session; `/tmp` gets cleaned mid-session and the message file vanishes between the message-write and the commit, failing the commit with an opaque `fatal: could not read log file`. Write it once into scratch and reuse the same path for retries.
 
-**The commit-scope guard splits on newlines, so a multi-line `-m` body reads as BARE even with pathspecs present.** The remedy is the documented one: `git commit -F <message-file> -- <paths>` — and note the `-- <paths>` after `-F`, which the pathspec parser needs to see on the SAME segment. Put the message in the file, not the command line.
+**The commit-scope guard splits on top-level separators, so a separator INSIDE quotes no longer reads as BARE.** Since 2026-11-12 the enforcer's splitter tracks single/double quotes (with backslash escapes), so a multi-line `-m` body keeps its newline and the `-- <paths>` spec stays readable on the same segment. A pathspec commit with a multi-line message or a `;`/`|` inside the message now PASSES (covered by `TestCommitScopeGate`). The genuinely bare form — a `git commit` with NO `-- <paths>` anywhere, even beside a scoped sibling in a compound — is still refused. Best practice for a long message remains `git commit -F <message-file> -- <paths>` (put the message in a file, not the command line); `--only`/`--git-dir=.git` are fallbacks only while the running gateway still holds the pre-fix enforcer (restart the gateway to load the quote-aware splitter).
 
 ## Fleet-Active Push Races (verified 2026-09-01)
 
