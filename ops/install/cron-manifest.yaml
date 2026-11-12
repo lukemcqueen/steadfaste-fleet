@@ -14,7 +14,7 @@ crons:
   model: ''
   provider: ''
   reasoning_effort: none
-- name: agent-agents-md-prune-scan
+- name: agent-md-prune-scan
   scope: universal
   schedule: 0 4 * * 1
   script: agent-md-prune-scan.py

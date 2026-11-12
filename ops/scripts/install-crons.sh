@@ -561,7 +561,7 @@ if $UNINSTALL; then
   printf "${CYAN}━━━ Uninstalling Hermes Cron Jobs ━━━${RESET}\n\n"
   for job in \
     "agent-agents-md-prune-apply" \
-    "agent-agents-md-prune-scan" \
+    "agent-md-prune-scan" \
     "agent-auto-save-sessions" \
     "agent-bus-retry-sweep" \
     "agent-cron-failure-watchdog" \
@@ -1137,7 +1137,7 @@ create_cron "agent-push-metrics" "every 5m" \
 
 # ── AGENTS.md auto-trim: daily scan + LLM apply (M-Sa) ──
 # Phase 1: deterministic scan — silent when clean, JSON report when candidates found
-create_cron "agent-agents-md-prune-scan" "0 4 * * 1" \
+create_cron "agent-md-prune-scan" "0 4 * * 1" \
   "agent-md-prune-scan.py" \
   "" \
   "" \
