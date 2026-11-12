@@ -1,6 +1,7 @@
 # Auto-Profile Detection — Shell Wrapper Pattern
 
-Auto-inject `hermes --profile <name>` when your current directory matches a registered project. Zero thinking, zero extra typing.
+Auto-inject `hermes --profile <name>` (the Hermes Agent CLI — a separate live
+product, kept name) when your current directory matches a registered project. Zero thinking, zero extra typing.
 
 ## The Pattern
 
@@ -8,13 +9,13 @@ A shell function wraps `hermes` to check `~/.cortex-projects.json` before dispat
 
 ```bash
 # ~/.zshrc or ~/.bashrc
-hermes() {
+hermes() {   # Hermes Agent CLI (live product, kept name)
   local profile
   profile=$(python3 -c "
 import json, os
 cwd = os.getcwd()
 try:
-  with open(os.path.expanduser('~/.cortex-projects.json')) as f:
+  with open(os.path.expanduser('~/.cortex-projects.json')) as f:   # kept path — fleet-profile.sh writes it
     for p in json.load(f):
       if cwd.startswith(p['location']):
         print(p.get('profile', p['project_name']))
@@ -38,7 +39,9 @@ except: pass
 
 ## Registry File
 
-`~/.cortex-projects.json` is created by `ops/scripts/install/fleet-profile.sh` and contains:
+`~/.cortex-projects.json` (kept path — the registry filename the deployed
+`ops/scripts/install/fleet-profile.sh` writes) is created by
+`ops/scripts/install/fleet-profile.sh` and contains:
 
 ```json
 [

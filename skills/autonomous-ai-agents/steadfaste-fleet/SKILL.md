@@ -257,14 +257,14 @@ rm -f ~/Library/LaunchAgents/com.mycortex.*.plist ~/.legacy-brain/sync-watch.sh
 ### 3. Verify fleet-update.sh covers all deployed files
 
 The update script uses a `register()` function to map repo paths → installed paths.
-Only registered files get auto-deployed when changed. See `references/cortex-update-deployment-map.md`
+Only registered files get auto-deployed when changed. See `references/fleet-update-deployment-map.md`
 for the full current map (core scripts, self-remediation, offline tools, dashboard, agent inbox, templates, langfuse).
 
 **New file additions:** When adding a new script to the repo, add a `register()` line to `fleet-update.sh`
 (ops/scripts/fleet-update.sh) so it gets auto-deployed on next update. Source paths
 use the canonical `ops/` prefix, e.g. `register "ops/scripts/health/heartbeat.py"`.
 
-See `references/cortex-update-deployment-map.md` for the complete map, update modes (delta/force/status),
+See `references/fleet-update-deployment-map.md` for the complete map, update modes (delta/force/status),
 and the macOS sha256sum→shasum fallback.
 
 ### 4. Verify Langfuse Containers
@@ -2173,7 +2173,7 @@ approach is `.steadfaste-fleet/` (project-anchored) + `~/.hermes/` (home-dir)
 - `references/langfuse-v3-migration.md` — Full Langfuse v3 env var reference and migration steps
 - `references/security-hardening.md` — File permission lockdown, bind address audit, nginx unload, restart resilience check, full audit one-liner
 - `references/bible-prep-issues.md` — Known upstream bugs in prep-bible.sh and bible-parse.py (to report to the orchestrator)
-- `references/cortex-update-deployment-map.md` — Full file map, restart functions, and the launchd bootout-before-rm pitfall
+- `references/fleet-update-deployment-map.md` — Full file map, restart functions, and the launchd bootout-before-rm pitfall
 - `references/offline-knowledge-subcommands.md` — Subcommand architecture pattern for offline_knowledge.py, the `lesson` tooling gap, and PATH setup
 - `references/mycortex-source-migration-export.md` — mycortex data export, cross-engine migration, and Postgres setup notes
 - `github.com/garrytan/mycortex` — Official mycortex repository (install via `bun install -g github:garrytan/mycortex`)
