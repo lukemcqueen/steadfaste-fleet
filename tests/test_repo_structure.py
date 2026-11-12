@@ -192,7 +192,15 @@ def test_no_gbrain_legacy_refs_in_tracked_source():
          # gbrain state being audited AT THAT TIME — same record rationale.
          ":(exclude)skills/devops/mycortex/references/dream-todo-bridge-2026-08-06.md",
          ":(exclude)skills/devops/mycortex/references/fleet-migration-verification-ledger-2026-08-05.md",
-         ":(exclude)skills/devops/mycortex/references/gbrain-reference-audit-2026-08-05.md"],
+         ":(exclude)skills/devops/mycortex/references/gbrain-reference-audit-2026-08-05.md",
+         # Dated record dirs (docs/evidence, docs/older): dated transcripts and
+         # reports quote the pre-sweep filenames as the thing that WAS — e.g.
+         # backlog-run-2026-10-17-selection.md lists dropped gbrain-named skill
+         # reference files. Same record rationale as the excludes above and the
+         # brand lint's RECORD_FILTER; records are never falsified. Resurrected
+         # refs in ACTIVE files (docs/, ops/, skills/, tests/) stay red.
+         ":(exclude)docs/evidence",
+         ":(exclude)docs/older"],
         cwd=REPO_ROOT, capture_output=True, text=True,
     ).stdout.strip()
     assert not hits, f"Legacy gbrain refs found in: {hits}"
