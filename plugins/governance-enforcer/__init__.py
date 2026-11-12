@@ -2558,8 +2558,12 @@ _COMMIT_BYPASS_TOKENS = ("--no-verify", "-n")
 _COMMIT_SCOPE_BARE_MSG = (
     "❌  BARE COMMIT REFUSED — it would commit whatever is staged, not just your files.\n"
     "    Several agents share one working tree and ONE git index, and a staged entry records\n"
-    "    nothing about which session staged it. Name the paths you changed:\n"
-    "        git commit -m 'your message' -- path/one path/two\n"
+    "    nothing about which session staged it. Name the paths you changed, putting the\n"
+    "    pathspec (`-- path/one path/two`) on the SAME command as `git commit`:\n"
+    "        git commit --only -m 'your message' -- path/one path/two\n"
+    "    For a multi-line message, put it in a file (a newline inside `-m` here makes the\n"
+    "    command read as bare — see the skill, prefer -F):\n"
+    "        git commit -F /tmp/msg -- path/one path/two\n"
     "    A partial commit builds its own temporary index, so it cannot include anything else."
 )
 _COMMIT_SCOPE_BYPASS_MSG = (
@@ -2584,6 +2588,67 @@ def _commit_segment_is_scoped(segment: str) -> bool:
     return bool(re.search(r"(^|\s)(-o|--only)(\s|$)", segment))
 
 
+def _split_commit_command(text: str) -> list[str]:
+    """Split a shell command line on top-level separators, ignoring separators INSIDE quotes.
+
+    A `git commit -m "<subject>\\n\\n<body>" -- <paths>` command carries the message in
+    double quotes, so the embedded newline and any `;`/`|` inside the message are part of
+    the argument, not command separators. A naive split (on `&& || ; \\n |`) breaks the text
+    there, leaving a first segment (`git commit -m "<subject>`) with no `-- <paths>` — which
+    used to make the scope gate read a commit that DID name paths as a bare commit and refuse
+    it with a message that sent the agent in a loop (Luke 2026-11-12). Tracking single and
+    double quotes (with backslash escapes) keeps the segment whole, so the pathspec stays to
+    be read by the gate.
+    """
+    out: list[str] = []
+    buf: list[str] = []
+    quote: str | None = None  # None | '"' | "'"
+    escaped = False
+    i = 0
+    n = len(text)
+    while i < n:
+        ch = text[i]
+        if quote is not None:
+            buf.append(ch)
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == quote:
+                quote = None
+            i += 1
+            continue
+        if ch in "\"'":
+            quote = ch
+            buf.append(ch)
+            i += 1
+            continue
+        if ch == "\\":
+            buf.append(ch)
+            i += 1
+            continue
+        # top-level separator: `&&`, `||`, `;`, newline, or `|`
+        if ch == "&" and i + 1 < n and text[i + 1] == "&":
+            out.append("".join(buf))
+            buf = []
+            i += 2
+            continue
+        if ch == "|" and i + 1 < n and text[i + 1] == "|":
+            out.append("".join(buf))
+            buf = []
+            i += 2
+            continue
+        if ch in ";|\n":
+            out.append("".join(buf))
+            buf = []
+            i += 1
+            continue
+        buf.append(ch)
+        i += 1
+    out.append("".join(buf))
+    return out
+
+
 def _check_commit_scope_gate(tool_name: str, args: dict) -> Optional[dict]:
     """Refuse a bare commit, or a bypass-flagged commit, in the agent's terminal commands.
 
@@ -2596,9 +2661,11 @@ def _check_commit_scope_gate(tool_name: str, args: dict) -> Optional[dict]:
     # `git commit ...` — every evidence generator in this repo does — and reading those as
     # commands would refuse the very commits that document the guard.
     head = command.split("<<", 1)[0]
-    for segment in re.split(r"&&|\|\||;|\n|\|", head):
-        if not re.match(r"\s*git\s+commit\b", segment):
-            continue
+    segments = _split_commit_command(head)
+    commit_segments = [s for s in segments if re.match(r"\s*git\s+commit\b", s)]
+    if not commit_segments:
+        return None
+    for segment in commit_segments:
         tokens = segment.split()
         if any(tok in _COMMIT_BYPASS_TOKENS for tok in tokens):
             return {"action": "block", "message": _COMMIT_SCOPE_BYPASS_MSG}

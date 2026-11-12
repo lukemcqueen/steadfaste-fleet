@@ -815,6 +815,41 @@ class TestCommitScopeGate:
         assert self._gate("cd /tmp/x && git commit -m 'bare'") is not None
         assert self._gate("cd /tmp/x && git commit -m 'scoped' -- a b") is None
 
+    def test_a_pathspec_commit_with_multiline_message_is_scoped(self):
+        """A multi-line -m body splits the command text on newlines, hiding the
+        `-- <paths>` separator from the per-segment scan. The whole-command view must
+        still read it as scoped — else the guard refuses a commit that DID name paths,
+        and its message ("name the paths you changed") sends the agent in a loop on a
+        command that already has them (Luke 2026-11-12)."""
+        result = self._gate(
+            'git commit -m "subject line one\n\nline two" -- ops/scripts/a.sh tests/b.py'
+        )
+        assert result is None, (
+            "a multi-line -m commit that names paths was refused as bare — the "
+            "newline split hid its pathspec from the per-segment scan"
+        )
+
+    def test_a_pathspec_commit_with_semicolon_in_message_is_scoped(self):
+        """A `;` inside the quoted message is a split point for the segment scan too."""
+        result = self._gate(
+            "git commit -m 'op one; then two' -- ops/scripts/a.sh"
+        )
+        assert result is None, (
+            "a pathspec commit whose message carries a semicolon was refused as bare"
+        )
+
+    def test_a_bare_commit_is_still_refused_even_beside_a_scoped_one(self):
+        """Quote-aware splitting must not loosen the guard: a genuinely bare commit in a
+        compound is still refused, even when a sibling segment names paths. A naive
+        whole-command 'is there a -- anywhere' test would have allowed this (Luke 2026-11-12)."""
+        result = self._gate(
+            "git commit -m 'swept' ; git commit -m 'scoped' -- ops/scripts/a.sh"
+        )
+        assert result is not None, (
+            "a genuinely bare commit beside a scoped one was allowed — quote-aware "
+            "splitting loosened the guard"
+        )
+
     def test_a_heredoc_body_is_not_read_as_a_command(self):
         """Every evidence generator in this repo quotes `git commit ...` inside a commit message.
 
