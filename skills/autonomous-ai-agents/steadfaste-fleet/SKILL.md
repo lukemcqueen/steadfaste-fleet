@@ -6,6 +6,10 @@ tags: [setup, installation, mycortex, langfuse, dashboard, nginx, systemd, launc
 related_skills: [hermes-agent, docker-compose-common-issues]
 ---
 
+<!-- Provenance: renamed from skills/autonomous-ai-agents/hermes-cortex/SKILL.md
+     on 2026-11-12 (hc→fleet brand sweep, commit 2dc01b0e). Content predates the
+     range; the range swept the brand tokens only. -->
+
 # Steadfaste Fleet Setup
 
 Steadfaste Fleet is the local AI infrastructure layer that provides:
