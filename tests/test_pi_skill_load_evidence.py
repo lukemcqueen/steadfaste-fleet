@@ -19,7 +19,7 @@ Three defects followed, and fixing any ONE of them alone changes nothing:
      ever recorded;
   2. the checker (`store.py::loaded_skill`) hard-coded `tool_name = 'skill_view'`
      → a read of the skill's file could not count even if it were recorded;
-  3. the writer keyed its row to `CORTEX_SESSION_KEY` (`hc-pi-<chat>`) while the
+  3. the writer keyed its row to `CORTEX_SESSION_KEY` (`fleet-pi-<chat>`) while the
      reflexion gate queries the ACTIVE LOCK's `session_id` (`sess_<hex>` for a
      non-Hermes caller) → the two could never agree.
 
@@ -101,7 +101,7 @@ def test_identity_matches_the_lock_the_gate_will_query(tmp_path):
 
     This is the whole fix for defect 3 in one assertion: the gate asks the store
     about the active lock's session_id, so the writer has to be handed that exact
-    value rather than inventing `hc-pi-<chat>`.
+    value rather than inventing `fleet-pi-<chat>`.
     """
     mod = _load_server()
     mod.GOVERNANCE_STATE_DIR = tmp_path / "state"
@@ -255,7 +255,7 @@ def test_a_skill_name_containing_a_like_wildcard_does_not_over_match():
     if not st.available():
         print("SKIP: HC session/memory store unreachable (not a failure)")
         return
-    key = f"hctest-pi-load-{os.getpid()}-wild"
+    key = f"fleettest-pi-load-{os.getpid()}-wild"
     try:
         st.sessions.record_tool_event(
             "pi", "read", {"path": "/skills/a_b/SKILL.md"}, session_key=key
@@ -267,8 +267,8 @@ def test_a_skill_name_containing_a_like_wildcard_does_not_over_match():
     finally:
         for sql in (
             "DELETE FROM mycortex_mem.tool_events WHERE session_id IN "
-            "(SELECT id FROM mycortex_mem.sessions WHERE session_key LIKE 'hctest-pi-load-%');",
-            "DELETE FROM mycortex_mem.sessions WHERE session_key LIKE 'hctest-pi-load-%';",
+            "(SELECT id FROM mycortex_mem.sessions WHERE session_key LIKE 'fleettest-pi-load-%');",
+            "DELETE FROM mycortex_mem.sessions WHERE session_key LIKE 'fleettest-pi-load-%';",
         ):
             for role in ("mycortex_mem_admin", "mycortex_mem_writer"):
                 try:
@@ -305,7 +305,7 @@ def test_real_store_round_trip_accepts_a_pi_read_and_refuses_an_unrelated_read()
         print("SKIP: HC session/memory store unreachable (not a failure)")
         return
 
-    key = f"hctest-pi-load-{os.getpid()}"
+    key = f"fleettest-pi-load-{os.getpid()}"
     skill = "reflexion-check"
     try:
         # 1. What the fixed extension now records for Pi's `read`.
@@ -343,8 +343,8 @@ def test_real_store_round_trip_accepts_a_pi_read_and_refuses_an_unrelated_read()
         # kept as a fallback so a host that grants it still cleans up.
         deletes = (
             "DELETE FROM mycortex_mem.tool_events WHERE session_id IN "
-            "(SELECT id FROM mycortex_mem.sessions WHERE session_key LIKE 'hctest-pi-load-%');",
-            "DELETE FROM mycortex_mem.sessions WHERE session_key LIKE 'hctest-pi-load-%';",
+            "(SELECT id FROM mycortex_mem.sessions WHERE session_key LIKE 'fleettest-pi-load-%');",
+            "DELETE FROM mycortex_mem.sessions WHERE session_key LIKE 'fleettest-pi-load-%';",
         )
         errors = []
         for sql in deletes:

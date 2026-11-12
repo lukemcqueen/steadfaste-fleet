@@ -62,14 +62,19 @@ harness file for them:
 
 - DOTTED paths (the runbook's discrimination rule — these must reach ZERO):
   `~/.hermes-cortex`, `.hermes-cortex/` (absolute + tilde forms), `~/hermes-cortex`.
-- Retired product name: `Hermes Cortex` (title-case, outside the 3 deliberately
-  kept skill `name:` identifiers).
+- Retired product name: `Hermes Cortex` (title-case). The four legacy
+  `hermes-cortex*` skill `name:` identifiers were RENAMED to `steadfaste-fleet*`
+  on 2026-11-12, so there are no longer any deliberately-kept skill-name
+  identifiers under the old name.
 
 **Deliberate keeps (excluded; same list as `docs/rename-followups-steadfaste-fleet.md`):**
-- the 4 skill dirs + `name:` frontmatter (`hermes-cortex`, `hermes-cortex-setup`,
-  `hermes-cortex-repo-deploy`, `hermes-cortex-maintenance`);
-- enforcer dual-URL accept list (`hermes-cortex|steadfaste-fleet`) — detection subject;
-- migration tools (`migrate-home-dirs.sh`, `fleet-set-origin.sh`, `verify-rename-*.sh`);
+- the doctor's stale-home detection literals
+  (`fleet_doctor/stale_premigration_home.py` path list);
+- migration tools (`migrate-home-dirs.sh`, `fleet-set-origin.sh` LEGACY URL,
+  `verify-rename-*.sh` OLD_*);
+- the enforcer's PII-URL legacy-URL accept (`hermes-cortex` in
+  `_PII_REPO_URL_RE` — the old URL redirects forever; the sanctioned-update
+  regex is single-URL since 2026-11-12);
 - `docs/older/` + `docs/evidence/` historical records.
 
 The check reports: `FAIL` when a REPO-owned file carries a retired dotted path;

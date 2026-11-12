@@ -291,28 +291,40 @@ A Pi restart is required to re-read the harness config (extensions + MCP servers
 On the next session, `fleet-context` tools (`mem_context`, `session_restore`, …) are available
 under their fleet names; `cortex-context` appears nowhere.
 
-## What is deliberately kept
+## What is deliberately kept (STALE-path literals — do NOT sweep)
 
-The names below are stable identifiers, not stale paths — do **not** sweep them:
+The names below are FUNCTIONAL literals or records, not stale paths — do **not**
+sweep them; each is labeled `STALE` in the code and documented in
+`docs/rename-followups-steadfaste-fleet.md`:
 
-- The enforcer's sanctioned-command regexes accept **both** `hermes-cortex|steadfaste-fleet`
-  (transition compatibility).
+- The doctor's `Stale pre-migration home folders` check + its test keep the old
+  home-dir paths (`~/hermes-cortex`, `~/.hermes-cortex`, `~/.local/lib/hermes-cortex`)
+  — they exist to DETECT those leftovers.
 - `hermes-cortex-dashboard.service` — the dashboard service keeps its name.
-- The `hermes-cortex`, `hermes-cortex-setup`, `hermes-cortex-repo-deploy`,
-  `hermes-cortex-maintenance` **skills** — concept names, not paths.
-- Historical `hermes-cortex` mentions in `docs/evidence/` and `docs/older/` — migration records.
-- The transition tools themselves: `fleet-set-origin.sh`, `migrate-home-dirs.sh`,
-  `verify-rename-local.sh` reference the old paths on purpose.
+- Migration tools keep the old paths on purpose: `fleet-set-origin.sh` (LEGACY
+  origin URL), `migrate-home-dirs.sh` (old→new pairs), `verify-rename-local.sh`
+  (OLD_REPO/OLD_HOME).
+- The enforcer's PII-URL gate keeps the legacy repo URL (it redirects forever;
+  the gate must recognize the fleet's own old URL).
+- Historical `hermes-cortex` mentions in `docs/evidence/` and `docs/older/` and
+  dated references — migration records, never falsified.
+- The `cortex` short-name family (cortex-bus, cortex-dashboard, mycortex,
+  CORTEX_DEPLOY_HOME) is a SEPARATE naming layer, not part of the hc sweep.
+
+Renamed 2026-11-12 (no longer deliberate keeps): the four `hermes-cortex*`
+skills → `steadfaste-fleet*`; the enforcer sanctioned-update regex → single-URL;
+`HC_AGENT` → `FLEET_AGENT`; gateway session ids → `fleet-<agent>-<chat>`; session
+worktrees → `~/fleet-session-*`.
 
 ## Post-migration straggler checklist (verified on esther 2026-11-12)
 
 The migration is NOT complete until these are gone or confirmed absent on the host.
 Anything in the previous section is deliberately kept; anything below is a straggler.
-Run `bash tests/test_fleet_cli_brand.sh` (brand lint) + the doctor (`stale hermes-cortex
-folders` check) to verify, then walk this list:
+Run `bash tests/test_fleet_cli_brand.sh` (brand lint) + the doctor (`Stale
+pre-migration home folders` check) to verify, then walk this list:
 
-1. **Old home folders** — all three must be absent (doctor `Stale hermes-cortex folders`
-   WARNs on any; confirmed gone on esther):
+1. **Old home folders** — all three must be absent (doctor `Stale pre-migration
+   home folders` WARNs on any; confirmed gone on esther):
    ```bash
    ls -d ~/hermes-cortex ~/.hermes-cortex ~/.local/lib/hermes-cortex   # expect: no such file
    ```

@@ -2,7 +2,7 @@
 
 ## Context
 
-After merging 8 new commits into `~/Developer/AI/hermes-cortex` (HEAD `7641f867`),
+After merging 8 new commits into `~/Developer/AI/steadfaste-fleet` (HEAD `7641f867`),
 `fleet-update.sh ` was run. Three bugs emerged:
 
 ## Bug 1: Missing platform_utils.py in Deployment Map

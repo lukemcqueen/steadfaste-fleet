@@ -39,8 +39,8 @@ their domain.
 | `blackbox` | 1.0.1 | Delegate coding tasks to the Blackbox AI multi-model CLI. | `skill_view(name='blackbox')` |
 | `evaluating-agent-frameworks` | 1.0.0 | Evaluate an external agent framework for interop. | `skill_view(name='evaluating-agent-frameworks')` |
 | `grok` | 0.1.1 | Delegate coding to xAI Grok Build CLI (features, PRs). | `skill_view(name='grok')` |
-| `hermes-cortex` | 2.0.0 | Install, configure, and maintain Hermes Cortex — the observability and knowledge layer for Hermes Agent (Ol... | `skill_view(name='hermes-cortex')` |
-| `hermes-cortex-setup` | 1.0.0 | Install and configure Hermes Cortex core components — Ollama, mycortex knowledge brain, health server, agen... | `skill_view(name='hermes-cortex-setup')` |
+| `steadfaste-fleet` | 2.0.0 | Install, configure, and maintain Steadfaste Fleet — the observability and knowledge layer for Hermes Agent (Ol... | `skill_view(name='steadfaste-fleet')` |
+| `steadfaste-fleet-setup` | 1.0.0 | Install and configure Steadfaste Fleet core components — Ollama, mycortex knowledge brain, health server, agen... | `skill_view(name='steadfaste-fleet-setup')` |
 | `honcho` | 2.0.0 | Configure and troubleshoot Honcho memory for Hermes. | `skill_view(name='honcho')` |
 | `openhands` | 0.1.0 | Delegate coding to OpenHands CLI (model-agnostic, LiteLLM). | `skill_view(name='openhands')` |
 | `pi-coding-agent` | 1.0.0 | Operate the Pi coding agent CLI — install, extensions, Jev. | `skill_view(name='pi-coding-agent')` |
@@ -217,8 +217,8 @@ their domain.
 | `health-external-verification` | 1.0.0 | Verify your health endpoint is externally reachable by testing the URL end-to-end instead of assuming local... | `skill_view(name='health-external-verification')` |
 | `hermes-agent-regression-triage` | 1.0.0 | Use when hermes-agent breaks after update or won't update. | `skill_view(name='hermes-agent-regression-triage')` |
 | `hermes-backup` | 1.0.0 | Use when performing a full-system backup of a Hermes Agent server — survey, clean up caches, checkpoint dat... | `skill_view(name='hermes-backup')` |
-| `hermes-cortex-maintenance` | 1.36.0 | Maintain an installed Hermes Cortex instance — update both the upstream Hermes Agent and the cortex repo la... | `skill_view(name='hermes-cortex-maintenance')` |
-| `hermes-cortex-repo-deploy` | 1.0.0 | Use when committing to the hermes-cortex repo. | `skill_view(name='hermes-cortex-repo-deploy')` |
+| `steadfaste-fleet-maintenance` | 1.36.0 | Maintain an installed Steadfaste Fleet instance — update both the upstream Hermes Agent and the fleet repo la... | `skill_view(name='steadfaste-fleet-maintenance')` |
+| `steadfaste-fleet-repo-deploy` | 1.0.0 | Use when committing to the steadfaste-fleet repo. | `skill_view(name='steadfaste-fleet-repo-deploy')` |
 | `hermes-gateway-operations` | 1.0.0 | Diagnose, configure, and maintain Hermes messaging gateway platforms (Telegram, Discord, WhatsApp, etc.). C... | `skill_view(name='hermes-gateway-operations')` |
 | `hermes-home-cleanup` | 1.0.0 | Use when cleaning ~/.hermes or ~/.steadfaste-fleet. Verify. | `skill_view(name='hermes-home-cleanup')` |
 | `hermes-model-config` | 1.0.0 | Use when sessions run the wrong model or config regresses. | `skill_view(name='hermes-model-config')` |
@@ -690,7 +690,8 @@ their domain.
 
 ## Naming Convention
 
-Skills ported from AgentKore were renamed from `ak-*` to `hc-*`:
+Skills ported from AgentKore were renamed from `ak-*` to `hc-*`, and the
+`hc-*` aliases were retired to `fleet-*` on 2026-11-12:
 - `ak-elicit` → `requirements-elicitation`
 - `ak-party` → `architecture-review`
 

@@ -56,7 +56,8 @@ the whole re-org (see below).
 - `docs/evidence` (759 files) is the dominant docs subtree — committed evidence
   captures, likely archive/prune candidates.
 - `docs/older` (69) is a legacy-docs pile.
-- `hc-session2/` is a SIBLING directory at `~/hc-session2/` (outside this repo),
+- `hc-session2/` is a SIBLING directory at `~/hc-session2/` (outside this repo;
+  pre-rename session-worktree name — new ones are `~/fleet-session-<tag>`),
   apparently a stale copy of the repo — needs a duplicate-vs-unique hash audit
   before any removal (rename-sweep pitfall: a copy can hold the only copy of
   real content).
@@ -71,7 +72,7 @@ the whole re-org (see below).
 2. **Navigability-first** — keep the existing `ops/` layout, achieve the same
    "easy to see the separation" goal by: partitioning/renaming the catch-all
    clearly, moving root strays, archiving `docs/evidence`+`docs/older`,
-   reconciling `core/`/`tools/`/`evals/`, auditing `hc-session2/`, and writing a
+   reconciling `core/`/`tools/`/`evals/`, auditing the stale `hc-session2/` sibling (pre-rename name), and writing a
    single repo map + AGENTS.md/DOCS-INDEX that makes every subtree obvious.
    Far less risky; same navigability outcome.
 

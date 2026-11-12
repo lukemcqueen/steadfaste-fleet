@@ -66,11 +66,11 @@ def _per_repo_files(state_dir):
 def test_two_different_session_keys_get_disjoint_ids():
     """THE DEFECT: two sessions, one repo -> two ids, so two lock files."""
     with tempfile.TemporaryDirectory() as td:
-        saved = _with_env({"CORTEX_SESSION_KEY": "hc-pi-chat-aaa"})
+        saved = _with_env({"CORTEX_SESSION_KEY": "fleet-pi-chat-aaa"})
         try:
             mod_a = _fresh_module(td)
             a = mod_a.get_session_id(None)
-            os.environ["CORTEX_SESSION_KEY"] = "hc-pi-chat-bbb"  # the OTHER session
+            os.environ["CORTEX_SESSION_KEY"] = "fleet-pi-chat-bbb"  # the OTHER session
             mod_b = _fresh_module(td)
             b = mod_b.get_session_id(None)
         finally:
@@ -131,20 +131,20 @@ def test_claude_code_wins_over_codex_when_both_set():
 
 def test_cortex_session_key_wins_over_pi_session_id():
     with tempfile.TemporaryDirectory() as td:
-        saved = _with_env({"CORTEX_SESSION_KEY": "hc-pi-chat-bbb",
+        saved = _with_env({"CORTEX_SESSION_KEY": "fleet-pi-chat-bbb",
                            "PI_SESSION_ID": "01a17c0b-82ee-72f1"})
         try:
             sid = _fresh_module(td).get_session_id(None)
         finally:
             _restore_env(saved)
-        assert "hc-pi-chat-bbb" in sid, f"wrong source won: {sid}"
+        assert "fleet-pi-chat-bbb" in sid, f"wrong source won: {sid}"
         assert "01a17c0b" not in sid
 
 
 def test_per_call_injected_id_still_wins():
     """Hermes is unchanged: the enforcer's per-call id is returned verbatim."""
     with tempfile.TemporaryDirectory() as td:
-        saved = _with_env({"CORTEX_SESSION_KEY": "hc-pi-chat-ccc",
+        saved = _with_env({"CORTEX_SESSION_KEY": "fleet-pi-chat-ccc",
                            "PI_SESSION_ID": "01a17c0b-82ee-72f1"})
         try:
             sid = _fresh_module(td).get_session_id({"session_id": "sess_hermes_xyz"})

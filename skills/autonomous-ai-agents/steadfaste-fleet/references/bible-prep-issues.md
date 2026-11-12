@@ -1,6 +1,6 @@
 # Known Issues — Offline Bible Prep
 
-Found while syncing hermes-cortex `d185ea1` (June 5, 2026). Both issues below exist in the repo and need upstream fixes from Moses.
+Found while syncing steadfaste-fleet `d185ea1` (June 5, 2026). Both issues below exist in the repo and need upstream fixes from Moses.
 
 ## prep-bible.sh
 

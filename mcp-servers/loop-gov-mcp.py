@@ -446,20 +446,20 @@ def _derive_slug(args: dict | None = None, session_repo: Optional[Path] = None) 
     The MCP server is a shared daemon spawned by the gateway: its own cwd is
     a launch artifact (often the hermes-agent checkout, itself a git repo) and
     is NEVER a reliable signal of the session's working repo. Trusting
-    ``git rev-parse`` from cwd first made locks carry ``hermes-agent`` while
+    ``git rev-parse`` from cwd first made locks carry a cwd-derived slug while
     the git hooks (which derive the slug from the repo they run in) expected
-    ``hermes-cortex`` — the lock never matched and every commit/push on
+    the governed repo's slug — the lock never matched and every commit/push on
     steadfaste-fleet was blocked. So the canonical governed repo is resolved
     FIRST; the cwd git repo is only a fallback for project-repo-only hosts.
 
     Priority 0 (2026-10-06): a repo the ENFORCER observed for THIS session and
     injected into the call. The canonical preference below is a property of the
-    HOST, not of the session, so on a host with ~/hermes-cortex present every
-    lock — including one opened by a session working in ~/steadfaste — was
-    tagged hermes-cortex, and the close gate then reviewed a tree that could
-    not contain the work (permanent FINDINGS, unclosable cycle). Accepted only
-    when it names a real git repo, so a bogus value cannot point the review at
-    an arbitrary directory.
+    HOST, not of the session, so on a host still carrying the pre-migration
+    home dir every lock — including one opened by a session working in
+    ~/steadfaste — was tagged with the stale repo slug, and the close gate then
+    reviewed a tree that could not contain the work (permanent FINDINGS,
+    unclosable cycle). Accepted only when it names a real git repo, so a bogus
+    value cannot point the review at an arbitrary directory.
 
     Priority 0c (2026-10-09, ``session_repo``): the NON-Hermes caller's own repo
     — see ``_session_repo_path``. pi / Claude Code / Codex / the ``loop-gov``
@@ -475,7 +475,7 @@ def _derive_slug(args: dict | None = None, session_repo: Optional[Path] = None) 
     # `HOME/<slug>`: for a checkout nested deeper than a HOME child the two
     # disagree — the path is accepted as absolute while the name fails the
     # `HOME/<slug>` test — and the lock then MIXES provenance. Observed in cycle
-    # 10800: `repo_slug: "hermes-cortex"` beside `repo_path:
+    # 10800: `repo_slug: "<old repo name>"` beside `repo_path:
     # "~/.hermes/hermes-agent"`. The close gate resolves the lock's
     # repo from `repo_path`, so it audited hermes-agent — a tree that session
     # never touched — and returned permanent FINDINGS for work it could not see.
@@ -491,7 +491,7 @@ def _derive_slug(args: dict | None = None, session_repo: Optional[Path] = None) 
     # CORTEX_SESSION_REPO identity, else the MCP child's cwd. Deliberately
     # SKIPPED for a Hermes caller (per-call session_id injected by the enforcer):
     # the shared gateway daemon's cwd is a launch artifact, so tagging from it is
-    # the hermes-agent/hermes-cortex mismatch this function exists to prevent.
+    # the hermes-agent/old-slug mismatch this function exists to prevent.
     own = session_repo
     if own is None and not _injected_session_id(args):
         own = _session_repo_env_path() or _cwd_repo_path()
@@ -3753,7 +3753,7 @@ def _db() -> sqlite3.Connection:
     SQLite write lock, not fail. WAL mode lets readers run while a writer
     commits, and a generous busy-timeout makes a second writer WAIT for the
     first to release instead of erroring with 'database is locked' (observed:
-    concurrent hermes-cortex sessions on moses blocked each other for minutes).
+    concurrent governed sessions on moses blocked each other for minutes).
 
     Schema-init-once (2026-09-29 friction fix): DDL is delegated to
     _ensure_schema(), guarded by _SCHEMA_DONE, so it runs once per process.
@@ -7338,12 +7338,13 @@ def _adversarial_review_gate(lock: dict, cycle: dict,
     # ── Wrong-repo guard (part 1 of the right-repo fix) ──
     # The lock's repo_slug comes from _derive_slug(), whose canonical-repo
     # preference is a property of the HOST rather than the session — so on a
-    # host where ~/hermes-cortex exists, a session working elsewhere gets a lock
-    # tagged hermes-cortex. Reviewing that tree judges material it cannot
-    # contain: the verdict is permanent FINDINGS, the close is refused forever,
-    # and each retry spawns another full review (observed: a subagent working
-    # in steadfaste reviewed against hermes-cortex, retrying end_change into a
-    # dozen 420s timeouts). When the lock's repo shows NOTHING in the window while another
+    # host still carrying the pre-migration home dir, a session working
+    # elsewhere gets a lock tagged with the stale repo slug. Reviewing that
+    # tree judges material it cannot contain: the verdict is permanent
+    # FINDINGS, the close is refused forever, and each retry spawns another
+    # full review (observed: a subagent working in steadfaste reviewed against
+    # the stale slug, retrying end_change into a dozen 420s timeouts). When the
+    # lock's repo shows NOTHING in the window while another
     # candidate repo gained commits, refuse and name both instead of silently auditing the
     # wrong tree. Fail loud, never silently skip.
     #
@@ -8051,7 +8052,7 @@ def _session_identity(args: dict | None = None) -> CallToolResult:
     store, keyed by the ACTIVE GOVERNANCE LOCK's ``session_id``. A harness that
     RECORDS evidence (the Pi extension) must therefore resolve the SAME id, and
     until now it invented a second key — ``CORTEX_SESSION_KEY``, e.g.
-    ``hc-pi-<chat>`` — so the writer and the checker could never agree and every
+    ``fleet-pi-<chat>`` — so the writer and the checker could never agree and every
     Pi commit was refused no matter what the agent did. Measured 2026-10-15:
     the gate asked ``sess_58607c4834b3`` (the per-repo id non-Hermes callers get,
     persisted at ``state/.session-<slug>.id``) while the store held zero real-Pi

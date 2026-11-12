@@ -14,6 +14,9 @@
 # (no GNU `mv -T`/`--`) so it runs on BOTH Linux and macOS BSD.
 set -euo pipefail
 
+# STALE-path literals by design: these are the pre-migration old->new pairs this
+# tool exists to migrate. Renaming them to steadfaste-fleet would make the tool
+# a no-op — do not touch.
 PAIRS=(
   "${HOME}/hermes-cortex|${HOME}/steadfaste-fleet"
   "${HOME}/.hermes-cortex|${HOME}/.steadfaste-fleet"

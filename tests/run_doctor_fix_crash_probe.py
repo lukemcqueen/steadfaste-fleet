@@ -10,7 +10,7 @@ handing in a non-path entry crashed the whole check:
 The fix skips such an entry. This script prints what the function does with `[None]` at whatever
 revision it is run against, so the before/after is one command in each tree:
 
-    cd /tmp/hc-base   && python3 tests/run_doctor_fix_crash_probe.py    # pre-fix: traceback, rc=1
+    cd /tmp/fleet-base   && python3 tests/run_doctor_fix_crash_probe.py    # pre-fix: traceback, rc=1
     cd ~/steadfaste-fleet && python3 tests/run_doctor_fix_crash_probe.py   # fixed: empty result, rc=0
 
 Exit 0 when the call is handled, 1 when it raises.

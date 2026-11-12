@@ -81,6 +81,9 @@ _FIXTURE_KNOWN_PREFIXES = (
     "precommit-client-repo-", "precommit-enforcer-test-proj",
     "precommit-ext-repo-test", "precommit-hook-image-test",
     "precommit-tdd-gate-test", "precommit-test_",
+    # STALE cycle-name literals: precommit-hc-scope-test / precommit-nonhc-test
+    # are historical governance-DB test-cycle names (from the hc-era scope tests)
+    # — kept verbatim so the sweep still matches those rows.
     "precommit-hc-scope-test", "precommit-hooktest", "precommit-nonhc-test",
     "precommit-omz-sim-test", "precommit-project-repo-test",
     "precommit-sleak-test", "precommit-tdd-final", "precommit-tdd-no-infra",

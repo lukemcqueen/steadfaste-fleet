@@ -110,7 +110,7 @@ done
 ## Why This Pattern
 
 - `.hermes/` in project roots is the **old pattern** — now replaced by
-  `.hermes-cortex/` (project-anchored, gitignored-but-tracked) and
+  `.steadfaste-fleet/` (project-anchored, gitignored-but-tracked) and
   `~/.hermes/` (home-dir, single source of truth)
 - Valuable agent output (plans, research) belongs in `~/brain/<project>/agents/`
   where mycortex indexes and searches it via `/brain`

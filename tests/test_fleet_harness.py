@@ -24,7 +24,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 HARNESS_CMD = REPO / "ops/scripts/fleet/harness.py"
-HC_PY = REPO / "ops/scripts/fleet/fleet.py"
+FLEET_PY = REPO / "ops/scripts/fleet/fleet.py"
 TOOLS_PY = REPO / "ops/services/mycortex-mem/context_tools.py"
 
 
@@ -265,7 +265,7 @@ def test_the_cli_does_not_need_the_invoking_interpreter_to_have_yaml(tmp_path):
     assert (REPO / "ops/scripts/lib/python-with-module.sh").is_file(), \
         "the fleet capability resolver is the seam this test drives"
     runner = _yaml_less_runner(tmp_path)
-    r = subprocess.run([sys.executable, str(runner), str(HC_PY), "harness", "list"],
+    r = subprocess.run([sys.executable, str(runner), str(FLEET_PY), "harness", "list"],
                        capture_output=True, text=True, timeout=120)
     assert r.returncode == 0, (r.stdout + r.stderr)[-600:]
     assert "pi" in r.stdout, r.stdout
@@ -295,10 +295,10 @@ def test_the_cli_reports_could_not_verify_when_no_interpreter_can_import_yaml(tm
            # redirected HOME no longer provides: without this the CLI exits 2 for a
            # missing identity and the assertion below would measure THAT, not the
            # capability path (a probe that never reached its subject).
-           "HC_AGENT": "the-agent",
+           "FLEET_AGENT": "the-agent",
            "AGENT_NAME": "the-agent",
            "PATH": str(binonly)}
-    r = subprocess.run([sys.executable, str(runner), str(HC_PY), "harness", "list"],
+    r = subprocess.run([sys.executable, str(runner), str(FLEET_PY), "harness", "list"],
                        capture_output=True, text=True, timeout=120, env={**os.environ, **env})
     combined = (r.stdout + r.stderr).lower()
     assert r.returncode == 3, f"expected 3 (could not verify), got {r.returncode}:\n{combined[-600:]}"

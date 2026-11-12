@@ -18,9 +18,9 @@ it*, and prints one human line the gateway relays verbatim.
 
 Usage (argv templates live in gateway.yaml, never here):
 
-    pi-control compact     --session-id hc-pi-<chat> [--model M] [--instructions TEXT]
+    pi-control compact     --session-id fleet-pi-<chat> [--model M] [--instructions TEXT]
     pi-control check-model <provider/model>
-    pi-control state       --session-id hc-pi-<chat>
+    pi-control state       --session-id fleet-pi-<chat>
 
 Exit codes follow the fleet convention for a check that can fail three ways:
 

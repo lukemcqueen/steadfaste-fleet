@@ -1,8 +1,8 @@
-# UX Gap Analysis Methodology (hc-elicit / hc-party)
+# UX Gap Analysis Methodology (fleet-elicit / fleet-party)
 
 A structured 5-phase methodology for auditing existing web applications to identify UX gaps, user workflow issues, data placement problems, and ease-of-use improvements. Designed for complex enterprise apps (ACME royalty systems) with 20+ pages and 25+ API routers.
 
-**Trigger:** User says "hc-elicit and hc-party", "UX gap analysis", "UX audit", "review the UI", "review the UX", "are there missing pages", "make the workflow efficient".
+**Trigger:** User says "fleet-elicit and fleet-party", "UX gap analysis", "UX audit", "review the UI", "review the UX", "are there missing pages", "make the workflow efficient".
 
 ## Phase 1: Page & Route Inventory
 
@@ -190,7 +190,7 @@ See `docs/reviews/ux-gap-analysis.md` in acme-royalty for a completed example (J
 
 This session (June 2026) produced a variation: the gap analysis was immediately followed by batch-building all identified gaps and running E2E tests against the built pages. The process was:
 
-1. Run hc-elicit + hc-party (page inventory → gap matrix → prioritized slices)
+1. Run fleet-elicit + fleet-party (page inventory → gap matrix → prioritized slices)
 2. Create slice docs + update SLICES-INDEX
 3. Build all P0 items in parallel via subagents
 4. Run Next.js build to verify compilation
@@ -202,12 +202,12 @@ This session (June 2026) produced a variation: the gap analysis was immediately 
 
 The key difference from the standard methodology: **build first, test second, fix third** — not analyze → document → hand off. The priority slices were built in the same session as the analysis.
 
-See `docs/research/hc-elicit-ux-gap-analysis-2026-06-05.md` in acme-works for the actual output.
+See `docs/research/fleet-elicit-ux-gap-analysis-2026-06-05.md` in acme-works for the actual output.
 
 ## See also
 
 - `engineering-approach/references/frontend-code-review-methodology.md` — code-level review (focused on component quality, not UX)
-- `engineering-approach/references/architecture-review-methodology.md` — architecture-level trade-off review (hc-party)
+- `engineering-approach/references/architecture-review-methodology.md` — architecture-level trade-off review (fleet-party)
 - `engineering-approach/references/breadcrumbs-component-pattern.md` — Breadcrumbs component usage
 - `engineering-approach/references/info-tooltip-component-pattern.md` — InfoTooltip component for complex field explanations
 - `engineering-approach/references/empty-state-component-pattern.md` — EmptyState component for pages with no data

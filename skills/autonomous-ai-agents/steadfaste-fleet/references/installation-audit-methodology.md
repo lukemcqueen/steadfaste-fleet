@@ -1,6 +1,6 @@
 # Installation Audit Methodology
 
-Systematic approach to auditing a Hermes Cortex installation against
+Systematic approach to auditing a Steadfaste Fleet installation against
 the documented state. Use after fresh install, after repo updates, or
 when diagnosing "empty brain" or "nothing works" symptoms.
 
@@ -11,7 +11,7 @@ what *actually* exists on disk and in running processes.
 
 ### Layer 1: Process Audit
 
-1. List all Hermes Cortex launchd services
+1. List all Steadfaste Fleet launchd services
 2. Check exit codes (non-zero = degraded even if running)
 3. Cross-reference against what the installer should have created
 

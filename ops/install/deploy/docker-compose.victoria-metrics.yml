@@ -15,12 +15,12 @@
 #
 # Reference: https://docs.victoriametrics.com/single-server-victoriametrics/
 
-name: hc-metrics
+name: fleet-metrics
 
 services:
   victoriametrics:
     image: victoriametrics/victoria-metrics:latest
-    container_name: hc-victoria-metrics
+    container_name: fleet-victoria-metrics
     restart: always
     ports:
       - "127.0.0.1:8428:8428"    # HTTP API — also accepts Prometheus push at /api/v1/import/prometheus
@@ -40,7 +40,7 @@ services:
 
   grafana:
     image: grafana/grafana:latest
-    container_name: hc-grafana
+    container_name: fleet-grafana
     depends_on:
       victoriametrics:
         condition: service_healthy

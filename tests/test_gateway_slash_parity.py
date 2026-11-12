@@ -336,7 +336,7 @@ def test_compact_runs_the_declared_command_and_reports_its_output(tmp_path):
     _tell(gw, "/compact")
     bodies = transport.bodies()
     assert any("compacting" in b for b in bodies)          # the interim line
-    assert any("compacted hc-pi-12345" in b for b in bodies)   # templated + reported
+    assert any("compacted fleet-pi-12345" in b for b in bodies)   # templated + reported
 
 
 def test_compact_says_so_when_the_backend_declares_no_compact(tmp_path):
@@ -628,7 +628,7 @@ def test_a_backend_with_no_model_at_all_reports_it_instead_of_running_nonsense()
     """Empty value on a --model flag is rejected by every agent: say so, visibly."""
     spec = _spec(model="")
     backend = AGENTS.CommandBackend(spec)
-    out, failure = backend._run("hello", "hc-pi-1", None, "")
+    out, failure = backend._run("hello", "fleet-pi-1", None, "")
     assert out == "" and "no model to pass" in failure
 
 
@@ -638,7 +638,7 @@ def test_control_templates_the_session_id_from_the_envelope(tmp_path):
                               "timeout_s": 5}}))
     rc, out, err = backend.control("compact", {"channel_user_id": CHAT, "body": "/compact"})
     assert (rc, err) == (0, "")
-    assert out == "hc-pi-12345 pi"
+    assert out == "fleet-pi-12345 pi"
 
 
 def test_control_reports_an_undeclared_command_as_rc2(tmp_path):
@@ -698,7 +698,7 @@ def test_control_with_an_unknown_placeholder_runs_it_verbatim(tmp_path):
         commands={"compact": ["/bin/echo", "{bogus}", "{session_id}"]}))
     rc, out, err = backend.control("compact", {"channel_user_id": CHAT, "body": "/compact"})
     assert rc == 0
-    assert out == "{bogus} hc-pi-12345"
+    assert out == "{bogus} fleet-pi-12345"
 
 
 # ── pi-control: the verdict is the OUTPUT, not the exit code ─────────────────
@@ -784,7 +784,7 @@ def test_pi_control_does_not_hang_on_a_chat_that_has_no_session_yet(tmp_path):
     """
     fake = _fake_rpc_pi(tmp_path, message_count=0, answer_compact=False)
     done = subprocess.run(
-        [sys.executable, str(PI_CONTROL), "compact", "--session-id", "hc-pi-1",
+        [sys.executable, str(PI_CONTROL), "compact", "--session-id", "fleet-pi-1",
          "--timeout-s", "5"],
         capture_output=True, text=True, timeout=60,
         env={**os.environ, "PI_BIN": str(fake)})
@@ -797,7 +797,7 @@ def test_pi_control_does_not_hang_on_a_chat_that_has_no_session_yet(tmp_path):
 def test_pi_control_compacts_when_the_session_has_messages(tmp_path):
     fake = _fake_rpc_pi(tmp_path, message_count=7, answer_compact=True)
     done = subprocess.run(
-        [sys.executable, str(PI_CONTROL), "compact", "--session-id", "hc-pi-1",
+        [sys.executable, str(PI_CONTROL), "compact", "--session-id", "fleet-pi-1",
          "--timeout-s", "10"],
         capture_output=True, text=True, timeout=60,
         env={**os.environ, "PI_BIN": str(fake)})
@@ -814,7 +814,7 @@ def test_pi_control_runs_its_rpc_calls_without_mcp(tmp_path):
     """
     fake = _fake_rpc_pi(tmp_path, message_count=7, answer_compact=True)
     subprocess.run(
-        [sys.executable, str(PI_CONTROL), "compact", "--session-id", "hc-pi-1",
+        [sys.executable, str(PI_CONTROL), "compact", "--session-id", "fleet-pi-1",
          "--timeout-s", "10"],
         capture_output=True, text=True, timeout=60,
         env={**os.environ, "PI_BIN": str(fake)})

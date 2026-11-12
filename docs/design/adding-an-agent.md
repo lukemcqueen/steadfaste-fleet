@@ -144,7 +144,7 @@ CONFIG change:
 
 | You want | You declare |
 |---|---|
-| Keep a conversation | `"session": "per_chat"` (the id is deterministic: `hc-<agent>-<chat>`, so it survives a restart) |
+| Keep a conversation | `"session": "per_chat"` (the id is deterministic: `fleet-<agent>-<chat>`, so it survives a restart) |
 | Show progress while it works | `"stream": true` (the gateway builds the sink; the backend only reports text) |
 | Only the agent's answer matters | `"output": "last_line"` |
 | The agent writes its own reply to the bus | `"reply_mode": "bus"` (needs `out_<name>` to exist and to be granted) |

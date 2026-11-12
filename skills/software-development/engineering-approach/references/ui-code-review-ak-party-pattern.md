@@ -1,6 +1,6 @@
-# UI Code Review using the hc-party Pattern
+# UI Code Review using the fleet-party Pattern
 
-The hc-party methodology (risk tiers 🔴/🟡/🟢, trade-off analysis, consistency verification) applies to UI codebases as well as infrastructure/PRDs. This reference documents the adaptation for frontend code.
+The fleet-party methodology (risk tiers 🔴/🟡/🟢, trade-off analysis, consistency verification) applies to UI codebases as well as infrastructure/PRDs. This reference documents the adaptation for frontend code.
 
 ## When to Use
 

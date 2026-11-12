@@ -1,6 +1,6 @@
 # Territory Matrix — Society Splits Design
 
-**Source:** hc-party review, 2026-06-23
+**Source:** fleet-party review, 2026-06-23
 **Approach:** Option B — Separate `society_splits` table
 
 ## Problem

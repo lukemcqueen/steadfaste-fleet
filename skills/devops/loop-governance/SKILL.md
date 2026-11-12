@@ -1125,7 +1125,7 @@ user knows the system self-healed.
 
 ## Architecture Review Action Items
 
-The most recent architecture review (2026-06-24, hc-party) produced these priority
+The most recent architecture review (2026-06-24, fleet-party) produced these priority
 action items for hardening the loop-governance system:
 
 | Priority | Item | Status |

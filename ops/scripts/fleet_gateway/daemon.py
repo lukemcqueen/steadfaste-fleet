@@ -898,7 +898,7 @@ class Gateway:
         `pi "/new"` replies "New task. What are we doing?" and keeps all context).
 
         Archive, not delete (Luke, 2026-10-03). The previous transcript stays on
-        disk under its own session id, which is DETERMINISTIC (hc-<agent>-<chat>-g<N>),
+        disk under its own session id, which is DETERMINISTIC (fleet-<agent>-<chat>-g<N>),
         so every archived conversation is findable after the fact. Nothing here
         removes, truncates or renames anything.
         """

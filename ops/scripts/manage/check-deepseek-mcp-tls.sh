@@ -4,7 +4,8 @@
 # Scope: the `deepseek` entry in ~/.pi/agent/mcp.json ONLY (not the whole fleet).
 # Asserts that the entry's own interpreter can `import mcp` and resolve a REAL
 # certifi.where() cacert.pem — the failure class the hermes-cortex → steadfaste-fleet
-# home-dir migration surfaced ("Could not find a suitable TLS CA certificate bundle,
+# home-dir migration surfaced (STALE-path history; the old paths below are the
+# failure signature to recognize): "Could not find a suitable TLS CA certificate bundle,
 # invalid path: <venv>/certifi/cacert.pem").
 #
 # A stale `command` path or a missing cacert exits 1 so whatever wires it (pi restart

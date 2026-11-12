@@ -244,7 +244,7 @@ _ARTIFACT_FROZEN = _REPO_ROOT / "docs" / "evidence" / "soul-refinement-window-20
 _OPERATOR_ROWS = (
     "Time to fix the mycortex nightly dream for all agents. Ex: Cronjob Response: cortex-bus-workday",
     "fix this please. Titus Pi: The tooling deadlock - you should know about it",
-    "Please check if this is true. We have multiple agents in the same repo (non-hc).",
+    "Please check if this is true. We have multiple agents in the same repo (non-fleet).",
     "of course fix it. tdd with edge cases and review with deepseek pro.",
     "Continue",
     "Sure fix the handler defect",

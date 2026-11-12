@@ -210,7 +210,7 @@ const fail = (message: string) => {
  * either would be a second derivation of "which session is this", and a second
  * derivation is how the writer and the checker come to disagree — which is the
  * defect this replaces (every Pi commit was refused because the evidence landed
- * under `hc-pi-<chat>` while the gate asked about `sess_<hex>`).
+ * under `fleet-pi-<chat>` while the gate asked about `sess_<hex>`).
  *
  * Returns "" when the id cannot be resolved. The caller REPORTS that failure and
  * records nothing: inventing a key would recreate the disagreement silently.

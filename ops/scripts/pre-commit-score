@@ -1003,18 +1003,18 @@ fi
 # SKIPPED for sanctioned pipeline commits — no_agent cron has no session;
 # those commits are gated by the append-only guard + adversarial + scoring.
 # SCOPE (Luke 2026-10-29): reflexion governs ALL development, not just the
-# steadfaste-fleet repo. In a non-HC repo, a commit with NO active governance
+# steadfaste-fleet repo. In a non-fleet repo, a commit with NO active governance
 # session is an ungoverned/human commit — pass it through (--skip-no-session);
-# a Pi/agent commit HAS a lock, so its session is judged. In the HC repo a
-# no-session commit is still refused (HC commits must be governed).
+# a Pi/agent commit HAS a lock, so its session is judged. In the fleet repo a
+# no-session commit is still refused (fleet commits must be governed).
 if [[ "$SANCTIONED_PIPELINE" != "1" ]]; then
-  HC_REFLEXION_CHECK=""
+  FLEET_REFLEXION_CHECK=""
   for _cand in "$REPO_ROOT/ops/scripts/reflexion-check.py" \
                "$HOME/.steadfaste-fleet/scripts/reflexion-check.py" \
                "$HOME/.local/bin/reflexion-check.py"; do
-    if [[ -f "$_cand" ]]; then HC_REFLEXION_CHECK="$_cand"; break; fi
+    if [[ -f "$_cand" ]]; then FLEET_REFLEXION_CHECK="$_cand"; break; fi
   done
-  if [[ -z "$HC_REFLEXION_CHECK" ]]; then
+  if [[ -z "$FLEET_REFLEXION_CHECK" ]]; then
     echo ""
     echo "❌  Reflexion gate verifier missing (reflexion-check.py)."
     echo "    Re-run: bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh"
@@ -1035,18 +1035,18 @@ if [[ "$SANCTIONED_PIPELINE" != "1" ]]; then
   # by the verifier (--skip-no-session). Any missing skill refuses the commit —
   # survey/leverage must happen before a change lands, not be prose an agent
   # can skip.
-  _HC_SKIP_FLAG=""
+  _FLEET_SKIP_FLAG=""
   if [[ "$IS_CORTEX_REPO" -ne 1 ]]; then
-    _HC_SKIP_FLAG="--skip-no-session"
+    _FLEET_SKIP_FLAG="--skip-no-session"
   fi
-  _hc_rc=0
+  _reflexion_rc=0
   for _ritual_skill in task-orient execute-right verify-and-ship; do
-    _hc_rc=0
-    _hc_out=$(python3 "$HC_REFLEXION_CHECK" $_HC_SKIP_FLAG --skill "$_ritual_skill" 2>&1) || _hc_rc=$?
-    if [[ "$_hc_rc" -ne 0 ]]; then
+    _reflexion_rc=0
+    _reflexion_out=$(python3 "$FLEET_REFLEXION_CHECK" $_FLEET_SKIP_FLAG --skill "$_ritual_skill" 2>&1) || _reflexion_rc=$?
+    if [[ "$_reflexion_rc" -ne 0 ]]; then
       echo ""
       echo "❌  Ritual gated: '$_ritual_skill' not loaded this session."
-      echo "    ${_hc_out}"
+      echo "    ${_reflexion_out}"
       echo ""
       echo "    Load it (skill_view / read the SKILL.md), then commit."
       echo ""
@@ -1063,15 +1063,15 @@ fi
 # so this targets the project repos where Titus works; widening it to
 # steadfaste-fleet is one condition away.
 if [[ "$SANCTIONED_PIPELINE" != "1" && "$IS_CORTEX_REPO" -ne 1 ]]; then
-  HC_PLAN_REVIEW=""
+  FLEET_PLAN_REVIEW=""
   for _cand in "$REPO_ROOT/ops/scripts/plan-review-check.py" \
                "$HOME/.steadfaste-fleet/scripts/plan-review-check.py" \
                "$HOME/.local/bin/plan-review-check.py"; do
-    if [[ -f "$_cand" ]]; then HC_PLAN_REVIEW="$_cand"; break; fi
+    if [[ -f "$_cand" ]]; then FLEET_PLAN_REVIEW="$_cand"; break; fi
   done
-  if [[ -n "$HC_PLAN_REVIEW" ]]; then
+  if [[ -n "$FLEET_PLAN_REVIEW" ]]; then
     _prc_rc=0
-    _prc_out=$(python3 "$HC_PLAN_REVIEW" --skip-no-session 2>&1) || _prc_rc=$?
+    _prc_out=$(python3 "$FLEET_PLAN_REVIEW" --skip-no-session 2>&1) || _prc_rc=$?
     if [[ "$_prc_rc" -ne 0 ]]; then
       echo ""
       echo "❌  Plan-review gate: a slice needs its plan reviewed before implementing."

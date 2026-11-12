@@ -9,8 +9,8 @@ source: steadfaste-fleet
 platforms: [linux, macos, windows]
 metadata:
   hermes:
-    tags: [requirements, elicitation, specs, prioritization, rice, moscow, user-stories, acceptance-criteria, domain-exploration, elicit, hc-elicit]
-    aliases: [hc-elicit, elicit]
+    tags: [requirements, elicitation, specs, prioritization, rice, moscow, user-stories, acceptance-criteria, domain-exploration, elicit, fleet-elicit]
+    aliases: [fleet-elicit, elicit]
     trigger_phrases: [elicit requirements, gather specs, requirements elicitation, fleet elicit]
     related_skills: [plan, spike, subagent-driven-development]
 ---

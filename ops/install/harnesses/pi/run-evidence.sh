@@ -56,7 +56,7 @@ EVID_SHA="$(sha256sum "$HERE/run-evidence.sh" | cut -d' ' -f1)"
 # which need no prior state.
 #
 # Chat ids are PERSONAL IDENTIFIERS and this is a public repo, so the pinned key
-# is shown with its id REDACTED — the shape (`hc-pi-<chat>`) is the evidence, the
+# is shown with its id REDACTED — the shape (`fleet-pi-<chat>`) is the evidence, the
 # specific id is not.
 PI_BIN="${PI_BIN:-$HOME/.pi/agent/bin/pi}"
 CTX_CLI="${HOME}/.steadfaste-fleet/scripts/fleet-context.py"
@@ -67,8 +67,8 @@ else
 fi
 if [ -f "$CTX_CLI" ]; then
   key_out="$(python3 "$CTX_CLI" session_list '{}' 2>&1 \
-    | grep -o 'hc-pi-[0-9]*' | sed -E 's/[0-9]+$/NNNNNNNNNN/' | sort -u | head -5 || true)"
-  [ -n "$key_out" ] || key_out="(no hc-pi-* session keys recorded yet)"
+    | grep -o 'fleet-pi-[0-9]*' | sed -E 's/[0-9]+$/NNNNNNNNNN/' | sort -u | head -5 || true)"
+  [ -n "$key_out" ] || key_out="(no fleet-pi-* session keys recorded yet)"
 else
   key_out="(fleet-context CLI not deployed here)"
 fi

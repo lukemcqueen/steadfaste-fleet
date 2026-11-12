@@ -132,11 +132,14 @@ EVASIONS = [
 
 SANCTIONED_UPDATE = [
     "bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh",
-    "bash ~/hermes-cortex/ops/scripts/fleet-update.sh",
     "~/steadfaste-fleet/ops/scripts/fleet-update.sh --status",
     "bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh --dry-run --status",
 ]
 NOT_SANCTIONED_UPDATE = [
+    # STALE-path literal: the pre-migration repo path is no longer sanctioned
+    # (2026-11-12) — a host on ~/hermes-cortex is a straggler, not a sanctioned
+    # updater.
+    "bash ~/hermes-cortex/ops/scripts/fleet-update.sh",
     "bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh && echo hi",
     "sudo ~/steadfaste-fleet/ops/scripts/fleet-update.sh",
     "bash ~/other/ops/scripts/fleet-update.sh",

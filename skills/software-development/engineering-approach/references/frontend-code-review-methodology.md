@@ -1,6 +1,6 @@
-# Frontend Code Review Methodology (hc-party adapted)
+# Frontend Code Review Methodology (fleet-party adapted)
 
-Adapts the hc-party architecture review pattern (`references/architecture-review-methodology.md`) for **existing frontend codebases** — not new builds but audits of live UI code. Same risk tiers (🔴→🔴→🟡→🟢), same trade-off + ADR style, but the review dimensions are frontend-specific.
+Adapts the fleet-party architecture review pattern (`references/architecture-review-methodology.md`) for **existing frontend codebases** — not new builds but audits of live UI code. Same risk tiers (🔴→🔴→🟡→🟢), same trade-off + ADR style, but the review dimensions are frontend-specific.
 
 ## When to Use
 

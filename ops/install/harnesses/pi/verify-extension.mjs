@@ -217,23 +217,23 @@ if (typeof hooks["before_agent_start"] === "function") {
   delete process.env.CORTEX_SESSION_KEY;
   try {
     await hooks["before_agent_start"]({ systemPrompt: "BASE" }, {
-      sessionManager: { getSessionId: () => "hc-pi-marker-session" },
+      sessionManager: { getSessionId: () => "fleet-pi-marker-session" },
     });
   } catch (err) {
     note(false, `before_agent_start (with ctx) threw: ${err}`);
   }
-  note(process.env.CORTEX_SESSION_KEY === "hc-pi-marker-session",
+  note(process.env.CORTEX_SESSION_KEY === "fleet-pi-marker-session",
        `before_agent_start sets CORTEX_SESSION_KEY from ctx.sessionManager.getSessionId() (got ${JSON.stringify(process.env.CORTEX_SESSION_KEY)})`);
   // Only-if-unset: an operator/gateway pin must win over the extension.
-  process.env.CORTEX_SESSION_KEY = "hc-pi-pinned";
+  process.env.CORTEX_SESSION_KEY = "fleet-pi-pinned";
   try {
     await hooks["before_agent_start"]({ systemPrompt: "BASE" }, {
-      sessionManager: { getSessionId: () => "hc-pi-marker-session" },
+      sessionManager: { getSessionId: () => "fleet-pi-marker-session" },
     });
   } catch (err) {
     note(false, `before_agent_start (pinned) threw: ${err}`);
   }
-  note(process.env.CORTEX_SESSION_KEY === "hc-pi-pinned",
+  note(process.env.CORTEX_SESSION_KEY === "fleet-pi-pinned",
        "an existing CORTEX_SESSION_KEY pin is NOT overwritten (only-if-unset)");
   if (savedKey === undefined) delete process.env.CORTEX_SESSION_KEY;
   else process.env.CORTEX_SESSION_KEY = savedKey;

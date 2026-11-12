@@ -1,15 +1,14 @@
 ---
-name: hermes-cortex-setup
+name: steadfaste-fleet-setup
 version: 1.0.0
-description: Install and configure Hermes Cortex core components — Ollama, mycortex knowledge brain, health server, agent registry, hooks, cron jobs, and profile scaffolding on a target machine.
+description: Install and configure Steadfaste Fleet core components — Ollama, mycortex knowledge brain, health server, agent registry, hooks, cron jobs, and profile scaffolding on a target machine.
 behavioral_principles:
  - The knowledge brain is mycortex — install it via the repo's fleet-update.sh (register-based deploy), never via pip/npm/bun. The legacy brain is decommissioned 2026-08-02; do not install or restart it.
  - When installing Bun, prefer download-inspect-execute over raw curl|bash when the security scanner flags it.
  - Always create a .env file in ~/steadfaste-fleet/ before running install-orch-crons.sh to avoid silent failure.
  - When sudo is unavailable, install Ollama from GitHub releases tarballs (not the official install.sh which requires root).
  - Before writing custom configs or inventing new approaches, check the repo's docs/ and ops/scripts/ first for existing documented solutions. Use the documented tools as primary; custom workarounds are a last resort.
- - ⚠️ **Stale name — migrated.** Hermes Cortex was consolidated into steadfaste-fleet (repo ~/steadfaste-fleet, deploy ~/.steadfaste-fleet); the old hermes-cortex path is gone. Substitute ~/.steadfaste-fleet wherever this skill says hermes-cortex / ~/.hermes-cortex.
- - When setting up services on a target machine, inspect running configs FIRST — check /etc/nginx/sites-enabled/, systemctl --user list-units, ss -tlnp, ps aux. The deployed nginx upstream blocks define the correct internal ports. Never invent port assignments before checking what's already deployed. Check in order: (1) running machine configs, (2) hermes-cortex repo docs/, (3) agent-registry.template.json.
+ - When setting up services on a target machine, inspect running configs FIRST — check /etc/nginx/sites-enabled/, systemctl --user list-units, ss -tlnp, ps aux. The deployed nginx upstream blocks define the correct internal ports. Never invent port assignments before checking what's already deployed. Check in order: (1) running machine configs, (2) steadfaste-fleet repo docs/, (3) agent-registry.template.json.
  - For systemd user services that run bun scripts, always set explicit PATH in Environment= — systemd does not inherit the user shell's PATH.
  - Verify each install step with a version check or doctor command before proceeding to the next.
  - After installing components, update PATH persistence in shell config (~/.bashrc) for Bun and ~/.local/bin.
@@ -22,7 +21,7 @@ behavioral_principles:
  - The health server exposes two endpoints with different response formats: /health (compact 9-element vector, ideal for orchestrator polling) and /api/v1/health (full JSON, ideal for debugging). When configuring EXTERNAL_HEALTH_URL, use /health per user preference.
  - mycortex sync is a 15-min cron (agent-mycortex-sync); there is no sync daemon to stop. After `sources add`, run `mycortex sync --source <name>` manually to index immediately.
  - When setting up an agent on a target machine, always check the machine's existing deployed configs FIRST — especially /etc/nginx/sites-enabled/ and /etc/systemd/system/ and /etc/nginx/conf.d/. The actual upstream port definitions may differ from what the docs say. Check nginx configs for upstream blocks before choosing internal ports.
- - Before writing custom configs or inventing port schemes, check three sources in order: (1) the running config on the machine itself (nginx sites-enabled, systemd services), (2) the hermes-cortex repo docs/ directory, (3) the agent-registry.template.json. Only after exhausting these three should you write a custom approach.
+ - Before writing custom configs or inventing port schemes, check three sources in order: (1) the running config on the machine itself (nginx sites-enabled, systemd services), (2) the steadfaste-fleet repo docs/ directory, (3) the agent-registry.template.json. Only after exhausting these three should you write a custom approach.
  - mycortex has no daemon and no PGLite lock — sources are synced via the mycortex CLI/cron. Never install the legacy brain or its services; the doctor treats leftover legacy units as stale.
  - fail2ban, nginx config deployment, and apt package installation require sudo. When these steps are needed and sudo is unavailable, prepare config files at `~/.steadfaste-fleet/nginx/` and scripts at `~/.steadfaste-fleet/scripts/` with full terminal commands printed for the user to copy-paste. Never assume sudo is available.
  - The health-vector.py service must run on port 8905 (127.0.0.1). This is what the deployed nginx `upstream health_backend` block expects. Do not change the port unless the nginx config explicitly defines a different upstream.
@@ -36,19 +35,19 @@ behavioral_principles:
  - When patching a no_agent cron script that uses `docker`, always wrap with `sg docker -c`. The cron runtime doesn't have docker group access even if the agent's shell does.
  - After fleet-update , verify deployed cron scripts in ~/.hermes/scripts/ are real file copies, not symlinks to the repo. Cron runtime rejects symlinks that resolve outside ~/.hermes/scripts/.
  - When running fleet-update.sh from its deployed location at ~/.hermes/scripts/, always export REPO_DIR=$HOME/steadfaste-fleet first. The script auto-detects REPO_DIR from $(dirname "${BASH_SOURCE[0]}") which resolves to ~/.hermes/scripts/ — not a git repo — and fails with "✗ Not a git repository".
-trigger: User asks to install, set up, deploy, or bootstrap Hermes Cortex, or mentions 'cortex setup', 'install cortex', 'hermes-cortex components'. The cron health report shows an agent as 🔴 unreachable — the fix is often missing health server + agent registry on that machine.
+trigger: User asks to install, set up, deploy, or bootstrap Steadfaste Fleet, or mentions 'cortex setup', 'install cortex', 'steadfaste-fleet components'. The cron health report shows an agent as 🔴 unreachable — the fix is often missing health server + agent registry on that machine.
 ---
 
-# Hermes Cortex Setup
+# Steadfaste Fleet Setup
 
-Walkthrough for installing the core Hermes Cortex components on a Linux (or macOS) machine. Each step is verified before moving to the next.
+Walkthrough for installing the core Steadfaste Fleet components on a Linux (or macOS) machine. Each step is verified before moving to the next.
 
 ## Prerequisites
 
 - Linux or macOS host
 - `curl`, `git`, `python3`, `unzip` available
 - Hermes Agent installed (the cortex skill set layers on top)
-- Target repo cloned: `git clone https://github.com/nousresearch/hermes-cortex.git ~/steadfaste-fleet`
+- Target repo cloned: `git clone https://github.com/nousresearch/steadfaste-fleet.git ~/steadfaste-fleet`
 
 ## Installation Steps
 
@@ -182,7 +181,7 @@ legacy brain unit/dir/binary as stale.
 
 ### 4. Initialize mycortex
 
-**Postgres container (dedicated, hermes-cortex-owned):**
+**Postgres container (dedicated, steadfaste-fleet-owned):**
 
 The `mycortex-postgres` container is defined in
 `ops/install/deploy/docker-compose.mycortex.yml` and started by install.sh.
@@ -199,10 +198,10 @@ python3 ~/steadfaste-fleet/ops/services/mycortex/migrate.py
 
 # 3. Register a brain source (git repo required per source)
 MYCORTEX_CLI="$HOME/.steadfaste-fleet/scripts/mycortex"
-"$MYCORTEX_CLI" sources add hermes-cortex --path ~/steadfaste-fleet
+"$MYCORTEX_CLI" sources add steadfaste-fleet --path ~/steadfaste-fleet
 
 # 4. Sync it (index now; the cron keeps it fresh)
-"$MYCORTEX_CLI" sync --source hermes-cortex
+"$MYCORTEX_CLI" sync --source steadfaste-fleet
 
 # 5. Verify
 "$MYCORTEX_CLI" doctor --json
@@ -233,7 +232,7 @@ This is the canonical approach. It's a zero-dependency HTTP server that outputs 
 # Create systemd user service
 cat > ~/.config/systemd/user/health-vector.service << 'EOF'
 [Unit]
-Description=Hermes Cortex Health Vector Server (<agent-name>)
+Description=Steadfaste Fleet Health Vector Server (<agent-name>)
 After=network.target
 Wants=ollama.service
 
@@ -287,7 +286,7 @@ See `references/health-vector-troubleshooting.md` for the full three-layer verif
 
 **Golden rule — Check existing deployments before inventing configs.** Check three sources in order:
 1. **Running configs on the machine** — `/etc/nginx/sites-enabled/*`, `systemctl --user list-units`, `ss -tlnp`, `ps aux`
-2. **Hermes Cortex docs** — `docs/setup-reference.md`, `docs/operations-reference.md`, `docs/fleet-reference.md`
+2. **Steadfaste Fleet docs** — `docs/setup-reference.md`, `docs/operations-reference.md`, `docs/fleet-reference.md`
 3. **Agent registry template** — `ops/install/deploy/agent-registry.template.json` in the repo (old `src/agent-registry.template.json` path no longer valid)
 
 The biggest class of error is inventing port assignments (e.g. 12007, 14008, 14070, 14076) when the answer is already in the deployed nginx config. Always check first.
@@ -353,7 +352,7 @@ retention policy. There is nothing to enable with systemd.
 ```bash
 # Manual sync (index now, don't wait for the cron)
 MYCORTEX_CLI="$HOME/.steadfaste-fleet/scripts/mycortex"
-"$MYCORTEX_CLI" sync --source hermes-cortex
+"$MYCORTEX_CLI" sync --source steadfaste-fleet
 
 # Verify the cron is registered
 hermes cron list --all 2>/dev/null | grep agent-mycortex-sync
@@ -408,7 +407,7 @@ mkdir -p "${HOME}/brain/lessons"
 
 ```bash
 # Skills + hooks — deploy from the repo source. The Cortex repo no longer
-# carries a .hermes-cortex/ directory (removed 2026-10-07: inside ~/steadfaste-fleet
+# carries a .steadfaste-fleet/ directory (removed 2026-10-07: inside ~/steadfaste-fleet
 # that name shadowed the runtime dir ~/.steadfaste-fleet and made a governance
 # marker indistinguishable from repo state). fleet-update.sh installs both
 # from ops/scripts/ and ops/install/hooks/ into ~/.steadfaste-fleet/hooks/.
@@ -440,7 +439,7 @@ Add `~/.local/bin` and `~/.bun/bin` to the user's PATH:
 grep -q '\.local/bin\|\.bun/bin' ~/.bashrc || {
  cat >> ~/.bashrc << 'EOF'
 
-# Hermes Cortex paths
+# Steadfaste Fleet paths
 export PATH="$HOME/.local/bin:$HOME/.bun/bin:$PATH"
 EOF
 }
@@ -451,7 +450,7 @@ EOF
 ```bash
 cd ~/steadfaste-fleet
 git config user.name "<Agent Name>"
-git config user.email "<agent-name>@hermes-cortex"
+git config user.email "<agent-name>@steadfaste-fleet"
 ```
 
 ### 13. Install Universal Cron Jobs (Every Agent)
@@ -493,7 +492,7 @@ Always use `cp` (real file copy) and pass just the filename (e.g. `agent-remedia
 **Pitfall — cron scripts import helper modules from the same directory.** Several cron scripts import utility modules as peer imports (`from hermes_tz import ...`, `from platform_utils import ...`, `from state_tracker import ...`, `from hermes_models import ...`). When you copy scripts to `~/.steadfaste-fleet/scripts/` or `~/.hermes/scripts/`, these helper modules must be copied alongside:
 
 ```bash
-# Helper modules needed by Hermes Cortex cron scripts
+# Helper modules needed by Steadfaste Fleet cron scripts
 for helper in platform_utils.py hermes_tz.py state_tracker.py hermes_models.py; do
  find ~/steadfaste-fleet/ops/scripts -name "$helper" -exec cp {} ~/.hermes/scripts/ \; 2>/dev/null
  find ~/steadfaste-fleet/ops/scripts -name "$helper" -exec cp {} ~/.steadfaste-fleet/scripts/ \; 2>/dev/null
@@ -712,7 +711,7 @@ The Cortex Dashboard is a Flask app at `ops/services/dashboard/server.py`. It sh
 # Create systemd user service
 cat > ~/.config/systemd/user/cortex-dashboard.service << 'EOF'
 [Unit]
-Description=Hermes Cortex Dashboard
+Description=Steadfaste Fleet Dashboard
 After=network.target
 
 [Service]
@@ -778,7 +777,7 @@ Nginx proxies this at `:14002` (prefix + 002).
 # Install
 sudo apt-get install -y fail2ban
 
-# Copy Hermes Cortex badbots filter
+# Copy Steadfaste Fleet badbots filter
 sudo cp ~/steadfaste-fleet/ops/install/deploy/nginx/nginx-badbots.conf \\
  /etc/fail2ban/filter.d/nginx-badbots.conf
 

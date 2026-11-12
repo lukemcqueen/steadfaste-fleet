@@ -7,12 +7,17 @@
 # host whose origin is something unexpected.
 #
 # Run via the agent-message-handler EXEC path (a deployed script in
-# ~/.hermes-cortex/scripts/). Prints only to stdout on the SUCCESS paths; git may
+# ~/.steadfaste-fleet/scripts/). Prints only to stdout on the SUCCESS paths; git may
 # write its own stderr on a failure, which this script propagates with exit!=0.
 set -euo pipefail
 
 # Env-overridable so a test can point it at throwaway git repos.
-REPO="${FLEET_SET_ORIGIN_REPO:-${HOME}/hermes-cortex}"
+# Default: the canonical checkout. (The pre-migration default ~/hermes-cortex was
+# retired 2026-11-12 — migration complete.)
+REPO="${FLEET_SET_ORIGIN_REPO:-${HOME}/steadfaste-fleet}"
+# STALE-path literal: the pre-migration repo URL (still redirects on the host).
+# Kept because this tool exists to REWRITE a straggler origin carrying it — do
+# not remove unless every host has confirmed the canonical origin.
 LEGACY="https://github.com/lukemcqueen/hermes-cortex.git"
 CANONICAL="https://github.com/lukemcqueen/steadfaste-fleet.git"
 

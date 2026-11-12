@@ -65,12 +65,12 @@ def test_a_worktree_of_the_cortex_repo_is_not_a_dev_repo(tmp_path, monkeypatch):
     """A worktree of the cortex repo carries the CORTEX repo's AGENTS.md on a session branch.
     Treating it as a dev repo warns about a block that belongs to the cortex repo (enforced by
     the repo check) and points the fix command at a session branch — measured 2026-10-14 with
-    ~/hc-session2. Its `.git` FILE names the real gitdir."""
+    ~/hc-session2 (pre-rename name; the convention is now ~/fleet-session2). Its `.git` FILE names the real gitdir."""
     cortex = tmp_path / "steadfaste-fleet"
     (cortex / ".git" / "worktrees" / "wt").mkdir(parents=True)
     (cortex / ".git" / "HEAD").write_text("ref: refs/heads/main\n")
     (cortex / "AGENTS.md").write_text("# cortex\n")
-    wt = tmp_path / "hc-session2"
+    wt = tmp_path / "fleet-session2"
     wt.mkdir()
     (wt / ".git").write_text(f"gitdir: {cortex}/.git/worktrees/wt\n")
     (wt / "AGENTS.md").write_text("# cortex worktree, no efficiency block\n")
@@ -79,7 +79,7 @@ def test_a_worktree_of_the_cortex_repo_is_not_a_dev_repo(tmp_path, monkeypatch):
     monkeypatch.setattr(checks, "CORTEX_REPO", cortex)
     res = Results()
     checks.check_dev_repo_agents(res)
-    offenders = [c for c in res.checks if "hc-session2" in c["name"]]
+    offenders = [c for c in res.checks if "fleet-session2" in c["name"]]
     assert not offenders, f"warned about a cortex worktree: {offenders}"
     print("  a worktree of the cortex repo is not a dev repo ✓")
 

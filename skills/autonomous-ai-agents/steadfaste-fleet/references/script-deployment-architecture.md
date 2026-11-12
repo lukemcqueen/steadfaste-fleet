@@ -1,4 +1,4 @@
-# Hermes Cortex Script Deployment Architecture
+# Steadfaste Fleet Script Deployment Architecture
 
 ## Directory Roles
 

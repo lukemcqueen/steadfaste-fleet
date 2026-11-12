@@ -45,8 +45,9 @@ is obsolete.
    outside `ops/` — is that the right separation, or should they consolidate?
 5. `ops/` is a catch-all: `offline/` (a 561-file corpus) vs `scripts/` vs
    `services/` vs `install/` — mostly clear by name, but nothing documents it.
-6. `hc-session2/` is a SIBLING dir at `~/hc-session2/` (outside the repo),
-   apparently a stale copy — needs duplicate-vs-unique hash audit.
+6. `hc-session2/` is a SIBLING dir at `~/hc-session2/` (outside the repo) — a
+   session worktree under the pre-rename name (STALE label; new session worktrees
+   are `~/fleet-session-<tag>`), apparently a stale copy — needs duplicate-vs-unique hash audit.
 7. No single repo map: navigation relies on AGENTS.md + DOCS-INDEX, neither of
    which lists the actual top-level separation as it stands.
 
@@ -84,6 +85,7 @@ Given the layer model is already established and `src/` is long retired:
   `evidence-bus-poll-titus-20261009.md`, `evidence-agent-fixer-evening-repetition-loop-20261009.md`,
   `CLAUDE.md`, `config/`, `laptop/`, `profiles/` (each 1 file).
 - `docs/evidence`/`docs/older` counts: same `git ls-files` breakdown.
-- `hc-session2/`: SIBLING at `~/hc-session2/` (outside this repo) — surfaces in
+- `hc-session2/`: SIBLING at `~/hc-session2/` (outside this repo; pre-rename
+  session-worktree name — new ones are `~/fleet-session-<tag>`) — surfaces in
   `search_files` of `~`; a duplicate-vs-unique hash audit is REQUIRED before any
   removal and has NOT yet been run.

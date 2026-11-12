@@ -169,7 +169,7 @@ def main() -> int:
         replies = turn(gw, "/new", chat)
         body = " ".join(str(r.get("body", "")) for r in replies)
         check("a new generation is announced", "New session" in body, body[:160])
-        check("the archived session is named", f"hc-{spec.name}-{chat}" in body)
+        check("the archived session is named", f"fleet-{spec.name}-{chat}" in body)
         archived = Path(os.path.expanduser("~/.pi/agent/sessions"))
         check("transcripts live on disk (archive, not delete)",
               (not archived.exists()) or any(archived.rglob("*.jsonl")))

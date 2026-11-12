@@ -587,7 +587,7 @@ repo state, audited range, the task's description, the diff stat, and the diff:
   last, so a generous tail suffices), and have it re-emitted in full.
 - **When the load-bearing value is a personal identifier, commit the SHAPE and
   claim the shape.** An evidence artifact is a committed file, so a real chat id,
-  hostname or key has to be redacted to its pattern (`hc-<agent>-<chat>`) — but a
+  hostname or key has to be redacted to its pattern (`fleet-<agent>-<chat>`) — but a
   redacted artifact sitting beside a note that asserts the exact value is its own
   finding. Assert the property the reader CAN check from committed material (the
   key is per-chat, distinct, stable) and drop the value they cannot.

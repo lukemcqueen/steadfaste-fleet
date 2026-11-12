@@ -1,16 +1,16 @@
 # Template Reference: AGENTS-loop-governance.md
 
 A standalone template for adopting loop-governance scoring in any project's
-`AGENTS.md` is available in the hermes-cortex repo at:
+`AGENTS.md` is available in the steadfaste-fleet repo at:
 
 `docs/templates/AGENTS-loop-governance.md`
 
 ## When to use
 
 - You're setting up a new project and want loop-governance integration
-- You're adopting hermes-cortex's scoring system in an existing project
+- You're adopting steadfaste-fleet's scoring system in an existing project
 - You need a lightweight drop-in section for AGENTS.md without copying the
-  entire hermes-cortex AGENTS.md
+  entire steadfaste-fleet AGENTS.md
 
 ## What it covers
 

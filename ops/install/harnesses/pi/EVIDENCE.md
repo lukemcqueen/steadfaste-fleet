@@ -71,7 +71,7 @@ re-runnable guard for the seam is
 `tests/test_gateway_agent_registry.py::test_command_backend_pins_session_identity_via_spec_env`.
 
 ```
-(no hc-pi-* session keys recorded yet)
+(no fleet-pi-* session keys recorded yet)
 ```
 
 ---

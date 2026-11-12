@@ -68,13 +68,16 @@ bash ~/steadfaste-fleet/ops/scripts/lib/python-with-module.sh --print mcp
 # exit 3 = no interpreter on this host can import it; install it and re-run
 ```
 
-**Migration signature (hermes-cortex → steadfaste-fleet).** After the home-dir
+**Migration signature (hermes-cortex → steadfaste-fleet).** (STALE-path
+teaching — the old paths below are the failure signature to recognize.) After the home-dir
 migration, an entry that still names the OLD interpreter fails TLS before any tool
 runs, because `certifi`'s CA bundle now lives only in the NEW venv, not the
-emptied `~/.hermes-cortex/venv`:
+emptied `~/.hermes-cortex/venv` (STALE pre-migration path — kept as the failure
+signature this section teaches you to recognize):
 
 > Could not find a suitable TLS CA certificate bundle, invalid path:
 > ~/.hermes-cortex/venv/lib/python3.12/site-packages/certifi/cacert.pem
+> (STALE pre-migration path — the exact failure line to recognize)
 
 certifi is the failure, not just the `mcp` package, so resolve by capability AND
 confirm the bundle — exit 3 from the resolver, or a missing `certifi`, means keep
@@ -88,8 +91,9 @@ PY=$(bash ~/steadfaste-fleet/ops/scripts/lib/python-with-module.sh --print mcp)
 pi mcp list | grep deepseek     # connected, with its 3 tools named `review`
 ```
 
-A stale `command` of `~/.hermes-cortex/venv/bin/python3` is the migration's blast
-radius, not this addon's fault — see `docs/runbooks/fleet-local-dir-rename.md`.
+A stale `command` of `~/.hermes-cortex/venv/bin/python3` (STALE pre-migration
+path) is the migration's blast radius, not this addon's fault — see
+`docs/runbooks/fleet-local-dir-rename.md`.
 
 ## Verify, then leave it alone
 

@@ -1,16 +1,12 @@
 ---
-name: hermes-cortex-repo-deploy
+name: steadfaste-fleet-repo-deploy
 version: 1.0.0
 category: devops
-description: "Use when committing to the hermes-cortex repo."
+description: "Use when committing to the steadfaste-fleet repo."
 platforms: [linux, macos]
 ---
 
-> ⚠️ **Stale name — migrated.** This skill governs the fleet repo, which is now **steadfaste-fleet**
-> (`~/steadfaste-fleet` repo, `~/.steadfaste-fleet` deploy). "Hermes Cortex" is the historical name;
-> the repo/home are the steady-fleet ones and the `hermes-cortex`/`~/.hermes-cortex` references are gone.
-
-# Hermes Cortex Repo — Deploy & Push Gates
+# Steadfaste Fleet Repo — Deploy & Push Gates
 
 Workflow for landing changes in `~/steadfaste-fleet` (shared public repo). The
 repo's own AGENTS.md governs governance mechanics; this skill carries the
@@ -465,7 +461,7 @@ can trip doc-friendliness heuristics; coordinate rather than cleaning.
 `ops/install/deploy/nginx/blocked_ips.add` is rewritten by the
 `agent-nginx-threat-pipeline` cron on every tick — it is *always* modified at
 commit time, and the pipeline both stages it and pushes its own commits. So
-on the hermes-cortex repo:
+on the steadfaste-fleet repo:
 
 - Expect this file to block `git pull --rebase` ("Please commit or stash
 them") on nearly every push. Stash just that path by name, rebase, pop.

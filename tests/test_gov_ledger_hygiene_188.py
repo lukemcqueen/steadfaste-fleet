@@ -98,7 +98,7 @@ def test_stats_separate_hook_cycles_and_judge_coverage_on_the_rest() -> None:
             ("precommit-dry-HEAD/update", "hook fixture", 5.8, None),
             # judged cycles: 1 of 3 has feedback
             ("docs-consolidation-cleanup", "judged", 8.6, 0),
-            ("pii-scrub-hc-repo-2", "judged", 7.9, None),
+            ("pii-scrub-fleet-repo-2", "judged", 7.9, None),
             ("titus-learning-report-gap", "judged", 8.0, None),
         ])
         m._db = lambda: _fixture_conn(db)

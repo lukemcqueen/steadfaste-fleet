@@ -287,7 +287,7 @@ def test_output_shape_is_declared_not_guessed():
 def test_per_chat_session_continuity_is_declared_and_deterministic():
     """pi spawns per turn, so without this every message starts a blank conversation.
 
-    The id is deterministic (hc-<agent>-<chat>) so continuity survives a gateway restart
+    The id is deterministic (fleet-<agent>-<chat>) so continuity survives a gateway restart
     with no shared state, and the argv template keeps pi's flag names out of our code.
     """
     spec = A.AgentSpec(name="pi", kind="command", session="per_chat",
@@ -298,8 +298,8 @@ def test_per_chat_session_continuity_is_declared_and_deterministic():
     reply_b = backend.dispatch(_inbound("second", chat=111))
     reply_c = backend.dispatch(_inbound("other chat", chat=222))
     ids = [r["body"].split("--session-id ")[1].split()[0] for r in (reply_a, reply_b, reply_c)]
-    assert ids[0] == ids[1] == "hc-pi-111", f"same chat must reuse its session: {ids}"
-    assert ids[2] == "hc-pi-222", f"a different chat must get its own session: {ids}"
+    assert ids[0] == ids[1] == "fleet-pi-111", f"same chat must reuse its session: {ids}"
+    assert ids[2] == "fleet-pi-222", f"a different chat must get its own session: {ids}"
     print(f"  per-chat sessions are deterministic: {ids} ✓")
 
     off = A.AgentSpec(name="pi", kind="command", command=["/bin/echo"])
@@ -335,7 +335,7 @@ def test_command_backend_pins_session_identity_via_spec_env():
     a = backend.dispatch(_inbound("first", chat=111))["body"]
     b = backend.dispatch(_inbound("second", chat=222))["body"]
     c = backend.dispatch(_inbound("third", chat=111))["body"]
-    assert a == "hc-pi-111" and b == "hc-pi-222", (a, b)
+    assert a == "fleet-pi-111" and b == "fleet-pi-222", (a, b)
     assert c == a, "the same chat must keep ONE key across turns (and restarts)"
     print(f"  spec env pins a per-chat session key: {a}, {b} ✓")
 

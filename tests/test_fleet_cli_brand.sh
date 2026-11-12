@@ -126,6 +126,38 @@ else
   bad "stale hc test filenames:"; echo "$stale_tests"
 fi
 
+# B7. no hc session scheme in the gateway / pi harness (hc-<agent>-<chat>,
+#     hc-pi-*) and no HC_ env contract in active code — the sweep of 2026-11-12
+#     renamed both (fleet-<agent>-<chat> / FLEET_AGENT). Dated records and
+#     deliberate-keep literals are exempt: the latter carry a 'STALE' label on
+#     their line (the documented contract for the detection literals).
+stale_scheme=$(
+  grep -RInE 'hc-<agent>|hc-pi-|f"hc-|hc-party|hc-elicit' "$REPO" \
+      --include=*.py --include=*.sh --include=*.mjs --include=*.ts --include=*.md 2>/dev/null \
+      --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=__pycache__ \
+      --exclude-dir=evidence --exclude-dir=older --exclude-dir=sessions \
+    | grep -viE 'STALE' \
+    | grep -viE "$RECORD_FILTER"
+)
+if [ -z "$stale_scheme" ]; then
+  ok "no hc session-scheme / hc-pi tokens in active surface"
+else
+  bad "hc session scheme remains:"; echo "$stale_scheme"
+fi
+stale_env=$(
+  grep -RInE '\bHC_[A-Z]+' "$REPO/ops" "$REPO/plugins" "$REPO/mcp-servers" \
+      --include=*.py --include=*.sh 2>/dev/null \
+      --exclude-dir=.git --exclude-dir=__pycache__ \
+      --exclude-dir=evidence --exclude-dir=older \
+    | grep -viE 'STALE' \
+    | grep -viE "$RECORD_FILTER"
+)
+if [ -z "$stale_env" ]; then
+  ok "no bare HC_ env tokens in production code"
+else
+  bad "HC_ env tokens remain:"; echo "$stale_env"
+fi
+
 echo
 echo "== RESULT: $pass ok, $fails failed =="
 [ $fails -eq 0 ]

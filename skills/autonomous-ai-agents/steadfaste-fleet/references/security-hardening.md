@@ -1,6 +1,6 @@
-# Hermes Cortex — Security Hardening Reference
+# Steadfaste Fleet — Security Hardening Reference
 
-Commands and patterns for hardening a Hermes Cortex installation on macOS.
+Commands and patterns for hardening a Steadfaste Fleet installation on macOS.
 
 ## Permission Audit
 
@@ -51,7 +51,7 @@ If a Cortex service appears (e.g. `Python *:8901`), it's binding to 0.0.0.0. Fix
 
 ## nginx Local-Only Unload
 
-nginx is installed as part of the Hermes Cortex stack for TLS reverse proxy. On local-only setups it should be unloaded to avoid log permission errors:
+nginx is installed as part of the Steadfaste Fleet stack for TLS reverse proxy. On local-only setups it should be unloaded to avoid log permission errors:
 
 **Symptom:** `brew services list` shows nginx as `error`, or `nginx -t` fails with:
 ```

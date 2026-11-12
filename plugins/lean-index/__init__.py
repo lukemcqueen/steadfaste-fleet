@@ -47,7 +47,7 @@ def _install() -> None:
         logger.warning("lean-index: cannot import coding_context: %s", exc)
         return
 
-    if getattr(cc, "_HC_LEAN_INDEX_PATCHED", False):
+    if getattr(cc, "_FLEET_LEAN_INDEX_PATCHED", False):
         return
 
     # 1. Keep "lean" a distinct mode (upstream aliases it to "focus").
@@ -74,7 +74,7 @@ def _install() -> None:
         return _orig(platform=platform, cwd=cwd, config=config)
 
     cc.coding_compact_skill_categories = _patched
-    cc._HC_LEAN_INDEX_PATCHED = True
+    cc._FLEET_LEAN_INDEX_PATCHED = True
     logger.info("lean-index: distinct 'lean' mode installed")
 
 

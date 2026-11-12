@@ -3,7 +3,7 @@
 `/new` must START A NEW conversation **without destroying the old one** (Luke,
 2026-10-03: "archive"). Two facts shape this design:
 
-- **The gateway owns session identity.** It pins `--session-id hc-<agent>-<chat>`
+- **The gateway owns session identity.** It pins `--session-id fleet-<agent>-<chat>`
   per chat (`agents.py:_session_id`), so a chat's session is deterministic and
   stable across restarts. That is exactly what makes a rotation expressible: bump a
   number and the derived id changes.

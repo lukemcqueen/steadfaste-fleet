@@ -1,4 +1,4 @@
-# Hermes Cortex Memory Architecture
+# Steadfaste Fleet Memory Architecture
 
 Six memory layers, from fastest/least durable to slowest/most durable:
 
@@ -11,7 +11,7 @@ Layer 5: Repo Memory (~/.steadfaste-fleet/memory/)  — per-project durable conv
 Layer 6: Repo Docs (docs/)                       — version controlled, team-visible
 ```
 
-A **consumer project** may keep its own repo-local `.hermes-cortex/` overlay
+A **consumer project** may keep its own repo-local `.steadfaste-fleet/` overlay
 (`seed-project.sh`) holding the same layer names — a DIFFERENT directory from the
 runtime `~/.steadfaste-fleet/` above. Never write the runtime one bare.
 
@@ -49,7 +49,7 @@ Next session (same default profile, working in Project B)
 | Axis | Isolates | Shares | Access |
 |------|----------|--------|--------|
 | **Brain source** (`~/brain/<name>/`) | Nothing | Knowledge by topic | `/brain <source> <query>` |
-| **Repo memory/** (`<project>/.hermes-cortex/memory/`) | Per-project truth | Per-repo | File read from working directory |
+| **Repo memory/** (`<project>/.steadfaste-fleet/memory/`) | Per-project truth | Per-repo | File read from working directory |
 
 ## Pointer Pattern
 

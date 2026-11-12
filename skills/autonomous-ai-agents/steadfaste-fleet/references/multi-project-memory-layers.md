@@ -21,7 +21,7 @@ Example setup:
 ~/.hermes/profiles/moses/      -- secondary agent profile
 ~/brain/default/               -- shared across both profiles
   +-- projects/korean-language/
-  +-- projects/hermes-cortex/
+  +-- projects/steadfaste-fleet/
   +-- concepts/docker-patterns/
   +-- people/
 ```
@@ -40,7 +40,7 @@ hermes --profile <name> setup
 ## macOS Launch Agents for Auto-Start
 
 Each service needs a plist in `~/Library/LaunchAgents/`. Moses maintains
-templates in the hermes-cortex repo at `docs/templates/` using a
+templates in the steadfaste-fleet repo at `docs/templates/` using a
 `CORTEX_HOME` placeholder that must be replaced before install:
 
 ```bash

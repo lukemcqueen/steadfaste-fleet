@@ -1,14 +1,15 @@
-# Hermes Cortex Naming Conventions
+# Steadfaste Fleet Naming Conventions
 
 ## Skill Naming
 
-Skills ported from AgentKore use descriptive names; legacy `hc-` prefixed
-names are preserved as **aliases** in frontmatter so old references still resolve.
+Skills ported from AgentKore use descriptive names; the legacy `hc-` prefix
+(retired 2026-11-12) is preserved as the **`fleet-` aliases** in frontmatter so
+old references still resolve (hc-party → fleet-party, hc-elicit → fleet-elicit — STALE aliases).
 
 | Canonical Name | Aliases | Notes |
 |----------------|---------|-------|
-| `requirements-elicitation` | `hc-elicit`, `elicit` | Requirements elicitation (deep/fast modes, RICE/MoSCoW) |
-| `architecture-review` | `hc-party`, `party` | Multi-role architecture review (6-role panel, weighted matrix) |
+| `requirements-elicitation` | `fleet-elicit`, `elicit` | Requirements elicitation (deep/fast modes, RICE/MoSCoW) |
+| `architecture-review` | `fleet-party`, `party` | Multi-role architecture review (6-role panel, weighted matrix) |
 
 Other skills keep descriptive names without prefix:
 - `agent-flow`, `agent-contract`, `change-test-loop`, `session-manager`

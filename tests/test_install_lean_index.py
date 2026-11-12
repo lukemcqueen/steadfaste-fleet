@@ -33,7 +33,7 @@ def test_plugin_installs_lean_without_toolset_collapse():
     code = """
 import os, sys
 from pathlib import Path
-repo = os.environ['HC_REPO']
+repo = os.environ['FLEET_REPO']
 sys.path.insert(0, str(Path.home() / '.hermes' / 'hermes-agent'))
 os.environ.setdefault('HERMES_HOME', os.path.expanduser('~/.hermes'))
 import importlib.util
@@ -48,7 +48,7 @@ assert 'ads' in cats, 'ads should be demoted'
 assert rm.profile.toolset is None or not rm.is_coding, 'lean must NOT collapse the toolset'
 print('lean:', len(cats), 'categories demoted, toolset intact')
 """
-    env = dict(os.environ, HC_REPO=str(_REPO))
+    env = dict(os.environ, FLEET_REPO=str(_REPO))
     r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, env=env)
     assert r.returncode == 0, f"runtime check failed: {r.stderr[-800:]}"
     assert "demoted" in r.stdout

@@ -88,9 +88,9 @@ def test_generation_zero_keeps_the_original_session_id():
     and no history is stranded under an id nobody will ask for again.
     """
     backend = _real_backend()
-    assert backend.session_id_for({"channel_user_id": CHAT}) == f"hc-pi-{CHAT}"
+    assert backend.session_id_for({"channel_user_id": CHAT}) == f"fleet-pi-{CHAT}"
     assert backend.session_id_for({"channel_user_id": CHAT,
-                                   "session_generation": 0}) == f"hc-pi-{CHAT}"
+                                   "session_generation": 0}) == f"fleet-pi-{CHAT}"
 
 
 def test_a_generation_changes_the_session_id():
@@ -101,21 +101,21 @@ def test_a_generation_changes_the_session_id():
     assert len({first, second, third}) == 3, "each generation must be a distinct session"
     assert second.endswith("-g1") and third.endswith("-g2")
     # The archived ids remain DERIVABLE, which is what makes the archive findable.
-    assert first.endswith(f"hc-pi-{CHAT}")
+    assert first.endswith(f"fleet-pi-{CHAT}")
 
 
 def test_a_bool_generation_is_not_read_as_generation_one():
     """bool is an int subclass; True must not silently rotate a chat."""
     backend = _real_backend()
     assert backend.session_id_for({"channel_user_id": CHAT,
-                                   "session_generation": True}) == f"hc-pi-{CHAT}"
+                                   "session_generation": True}) == f"fleet-pi-{CHAT}"
 
 
 def test_a_junk_generation_is_ignored_rather_than_crashing():
     backend = _real_backend()
     for junk in ("1", None, -1, [], {}):
         assert backend.session_id_for({"channel_user_id": CHAT,
-                                       "session_generation": junk}) == f"hc-pi-{CHAT}"
+                                       "session_generation": junk}) == f"fleet-pi-{CHAT}"
 
 
 def test_the_session_KEY_env_follows_the_generation():
@@ -129,11 +129,11 @@ def test_the_session_KEY_env_follows_the_generation():
     """
     backend = _real_backend()
     inbound = {"channel_user_id": CHAT}
-    before = backend._child_env(inbound, f"hc-pi-{CHAT}")
-    after = backend._child_env(inbound, f"hc-pi-{CHAT}-g1")
+    before = backend._child_env(inbound, f"fleet-pi-{CHAT}")
+    after = backend._child_env(inbound, f"fleet-pi-{CHAT}-g1")
     assert before and after, "the spec declares env, so it must be returned"
-    assert before["CORTEX_SESSION_KEY"] == f"hc-pi-{CHAT}"
-    assert after["CORTEX_SESSION_KEY"] == f"hc-pi-{CHAT}-g1"
+    assert before["CORTEX_SESSION_KEY"] == f"fleet-pi-{CHAT}"
+    assert after["CORTEX_SESSION_KEY"] == f"fleet-pi-{CHAT}-g1"
     assert before["CORTEX_SESSION_KEY"] != after["CORTEX_SESSION_KEY"]
 
 
@@ -190,7 +190,7 @@ def test_the_archived_session_is_named_in_the_reply():
         gw = _gateway(book, _real_backend())
         _turn(gw, "/new")
         body = gw.transport.sent[-1]["body"]
-        assert f"hc-pi-{CHAT}" in body, (
+        assert f"fleet-pi-{CHAT}" in body, (
             "the reply must name the session being archived, or nobody can find it")
 
 
@@ -199,7 +199,7 @@ def test_new_before_any_session_still_names_something_derivable():
         book = SESSIONS.SessionBook(Path(tmp) / "sessions.json")
         gw = _gateway(book, _real_backend())
         _turn(gw, "/new")
-        assert f"hc-pi-{CHAT}" in gw.transport.sent[-1]["body"]
+        assert f"fleet-pi-{CHAT}" in gw.transport.sent[-1]["body"]
 
 
 def test_new_without_a_configured_book_says_so_and_does_not_crash():

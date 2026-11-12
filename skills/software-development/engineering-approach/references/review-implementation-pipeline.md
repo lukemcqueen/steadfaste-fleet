@@ -2,21 +2,21 @@
 
 ## Purpose
 
-Bridge the gap between architecture review output (hc-party) and delivered, tested code. The hc-party produces a list of "Implementation Slices" with summaries and estimates. This reference documents how to convert those slices into actual story slices, implement each one, add tests, and verify.
+Bridge the gap between architecture review output (fleet-party) and delivered, tested code. The fleet-party produces a list of "Implementation Slices" with summaries and estimates. This reference documents how to convert those slices into actual story slices, implement each one, add tests, and verify.
 
 ## When to Use
 
-After running `hc-party` or any structured architecture review that produces a list of recommended implementation slices. Use this to turn recommendations into real code.
+After running `fleet-party` or any structured architecture review that produces a list of recommended implementation slices. Use this to turn recommendations into real code.
 
 ## Pipeline Stages
 
 ```
-hc-party → story-slicing → implement → test → verify → report
+fleet-party → story-slicing → implement → test → verify → report
 ```
 
 ### Stage 1: Slice Conversion
 
-The hc-party "First 5 Implementation Slices" section lists items like:
+The fleet-party "First 5 Implementation Slices" section lists items like:
 ```
 | Slice | Work | Estimate |
 |-------|------|----------|
@@ -253,7 +253,7 @@ After all slices are complete:
 
 ## Anti-Patterns
 
-- **Skipping the slice conversion**: Taking hc-party recommendations directly as code directives without converting to proper story slices. Each slice needs scope (included/excluded), AC, files affected, and verification. Without this, slices bleed into each other or miss edge cases.
+- **Skipping the slice conversion**: Taking fleet-party recommendations directly as code directives without converting to proper story slices. Each slice needs scope (included/excluded), AC, files affected, and verification. Without this, slices bleed into each other or miss edge cases.
 - **Implementing all slices before running any tests**: Test each slice before moving to the next. A bug in S1 will cascade through S2-S5.
 - **Skipping i18n**: Even for Korean-first projects, add both en.json and ko.json keys in the same commit. Missing translations are a common gap.
 - **Forgetting to add `stalled_pct` to the frontend type**: If the backend returns a new field but the frontend `StageInfo` interface doesn't declare it, TypeScript will error. Update types and mocks in the same change as the backend field.

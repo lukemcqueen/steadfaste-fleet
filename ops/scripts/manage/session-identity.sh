@@ -88,7 +88,7 @@ cmd_set() {
 
 cmd_new() {
   _validate_tag "${1:-}"
-  local tag="$1" path="${2:-$HOME/hc-session-${1}}"
+  local tag="$1" path="${2:-$HOME/fleet-session-${1}}"
   [[ -e "$path" ]] && die "path already exists: $path"
   local primary; primary="$(git rev-parse --show-toplevel)"
   git -C "$primary" fetch -q origin main

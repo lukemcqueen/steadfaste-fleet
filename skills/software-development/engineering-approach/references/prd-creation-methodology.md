@@ -1,6 +1,6 @@
-# PRD Creation Methodology (hc-elicit pattern)
+# PRD Creation Methodology (fleet-elicit pattern)
 
-Structured product requirements document creation for complex features. Maps to the hc-elicit phase of AgentKore's `/plan` command.
+Structured product requirements document creation for complex features. Maps to the fleet-elicit phase of AgentKore's `/plan` command.
 
 ## When to Use
 
@@ -216,4 +216,4 @@ For each change, the levers are:
 
 ## Related
 
-- `references/architecture-review-methodology.md` — the hc-party review to run AFTER this PRD is drafted
+- `references/architecture-review-methodology.md` — the fleet-party review to run AFTER this PRD is drafted

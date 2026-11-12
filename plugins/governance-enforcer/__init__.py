@@ -1922,8 +1922,11 @@ def _is_readonly_terminal_command(command: str) -> bool:
 #     the match exact
 # The pre-commit hook advertises this exact command as "allowed for every
 # agent" (AGENTS.md RULE 7b) — this makes that promise true.
+# (2026-11-12: the pre-migration repo name `hermes-cortex` was REMOVED from the
+# accept list — the migration is complete; a host on the old name is a straggler
+# the doctor's stale-home check flags.)
 _SANCTIONED_CORTEX_UPDATE_RE = re.compile(
-    r"^\s*(?:bash\s+)?(?:~|" + re.escape(str(Path.home())) + r")/(?:hermes-cortex|steadfaste-fleet)/ops/scripts/(?:cortex-update|fleet-update)\.sh"
+    r"^\s*(?:bash\s+)?(?:~|" + re.escape(str(Path.home())) + r")/steadfaste-fleet/ops/scripts/(?:cortex-update|fleet-update)\.sh"
     r"(?:\s+(?:--dry-run|--status|--delta|--clean-stale))*\s*$"
 )
 
@@ -2264,6 +2267,12 @@ _PII_SENSITIVE_OK_RE = re.compile(r"fleet-operator(/|$)", re.IGNORECASE)
 # Both repo names are sanctioned: the current canonical name AND the renamed
 # name (steadfaste-fleet, 2026-11-03 operator-approved migration), because the
 # legacy URL redirects forever and already-published docs/tests reference it.
+# STALE-path literal: the pre-migration repo name `hermes-cortex` is kept HERE
+# on purpose. The old repo URL redirects forever on GitHub, and already-published
+# docs/tests reference it — the gate must keep recognizing the fleet's OWN
+# legacy URL as a known repo URL, or it would flag it as a leak (e.g. the
+# LEGACY literal in fleet-set-origin.sh trips on every commit). All other
+# active hermes-cortex tokens were removed 2026-11-12; this one is detection.
 _PII_REPO_URL_RE = re.compile(
     r"(?:https?://(?:github\.com|raw\.githubusercontent\.com|"
     r"img\.shields\.io/github/license)/|git@github\.com:)"

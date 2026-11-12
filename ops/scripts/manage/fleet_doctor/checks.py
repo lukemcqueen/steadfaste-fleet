@@ -646,7 +646,8 @@ def _is_cortex_worktree(repo_dir):
 
   A worktree carries the CORTEX repo's own AGENTS.md on a session branch, so judging it as a dev
   repo warns about a block that belongs to the cortex repo (check_repo's job) and points the
-  printed fix at a session branch. Measured 2026-10-14 on ~/hc-session2. The `.git` FILE names
+  printed fix at a session branch. Measured 2026-10-14 on ~/hc-session2 (the
+  pre-rename session-worktree name; the convention is now ~/fleet-session2). The `.git` FILE names
   the real gitdir, so the common dir decides.
   """
   git = Path(repo_dir) / ".git"
@@ -6291,9 +6292,10 @@ def check_harness_registry(res) -> None:
 def check_harness_doc_conflicts(res):
   """Cross-client harness instruction files vs AGENTS.md canonical facts.
 
-  The hermes-cortex -> steadfaste-fleet rename (940-file sweep, 2026-11-04)
+  The pre-migration -> steadfaste-fleet rename (940-file sweep, 2026-11-04)
   missed HOST-LEVEL harness files: ~/.claude/CLAUDE.md kept the retired
-  ~/hermes-cortex + ~/.hermes-cortex paths until fixed manually (cycle #14213).
+  pre-migration paths (~/hermes-cortex + ~/.hermes-cortex, STALE) until fixed
+  manually (cycle #14213).
   This check enumerates the harness-owned instruction/config files and flags
   any that still carry a RETIRED canonical token contradicting AGENTS.md.
   Never auto-rewrites: these files are host/project-owned; the fix line names
@@ -6301,10 +6303,10 @@ def check_harness_doc_conflicts(res):
   """
   name = "Harness doc conflict"
   # The harness-owned files that carry identity / paths / canonical facts. Kept
-  # as a small explicit list ON PURPOSE: the deliberate-keep files (the four
-  # hermes-cortex* skill bodies, the enforcer's dual-URL detection, migration
-  # tools, docs/older + docs/evidence history) live elsewhere and must not be
-  # swept — see docs/rename-followups-steadfaste-fleet.md.
+  # as a small explicit list ON PURPOSE: the deliberate-keep files (the
+  # pre-migration-token literals below, the enforcer's legacy-URL detection,
+  # migration tools, docs/older + docs/evidence history) live elsewhere and
+  # must not be swept — see docs/rename-followups-steadfaste-fleet.md.
   repo_files = [CORTEX_REPO / "CLAUDE.md", CORTEX_REPO / ".mcp.json"]
   host_files = [
     HOME / ".claude" / "CLAUDE.md",
@@ -6313,9 +6315,11 @@ def check_harness_doc_conflicts(res):
     HOME / ".pi" / "agent" / "settings.json",
   ]
   # Retired canonical facts (the inverse of what AGENTS.md now states).
+  # STALE-path literals by design: these are the pre-migration names the check
+  # exists to detect in harness files — do not rename them.
   tokens = [
-    (".hermes-cortex", "retired deployed-home path ~/.hermes-cortex"),
-    ("~/hermes-cortex", "retired repo path ~/hermes-cortex"),
+    (".hermes-cortex", "retired deployed-home path ~/.hermes-cortex (STALE)"),
+    ("~/hermes-cortex", "retired repo path ~/hermes-cortex (STALE)"),
     ("Hermes Cortex", "retired product name"),
   ]
   def _conflicts(path):

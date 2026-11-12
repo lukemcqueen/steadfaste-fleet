@@ -1,19 +1,14 @@
 ---
-name: hermes-cortex
+name: steadfaste-fleet
 version: 2.0.0
-description: Install, configure, and maintain Hermes Cortex — the observability and knowledge layer for Hermes Agent (Ollama, mycortex, Langfuse, Cortex Dashboard, nginx, systemd/launchd services, Hermes plugins, offline code assistant, offline content auto-update).
+description: Install, configure, and maintain Steadfaste Fleet — the observability and knowledge layer for Hermes Agent (Ollama, mycortex, Langfuse, Cortex Dashboard, nginx, systemd/launchd services, Hermes plugins, offline code assistant, offline content auto-update).
 tags: [setup, installation, mycortex, langfuse, dashboard, nginx, systemd, launchd, linux, macos, plugins, docker-compose, offline, code-assistant, rag, bible, hymns]
 related_skills: [hermes-agent, docker-compose-common-issues]
 ---
 
-> ⚠️ **Stale name — migrated.** Hermes Cortex was consolidated into **steadfaste-fleet**: the
-> repo and deploy home are now `~/steadfaste-fleet` / `~/.steadfaste-fleet`; the old
-> `hermes-cortex` name and `~/.hermes-cortex` path are gone. Read this skill as governing the
-> steady-fleet deployment and substitute `~/.steadfaste-fleet` wherever it says `hermes-cortex`/`~/.hermes-cortex`.
+# Steadfaste Fleet Setup
 
-# Hermes Cortex Setup
-
-Hermes Cortex is the local AI infrastructure layer that provides:
+Steadfaste Fleet is the local AI infrastructure layer that provides:
 - **Ollama** — Local LLM inference server
 - **mycortex** — Postgres-native knowledge brain with hybrid RAG search (legacy brain replacement, decommissioned 2026-08-02)
 - **systemd (Linux) / launchd (macOS) services** — Persistent daemons for Ollama, mycortex, Dashboard
@@ -99,7 +94,7 @@ The installer runs **~30 steps** (exact count varies by OS/profile):
 
 ### Script Deployment Architecture
 
-Hermes Cortex uses a **two-directory deployment model**:
+Steadfaste Fleet uses a **two-directory deployment model**:
 
 | Directory | Purpose | Managed by |
 |-----------|---------|-----------|
@@ -526,7 +521,7 @@ hermes mcp add \
 
 The MCP server exposes 7 tools: `cache_search`, `config_show`, `config_set`, `cycle_query`, `cycle_stats`, `feedback_accept`, `feedback_override`. These are the primary interface for agents -- the CLI (`score-cycle`, `loop-feedback`) is the fallback for pre-commit hooks and scripts.
 
-**Pitfall — config path:** The MCP server's `args` path in `~/.hermes/config.yaml` must point to the actual file. If hermes-cortex was cloned to a different path than `~/steadfaste-fleet/`, update the args. A stale path (pointing to a non-existent file) causes MCP tool failures with no visible error -- the process starts but runs old code.
+**Pitfall — config path:** The MCP server's `args` path in `~/.hermes/config.yaml` must point to the actual file. If steadfaste-fleet was cloned to a different path than `~/steadfaste-fleet/`, update the args. A stale path (pointing to a non-existent file) causes MCP tool failures with no visible error -- the process starts but runs old code.
 
 **Verification:** After registering, run `hermes mcp list`. The loop-governance server should show `✓ enabled` with 7 tools. If MCP tools return "Error: no such column", kill stale `loop-gov-mcp.py` processes and let Hermes restart them.
 
@@ -570,7 +565,7 @@ If the system's decision was wrong, use `loop-feedback override <id> --note "...
 
 **Verification:** Run `bash ~/steadfaste-fleet/core/governance/verify.sh` — expects 14/14 passed, 0 warnings, 0 failures.
 
-**Template for new projects:** Copy the standalone template from the hermes-cortex repo's `docs/templates/AGENTS-loop-governance.md` to add loop-governance rules to any project's AGENTS.md. See skill reference `agents-loop-governance-template.md`.
+**Template for new projects:** Copy the standalone template from the steadfaste-fleet repo's `docs/templates/AGENTS-loop-governance.md` to add loop-governance rules to any project's AGENTS.md. See skill reference `agents-loop-governance-template.md`.
 
 **4. score-cycle/loop-feedback shebangs — Python 3.12+ required (macOS default is 3.9)**
 
@@ -707,7 +702,7 @@ and includes the toolchain dir (`/opt/homebrew/bin` on Apple Silicon,
 
 ### Python 3.12 Default — Mandatory Pre-Merge Version Check
 
-Python 3.12 is now the **explicit default** for all Hermes Cortex projects. All scripts,
+Python 3.12 is now the **explicit default** for all Steadfaste Fleet projects. All scripts,
 cron jobs, and tooling assume 3.12+ with PEP 604 union syntax (`str | None`), PEP 695
 type-parameter syntax, and `match`/case statements — all natively supported.
 
@@ -775,7 +770,7 @@ deployed inline copy drift from the repo source.
 
 ## Project Bootstrapping — seed-project.sh
 
-Hermes Cortex provides `seed-project.sh` to deploy the development harness (AGENTS.md, `.hermes-cortex/` infrastructure, loop-governance scoring, pre-commit hooks, and project skills) to any project.
+Steadfaste Fleet provides `seed-project.sh` to deploy the development harness (AGENTS.md, `.steadfaste-fleet/` infrastructure, loop-governance scoring, pre-commit hooks, and project skills) to any project.
 
 ### Quick Start
 
@@ -788,7 +783,7 @@ bash ~/.steadfaste-fleet/scripts/seed-project.sh --project=/path/to/project --mo
 
 # Deploy specific components only
 bash ~/.steadfaste-fleet/scripts/seed-project.sh --project=/path/to/project \
- --components=AGENTS.md,.hermes-cortex,pre-commit
+ --components=AGENTS.md,.steadfaste-fleet,pre-commit
 
 # Custom skill set
 bash ~/.steadfaste-fleet/scripts/seed-project.sh --project=/path/to/project \
@@ -805,13 +800,13 @@ bash ~/.steadfaste-fleet/scripts/seed-project.sh --project=/path/to/project \
 
 ### Backup Architecture
 
-Every seed creates a timestamped backup under `.hermes-cortex/.seed-backups/<ts>/`:
+Every seed creates a timestamped backup under `.steadfaste-fleet/.seed-backups/<ts>/`:
 
 ```
-project/.hermes-cortex/.seed-backups/
+project/.steadfaste-fleet/.seed-backups/
 ├── 20260626_150000-12345/
 │  ├── AGENTS.md       ← backed up BEFORE modify
-│  ├── .hermes-cortex/     ← excludes .seed-backups/ (circular)
+│  ├── .steadfaste-fleet/     ← excludes .seed-backups/ (circular)
 │  ├── .git/hooks/pre-commit
 │  └── manifest.json
 ```
@@ -825,16 +820,16 @@ project/.hermes-cortex/.seed-backups/
 | Component | What it deploys | Source |
 |-----------|----------------|--------|
 | AGENTS.md | Templated agent guidelines with project name, date, commit. Includes contract rules 1-11 and loop-gov scoring section. | `docs/templates/AGENTS.seed.md` or custom `--template` |
-| .hermes-cortex | Dir structure: sessions/archive/, memory/, skills/ + .gitignore (excludes memory, db, secrets). | Built-in |
+| .steadfaste-fleet | Dir structure: sessions/archive/, memory/, skills/ + .gitignore (excludes memory, db, secrets). | Built-in |
 | pre-commit | Loop-governance pre-commit hook via install-score-hook.sh | `ops/scripts/pre-commit-score` |
-| loop-gov | score-cycle + loop-feedback wrappers in .hermes-cortex/loop-governance/ | Wrapper scripts |
-| skills | Selected skills from ~/.hermes/skills/ into project's .hermes-cortex/skills/ | ~/.hermes/skills/ (via symlink) |
+| loop-gov | score-cycle + loop-feedback wrappers in .steadfaste-fleet/loop-governance/ | Wrapper scripts |
+| skills | Selected skills from ~/.hermes/skills/ into project's .steadfaste-fleet/skills/ | ~/.hermes/skills/ (via symlink) |
 
 ### Pitfalls (Discovered During Development)
 
 1. **Functions must `return`, not `exit`.** `exit 0` inside a function kills the entire shell. Only `exit` from top-level main().
 2. **`local var=$(cmd)` swallows exit codes.** With `set -e`, split into `local var; var=$(cmd) || true` to preserve error handling.
-3. **Circular backup.** Backups live inside `.hermes-cortex/.seed-backups/`. Exclude `.seed-backups/` when copying `.hermes-cortex/` or it tries to copy itself.
+3. **Circular backup.** Backups live inside `.steadfaste-fleet/.seed-backups/`. Exclude `.seed-backups/` when copying `.steadfaste-fleet/` or it tries to copy itself.
 4. **Restore must guard against missing data.** Never `rm -rf` the target before confirming the backup source exists. Move aside (never delete), then restore on failure.
 5. **Timestamp collisions.** Two seeds in the same second collide. Append `-$RANDOM` to the timestamp.
 6. **Template braces must match.** A missing `}` in `{{PLACEHOLDER}}` leaves the placeholder unexpanded.
@@ -854,7 +849,7 @@ project/.hermes-cortex/.seed-backups/
 
 ## Skills Architecture: Three-Layer Model
 
-Hermes Cortex uses a three-layer skill model with different purposes per layer. Understanding this hierarchy is essential for any agent working on the repo.
+Steadfaste Fleet uses a three-layer skill model with different purposes per layer. Understanding this hierarchy is essential for any agent working on the repo.
 
 ### The Three Layers
 
@@ -862,7 +857,7 @@ Hermes Cortex uses a three-layer skill model with different purposes per layer. 
 |-------|----------|---------|-----------|
 | **Canonical source** | `~/steadfaste-fleet/skills/` | Public reusable skills distributed by the installer. These are the curated set — ~40 skills across devops, software-development, MCP, github, etc. | `git push` to repo |
 | **Global installed** | `~/.hermes/skills/` | Hermes Agent's primary skill directory (~150 skills). Contains cortex skills + ecosystem skills (apple/, creative/, gaming/, mlops/, testing/, etc.) | `fleet-update.sh sync_skills()` + manual additions |
-| **Project overrides** | `<consumer-project>/.hermes-cortex/skills/` | Project-specific skill overrides tracked in THAT project's repo. This overlay is for CONSUMER projects only — the Cortex repo itself must never carry one (inside `~/steadfaste-fleet` it shadowed the runtime dir name `~/.steadfaste-fleet` and made a stray governance marker indistinguishable from repo state). `fleet-update.sh` skips the overlay when the repo carries `mcp-servers/loop-gov-mcp.py`. | Tracked in the consumer project |
+| **Project overrides** | `<consumer-project>/.steadfaste-fleet/skills/` | Project-specific skill overrides tracked in THAT project's repo. This overlay is for CONSUMER projects only — the Cortex repo itself must never carry one (inside `~/steadfaste-fleet` it shadowed the runtime dir name `~/.steadfaste-fleet` and made a stray governance marker indistinguishable from repo state). `fleet-update.sh` skips the overlay when the repo carries `mcp-servers/loop-gov-mcp.py`. | Tracked in the consumer project |
 
 ### How Skills Flow
 
@@ -936,7 +931,7 @@ The delta engine means:
 The symlink was created once:
 
 ```bash
-# 1. Migrate any unique skills from old .hermes-cortex/skills/ that didn't exist in ~/.hermes/skills/
+# 1. Migrate any unique skills from old .steadfaste-fleet/skills/ that didn't exist in ~/.hermes/skills/
 #  Checked: only mcp-server-building and repo-organization were unique → copied manually
 
 # 2. Remove old directory, create symlink
@@ -950,13 +945,13 @@ bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh
 
 ### What This Means for Agent Sessions
 
-When an agent works inside the hermes-cortex repo:
-1. Hermes checks `.hermes-cortex/skills/` (in the repo) first — these are project-specific overrides
+When an agent works inside the steadfaste-fleet repo:
+1. Hermes checks `.steadfaste-fleet/skills/` (in the repo) first — these are project-specific overrides
 2. Falls back to `~/.hermes/skills/` (global, via symlink) for anything not in the overrides
-3. The overrides are intentionally condensed versions — e.g. the 72-line `agent-contract` used when working on hermes-cortex vs the 990-line public version
+3. The overrides are intentionally condensed versions — e.g. the 72-line `agent-contract` used when working on steadfaste-fleet vs the 990-line public version
 
-For agents on other projects (not working in the hermes-cortex repo):
-- Only `~/.hermes/skills/` is used (no `.hermes-cortex/skills/` project override exists)
+For agents on other projects (not working in the steadfaste-fleet repo):
+- Only `~/.hermes/skills/` is used (no `.steadfaste-fleet/skills/` project override exists)
 - `fleet-update.sh` keeps these current automatically
 
 ## Services (systemd on Linux, launchd on macOS)
@@ -1258,7 +1253,7 @@ Use the **Agent Bus** via `inbox_send` MCP tool. Do NOT write files directly to 
 | `inbox_read` | Read recent messages | `limit`, `topic`, `unread_only` |
 | `inbox_watch` | Check for new messages | `limit` |
 
-> **⚠️ Agents must NOT write to `~/private-data/messages/inbox/` directly.** The file-based inbox is deprecated. All agent messaging goes through the PGMQ Agent Bus. Agents running in the Hermes Cortex fleet get `inbox_send` / `inbox_read` / `inbox_watch` as MCP tools automatically.
+> **⚠️ Agents must NOT write to `~/private-data/messages/inbox/` directly.** The file-based inbox is deprecated. All agent messaging goes through the PGMQ Agent Bus. Agents running in the Steadfaste Fleet fleet get `inbox_send` / `inbox_read` / `inbox_watch` as MCP tools automatically.
 
 ## Maintenance
 
@@ -1268,7 +1263,7 @@ mycortex is a repo-managed Python CLI + Postgres schema — update it via the re
 not a package manager:
 
 ```bash
-# Pull latest hermes-cortex
+# Pull latest steadfaste-fleet
 cd ~/steadfaste-fleet && git pull --rebase
 
 # Deploy updated CLI + schema
@@ -1297,7 +1292,7 @@ hermes skills check     # Check all installed skills for updates
 hermes skills update <name> # Update a specific skill
 ```
 
-The `hermes-cortex` repo ships some local skills — these are updated via `git pull` in the repo, not via `hermes skills update`. Only hub/official skills are updated by `hermes skills update`.
+The `steadfaste-fleet` repo ships some local skills — these are updated via `git pull` in the repo, not via `hermes skills update`. Only hub/official skills are updated by `hermes skills update`.
 
 ### Rebuild Knowledge Index
 
@@ -1373,7 +1368,7 @@ Useful commands for managing sources day-to-day:
 ```
 
 **Cron integration:** The `agent-mycortex-sync` cron job runs sync automatically;
-`hermes-cortex-sync` runs health checks and reports to Telegram.
+`steadfaste-fleet-sync` runs health checks and reports to Telegram.
 
 ## Security Posture
 
@@ -1438,7 +1433,7 @@ for c in $(docker ps -a -q); do
 done
 ```
 
-Expected: all Hermes Cortex services (`ollama.serve`, `mycortex.sync-watch`, `cortex-dashboard`, `ai.hermes.gateway`) present with `RunAtLoad`. Langfuse containers show `always`, other project containers show `always` or `unless-stopped`.
+Expected: all Steadfaste Fleet services (`ollama.serve`, `mycortex.sync-watch`, `cortex-dashboard`, `ai.hermes.gateway`) present with `RunAtLoad`. Langfuse containers show `always`, other project containers show `always` or `unless-stopped`.
 
 ### Security Checklist (Post-Install)
 
@@ -1835,11 +1830,11 @@ launchctl load ~/Library/LaunchAgents/com.legacy-brain.sync-watch.plist
 
 ## Public vs Private Repo Split
 
-Hermes Cortex uses a two-repo architecture:
+Steadfaste Fleet uses a two-repo architecture:
 
 | Repo | Visibility | Contents |
 |------|-----------|----------|
-| **`hermes-cortex`** (public) | Public | `ops/install/install.sh`, `ops/install/deploy/` (compose files), `ops/services/dashboard`, nginx configs, skeleton config, architecture docs, skills, bump-version script |
+| **`steadfaste-fleet`** (public) | Public | `ops/install/install.sh`, `ops/install/deploy/` (compose files), `ops/services/dashboard`, nginx configs, skeleton config, architecture docs, skills, bump-version script |
 | **`private-data`** (private) | Private | Full `config.yaml` with personal settings, brain content on `brain-*` branches, custom scripts, SSL certs |
 
 **Domain Privacy Rule:** Use `example.com` as placeholder in public repo files. Put your real domain in private repo only. See `references/public-repo-privacy.md` for the full pattern including git history rewriting.
@@ -2021,7 +2016,7 @@ The old approach used Hermes profiles for per-project isolation (separate MEMORY
 
 *See `references/memory-architecture.md` for the full six-layer model, memory scoring rubric, and detailed patterns.*
 
-Agent knowledge in Hermes Cortex spans six layers from fastest/least durable to slowest/most durable:
+Agent knowledge in Steadfaste Fleet spans six layers from fastest/least durable to slowest/most durable:
 
 | Layer | Location | Durability |
 |-------|----------|-----------|
@@ -2155,7 +2150,7 @@ See `references/hermes-dot-dir-cleanup.md` for the full pattern including
 archive commands, verification steps, and bulk-detection for prevention.
 
 Remember: `.hermes/` in project roots is the old pattern. The preferred
-approach is `.hermes-cortex/` (project-anchored) + `~/.hermes/` (home-dir)
+approach is `.steadfaste-fleet/` (project-anchored) + `~/.hermes/` (home-dir)
 + `~/brain/<project>/agents/` for indexed agent artifacts.
 
 ## References
@@ -2166,7 +2161,7 @@ approach is `.hermes-cortex/` (project-anchored) + `~/.hermes/` (home-dir)
 - `references/memory-architecture.md` — Six-layer memory model, pointer pattern, memory scoring rubric (≥7/12), cross-project knowledge flow, brain source vs repo memory
 - `references/multi-project-memory-layers.md` — Memory survivability across restarts, model swaps, profile switches, reinstalls
 - `references/session-state-pattern.md` — Session state layer: what stores what, when to save, when to discard
-- `references/naming-conventions.md` — Hermes Cortex skill naming (`hc-` prefix) and versioning conventions
+- `references/naming-conventions.md` — Steadfaste Fleet skill naming (`fleet-` aliases) and versioning conventions
 - `references/auto-profile-detection.md` — Legacy auto-profile detection pattern (working-directory-based profile selection, deprecated)
 - `references/installation-audit-methodology.md` — Systematic install audit: documented-vs-actual pattern, divergence detection, recovery checklist
 - `references/hermes-dot-dir-cleanup.md` — Full `.hermes/` directory cleanup pattern: assessment, archive, removal, gitignore, prevention

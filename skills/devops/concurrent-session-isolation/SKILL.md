@@ -113,8 +113,8 @@ it still blocks — without that, a green test proves nothing.
 
 ```bash
 # from the primary checkout
-git worktree add ~/hc-<tag> -b session/<tag> origin/main
-cd ~/hc-<tag>
+git worktree add ~/fleet-session-<tag> -b session/<tag> origin/main
+cd ~/fleet-session-<tag>
 git config extensions.worktreeConfig true          # REQUIRED once — see pitfall 1
 git config --worktree user.name  "<agent>-<tag>"
 git config --worktree user.email "<agent>+<tag>@<domain>"

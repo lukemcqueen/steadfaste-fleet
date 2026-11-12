@@ -1,35 +1,30 @@
 ---
-name: hermes-cortex-maintenance
+name: steadfaste-fleet-maintenance
 version: 1.36.0
 category: devops
 description: >-
-  Maintain an installed Hermes Cortex instance — update both the upstream
-  Hermes Agent and the cortex repo layer, merge diverged histories, sync
+  Maintain an installed Steadfaste Fleet instance — update both the upstream
+  Hermes Agent and the fleet repo layer, merge diverged histories, sync
   skills safely, and troubleshoot common issues. Covers the dual-update
   workflow (hermes update + fleet-update.sh), encrypted brain data backup,
   mycortex import, and recovery techniques.
 ---
 
-> ⚠️ **Stale name — migrated.** Hermes Cortex was consolidated into **steadfaste-fleet**: repo
-> `~/steadfaste-fleet`, deploy `~/.steadfaste-fleet`; the `~/.hermes-cortex` path is gone. Read
-> this as governing the steady-fleet deployment and substitute `~/.steadfaste-fleet` for
-> `hermes-cortex`/`~/.hermes-cortex`.
+# Steadfaste Fleet Maintenance v1.36.0
 
-# Hermes Cortex Maintenance v1.36.0
-
-> **Maintaining your Hermes Cortex install** — pulling upstream changes,
+> **Maintaining your Steadfaste Fleet install** — pulling upstream changes,
 > updating mycortex, syncing skills, and recovering when things go wrong.
 
 ## Prerequisites
 
-- Hermes Cortex installed at `~/steadfaste-fleet/`
+- Steadfaste Fleet installed at `~/steadfaste-fleet/`
 - Bun at `~/.bun/bin/bun`
 - mycortex at `~/.steadfaste-fleet/scripts/mycortex`
 - Ollama running as a systemd user service (or equivalent)
 
 ## Daily Auto-Update Timer (3am)
 
-Hermes Cortex includes a **daily auto-update timer** that replaces all
+Steadfaste Fleet includes a **daily auto-update timer** that replaces all
 standalone maintenance cron jobs.
 
 ### Install the timer
@@ -42,7 +37,7 @@ bash ~/steadfaste-fleet/ops/scripts/install/install-fleet-update-cron.sh
 Verify it's scheduled:
 
 ```bash
-systemctl --user list-timers | grep hermes-cortex-update
+systemctl --user list-timers | grep steadfaste-fleet-update
 ```
 
 ## Dual-Update Workflow (manual)
@@ -170,7 +165,7 @@ than land that.
   (see the skill-restoration workflow)
 
 ## Related
-- `hermes-cortex` — install/configure guide
+- `steadfaste-fleet` — install/configure guide
 - `cortex-preflight` — pre-change checks and deploy pitfalls
 - `hermes-recovery` — disaster recovery
 - `doc-freshness` — keeping AGENTS.md/SOUL.md current

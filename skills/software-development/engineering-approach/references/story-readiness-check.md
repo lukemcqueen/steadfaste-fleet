@@ -5,19 +5,19 @@ Run before starting any new slice or phase.
 
 ## The 5-Axis Check
 
-### 1. PRD & Domain Alignment (hc-elicit lens)
+### 1. PRD & Domain Alignment (fleet-elicit lens)
 
 Verify the PRD is current and the story aligns with it:
 
 | Check | What to look for |
 |-------|-----------------|
 | PRD version | Is the PRD the current version? Revision history visible? |
-| hc-party review | Does the PRD explicitly say it went through architecture review? |
+| fleet-party review | Does the PRD explicitly say it went through architecture review? |
 | Story ↔ PRD mapping | Does every story requirement trace to a PRD section? |
 | Cross-codebase audit | Was client/Rails codebase reviewed to validate the model? |
 | Story spec completeness | Does the slice spec have endpoints, schemas, validation rules, edge cases? |
 
-### 2. Architecture Review (hc-party lens)
+### 2. Architecture Review (fleet-party lens)
 
 Verify architectural decisions are documented:
 
@@ -90,7 +90,7 @@ For Phase 1C (Contracts + Shares), the gap analysis was:
 ## Reference
 
 Used in this session before Phase 1C of acme-works. The check confirmed:
-- PRD v2.0 → ✅ (revised after hc-party + hc-elicit)
+- PRD v2.0 → ✅ (revised after fleet-party + fleet-elicit)
 - 8 ADRs → ✅
 - All Phase 1C tables in schema → ✅ (except member_publishers, added as pre-work)
 - Auth/RBAC infrastructure → ✅

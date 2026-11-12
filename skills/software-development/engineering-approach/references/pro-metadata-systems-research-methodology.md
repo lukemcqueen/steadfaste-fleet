@@ -7,7 +7,7 @@ How to research copyright society metadata/catalog systems and Korean cross-ling
 - Creating a PRD for a PRO metadata store, catalog system, or matching engine
 - Evaluating PRO catalog architectures for benchmarking
 - Researching Korean↔English matching failure modes
-- Feeding research into hc-elicit (PRD) and hc-party (review) phases
+- Feeding research into fleet-elicit (PRD) and fleet-party (review) phases
 
 ## PRO Catalog System Research Dimensions
 
@@ -180,7 +180,7 @@ Patch PRD:
   ├── §Open Questions — add new unresolved questions
   └── §References — add research doc link, update industry standards/comparison tables
   ↓
-Patch hc-party Review:
+Patch fleet-party Review:
   ├── Add new critical risks (R6, R7, ...)
   ├── Add new medium issues (I6, I7, ...)  
   ├── Add new observations (O5, O6, ...)
@@ -196,7 +196,7 @@ Draft new ADRs for architecture decisions discovered in research
 ## Related References
 
 - `references/prd-creation-methodology.md` — generic PRD creation process (this file adds the research dimension)
-- `references/architecture-review-methodology.md` — hc-party review (this file feeds into it)
+- `references/architecture-review-methodology.md` — fleet-party review (this file feeds into it)
 - `references/korean-text-normalization.md` — Korean text normalization techniques (narrower scope, this file provides the broader context)
 - `references/copyright-society-benchmarking.md` — 12-society website feature matrix (frontend features, not catalog/matching systems)
 - `3-store-architecture-pattern` — the concrete architecture pattern derived from this research (Rights Catalog ↔ DSP Metadata ↔ Match Map). Read after research is complete and before building.

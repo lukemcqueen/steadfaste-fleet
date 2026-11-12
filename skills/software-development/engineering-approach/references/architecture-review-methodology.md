@@ -1,6 +1,6 @@
-# Architecture Review Methodology (hc-party pattern)
+# Architecture Review Methodology (fleet-party pattern)
 
-Structured trade-off review for complex architecture decisions. Maps to the hc-party phase of AgentKore's `/plan` command. Run AFTER a PRD is drafted and BEFORE building begins.
+Structured trade-off review for complex architecture decisions. Maps to the fleet-party phase of AgentKore's `/plan` command. Run AFTER a PRD is drafted and BEFORE building begins.
 
 ## When to Use
 
@@ -80,7 +80,7 @@ Cross-reference these dimensions for gaps:
 A structured review document (in the response, not a saved file unless requested):
 
 ```
-## hc-party Architecture Review
+## fleet-party Architecture Review
 
 ### 🔴 Critical Risks (Must Fix Before Build)
 

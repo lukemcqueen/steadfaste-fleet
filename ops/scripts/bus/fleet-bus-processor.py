@@ -27,9 +27,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 # Ensure the steadfaste-fleet scripts dir is in sys.path for lib.fleet_bus
-_HC_SCRIPTS = Path.home() / ".steadfaste-fleet" / "scripts"
-if str(_HC_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(_HC_SCRIPTS))
+_FLEET_SCRIPTS = Path.home() / ".steadfaste-fleet" / "scripts"
+if str(_FLEET_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_FLEET_SCRIPTS))
 
 from lib.fleet_bus import bus_list_queues, bus_read, bus_archive
 

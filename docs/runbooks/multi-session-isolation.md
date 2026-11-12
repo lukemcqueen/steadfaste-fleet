@@ -46,7 +46,7 @@ sessions that each believe they own it.
 ```bash
 # from the primary checkout
 ops/scripts/manage/session-identity.sh new pi        # worktree + branch session/pi + identity
-cd ~/hc-session-pi                                   # run the session THERE
+cd ~/fleet-session-pi                                   # run the session THERE
 
 ops/scripts/manage/session-identity.sh show          # what am I, where, as whom
 ```

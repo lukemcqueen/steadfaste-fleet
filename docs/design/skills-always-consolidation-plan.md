@@ -63,10 +63,12 @@ derive required from template `always:`, self-consistent; update comment :966.
 **Pre-commit ritual gate (names skills — the wire that actually binds):**
 - `ops/scripts/pre-commit-score:908` `for _ritual_skill in reflexion-check
   survey-before-action prove-before-create agent-contract` — remap to the 3 new
-  names. `hc-reflexion-check --skill <name>` answers from the tool-event store
+  names. `hc-reflexion-check --skill <name>` (old tool name — STALE; the gate
+  tool is now `reflexion-check.py`) answers from the tool-event store
   keyed by the name passed to skill_view, so the loop MUST name the new skills
   (aliases do NOT satisfy it).
-- `ops/scripts/hc-reflexion-check.py:47` `DEFAULT_SKILL="reflexion-check"` — the
+- `ops/scripts/hc-reflexion-check.py:47` (STALE path — now
+  `ops/scripts/reflexion-check.py`) `DEFAULT_SKILL="reflexion-check"` — the
   verify survivor (`verify-and-ship`).
 
 **Tests:**

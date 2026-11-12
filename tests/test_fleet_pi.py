@@ -35,7 +35,7 @@ def _load_fleet():
 def fleet(tmp_path, monkeypatch):
     """fleet with HOME pointed at a scratch dir, so every path decision is controlled."""
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.delenv("HC_AGENT", raising=False)
+    monkeypatch.delenv("FLEET_AGENT", raising=False)
     mod = _load_fleet()
     return mod
 
@@ -303,7 +303,7 @@ def test_run_script_flushes_stdout_before_delegating(fleet, monkeypatch, tmp_pat
 def test_end_to_end_without_pi_exits_zero_and_says_why(tmp_path):
     """The real command, real argv, real exit status — with an agent identity because
     fleet refuses to run without one (that refusal is its own correct behaviour)."""
-    env = dict(os.environ, HOME=str(tmp_path), HC_AGENT="testagent")
+    env = dict(os.environ, HOME=str(tmp_path), FLEET_AGENT="testagent")
     env.pop("PYTHONPATH", None)
     r = subprocess.run([sys.executable, str(FLEET), "pi", "check"],
                        capture_output=True, text=True, env=env, timeout=120)
@@ -312,7 +312,7 @@ def test_end_to_end_without_pi_exits_zero_and_says_why(tmp_path):
 
 
 def test_end_to_end_bad_subcommand_keeps_fleet_usage_exit_code(tmp_path):
-    env = dict(os.environ, HOME=str(tmp_path), HC_AGENT="testagent")
+    env = dict(os.environ, HOME=str(tmp_path), FLEET_AGENT="testagent")
     r = subprocess.run([sys.executable, str(FLEET), "pi", "nonsense"],
                        capture_output=True, text=True, env=env, timeout=120)
     assert r.returncode == 2, r.stdout + r.stderr

@@ -24,8 +24,8 @@ moses and esther hosts. No docker exec, no local-Postgres assumption.
   fleet env               show current config
   fleet help              this message
 
-Config: ~/steadfaste-fleet/.env (optional HC_AGENT; every field falls back)
-  HC_AGENT=esther                          # your agent name (default)
+Config: ~/steadfaste-fleet/.env (optional FLEET_AGENT; every field falls back)
+  FLEET_AGENT=esther                        # your agent name (default)
 Bus config comes from ~/steadfaste-fleet/.env:
   CORTEX_BUS_URL=https://…:13004           # active bus (Moses)
   CORTEX_BUS_FALLBACK_URL=https://…:14004  # fallback bus (Esther)
@@ -117,14 +117,14 @@ def load_config() -> dict:
     """Load config from the canonical .env (env vars override).
 
     Agent resolution order:
-      1. HC_AGENT env var
-      2. HC_AGENT in ~/steadfaste-fleet/.env
+      1. FLEET_AGENT env var
+      2. FLEET_AGENT in ~/steadfaste-fleet/.env
       3. AGENT_NAME in .env (canonical per-host identity)
       NEVER hostname — a machine name is not an agent identity. Missing
       identity fails loudly (Luke directive 2026-08-14).
     """
     config = {
-        "agent": os.environ.get("HC_AGENT", ""),
+        "agent": os.environ.get("FLEET_AGENT", ""),
     }
 
     if CONFIG_FILE.exists():
@@ -134,14 +134,14 @@ def load_config() -> dict:
                 if not line or line.startswith("#") or "=" not in line:
                     continue
                 k, v = (x.strip().strip("'\"") for x in line.split("=", 1))
-                if k == "HC_AGENT" and not config["agent"]:
+                if k == "FLEET_AGENT" and not config["agent"]:
                     config["agent"] = v
         except Exception as exc:
-            # An unreadable .env makes HC_AGENT ABSENT here — the same answer the
+            # An unreadable .env makes FLEET_AGENT ABSENT here — the same answer the
             # search gives for a key it cannot find. Say WHY it is absent rather than
             # swallowing (matches _read_bus_conf's fail-closed stance); identity still
             # fails loudly once every source is exhausted.
-            print(f"⚠️  Could not read {CONFIG_FILE} ({exc}) — treating HC_AGENT as absent",
+            print(f"⚠️  Could not read {CONFIG_FILE} ({exc}) — treating FLEET_AGENT as absent",
                   file=sys.stderr)
 
     if not config["agent"]:
@@ -153,7 +153,7 @@ def load_config() -> dict:
         # directive 2026-08-14). Fail loudly with setup instructions.
         print(
             "❌ Cannot determine agent identity. Set one of:\n"
-            "   1. export HC_AGENT=<your-agent>   (or add HC_AGENT= to ~/steadfaste-fleet/.env)\n"
+            "   1. export FLEET_AGENT=<your-agent>   (or add FLEET_AGENT= to ~/steadfaste-fleet/.env)\n"
             "   2. AGENT_NAME= in ~/steadfaste-fleet/.env\n"
             "   3. export AGENT_NAME=<your-agent>",
             file=sys.stderr,
@@ -984,7 +984,7 @@ def cmd_dashboard(cfg: dict, args: list):
 def cmd_env(cfg: dict, args: list):
     """Show current config."""
     print("📋 fleet Configuration:")
-    print(f"   HC_AGENT     = {cfg['agent']}")
+    print(f"   FLEET_AGENT   = {cfg['agent']}")
     print(f"   Config file  = {CONFIG_FILE}")
     print(f"   File exists  = {CONFIG_FILE.exists()}")
     if _HAS_LIB:

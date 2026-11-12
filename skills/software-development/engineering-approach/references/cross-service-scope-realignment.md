@@ -1,4 +1,4 @@
-# Cross-Service Scope Realignment (hc-elicit → hc-party)
+# Cross-Service Scope Realignment (fleet-elicit → fleet-party)
 
 When a PRD story or epic overlaps with another ACME microservice, follow this
 pipeline to realign scope and document the integration contract.
@@ -19,7 +19,7 @@ Any of these signal a cross-service overlap that needs realignment:
 Build a mapping table of PRD stories ↔ existing implementation by checking
 the sibling repo's PRDs, routers, and services.
 
-### 2. hc-elicit (Requirements Gap Analysis)
+### 2. fleet-elicit (Requirements Gap Analysis)
 
 | # | Question | How to answer |
 |---|---|---|
@@ -28,7 +28,7 @@ the sibling repo's PRDs, routers, and services.
 | 3 | What integration does the current repo need? | What data flows in each direction? Check the sibling PRD's "Integration" or "Bounded Context" section. |
 | 4 | What infrastructure is missing? | Check for NATS consumers, API clients, proxy endpoints, or event handlers. |
 
-### 3. hc-party (Architecture Review & Integration Contract)
+### 3. fleet-party (Architecture Review & Integration Contract)
 
 Document in an ADR (`docs/decisions/ADR-NNN-<topic>.md`):
 

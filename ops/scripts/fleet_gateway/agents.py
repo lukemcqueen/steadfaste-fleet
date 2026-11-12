@@ -82,7 +82,7 @@ OUTPUT_MODES = ("raw", "last_line")
 
 # How an agent remembers the conversation. `none` = a fresh process per turn (no memory);
 # `per_chat` = one agent session per human chat, declared via session_args. The id is
-# DETERMINISTIC (hc-<agent>-<chat>), so continuity survives a gateway restart without
+# DETERMINISTIC (fleet-<agent>-<chat>), so continuity survives a gateway restart without
 # shared state — and the argv template keeps the agent's own flag names out of our code
 # (pi: --session-id, others differ).
 SESSION_MODES = ("none", "per_chat")
@@ -472,7 +472,7 @@ class CommandBackend:
     def _session_id(self, inbound: dict) -> str:
         """Deterministic per-chat session id: stable, no shared state, restart-safe.
 
-        hc-<agent>-<chat> — pi creates the session if it does not exist, so the first turn
+        fleet-<agent>-<chat> — pi creates the session if it does not exist, so the first turn
         of a chat starts one and every later turn continues it. A random or in-memory id
         would silently reset the conversation on every gateway restart.
 
@@ -487,7 +487,7 @@ class CommandBackend:
         chat = inbound.get("channel_user_id")
         if chat is None:
             return ""
-        base = f"hc-{self.spec.name}-{chat}"
+        base = f"fleet-{self.spec.name}-{chat}"
         generation = inbound.get("session_generation") or 0
         # bool is an int subclass; True must not read as generation 1.
         if isinstance(generation, bool) or not isinstance(generation, int) or generation <= 0:

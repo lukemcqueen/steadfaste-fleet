@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Deploy Hermes Cortex development harness (AGENTS.md, .hermes-cortex/ infrastructure, loop-governance scoring, pre-commit hooks, project skills) to any project directory.
+Deploy Steadfaste Fleet development harness (AGENTS.md, .steadfaste-fleet/ infrastructure, loop-governance scoring, pre-commit hooks, project skills) to any project directory.
 
 ## Usage
 
@@ -14,7 +14,7 @@ REQUIRED:
 
 OPTIONS:
   --mode=merge|overwrite|diff    Default: merge
-  --components=ALL|list          Default: ALL (AGENTS.md,.hermes-cortex,pre-commit,loop-gov,manifest,skills)
+  --components=ALL|list          Default: ALL (AGENTS.md,.steadfaste-fleet,pre-commit,loop-gov,manifest,skills)
   --name=<name>                  Project display name (for AGENTS.md {{PROJECT_NAME}})
   --template=<path>              Custom AGENTS.md template
   --skill-refs=skill1,skill2     Skill names for the manifest always section
@@ -36,7 +36,7 @@ AGENTS.seed.md uses these substitution patterns:
 | `{{PROJECT_NAME}}` | `--name` flag or basename of project path | "My API" |
 | `{{PROJECT_DESCRIPTION}}` | Auto-generated from project name | "my-api — seeded project" |
 | `{{SEED_DATE}}` | Current UTC date | "2026-06-26" |
-| `{{SEED_COMMIT}}` | Current hermes-cortex repo commit | "b432700" |
+| `{{SEED_COMMIT}}` | Current steadfaste-fleet repo commit | "b432700" |
 
 ## Restore Scenarios
 
@@ -55,7 +55,7 @@ bash ~/.steadfaste-fleet/scripts/seed-project.sh --restore=/path/to/project@2026
 
 ### What gets restored
 - AGENTS.md → project root
-- .hermes-cortex/ → replaced from backup (backup history preserved)
+- .steadfaste-fleet/ → replaced from backup (backup history preserved)
 - .git/hooks/pre-commit → restored
 
 ### What does NOT get restored
@@ -68,11 +68,11 @@ bash ~/.steadfaste-fleet/scripts/seed-project.sh --restore=/path/to/project@2026
 ### AGENTS.md
 - Source: `docs/templates/AGENTS.seed.md` or custom `--template`
 - Template uses `{{PLACEHOLDER}}` substitution
-- Agent execution contract (rules 1-11) from hermes-cortex AGENTS.md
+- Agent execution contract (rules 1-11) from steadfaste-fleet AGENTS.md
 - Loop-governance scoring section (CLI + MCP paths)
 - Project-specific section for manual additions (dev setup, architecture, deployment, testing)
 
-### .hermes-cortex/
+### .steadfaste-fleet/
 - Creates: sessions/archive/, memory/, skills/ + .gitkeep files
 - Writes `.gitignore` excluding: memory/, *.db, *.sqlite, .env, *.pem, *.key
 - Backup excludes `.seed-backups/` directory (circular copy prevention)
@@ -83,35 +83,35 @@ bash ~/.steadfaste-fleet/scripts/seed-project.sh --restore=/path/to/project@2026
 - Runs `score-cycle` on every commit
 
 ### Loop-Governance
-- Creates score-cycle and loop-feedback wrapper scripts in `.hermes-cortex/loop-governance/`
+- Creates score-cycle and loop-feedback wrapper scripts in `.steadfaste-fleet/loop-governance/`
 - Wrappers delegate to global score-cycle via `exec`
 - Adds *.db and loop-gov.db to .gitignore
 
-### Skills Manifest (`.hermes-cortex/skills.yaml`)
+### Skills Manifest (`.steadfaste-fleet/skills.yaml`)
 
 - **Default (no `--legacy-copy`):** writes a YAML manifest that references global
   skills by name. No file copies, no drift. The `always` section is populated from
   `--skill-refs` (or the default set below). The `on_task` section provides
   task-type mappings (debug → root-cause-debugging, review → code-review, etc.).
 - **Legacy (`--legacy-copy`):** copies SKILL.md + references/ from global
-  `~/.hermes/skills/` into `.hermes-cortex/skills/<name>/` (old behavior).
+  `~/.hermes/skills/` into `.steadfaste-fleet/skills/<name>/` (old behavior).
 - Default set: change-test-loop, engineering-approach, save-lesson, spike, dev-plan
 - Custom via `--skill-refs=comma,separated,list`
 
 ### How agents discover skills
 
 1. Agent reads `AGENTS.md` at session start → "load skills from manifest"
-2. Agent reads `.hermes-cortex/skills.yaml` → loads all `always` skills via `skill_view()`
+2. Agent reads `.steadfaste-fleet/skills.yaml` → loads all `always` skills via `skill_view()`
 3. Agent classifies task via `agent-flow` → loads matching `on_task` skills
-4. Fallback: if no manifest, scan `.hermes-cortex/skills/` for embedded SKILL.md files
+4. Fallback: if no manifest, scan `.steadfaste-fleet/skills/` for embedded SKILL.md files
 
 ## Pitfalls
 
 ### 1. Destructive restore of incomplete backup
-The original restore code did `rm -rf "${project}/.hermes-cortex"` BEFORE checking if the backup had `.hermes-cortex/`. A first-seed backup only has AGENTS.md (no .hermes-cortex/ to restore). The rm deleted the entire `.hermes-cortex/` including `.seed-backups/`. Fix: only restore .hermes-cortex/ when backup explicitly has it; move aside (never delete) the current version; restore original on cp failure.
+The original restore code did `rm -rf "${project}/.steadfaste-fleet"` BEFORE checking if the backup had `.steadfaste-fleet/`. A first-seed backup only has AGENTS.md (no .steadfaste-fleet/ to restore). The rm deleted the entire `.steadfaste-fleet/` including `.seed-backups/`. Fix: only restore .steadfaste-fleet/ when backup explicitly has it; move aside (never delete) the current version; restore original on cp failure.
 
 ### 2. Circular backup copy
-`create_backup()` copies `.hermes-cortex/` recursively. Since the backup path is INSIDE `.hermes-cortex/.seed-backups/`, the copy would include the backup being written — infinite recursion. Fix: iterate over top-level items in `.hermes-cortex/` and skip `.seed-backups/`.
+`create_backup()` copies `.steadfaste-fleet/` recursively. Since the backup path is INSIDE `.steadfaste-fleet/.seed-backups/`, the copy would include the backup being written — infinite recursion. Fix: iterate over top-level items in `.steadfaste-fleet/` and skip `.seed-backups/`.
 
 ### 3. `local var=$(cmd)` with `set -e`
 In bash, `local var=$(cmd)` masks the exit code of `cmd`. When `set -e` is active, a failed command inside `$()` causes the entire script to exit. Fix: split into `local var; var=$(cmd) || true`.
@@ -127,16 +127,16 @@ In bash, `local var=$(cmd)` masks the exit code of `cmd`. When `set -e` is activ
 
 ## Migration Patterns
 
-### First-time seed on a project with existing .hermes-cortex/
+### First-time seed on a project with existing .steadfaste-fleet/
 ```
-1. Backups existing .hermes-cortex/ (without circular backup) ✓
+1. Backups existing .steadfaste-fleet/ (without circular backup) ✓
 2. Overwrites AGENTS.md if different (checksum)
 3. Adds .gitignore entries (doesn't remove existing)
 4. Installs/updates pre-commit hook
 5. Loop-gov wrappers always created fresh (small files)
 6. Writes skills.yaml manifest (new default — replaces file copies)
-7. Skills only added (never removed from .hermes-cortex/skills/)
-   Note: existing `.hermes-cortex/skills/<name>/` dirs from previous
+7. Skills only added (never removed from .steadfaste-fleet/skills/)
+   Note: existing `.steadfaste-fleet/skills/<name>/` dirs from previous
    file-copy seeds are harmless — agent-flow falls back to them if
    no manifest exists, but the manifest takes priority.
 ```
