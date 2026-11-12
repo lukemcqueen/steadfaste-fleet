@@ -29,6 +29,11 @@ Contracts:
   * **Duplicate suppression.** An identical consecutive checkpoint is skipped
     (state-signature, not content-hash-of-everything) — re-firing the hook on
     every turn must not shred session history or spam the store.
+  * **Scope-qualified labels.** Decisions and labels ("operator-gated",
+    "deferred") must carry scope — what they apply to and what they do NOT
+    restrict. A bare label without scope over-generalizes in the next session
+    (from "don't mutate" to "don't touch"). Record (a) what was decided, (b)
+    its scope, (c) what it does not restrict.
   * Identity is the same derivation the MCP server uses (env → git), so a
     checkpoint written here and a restore read there agree on the session.
 """

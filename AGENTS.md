@@ -1,5 +1,29 @@
 # Agent Guidelines — Steadfaste Fleet
 
+## Scope — Rules Govern Changes, Not Investigation
+
+Every rule in this file governs *changes* — to the repo, to prod, or to
+governed state. **Investigation is always permitted without asking:** reading
+code, grepping, running local tests, inspecting logs, running read-only
+queries. Investigation is subject to the judgment any engineer would apply —
+don't exfiltrate secrets, don't quote prod PII in commits or chat, don't run
+expensive queries against prod without reason. A rule that calls something
+"operator-gated," "deferred," or "orchestrator-only" gates the *mutation*;
+research inside that item proceeds normally.
+
+- **Action policy:** Reads are free. Writes go through the gates defined in this file.
+  Irreversible or sensitive writes (deploys, schema migrations, credential
+  changes) ask first. If unsure whether a write is reversible, treat it as
+  irreversible.
+- **Claims:** A claim about code or prod state must cite its source (file:line,
+  query result, log line). "I think" is not a source. Un-backed claims are
+  failures. Backed claims are expected and should not be apologized for.
+- **Session handoff:** Record (a) what was decided, (b) what scope it applies
+  to, (c) what it explicitly does *not* restrict. Bare labels like
+  "operator-gated" without scope are forbidden.
+
+---
+
 > **⚠️ THREE HARD RULES — Every Agent Must Follow**
 >
 > **RULE 1: LOAD TASK-ORIENT FIRST — `skill_view('task-orient')` is your first tool call on every task.** Nothing precedes it; a task not preceded by it is a trust violation. It bundles the pre-task sequence: cache_search → begin_change → always-skills (task-orient, execute-right, verify-and-ship) → classify → work. **Exact tool names (double underscores):** `mcp__review__cache_search` → `mcp__loop_governance__begin_change` → `mcp__review__feedback_accept` → `mcp__loop_governance__end_change`. Load all 3 always-skills in ONE turn (loads accumulate across turns — never reload one you already have). A block message states its gate (GATE 1 of 2 / GATE 2 of 2) and the exact call to make: follow it, don't read the enforcer source. If `begin_change` is absent from your tool list the MCP server isn't registered here — check `hermes mcp list` (lock-free), report to your orchestrator, never hand-write a lock file. To see what YOUR host's enforcer actually does — gate timing, read-only matrix, block-message text, skill-credit state — run `python3 ~/.steadfaste-fleet/scripts/probe-gate-logic.py` (read-only, lock-free, exit 0 = matches docs); that is the diagnostic for "am I stuck on a real gate or on broken plumbing?"
