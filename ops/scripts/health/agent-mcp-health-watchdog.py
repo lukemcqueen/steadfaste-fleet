@@ -14,7 +14,7 @@ write-deadlocked until an out-of-band fix).
 
 Severity (M-001/M-002, docs/elicit/2026-08-18_governance-fail-loudly-party.md):
   review / tasks down -> CRITICAL (write-deadlock risk — ALL WRITES BLOCKED)
-  agent-bus (cortex-bus) down   -> WARNING  (no deadlock)
+  agent-bus (fleet-bus) down   -> WARNING  (no deadlock)
   unknown configured server     -> WARNING  (probed generically)
 
 Fires after 2 consecutive probe failures per server (transient tolerance),
@@ -63,15 +63,15 @@ CRITICAL = "CRITICAL"
 WARNING = "WARNING"
 
 # Live config server key -> (display name, severity, required tool names)
-# Config uses `agent-bus`; the doctor's canonical name is `cortex-bus`.
+# Config uses `agent-bus`; the doctor's canonical name is `fleet-bus`.
 EXPECTED_TOOLS = {
     # Slice B: the ONE loop-gov binary is role-distinct. Lifecycle/lock tools live on
     # `loop-governance`; re-review/feedback/cycle-read on `review`. Probe accordingly.
     "loop-governance": ("loop-governance", CRITICAL, ["begin_change", "end_change", "check_lock"]),
     "review": ("review", CRITICAL, ["rereview_change", "cycle_query", "feedback_accept"]),
     "tasks": ("tasks", CRITICAL, ["task_add", "task_update"]),
-    "agent-bus": ("agent-bus (cortex-bus)", WARNING, ["inbox_read", "inbox_send"]),
-    "cortex-bus": ("agent-bus (cortex-bus)", WARNING, ["inbox_read", "inbox_send"]),
+    "agent-bus": ("agent-bus (fleet-bus)", WARNING, ["inbox_read", "inbox_send"]),
+    "fleet-bus": ("agent-bus (fleet-bus)", WARNING, ["inbox_read", "inbox_send"]),
 }
 
 RECOVERY_HINT = (

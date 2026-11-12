@@ -65,7 +65,7 @@ push's dogfood. Expect it whenever your change touches skills/ or AGENTS.md.
 The enforcer's `_REQUIRED_SKILLS` comment says it "MUST stay in sync with
 skills.yaml `always:` and doctor checks.py" — but it missed a
 fourth sync point: **AGENTS.md Rule 1**, which enumerated the always-set with
-pre-2026-08-20 names (`reasoning-patterns`, `cortex-preflight`) and omitted
+pre-2026-08-20 names (`reasoning-patterns`, `fleet-preflight`) and omitted
 `test-driven-development`. Sessions loading per Rule 1 loaded the wrong set and
 failed the marker. Fix was a one-line list replacement; also greps for the
 stale class found `"8 always-skills"` leftovers in three skill bodies (the set

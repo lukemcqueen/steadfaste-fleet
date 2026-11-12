@@ -149,9 +149,9 @@ These run on this machine but use `agent-*` naming. Not in repo installers (inte
 
 | Name | Schedule | Type | Deliver |
 |------|----------|------|---------|
-| `cortex-bus-workday` | `0 8,14,20 * * 1-5` | LLM | origin |
-| `cortex-bus-evening` | `0 20,22 * * 1-5` | LLM | origin |
-| `cortex-bus-overnight` | `0 23 * * 1-5` | LLM | origin |
+| `fleet-bus-workday` | `0 8,14,20 * * 1-5` | LLM | origin |
+| `fleet-bus-evening` | `0 20,22 * * 1-5` | LLM | origin |
+| `fleet-bus-overnight` | `0 23 * * 1-5` | LLM | origin |
 | `job-opportunity-scanner` | `0 7 * * *` | LLM | Telegram |
 
 ### Other crons — 8 crons

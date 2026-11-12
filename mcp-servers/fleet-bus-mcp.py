@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-P3 step 3 (2026-11-06): renamed from mcp-servers/cortex-bus-mcp.py.
+P3 step 3 (2026-11-06): renamed from mcp-servers/fleet-bus-mcp.py.
 Provenance: git log --follow -- mcp-servers/fleet-bus-mcp.py (the p3
 sweep moved the file and swapped the fleet-* tokens, incl. the server
 name below).

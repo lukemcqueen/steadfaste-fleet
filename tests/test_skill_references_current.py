@@ -159,7 +159,7 @@ def find_duplicate_related(root):
 
     A sweep that redirects `old` -> `new` creates this whenever the list ALREADY
     named `new`: measured on 2026-10-22, a substitution turned
-    `[cortex-bus, cortex-bus-automation, …]` into `[cortex-bus, cortex-bus, …]`
+    `[fleet-bus, fleet-bus-automation, …]` into `[fleet-bus, fleet-bus, …]`
     and a related-bullet pair into two identical entries. The match count was
     asserted and still produced it, because the artefact is a CONSEQUENCE of the
     replacement rather than a failed match — so the sweep needs a scan for what it

@@ -25,7 +25,7 @@ remains.
   admin/ingest/reader. DB `gbrain` holds schemas `bus` (23 msgs),
   `mycortex` (1726 pages / 29298 chunks), `public` (61 `gbrain_legacy_*`
   tombstoned tables). Total 183 MB.
-- **Bus server** = `cortex-bus.service` (systemd user, uvicorn
+- **Bus server** = `fleet-bus.service` (systemd user, uvicorn
   fleet_bus.server:app :8903) connects as `gbrain`/`gbrain` via
   `CORTEX_BUS_PG_*` from `~/steadfaste-fleet/.env` (PORT=15432, DB=gbrain,
   USER=gbrain). The ONLY live `gbrain|gbrain` backend is the bus.
@@ -45,7 +45,7 @@ remains.
 | `ops/scripts/agent/fleet-agent-manager.py` | `docker exec gbrain-postgres psql -U gbrain -d gbrain` |
 | `ops/scripts/agent/install-worker.sh` | `docker exec gbrain-postgres psql -U gbrain -d gbrain` |
 | `ops/scripts/agent/agent-diagnostic.py` | docker exec gbrain-postgres |
-| `ops/scripts/agent/commands.py` | `available_services: ["cortex-bus", "gbrain", ...]`, service list `gbrain-sync` |
+| `ops/scripts/agent/commands.py` | `available_services: ["fleet-bus", "gbrain", ...]`, service list `gbrain-sync` |
 | `ops/scripts/bus/workflow-inspector.py` | defaults `PG_DB="gbrain"`, `PG_USER="gbrain"` |
 | `ops/scripts/orch-bus/orch-bus-test.py` | docstring `CORTEX_BUS_PG_USER=gbrain` |
 | `ops/scripts/health/health-vector-push.sh` | `pgrep -f gbrain` gates `SVC_OK` (metric [1]) + `V_GBRAIN` (metric [6]) |

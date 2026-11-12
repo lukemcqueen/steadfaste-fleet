@@ -62,7 +62,7 @@ Return everything as raw output, don't summarize.
 | System OOM / high load | Memory pressure killing handler | Free memory, restart services |
 | `""` in processed_ids | Messages without correlation_id causing skip loop | Archive backlog, keep correlation_ids unique |
 | **Messages stuck `processing`, handler runs fine** | **`bus_archive()` returning False but handler ignores it — archive silently fails** | **Upgrade to handler commit `c306e3d`+ which logs archive failures. Check network/auth from agent to bus server.** |
-| **Agent polls wrong queue** | **`AGENT_NAME` missing in cortex-bus.conf** | **Set `AGENT_NAME=<agent>` in `~/.steadfaste-fleet/conf.d/cortex-bus.conf`** |
+| **Agent polls wrong queue** | **`AGENT_NAME` missing in fleet-bus.conf** | **Set `AGENT_NAME=<agent>` in `~/.steadfaste-fleet/conf.d/fleet-bus.conf`** |
 
 ## The Poll-Once Crash Pattern (No Exception Handler)
 

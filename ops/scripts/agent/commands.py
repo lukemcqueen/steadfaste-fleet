@@ -630,10 +630,10 @@ def handle_reboot(msg_body: dict, msg_raw: dict) -> dict:
             "success": False,
             "error": "Confirmation required. Set confirm=true to proceed.",
             "message": f"Will restart{' ' + service if service else ' all agent services'}",
-            "available_services": ["cortex-bus", "hermes-gateway"],
+            "available_services": ["fleet-bus", "hermes-gateway"],
         }
 
-    services = [service] if service else ["cortex-bus", "hermes-gateway"]
+    services = [service] if service else ["fleet-bus", "hermes-gateway"]
     results = []
 
     for svc in services:

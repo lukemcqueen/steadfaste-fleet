@@ -97,9 +97,9 @@ alerts. If all you did was archive routine health pings, stay silent.
 
 | Cron | Prompt instruction |
 |------|-------------------|
-| `cortex-bus-workday` | SILENT WHEN HEALTHY — only speaks on actionable bus items |
-| `cortex-bus-evening` | Same |
-| `cortex-bus-overnight` | Same |
+| `fleet-bus-workday` | SILENT WHEN HEALTHY — only speaks on actionable bus items |
+| `fleet-bus-evening` | Same |
+| `fleet-bus-overnight` | Same |
 
 ### Same contract as no_agent scripts
 

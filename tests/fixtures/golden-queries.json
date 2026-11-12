@@ -187,7 +187,7 @@
       "source": "steadfaste-fleet",
       "scope": "federated",
       "expected_top3": [
-        "skills/devops/cortex-deployment-sync/SKILL.md",
+        "skills/devops/fleet-deployment-sync/SKILL.md",
         "docs/fleet-update-protocol.md",
         "docs/agent-onboarding.md"
       ]

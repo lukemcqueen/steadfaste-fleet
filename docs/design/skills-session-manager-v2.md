@@ -42,7 +42,7 @@ Replace `.skills-loaded` with `~/.steadfaste-fleet/state/skills-state.json`:
     "reflexion-check": { "loaded_at": "2026-07-30T11:11:33Z", "verified": true },
     "change-checklist": { "loaded_at": "2026-07-30T11:11:34Z", "verified": true },
     "survey-before-action": { "loaded_at": "2026-07-30T11:11:38Z", "verified": true },
-    "cortex-preflight": { "loaded_at": "2026-07-30T11:11:39Z", "verified": true },
+    "fleet-preflight": { "loaded_at": "2026-07-30T11:11:39Z", "verified": true },
     "agent-contract": { "loaded_at": "2026-07-30T11:11:40Z", "verified": true }
   },
   "task_type": "enterprise",

@@ -267,9 +267,9 @@ def test_repair_units_fixes_deployed_units_and_is_idempotent(tmp_path, capsys, m
     g = _load("fleet-bus-bridge-generate")
     units = tmp_path / "user"
     units.mkdir()
-    old = units / "cortex-bridge-agent-message-handler.service"
+    old = units / "fleet-bridge-agent-message-handler.service"
     old.write_text("[Service]\nType=oneshot\nExecStart=/bin/true\n")
-    good = units / "cortex-bridge-already-fine.service"
+    good = units / "fleet-bridge-already-fine.service"
     good.write_text("[Service]\nType=oneshot\nKillMode=process\nExecStart=/bin/true\n")
     other = units / "some-other.service"
     other.write_text("[Service]\nType=oneshot\nExecStart=/bin/true\n")
@@ -278,7 +278,7 @@ def test_repair_units_fixes_deployed_units_and_is_idempotent(tmp_path, capsys, m
     assert g.repair_units() == 0
     assert "KillMode=process" in old.read_text()
     # A unit that already had it is untouched, and an unrelated unit is never
-    # touched (the repair scans only cortex-bridge-*.service).
+    # touched (the repair scans only fleet-bridge-*.service).
     assert good.read_text() == "[Service]\nType=oneshot\nKillMode=process\nExecStart=/bin/true\n"
     assert "KillMode" not in other.read_text()
     assert "1 unit(s) given" in capsys.readouterr().out
@@ -294,12 +294,12 @@ def test_repair_units_reports_unreadable_units_nonzero(tmp_path, capsys, monkeyp
     g = _load("fleet-bus-bridge-generate")
     units = tmp_path / "user"
     units.mkdir()
-    (units / "cortex-bridge-ok.service").write_text(
+    (units / "fleet-bridge-ok.service").write_text(
         "[Service]\nType=oneshot\nExecStart=/bin/true\n")
-    (units / "cortex-bridge-unreadable.service").write_text("x")
+    (units / "fleet-bridge-unreadable.service").write_text("x")
     monkeypatch.setattr(g, "_UNITS", units)
     # Make only the second file unreadable at read time.
-    target = units / "cortex-bridge-unreadable.service"
+    target = units / "fleet-bridge-unreadable.service"
     real_read = Path.read_text
 
     def fake_read(self, *a, **k):
@@ -311,5 +311,5 @@ def test_repair_units_reports_unreadable_units_nonzero(tmp_path, capsys, monkeyp
     rc = g.repair_units()
     err = capsys.readouterr().err
     assert rc == 1, "an unreadable unit must make the repair exit non-zero"
-    assert "cortex-bridge-unreadable.service" in err
+    assert "fleet-bridge-unreadable.service" in err
     assert "repair FAILED" in err

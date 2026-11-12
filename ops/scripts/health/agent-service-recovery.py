@@ -122,11 +122,11 @@ SERVICES: list[dict] = [
     # mycortex: DECOMMISSIONED 2026-08-02 (mycortex replaces) — service left
     # unregistered so the recovery loop never restarts a decommissioned daemon.
 ]
-# cortex-bus: only on orchestrator machines (Moses/Esther). Non-orchestrators
+# fleet-bus: only on orchestrator machines (Moses/Esther). Non-orchestrators
 # don't run the bus server and shouldn't try to recover it.
 if _is_orchestrator():
     SERVICES.append(
-        _make_service("cortex-bus", label="cortex-bus.service", pgrep="cortex-bus"),
+        _make_service("fleet-bus", label="fleet-bus.service", pgrep="fleet-bus"),
     )
 SERVICES.extend([
     {

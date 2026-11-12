@@ -9,7 +9,7 @@
 # for ten minutes before the cron is killed as a TimeoutError.
 # Fleet default here: 600s — the upstream default. The 08-04 fleet
 # experiment (30s probe, then 300s) proved too tight: under 300s, the
-# evening LLM crons (agent-fixer/cortex-bus/agent-inbox/soul-refinement)
+# evening LLM crons (agent-fixer/fleet-bus/agent-inbox/soul-refinement)
 # failed 9/9 runs with 'idle for 300s' — heavy non-streaming deepseek
 # calls on accumulated daily workload exceed 5 minutes. 600s restores
 # known-good behavior (jobs ran fine under it since late July).

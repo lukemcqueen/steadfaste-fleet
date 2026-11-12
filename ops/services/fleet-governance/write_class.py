@@ -189,7 +189,7 @@ def is_readonly_command(command: str) -> bool:
 # (2026-11-12: the pre-migration repo name `hermes-cortex` was REMOVED from the
 # accept list — the migration is complete.)
 _SANCTIONED_CORTEX_UPDATE_RE = re.compile(
-    r"^\s*(?:bash\s+)?(?:~|" + re.escape(str(Path.home())) + r")/steadfaste-fleet/ops/scripts/(?:cortex-update|fleet-update)\.sh"
+    r"^\s*(?:bash\s+)?(?:~|" + re.escape(str(Path.home())) + r")/steadfaste-fleet/ops/scripts/(?:fleet-update|fleet-update)\.sh"
     r"(?:\s+(?:--dry-run|--status|--delta|--clean-stale))*\s*$"
 )
 

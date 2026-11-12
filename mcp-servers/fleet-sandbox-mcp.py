@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.12
 """
 Fleet Sandbox MCP Server — exposes disk access control as MCP tools.
-P3 step 3 (2026-11-06): renamed from mcp-servers/cortex-sandbox-mcp.py;
+P3 step 3 (2026-11-06): renamed from mcp-servers/fleet-sandbox-mcp.py;
 provenance: git log --follow -- mcp-servers/fleet-sandbox-mcp.py.
 
 Tools:

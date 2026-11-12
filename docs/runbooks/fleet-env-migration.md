@@ -1,7 +1,7 @@
 # Runbook — fleet env migration (one canonical `.env`)
 
 > **Audience:** any agent, on Linux or macOS, that maintains a Steadfaste Fleet host.
-> **Status:** current since the 2026-10 single-env refactor (updated 2026-10-17: the back-compat symlink is now `~/.steadfaste-fleet/.env`; `cortex-bus.conf` retired).
+> **Status:** current since the 2026-10 single-env refactor (updated 2026-10-17: the back-compat symlink is now `~/.steadfaste-fleet/.env`; `fleet-bus.conf` retired).
 > **Companion:** `docs/env-vars.md` (variable reference) · `docs/design/gateway-envelope-verification.md`.
 
 ## The convention
@@ -18,7 +18,7 @@ The deploy dir carries a **sanctioned back-compat symlink to it** (so legacy rea
 |---|---|---|
 | `~/steadfaste-fleet/.env` | the canonical fleet env | **edit this** |
 | `~/.steadfaste-fleet/.env` | symlink → the canonical env (back-compat) | never edit; recreate with `consolidate-env.sh` if missing |
-| `~/.steadfaste-fleet/cortex-bus.conf` | **retired 2026-10-17** (was the old legacy symlink name) | must not exist; `consolidate-env.sh` removes it |
+| `~/.steadfaste-fleet/fleet-bus.conf` | **retired 2026-10-17** (was the old legacy symlink name) | must not exist; `consolidate-env.sh` removes it |
 | `~/.hermes/.env` | **Hermes-owned** (provider keys, Telegram) | never merge into it |
 
 Per-host values are per-machine and gitignored; the repo ships only
@@ -42,12 +42,12 @@ bash ops/scripts/fleet-update.sh          # runs consolidate-env.sh, then deploy
 
 `consolidate-env.sh` is idempotent and:
 
-1. **seeds** `~/steadfaste-fleet/.env` from `cortex-bus.conf` if the canonical env
+1. **seeds** `~/steadfaste-fleet/.env` from `fleet-bus.conf` if the canonical env
    does not exist yet (hosts installed before the refactor);
 2. merges any legacy-only variables into the canonical env (aborts on a *value*
    conflict rather than guessing);
 3. creates `~/.steadfaste-fleet/.env` as a **symlink to the canonical env**;
-4. **retires** any leftover `cortex-bus.conf` (backing up a real file first);
+4. **retires** any leftover `fleet-bus.conf` (backing up a real file first);
 5. refuses to touch `~/.hermes/.env` by design.
 
 ### Manual run (same thing, explicit)
@@ -62,7 +62,7 @@ bash ~/.steadfaste-fleet/scripts/consolidate-env.sh --check    # dry check; exit
 The behaviours this runbook documents are pinned by committed tests, runnable in
 the repo: `tests/test_fleet_doctor_env.py` drives `check_fleet_env` both ways
 (sanctioned symlink PASS, real-file FAIL, missing-symlink FAIL, leftover
-`cortex-bus.conf` FAIL) and `tests/test-consolidate-env.sh` drives
+`fleet-bus.conf` FAIL) and `tests/test-consolidate-env.sh` drives
 `consolidate-env.sh`'s migration / idempotence / real-file refusal / `--check`
 against an isolated temp HOME. Run them to reproduce the claims rather than
 trusting this prose.
@@ -76,23 +76,23 @@ ls -la ~/steadfaste-fleet/.env ~/.steadfaste-fleet/.env
 [ ~/steadfaste-fleet/.env -ef ~/.steadfaste-fleet/.env ] && echo "one file ✓"
 
 # 3. the retired name is gone
-[ ! -e ~/.steadfaste-fleet/cortex-bus.conf ] && echo "cortex-bus.conf retired ✓"
+[ ! -e ~/.steadfaste-fleet/fleet-bus.conf ] && echo "fleet-bus.conf retired ✓"
 ```
 
 The doctor reports:
 
-- `✅ fleet env — canonical ~/steadfaste-fleet/.env present (600); ~/.steadfaste-fleet/.env is the sanctioned symlink; cortex-bus.conf retired`
+- `✅ fleet env — canonical ~/steadfaste-fleet/.env present (600); ~/.steadfaste-fleet/.env is the sanctioned symlink; fleet-bus.conf retired`
 - `❌ fleet env — <problem>; fix: run fleet-update.sh (it runs consolidate-env.sh)`
 
 ## What changed in the refactor (so you can implement it)
 
-1. **All references swept to `.env`.** ~66 `cortex-bus.conf` references across
+1. **All references swept to `.env`.** ~66 `fleet-bus.conf` references across
    code, docs, skills and AGENTS.md now point at the canonical env. The only
    legitimate remaining references are `ops/scripts/manage/consolidate-env.sh`
    (it performs the migration) and the doctor's `check_fleet_env` (it enforces
-   the retirement). A `cortex-bus.conf` reference elsewhere is a regression —
-   `git grep -n cortex-bus.conf` should show only those two (and genuinely
-   different files: `~/.steadfaste-fleet/conf.d/…`, `~/.hermes/cortex-bus.conf`).
+   the retirement). A `fleet-bus.conf` reference elsewhere is a regression —
+   `git grep -n fleet-bus.conf` should show only those two (and genuinely
+   different files: `~/.steadfaste-fleet/conf.d/…`, `~/.hermes/fleet-bus.conf`).
 2. **The deploy dir holds the sanctioned `.env` symlink** (was: "no `.env`").
    The stray-langfuse trap is now caught differently — the doctor FAILs on a
    REAL file (not a symlink) at `~/.steadfaste-fleet/.env`, not on the
@@ -107,7 +107,7 @@ The doctor reports:
 4. **Enforcement.** `check_fleet_env` in `fleet_doctor/checks.py` FAILs when
    the canonical env is missing, when a REAL file (not a symlink) appears at
    `~/.steadfaste-fleet/.env`, when the sanctioned symlink is missing or points
-   elsewhere, or when a retired `cortex-bus.conf` still exists.
+   elsewhere, or when a retired `fleet-bus.conf` still exists.
 
 ## Troubleshooting
 
@@ -116,17 +116,17 @@ The doctor reports:
 | Doctor: `canonical ~/steadfaste-fleet/.env is MISSING` | fresh or legacy host | `bash ops/scripts/fleet-update.sh` |
 | Doctor: `~/.steadfaste-fleet/.env is a REAL file` | an unowned real `.env` sits at the deploy-symlink path | resolve it by hand (check what it points to / where it came from), then `bash ~/.steadfaste-fleet/scripts/consolidate-env.sh` |
 | Doctor: `~/.steadfaste-fleet/.env symlink is MISSING` | canonical exists but the sanctioned symlink is gone | `bash ~/.steadfaste-fleet/scripts/consolidate-env.sh` |
-| Doctor: `retired cortex-bus.conf … remains` | old host not yet consolidated | `bash ~/.steadfaste-fleet/scripts/consolidate-env.sh` |
-| A script finds no `CORTEX_BUS_URL` | env resolves to the wrong path | check the script reads `~/steadfaste-fleet/.env` (grep for `cortex-bus.conf`) |
+| Doctor: `retired fleet-bus.conf … remains` | old host not yet consolidated | `bash ~/.steadfaste-fleet/scripts/consolidate-env.sh` |
+| A script finds no `CORTEX_BUS_URL` | env resolves to the wrong path | check the script reads `~/steadfaste-fleet/.env` (grep for `fleet-bus.conf`) |
 | `CORTEX_BUS_URL not configured (checked: …/.steadfaste-fleet/.env)` | a script still hardcodes the old deploy-dir path | repoint it at the canonical env |
 
 ## Do not
 
 - Do **not** write fleet variables into `~/.hermes/.env` (Hermes-owned).
 - Do **not** replace `~/.steadfaste-fleet/.env` with a real file — it must stay a symlink to the canonical env.
-- Do **not** recreate `cortex-bus.conf` — it is retired.
+- Do **not** recreate `fleet-bus.conf` — it is retired.
 
-> **Deliberately kept names (P3 scope):** `cortex-bus.conf` is the RETIRED
+> **Deliberately kept names (P3 scope):** `fleet-bus.conf` is the RETIRED
 > symlink name — it is the doctor check's subject and must stay spelled that
 > way (`consolidate-env.sh` retires it, `check_fleet_env` enforces its
 > absence; a surviving reference is the regression signal). Env var NAMES

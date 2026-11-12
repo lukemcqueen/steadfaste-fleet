@@ -126,7 +126,7 @@ except (FileNotFoundError, OSError, IndexError):
     pass  # expected — silently handled
 EXPECTED_MCP_SERVERS = {
     # "agent-bus" is the key the fleet actually REGISTERS (pi's install-pi-mcp.sh and this
-    # host's config.yaml both use it). It was listed here as "cortex-bus" — which happens to
+    # host's config.yaml both use it). It was listed here as "fleet-bus" — which happens to
     # appear in the args PATH (fleet-bus-mcp.py), so the name-in-config check passed for the
     # wrong reason and `--fix` would have added a SECOND, wrongly-named server for the same
     # script. 2026-10-13.

@@ -142,7 +142,7 @@ known-fix-table applications and repeats are not new learnings.
 | server.py endpoint | runs from repo (bus service) | in-repo change |
 
 Bus service restart needed after server.py changes: `systemctl --user restart
-cortex-bus.service` (or launchd on macOS). Moses picks up the endpoint on his
+fleet-bus.service` (or launchd on macOS). Moses picks up the endpoint on his
 next pull + restart; until then his :13004 returns 404 for /api/learnings
 (workers already fail over to Esther via lib fallback).
 

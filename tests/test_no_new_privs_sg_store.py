@@ -4,7 +4,7 @@
 Context (2026-10-08): the pi backend of @Esther0001Bot reported "memory
 unavailable — the cortex store is not reachable from this host" while Hermes
 Esther on the same host had memory. Root cause: the serving unit
-(cortex-gateway-esther0001.service) sets `NoNewPrivileges=true`, and the store's
+(fleet-gateway-esther0001.service) sets `NoNewPrivileges=true`, and the store's
 Linux path reaches Postgres only through `sg docker -c "docker exec …"`.
 sg/newgrp calls setgroups()/setgid() unconditionally and the kernel refuses under
 NoNewPrivileges — even though the process already holds the docker group. The

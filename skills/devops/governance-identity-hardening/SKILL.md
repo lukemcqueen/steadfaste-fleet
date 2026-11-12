@@ -9,7 +9,7 @@ platforms: [linux, macos]
 metadata:
   hermes:
     tags: [governance, identity, spoofing, orchestrator, git-authorship, enforcer, pre-commit]
-    related_skills: [enforcer-modification-considerations, cortex-preflight, two-hard-rules, shell-scripting]
+    related_skills: [enforcer-modification-considerations, fleet-preflight, two-hard-rules, shell-scripting]
 ---
 
 # Governance Identity Hardening

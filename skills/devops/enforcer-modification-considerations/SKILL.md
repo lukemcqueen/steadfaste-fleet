@@ -586,4 +586,4 @@ HEAD — new mediums are your change's fault, an unchanged count is pre-existing
 - `ops/scripts/pre-commit-score` — pre-commit hook with orchestrator guard
 - `ops/scripts/manage/fleet_doctor/checks.py` — doctor checks (hook drift, enforcer permissions)
 - `ops/scripts/fleet-update.sh` — deploy script with `deploy_governance_plugin()`
-- `skills/devops/cortex-preflight/SKILL.md` — Pitfall 3 covers skills-loaded marker
+- `skills/devops/fleet-preflight/SKILL.md` — Pitfall 3 covers skills-loaded marker

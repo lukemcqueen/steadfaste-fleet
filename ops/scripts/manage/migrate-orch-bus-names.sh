@@ -120,7 +120,7 @@ fi
 echo "✅ Migration complete — all bus-* orphans cleaned"
 echo ""
 echo "Next steps:"
-echo "  1. Verify: python3 $REPO/ops/scripts/manage/cortex-doctor.py --quiet"
+echo "  1. Verify: python3 $REPO/ops/scripts/manage/fleet-doctor.py --quiet"
 echo "  2. Commit by PATHSPEC — a bare commit (or \`git add -A\`) commits whatever is staged,"
 echo "     including another session's work, and the pre-commit hook refuses that shape. Name"
 echo "     the paths this migration actually touched:"

@@ -127,7 +127,7 @@ def test_shell_payload_stored_as_literal():
 
 
 # ── Regression: fleet B-5 scrub gate degrades to personal (2026-08-21) ──
-# cortex-bus-overnight task_add (scope=fleet, content with ~/.hermes/... paths)
+# fleet-bus-overnight task_add (scope=fleet, content with ~/.hermes/... paths)
 # died with a raw RLS error ("new row violates row-level security policy for
 # table tasks"). Fix: cmd_add probes tasks.content_ok_for_fleet() and degrades
 # to scope=personal with a warning — the task is still created locally, the

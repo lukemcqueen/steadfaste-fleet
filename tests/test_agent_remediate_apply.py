@@ -104,7 +104,7 @@ def main() -> int:
                 "type": "service_down",
                 "detail": "Remote Agent Bus unreachable",
                 "timestamp": ts,
-                "context": {"service": "cortex-bus"},
+                "context": {"service": "fleet-bus"},
             }
 
         _make_sensor_output(home, job_id, [issue("2026-08-31T00:20:20Z")])

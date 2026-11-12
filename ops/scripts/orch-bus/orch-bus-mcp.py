@@ -47,7 +47,7 @@ if importlib.util.find_spec("mcp") is None:
     sys.exit(1)
 
 logging.basicConfig(level=logging.DEBUG, format="[mcp-server] %(levelname)s: %(message)s", stream=sys.stderr, force=True)
-log = logging.getLogger("cortex-bus")
+log = logging.getLogger("fleet-bus")
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
@@ -178,7 +178,7 @@ def _request(path: str, data: bytes | None = None, method: str = "POST") -> tupl
         return 0, str(e)
 
 # ── Server ────────────────────────────────────────────────────
-server = Server("cortex-bus")
+server = Server("fleet-bus")
 
 @server.list_tools()
 async def list_tools() -> list[Tool]:

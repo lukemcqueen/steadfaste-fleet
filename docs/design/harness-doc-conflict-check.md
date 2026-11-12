@@ -11,7 +11,7 @@ detected the miss. Incidents, each recorded in a governance cycle
   paths (fixed in cycle #14213 `fix-claude-agent-paths`).
 - `~/.steadfaste-fleet/SOUL.md` carried a stale `~/.hermes-cortex/state/...` lock
   path (removed in cycle #14212 `remove-fleet-soul-leftover`).
-- `hermes-cortex-setup` skill body + deployed `gateway-pi.example.yaml` carried
+- `hermes-fleet-setup` skill body + deployed `gateway-pi.example.yaml` carried
   retired paths (fixed in cycle #14207, commit `1dce14da`).
 
 Root cause: the doctor enumerates REPO surfaces and a few harness surfaces, but

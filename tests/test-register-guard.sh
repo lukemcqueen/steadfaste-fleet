@@ -44,7 +44,7 @@ check refused "nested hermes home path"                "${HOME}/.hermes/profiles
 check ok "cortex scripts dest"        "${HOME}/.steadfaste-fleet/scripts/foo.sh"
 check ok "cortex memory README (singular, cortex-owned)" "${HOME}/.steadfaste-fleet/memory/README.md"
 check ok "langfuse compose"           "${HOME}/langfuse/docker-compose.yml"
-check ok "macOS launch agent"         "${HOME}/Library/LaunchAgents/com.hermes.cortex-bus.plist"
+check ok "macOS launch agent"         "${HOME}/Library/LaunchAgents/com.hermes.fleet-bus.plist"
 check ok "systemd user unit"          "${HOME}/.config/systemd/user/steadfaste-fleet-dashboard.service"
 check ok "dashboard static"           "${HOME}/.steadfaste-fleet/dashboard/static/index.html"
 check ok "home-relative non-hermes"   "${HOME}/some-other-dir/file.txt"

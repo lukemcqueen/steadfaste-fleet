@@ -1,5 +1,5 @@
 ---
-name: cortex-deployment-sync
+name: fleet-deployment-sync
 version: 1.0.0
 category: devops
 description: "Use when pulling latest or running cortex update."
@@ -120,8 +120,8 @@ scratch, and append a real rc so you can read the verdict from the log:
 ```bash
 # background=true, notify=true
 bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh \
-  > ~/.hermes/cache/scratch/cortex-update-<stamp>.log 2>&1
-echo "EXIT=$?" >> ~/.hermes/cache/scratch/cortex-update-<stamp>.log
+  > ~/.hermes/cache/scratch/fleet-update-<stamp>.log 2>&1
+echo "EXIT=$?" >> ~/.hermes/cache/scratch/fleet-update-<stamp>.log
 ```
 
 - The redirect plus `echo "EXIT=$?"` captures the transcript AND the exit code;
@@ -233,7 +233,7 @@ restart requirements — same rule applies. The regex branches:
 ## Pitfall 13: A peer's deploy holds the mutex — stand down, don't fight it
 
 `fleet-update.sh` guards itself with a mutex and prints
-`fleet-update mutex held: another deploy is running (~/.steadfaste-fleet/state/fleet-update.lock)`
+`fleet-update mutex held: another deploy is running (~/.steadfaste-fleet/state/cortex-update.lock)`
 then exits non-zero, followed by `relock ran on a FAILED exit (rc=1) — enforcement files
 re-secured` (the fail-safe doing its job, not a second fault). The lock FILE's mtime is useless
 evidence — it can be days old while a live holder exists. Read the process tree instead:
@@ -369,14 +369,14 @@ any number of deploys and must be repaired directly** (measured: after the corte
 sweep, `Systemd stale units` + `MCP wiring (agent-bus)` were still failing after run
 two).
 
-- `Systemd stale units` — every `cortex-bridge-*.service` ExecStart'd the renamed
-  `cortex-bus-bridge-run.py`, so each bridge tick failed instantly. The bridge
+- `Systemd stale units` — every `fleet-bridge-*.service` ExecStart'd the renamed
+  `fleet-bus-bridge-run.py`, so each bridge tick failed instantly. The bridge
   generator (`fleet-bus-bridge-generate.py`) cannot regenerate these by design:
   migrated bridge-owned jobs are REMOVED from jobs.json, and the generator only emits
   units for jobs still listed there. Patch the live unit files, reload, reset-failed:
-  `sed -i 's|cortex-bus-bridge-run\.py|fleet-bus-bridge-run.py|g' ~/.config/systemd/user/cortex-bridge-*.service`
+  `sed -i 's|fleet-bus-bridge-run\.py|fleet-bus-bridge-run.py|g' ~/.config/systemd/user/fleet-bridge-*.service`
   … then `systemctl --user daemon-reload && systemctl --user reset-failed`. Also fix
-  any `--script` arg renamed beside the runner (e.g. `cortex-bus-failover-watchdog.py`
+  any `--script` arg renamed beside the runner (e.g. `fleet-bus-failover-watchdog.py`
   → `fleet-bus-failover-watchdog.py`). Verify 0 failed units with
   `systemctl --user list-units --state=failed`.
 - `MCP wiring (<server>)` — `~/.hermes/config.yaml` still names the old runner path

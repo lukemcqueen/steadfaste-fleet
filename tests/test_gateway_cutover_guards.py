@@ -115,7 +115,7 @@ def test_both_shipped_units_carry_the_guard_as_ExecStartPre():
     comment again, in a different file."""
     units = [_REPO / "docs" / "templates" / "fleet-gateway.service",
              Path.home() / ".config" / "systemd" / "user"
-             / "cortex-gateway-esther0001.service"]
+             / "fleet-gateway-esther0001.service"]
     for unit in units:
         if not unit.is_file():
             continue

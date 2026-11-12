@@ -13,7 +13,7 @@ When a Hermes default skill is missing functionality we need, **we do not edit t
 | `survey-before-action` | *(merged in 2026-08-20 — see note)* | Repo-specific checks (git search, Hermes boundary, deployment verification) were folded INTO survey-before-action; new supporting skills use a descriptive `cortex-*` name |
 | *(future)* | *(to be created)* | |
 
-> **Note (2026-08-20):** `cortex-preflight` was merged into `survey-before-action`
+> **Note (2026-08-20):** `fleet-preflight` was merged into `survey-before-action`
 > during the always-skill consolidation (10 → 7). The pattern below still
 > applies to NEW supporting skills — the merge was a dedup of an existing
 > supplement, not a repeal of the pattern. See
@@ -49,7 +49,7 @@ Created to supplement `session-manager` and `task-start`. Adds:
 - Fleet-visible todo management
 - task-db.py CLI
 
-## Historical example: cortex-preflight (merged 2026-08-20)
+## Historical example: fleet-preflight (merged 2026-08-20)
 
 Created to supplement `survey-before-action`. Added:
 - Check git for files committed but not deployed
@@ -60,8 +60,8 @@ Created to supplement `survey-before-action`. Added:
 - Cross-agent impact check
 
 All six checks now live inside `survey-before-action` under
-"Repo-Specific Pre-Flight (formerly cortex-preflight, merged 2026-08-20)".
-The skill dir was deleted; `aliases: [cortex-preflight]` keeps old
+"Repo-Specific Pre-Flight (formerly fleet-preflight, merged 2026-08-20)".
+The skill dir was deleted; `aliases: [fleet-preflight]` keeps old
 references resolving.
 
 ## Pitfalls

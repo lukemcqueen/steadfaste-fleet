@@ -48,10 +48,10 @@ Peak-hit counts computed by expanding each cron's hour/minute fields:
 | Cron | Schedule (KST) | Peak hits |
 |---|---|---|
 | agent-fixer-workday | 49 9-17 * * 1-5 | 6/9 (10:49,11:49,12:49,15:49,16:49,17:49) |
-| cortex-bus-workday | 50 9-17 * * 1-5 | 6/9 |
+| fleet-bus-workday | 50 9-17 * * 1-5 | 6/9 |
 | orch-backlog-driver | 6 8-22 * * * | 7/15 |
 | agent-fixer-evening | 50 18,20,22 * * 1-5 | 1/3 (18:50) |
-| cortex-bus-evening | 41 18,20,22 * * 1-5 | 1/3 (18:41) |
+| fleet-bus-evening | 41 18,20,22 * * 1-5 | 1/3 (18:41) |
 | agent-llm-judge-scorer-weekday | 0 12,20 * * 1-5 | 1/2 (12:00) |
 | all overnight/night crons (03:xx-06:xx, 22:xx-23:xx) | — | 0/1 each |
 
@@ -60,7 +60,7 @@ Peak-hit counts computed by expanding each cron's hour/minute fields:
 - KEEP: workday crons (fixer-workday, bus-workday, backlog-driver) — their
   function is daytime responsiveness; the extra peak cost is ~$0.003–0.007 per
   peak run at flash rates, trivial next to their value.
-- FREE WINS proposed: agent-fixer-evening 18:50→19:50, cortex-bus-evening
+- FREE WINS proposed: agent-fixer-evening 18:50→19:50, fleet-bus-evening
   18:41→19:41, judge-scorer 12:00→13:30 (lunch off-peak gap). Zero coverage
   loss, half price.
   any frequency trimming.

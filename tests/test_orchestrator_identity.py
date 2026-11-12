@@ -159,7 +159,7 @@ def test_committers_doc_contains_luke_row():
             and not ln.strip().startswith("@")]
     # Titus's verified directory-services home (macOS NFSHomeDirectory):
     # /Users/luke — the row must match it EXACTLY or the capability never fires
-    # but fails silent. See docs/evidence/cortex-update-3-final-2026-10-14.txt
+    # but fails silent. See docs/evidence/fleet-update-3-final-2026-10-14.txt
     # and enforcement-plumbing-verify-2026-10-23.md for /Users/luke as the home.
     assert rows == ["/Users/luke"], f"committers doc must contain exactly '/Users/luke', got {rows}"
 
@@ -226,7 +226,7 @@ def test_committer_deny_list_blocks_the_guard_script():
     deny_files = src.split("_COMMITTER_DENY_FILES=(", 1)[1].split("\n)", 1)[0]
     for spine in ("mcp-servers/loop-gov-mcp.py", "ops/scripts/pre-commit-score",
                   "ops/scripts/fleet-update.sh", "ops/scripts/pre-push-pull",
-                  "ops/scripts/cortex-update.sh", "AGENTS.md", "SOUL.md",
+                  "ops/scripts/fleet-update.sh", "AGENTS.md", "SOUL.md",
                   "docs/fleet-committers.txt", "docs/orchestrator-only-paths.txt",
                   # review pipeline (ADV-14431-8): a committer editing these
                   # could mint or waive receipts

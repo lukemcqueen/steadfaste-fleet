@@ -75,7 +75,7 @@ When you remove a `register()` line from fleet-update.sh:
 
 - **2026-07-23:** 14 stale register entries removed from fleet-update.sh
   (bus-sensor.py ×2, orch-install-bus.sh, change-readiness.sh, inbox-sensor.py,
-  inbox-depth-watchdog.sh, cortex-bus-monitor.sh, inbox_watcher.py, mcp-inbox-proxy,
+  inbox-depth-watchdog.sh, fleet-bus-monitor.sh, inbox_watcher.py, mcp-inbox-proxy,
   agent-inbox server+plist, old offline_code_index_cron.sh path)
 - **34 orphan files** detected in `~/.steadfaste-fleet/scripts/` after cleanup
 - Auto-cleanup and doctor check added to prevent recurrence

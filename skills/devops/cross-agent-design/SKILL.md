@@ -9,11 +9,11 @@ description: >-
 version: 1.0.0
 category: devops
 author: Steadfaste Fleet
-created_from_session: cortex-bus-architecture-survey
+created_from_session: fleet-bus-architecture-survey
 related_skills:
   - survey-before-action
-  - cortex-preflight
-  - cortex-bus
+  - fleet-preflight
+  - fleet-bus
   - agent-contract
   - session-start-discipline
 ---
@@ -108,12 +108,12 @@ A message in an agent's inbox is only processed if the agent has a consumer:
 
 | Consumer type | Reads every | Handles | Configured on |
 |--------------|-------------|---------|---------------|
-| LLM-driven cron | 10-60 min | All message types | Moses (cortex-bus-workday/evening/overnight) |
+| LLM-driven cron | 10-60 min | All message types | Moses (fleet-bus-workday/evening/overnight) |
 | agent-worker service | ~30 sec | Only `workflow_step` type | Some agents (may cause competing consumer problem) |
 | Manual MCP tools | On-demand | All message types | All agents (but only when they read their inbox) |
 
 **If the target agent has no bus-processor cron, your message sits unprocessed
-until it times out and goes to DLQ.** The `cortex-bus-*` cron jobs are only
+until it times out and goes to DLQ.** The `fleet-bus-*` cron jobs are only
 configured on Moses by default.
 
 ### 4. Verify the ACL allows it
@@ -352,7 +352,7 @@ Pitfalls that cost a cycle here:
 
 Check, in order:
 1. Does Esther connect to the same Postgres instance? (She uses `CORTEX_BUS_URL`)
-2. Does she have a bus-processor cron? (`cortex-bus-*` jobs in her cron list)
+2. Does she have a bus-processor cron? (`fleet-bus-*` jobs in her cron list)
 3. Does her ACL allow reading `inbox_esther`? (Yes — every agent reads their own)
 4. Was the message consumed by `agent-worker` without being archived? (Competing consumer)
 
@@ -432,9 +432,9 @@ orchestrators (Moses, Esther) who use `host`.
 
 ## Reference
 
-- `cortex-bus` skill — bus operations, DLQ management, recovery
-- `cortex-preflight` skill — general pre-flight checks (manually authored)
-- `docs/reference/cortex-bus-config.md` — detailed config and auth resolution
+- `fleet-bus` skill — bus operations, DLQ management, recovery
+- `fleet-preflight` skill — general pre-flight checks (manually authored)
+- `docs/reference/fleet-bus-config.md` — detailed config and auth resolution
 - `docs/orch-bus-setup.md` — full setup guide with architecture overview
 - `agent-message-handler.py` — fleet-wide no_agent consumer (every 5 min)
 

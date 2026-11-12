@@ -33,7 +33,7 @@ resurrected a second owner.
 systemd's own enable symlink:
 
 ```
-~/.config/systemd/user/timers.target.wants/cortex-bridge-<name>.timer
+~/.config/systemd/user/timers.target.wants/fleet-bridge-<name>.timer
 ```
 
 Present ⇒ the bridge owns the job (it is enabled). Absent ⇒ the bridge does
@@ -50,8 +50,8 @@ bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh          # deploys the bridg
 
 1. **Generate the units** from the host's own `jobs.json`:
    ```bash
-   python3 ~/steadfaste-fleet/ops/scripts/cortex-bus-bridge-generate.py --dry-run   # inspect first
-   python3 ~/steadfaste-fleet/ops/scripts/cortex-bus-bridge-generate.py
+   python3 ~/steadfaste-fleet/ops/scripts/fleet-bus-bridge-generate.py --dry-run   # inspect first
+   python3 ~/steadfaste-fleet/ops/scripts/fleet-bus-bridge-generate.py
    ```
    It skips LLM / chained / non-translatable jobs and only emits simple
    `no_agent` ones.
@@ -59,7 +59,7 @@ bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh          # deploys the bridg
 2. **Enable the timers** (reload first — new units are invisible otherwise):
    ```bash
    systemctl --user daemon-reload
-   systemctl --user enable --now cortex-bridge-<job>.timer
+   systemctl --user enable --now fleet-bridge-<job>.timer
    ```
    ⚠️ **A job already paused for a reason** (e.g. `agent-daily-bible-reading`,
    `agent-hermes-update`, `orch-daily-regression-gate`, `agent-bus-retry-sweep`)
@@ -111,11 +111,11 @@ all four requests answered only at the 30-minute sweep timeout
   REMOVES the Hermes entry, so the job is gone from `jobs.json` and the
   generator will never emit that unit again. Repair in place:
   ```bash
-  python3 ~/steadfaste-fleet/ops/scripts/cortex-bus-bridge-generate.py --repair
+  python3 ~/steadfaste-fleet/ops/scripts/fleet-bus-bridge-generate.py --repair
   systemctl --user daemon-reload
   ```
   Idempotent: a second run reports `0 unit(s) given`.
-- **Guard** — the doctor FAILs on any enabled `cortex-bridge-*.service` with no
+- **Guard** — the doctor FAILs on any enabled `fleet-bridge-*.service` with no
   explicit `KillMode` (check: *Bridge unit kill mode*), so this cannot regress
   silently.
 
@@ -134,7 +134,7 @@ all four requests answered only at the 30-minute sweep timeout
 - **A silent watchdog proves nothing.** Exit 0 with empty stdout is the
   success case, so it cannot show the delivery chain works. Prove delivery on
   an always-output job, or check
-  `systemctl --user status cortex-bridge-<job>.service` for
+  `systemctl --user status fleet-bridge-<job>.service` for
   `code=exited, status=0/SUCCESS` plus the runner's `--deliver` argument.
 - **Verify with the marker, not with `is-active`** when running from a
   context that has no user DBus session.

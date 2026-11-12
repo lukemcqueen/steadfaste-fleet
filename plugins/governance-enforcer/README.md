@@ -249,7 +249,7 @@ a measured 7-vs-8 count discrepancy. `_REQUIRED_SKILLS_DEFAULT` is the documente
 fail-closed fallback for remote backends where the manifest is not mounted. Today
 the set is: task-orient (absorbed task-start, agent-flow, session-start-discipline,
 reasoning-patterns), execute-right (absorbed agent-contract, survey-before-action,
-cortex-preflight, prove-before-create, test-driven-development), verify-and-ship
+fleet-preflight, prove-before-create, test-driven-development), verify-and-ship
 (absorbed change-checklist, reflexion-check).
 
 ### How it works
@@ -618,7 +618,7 @@ ls ~/steadfaste-fleet/plugins/governance-enforcer/
 # On each agent machine, symlink:
 ln -sf ~/steadfaste-fleet/plugins/governance-enforcer ~/.hermes/plugins/
 
-# Run cortex-update to ensure repo is current:
+# Run fleet-update to ensure repo is current:
 cd ~/steadfaste-fleet && git pull origin main
 bash ops/scripts/fleet-update.sh
 
@@ -831,7 +831,7 @@ happens and how to verify a clean upgrade.
 2. `/reset` (new Hermes session)
   - The new enforcer loads with scan-based lock checking
 3. Verify:
-  - `bash ~/steadfaste-fleet/ops/scripts/manage/cortex-doctor.py --once`
+  - `bash ~/steadfaste-fleet/ops/scripts/manage/fleet-doctor.py --once`
   - Should show: `Governance coverage — PASS — all bypass closures validated`
   - Should show: `Governance locks — PASS — no lock files`
 
@@ -839,7 +839,7 @@ happens and how to verify a clean upgrade.
 
 If you were mid-task when upgrading, your old lock file (without `repo_slug`)
 is accepted by the new enforcer as valid — you can finish your work and call
-`end_change()`. On the next `cortex-update` run, the old lock is cleaned.
+`end_change()`. On the next `fleet-update` run, the old lock is cleaned.
 
 ## Key Lessons
 
@@ -913,7 +913,7 @@ cat ~/.steadfaste-fleet/state/.hermes-session-current.id
 ls ~/.steadfaste-fleet/state/.governance-*.json
 
 # If the filename (sess_<id>) doesn't match the bridge file content,
-# the handoff is broken. Run cortex-update to clear pycache and fix.
+# the handoff is broken. Run fleet-update to clear pycache and fix.
 bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh
 ```
 

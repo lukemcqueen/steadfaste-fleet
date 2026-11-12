@@ -8,7 +8,7 @@ license: MIT
 metadata:
   hermes:
     tags: [watchdog, health, cron, alert, debounce, reachability]
-    related_skills: [cortex-bus, cron-quality-gate, approval-gate-debugging, watchdog-flapping-diagnostics]
+    related_skills: [fleet-bus, cron-quality-gate, approval-gate-debugging, watchdog-flapping-diagnostics]
 ---
 
 # Watchdog Alert Design (health / bus / reachability crons)

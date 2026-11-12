@@ -17,7 +17,7 @@ the child's. Acquire failure => exit 1 and the deploy script refuses.
 Properties (what the fleet needs):
 
   * per-deploy-home scoping: the lock file is named from
-    ``$CORTEX_DEPLOY_HOME/state/fleet-update.lock``, so two sessions on the
+    ``$CORTEX_DEPLOY_HOME/state/cortex-update.lock``, so two sessions on the
     SAME repo share one lock (the second refuses, exit 1) while DIFFERENT repos
     on one server use different lock files and deploy independently — free
     isolation, no extra logic.
@@ -36,7 +36,7 @@ venv python are resolved), guarded so the inner run skips the wrapper:
     if [[ -z "${CORTEX_UPDATE_INNER:-}" ]]; then
       "${CORTEX_DEPLOY_HOME}/venv/bin/python3" \
         "${CORTEX_DEPLOY_HOME}/scripts/lib/fleet-update-mutex.py" \
-        --guard "${CORTEX_DEPLOY_HOME}/state/fleet-update.lock" \
+        --guard "${CORTEX_DEPLOY_HOME}/state/cortex-update.lock" \
         "$0" "$@" || { echo 'refusing concurrent fleet-update (mutex held)'; exit 1; }
       exit $?   # inner run's exit code
     fi

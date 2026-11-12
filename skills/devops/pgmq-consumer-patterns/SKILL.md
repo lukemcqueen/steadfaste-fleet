@@ -6,7 +6,7 @@ author: Steadfaste Fleet
 metadata:
   hermes:
     tags: [bus, pgmq, consumers, migration, health]
-    related_skills: [cortex-bus, agent-health-monitoring]
+    related_skills: [fleet-bus, agent-health-monitoring]
 ---
 
 # PGMQ Consumer Patterns

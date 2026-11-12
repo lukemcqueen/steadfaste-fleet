@@ -8,7 +8,7 @@ platforms: [linux, macos]
 metadata:
   hermes:
     tags: [approval, tirith, security-scan, smart-approval, terminal-gate, path-shadowing]
-    related_skills: [root-cause-debugging, cortex-deployment-sync, file-ownership-boundaries]
+    related_skills: [root-cause-debugging, fleet-deployment-sync, file-ownership-boundaries]
 ---
 
 # Approval Gate Debugging — Terminal Security-Scan False Blocks

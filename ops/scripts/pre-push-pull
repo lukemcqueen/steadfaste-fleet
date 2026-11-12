@@ -29,7 +29,7 @@ fi
 ACTUAL_HOOKS_RESOLVED=$(cd "$ACTUAL_HOOKS" 2>/dev/null && pwd || echo "$ACTUAL_HOOKS")
 if [[ "$ACTUAL_HOOKS_RESOLVED" != "$EXPECTED_HOOKS" ]]; then
     # Pinned-repo carve-out (same as pre-commit): pin_repos_with_own_hooks()
-    # points core.hooksPath at a repo's OWN .git/hooks, and cortex-update
+    # points core.hooksPath at a repo's OWN .git/hooks, and fleet-update
     # refreshes the cortex hook FILES there. Accept when the hooks dir
     # carries a cortex-managed hook; otherwise fail closed.
     _CORTEX_HOOK_PRESENT=""
@@ -472,9 +472,9 @@ _detect_orch() {
 }
 
 DOCTOR_BLOCKED=0
-CORTEX_DOCTOR="${HOME}/steadfaste-fleet/ops/scripts/manage/cortex-doctor.py"
+CORTEX_DOCTOR="${HOME}/steadfaste-fleet/ops/scripts/manage/fleet-doctor.py"
 if [[ "$_REPO_TOP" == "$CORTEX_REPO_TOP" ]] && _detect_orch && [[ -f "$CORTEX_DOCTOR" ]]; then
-  DOCTOR_OUTPUT=$(cd "${HOME}/steadfaste-fleet/ops/scripts/manage" && python3 cortex-doctor.py --quiet 2>&1 || true)
+  DOCTOR_OUTPUT=$(cd "${HOME}/steadfaste-fleet/ops/scripts/manage" && python3 fleet-doctor.py --quiet 2>&1 || true)
   # Real failure = any ❌ check line that is NOT the "Overall: FAILING"
   # summary line (counted via its own ❌). Matches on the ❌ marker, not
   # the word "FAIL" — "Overall: FAILING" would false-positive the old grep.
@@ -489,7 +489,7 @@ if [[ "$_REPO_TOP" == "$CORTEX_REPO_TOP" ]] && _detect_orch && [[ -f "$CORTEX_DO
     echo "❌  Push blocked: doctor reports $([ "${_DOCTOR_FAILS:-0}" -eq 1 ] && echo '1 failure' || echo "${_DOCTOR_FAILS} failures")."
     echo "    Deployed state does not match repo source (or governance drift)."
     echo "    Dogfood is MANDATORY before push (Luke directive 2026-08-05):"
-    echo "      bash ${HOME}/.steadfaste-fleet/scripts/cortex-dogfood.sh --force"
+    echo "      bash ${HOME}/.steadfaste-fleet/scripts/fleet-dogfood.sh --force"
     echo "    (runs pull → deploy → doctor → verify; exit 1 on any FAIL)"
     echo ""
     echo "$DOCTOR_OUTPUT" | grep -E '^ *❌' | grep -vE 'PENDING cycles|Overall: FAILING' | head -10
@@ -500,8 +500,8 @@ fi
 
 # ── MANDATORY DOGFOOD (2026-08-05, Luke directive) ─────────
 # A push that touches ANY non-doc file in steadfaste-fleet MUST
-# dogfood-deploy BEFORE it lands: pull → cortex-update → doctor →
-# verify. The gate runs cortex-dogfood.sh itself so the step cannot
+# dogfood-deploy BEFORE it lands: pull → fleet-update → doctor →
+# verify. The gate runs fleet-dogfood.sh itself so the step cannot
 # be forgotten — "make this mandatory, not a manual ritual".
 # SCOPE (Luke 2026-08-05):
 #   - EVERY script/enforcement file in the HC repo, INCLUDING changes
@@ -522,13 +522,13 @@ if [[ "$_REPO_TOP" == "$CORTEX_REPO_TOP" ]] && _detect_orch && [[ -n "$CHANGED_F
   if [[ "$_DOGFOOD_RELEVANT" -eq 1 ]]; then
     echo ""
     echo "🔄  MANDATORY DOGFOOD: push touches enforcement/deploy files."
-    echo "    Running cortex-dogfood.sh (pull → deploy → doctor → verify)..."
+    echo "    Running fleet-dogfood.sh (pull → deploy → doctor → verify)..."
     echo ""
-    if [[ -f "${HOME}/.steadfaste-fleet/scripts/cortex-dogfood.sh" ]]; then
-      bash "${HOME}/.steadfaste-fleet/scripts/cortex-dogfood.sh" --quiet 2>&1 | sed 's/^/    /'
+    if [[ -f "${HOME}/.steadfaste-fleet/scripts/fleet-dogfood.sh" ]]; then
+      bash "${HOME}/.steadfaste-fleet/scripts/fleet-dogfood.sh" --quiet 2>&1 | sed 's/^/    /'
       _DOGFOOD_RC=${PIPESTATUS[0]}
     else
-      echo "    ✗ cortex-dogfood.sh not deployed — cannot verify deployed state."
+      echo "    ✗ fleet-dogfood.sh not deployed — cannot verify deployed state."
       _DOGFOOD_RC=1
     fi
     if [[ "$_DOGFOOD_RC" -ne 0 ]]; then
@@ -536,7 +536,7 @@ if [[ "$_REPO_TOP" == "$CORTEX_REPO_TOP" ]] && _detect_orch && [[ -n "$CHANGED_F
       echo "❌  Push blocked: mandatory dogfood FAILED."
       echo "    The deployed state does not verify clean after your changes."
       echo "    Fix the failures above, re-run:"
-      echo "      bash ${HOME}/.steadfaste-fleet/scripts/cortex-dogfood.sh --force"
+      echo "      bash ${HOME}/.steadfaste-fleet/scripts/fleet-dogfood.sh --force"
       echo "    then push again. This gate cannot be skipped (no --no-verify)."
       echo ""
       exit 1

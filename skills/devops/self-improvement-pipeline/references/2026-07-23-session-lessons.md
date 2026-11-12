@@ -4,7 +4,7 @@
 
 ### 1. Always skills must be loaded before begin_change
 
-**The mistake:** Loaded task-start, assumed it loaded the always skills, called begin_change as step 2. The always skills (agent-flow, reasoning-patterns, reflexion-check, change-checklist, survey-before-action, cortex-preflight, agent-contract) were never loaded via individual skill_view() calls.
+**The mistake:** Loaded task-start, assumed it loaded the always skills, called begin_change as step 2. The always skills (agent-flow, reasoning-patterns, reflexion-check, change-checklist, survey-before-action, fleet-preflight, agent-contract) were never loaded via individual skill_view() calls.
 
 **The fix:** SOUL.md MANDATORY SESSION-START RITUAL rewritten as numbered steps 1-8. begin_change is step 8, not step 2. The old wording ("task-start loads these skills") was replaced with explicit numbered skill_view() calls for each always skill.
 

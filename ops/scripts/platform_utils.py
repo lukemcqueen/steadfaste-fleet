@@ -115,7 +115,7 @@ def restart_service(label: str) -> bool:
         # Scope-aware: prefer the SYSTEM unit when its file exists (orchestrator
         # hosts migrated to system scope 2026-08-31). Plain `systemctl --user
         # restart` on an inactive-but-present user unit STARTS it — which
-        # resurrected the user-scope cortex-bus twin to fight the system unit
+        # resurrected the user-scope fleet-bus twin to fight the system unit
         # for port 8903 (1,600+ restart crash loop, 2026-09-09).
         probe = _run(["systemctl", "list-unit-files", "--no-legend",
                       f"{label}.service"])

@@ -8,7 +8,7 @@ paths are as observed; nothing here is reconstructed from memory.
 ```
 2026-10-06 08:25:09 ERROR tools.mcp_tool: MCP tool loop-governance/cache_search call failed:
   type object 'TraceFlags' has no attribute 'RANDOM_TRACE_ID'
-2026-10-06 08:25:28 ERROR tools.mcp_tool: MCP tool cortex-bus/inbox_read call failed:
+2026-10-06 08:25:28 ERROR tools.mcp_tool: MCP tool fleet-bus/inbox_read call failed:
   type object 'TraceFlags' has no attribute 'RANDOM_TRACE_ID'
 2026-10-06 09:22:49 WARNING hermes_cli.plugins: Hook 'pre_api_request' callback on_pre_llm_request raised:
   'TraceFlags' object has no attribute 'random_trace_id'

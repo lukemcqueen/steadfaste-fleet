@@ -1,5 +1,5 @@
 ---
-name: cortex-bus
+name: fleet-bus
 version: 1.3.0
 category: devops
 description: "Agent Bus (PGMQ) operations — queue inspection, DLQ management, message recovery, auth, and health diagnostics. Covers the Postgres-backed message queue that replaces the legacy file inbox."
@@ -17,7 +17,7 @@ metadata:
 
 The Agent Bus is a Postgres-native message queue (`lib/pgmq` implementation with `SKIP LOCKED`) running on port `:8903`, proxied through nginx. All inter-agent communication flows through it. It replaces the old file-based agent inbox.
 
-> **📐 Architecture reference:** `docs/reference/cortex-bus-config.md`, `docs/bus-architecture.md`, `docs/orch-bus-setup.md`, `docs/esther-bus-setup.md` — these live on the **orchestrator hosts' private repo** (moses/esther) and may NOT exist on this host or in the public repo. Check before opening: `ls ~/steadfaste-fleet/docs/reference/cortex-bus-config.md 2>/dev/null || echo "not on this host — request from orchestrator via inbox_orchestrator"`. This skill covers operational diagnostics only.
+> **📐 Architecture reference:** `docs/reference/fleet-bus-config.md`, `docs/bus-architecture.md`, `docs/orch-bus-setup.md`, `docs/esther-bus-setup.md` — these live on the **orchestrator hosts' private repo** (moses/esther) and may NOT exist on this host or in the public repo. Check before opening: `ls ~/steadfaste-fleet/docs/reference/fleet-bus-config.md 2>/dev/null || echo "not on this host — request from orchestrator via inbox_orchestrator"`. This skill covers operational diagnostics only.
 
 > **⚠️ Postgres access (post-2026-08-05 migration):** the `legacy Postgres`
 > container was replaced by **`mycortex-postgres`** (role/db **`mycortex`**,
@@ -27,7 +27,7 @@ The Agent Bus is a Postgres-native message queue (`lib/pgmq` implementation with
 > with `FATAL: role "mycortex" does not exist`.
 
 Key architectural facts:
-- **Bus server** processes at `~/steadfaste-fleet/core/fleet_bus/server.py` (module `fleet_bus.server:app`, service `cortex-bus.service`)
+- **Bus server** processes at `~/steadfaste-fleet/core/fleet_bus/server.py` (module `fleet_bus.server:app`, service `fleet-bus.service`)
 - **Queue module** at `~/steadfaste-fleet/core/fleet_bus/queue.py`
 - **Postgres schema** `bus.*` in the shared mycortex database (`:15432`)
 - **MCP tools** `mcp__fleet_bus__*` route through the bus via HTTP
@@ -474,10 +474,10 @@ grep CORTEX_BUS_TOKEN ~/steadfaste-fleet/.env
 ss -tlnp | grep 8903
 
 # Is the systemd service active?
-systemctl --user status cortex-bus.service
+systemctl --user status fleet-bus.service
 
 # Restart if needed
-systemctl --user restart cortex-bus.service
+systemctl --user restart fleet-bus.service
 ```
 
 Note: The bus at `:8903` is a direct local connection. It's also proxied through nginx at the orchestrator's bus port (e.g. `:13004` for Moses, `:14004` for Esther) with Bearer auth. The MCP tools route through nginx, not directly.
@@ -592,7 +592,7 @@ for a in ('gisu','joseph','kustos','titus','moses'):
 - **Hash scheme:** `bus.tokens.token_hash` = `hashlib.pbkdf2_hmac("sha256", token, b"hermes-bus-salt", 100000).hex()` (`core/fleet_bus/auth.py hash_token`).
 - **Rotate:** generate `"hbus_" + secrets.token_hex(32)` → update `~/steadfaste-fleet/.env` AND `~/steadfaste-fleet/.env` (both carry `CORTEX_BUS_TOKEN`; the forwarder's `LOCAL_TOKEN` reads the conf) → `UPDATE bus.tokens SET token_hash='<pbkdf2(new)>', rotated_at=NOW() WHERE agent_name='<agent>'` → verify Bearer against the LOCAL bus (`127.0.0.1:8903`): new → 200, old → 401.
 - **Verify Bearer on the LOCAL bus only.** Testing Bearer against the external nginx port (`:13004`/`:14004`) is meaningless — nginx validates Basic auth and sets `X-Forwarded-User`; a Bearer header sent through nginx is ignored (401 for missing Basic). A token that "401s" through nginx can still be LIVE on the local bus.
-- **Never delete `CORTEX_BUS_TOKEN` from `.env` because Bearer "401s through nginx".** The local raw bus (`127.0.0.1:8903`) REQUIRES that Bearer token; a 401 through nginx only proves the request lacked Basic auth. Removing it silently breaks every local-bus consumer — `orch-bus-forwarder` exits 1 with `LOCAL_URL and LOCAL_TOKEN required`, `orch-bus-inbox-relay` prints `cannot relay`, the confirmation-poller goes deaf. The systemd bridge runner (`cortex-bus-bridge-run.py`) returns 0 regardless of the script's exit code, so the timer shows `success` while the job crashes — the tells are a FROZEN `~/.steadfaste-fleet/state/bus-forwarder-state.json` `last_run` and a growing BACKUP-bus `inbox_orchestrator` depth (stale-mirror sweep stopped). Restore the token (verify against `127.0.0.1:8903` → 200), then re-run the forwarder.
+- **Never delete `CORTEX_BUS_TOKEN` from `.env` because Bearer "401s through nginx".** The local raw bus (`127.0.0.1:8903`) REQUIRES that Bearer token; a 401 through nginx only proves the request lacked Basic auth. Removing it silently breaks every local-bus consumer — `orch-bus-forwarder` exits 1 with `LOCAL_URL and LOCAL_TOKEN required`, `orch-bus-inbox-relay` prints `cannot relay`, the confirmation-poller goes deaf. The systemd bridge runner (`fleet-bus-bridge-run.py`) returns 0 regardless of the script's exit code, so the timer shows `success` while the job crashes — the tells are a FROZEN `~/.steadfaste-fleet/state/bus-forwarder-state.json` `last_run` and a growing BACKUP-bus `inbox_orchestrator` depth (stale-mirror sweep stopped). Restore the token (verify against `127.0.0.1:8903` → 200), then re-run the forwarder.
 - **Identity mapping pitfall:** a token found in another agent's docs/config may be a DIFFERENT agent's row — the esther setup guide carried MOSES' token (esther's `.env` seeded with it), so it authenticated as moses with full queue privileges. Before rotating, look up the identity by hash: `SELECT agent_name FROM bus.tokens WHERE token_hash='<pbkdf2(leaked)>' AND is_active=true`. Rotate the MAPPED row (or sync it to the owner's real token hash).
 - **Peer-bus consistency:** each orchestrator's Postgres is independent; if the peer's token row on your bus doesn't match his real token, sync it from his bus (`SELECT token_hash FROM bus.tokens WHERE agent_name='moses'` on his host, then UPDATE your row) so a leaked token dies on your bus too.
 - **Rotation order (configs first):** update consumer configs (`.env`, `.env`) BEFORE the token table so the forwarder/MCP never hit a dead token mid-rotation.
@@ -678,12 +678,12 @@ orchestrator traffic:
 - **Schema:** `core/fleet_bus/schema/auth.sql` seeds the queue idempotently (also auto-creates on first send)
 - **Handler:** `agent-message-handler.py` on orchestrators polls `inbox_orchestrator` as a secondary queue — **archive from the SOURCE queue** (`source_queue`, not the hardcoded own-inbox name)
 - **Workers:** `contact-orchestrator.sh` defaults to `inbox_orchestrator` (override with `CORTEX_INBOX_TARGET` only for point-to-point replies)
-- **Docs:** ACL table in `docs/bus-architecture.md` + `docs/reference/cortex-bus-config.md` (orchestrators read `inbox_orchestrator`; workers `can_send` it)
+- **Docs:** ACL table in `docs/bus-architecture.md` + `docs/reference/fleet-bus-config.md` (orchestrators read `inbox_orchestrator`; workers `can_send` it)
 
 **ACL model:** BOTH buses use the canonical **per-queue array** ACLs
 (`can_read`/`can_write` `TEXT[]` + `is_admin`) in `bus.permissions` — unified
 2026-08-04. The old boolean model (`can_send`/`can_archive`/`can_requeue`,
-`ops/services/cortex-bus/server.py`) is **deleted**. If a 403 appears, check
+`ops/services/fleet-bus/server.py`) is **deleted**. If a 403 appears, check
 the agent's `can_write` array, not boolean flags.
 
 ### Reading a pending message's FULL body (evaluating an inbox message)
@@ -774,7 +774,7 @@ UPDATE bus.tokens SET expires_at = GREATEST(rotated_at, created_at) + INTERVAL '
 WHERE agent_name = '<agent>' RETURNING agent_name, expires_at;
 ```
 Verify: Bearer `GET /api/pgmq/queues` → 200, then run the deployed forwarder via
-`cortex-bus-bridge-run.py --name orch-bus-forwarder-sync --script
+`fleet-bus-bridge-run.py --name orch-bus-forwarder-sync --script
 orch-bus-forwarder.py --deliver local` and confirm `total_local_to_peer`
 advances in `~/.steadfaste-fleet/state/bus-forwarder-state.json` (proves the LOCAL
 write path, not just the DB row). Real fix for the class: add
@@ -787,6 +787,6 @@ requires it; extend/rotate instead.
 ## References
 
 - `references/forwarder-peer-resolution.md` — role-aware PEER fix detail (2026-08-03)
-- `references/credential-rotation.md`, `references/dlq-monitor-fix.md`, `references/cross-server-architecture.md` — may exist on orchestrator hosts only (check `ls ~/.hermes/skills/devops/cortex-bus/references/` first)
+- `references/credential-rotation.md`, `references/dlq-monitor-fix.md`, `references/cross-server-architecture.md` — may exist on orchestrator hosts only (check `ls ~/.hermes/skills/devops/fleet-bus/references/` first)
 - `core/fleet_bus/queue.py` — Queue creation, DLQ logic, send/read/archive
 - `core/fleet_bus/server.py` — HTTP API, auth, dashboard

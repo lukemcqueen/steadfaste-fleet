@@ -6,7 +6,7 @@ description: "Use when a credential leaks — verify live, scrub, rotate."
 metadata:
   hermes:
     tags: [security, credentials, leak, rotation, secrets, incident-response]
-    related_skills: [secure-credential-handling, pii-scrubbing, cortex-bus]
+    related_skills: [secure-credential-handling, pii-scrubbing, fleet-bus]
 ---
 
 # Credential Leak Response
@@ -125,7 +125,7 @@ and channel leaked, and never re-embed the literal while investigating.
 
 ## Rotation mechanics by system
 
-- **Bus (bearer tokens + nginx Basic auth):** `cortex-bus` skill →
+- **Bus (bearer tokens + nginx Basic auth):** `fleet-bus` skill →
   `references/credential-rotation.md` — token rotation steps, bearer-vs-Basic
   exposure model, htpasswd rotation blockers (sudo password required,
   Docker userns remapping kills container-root writes, postgres images run as
@@ -144,4 +144,4 @@ and channel leaked, and never re-embed the literal while investigating.
 
 - `secure-credential-handling` (user-owned) — behavioral rules for not leaking secrets into command strings in the first place
 - `pii-scrubbing` (user-owned) — full repo PII inventory + git-filter-repo history rewrite
-- `cortex-bus` — bus-specific credential rotation playbook
+- `fleet-bus` — bus-specific credential rotation playbook

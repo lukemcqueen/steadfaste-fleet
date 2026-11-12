@@ -158,7 +158,7 @@ When the user says "fix this" or "address the issues," identify whether you're t
 >
 > **User's correction:** "You have to actually address the issues. The bus and all messages are your responsibility."
 >
-> **Root cause:** Moses shouldn't run `agent-message-handler` at all. Orchestrator handles inbox in-session (tools) and out-of-session (`cortex-bus-*` LLM crons). Handler is for fleet agents.
+> **Root cause:** Moses shouldn't run `agent-message-handler` at all. Orchestrator handles inbox in-session (tools) and out-of-session (`fleet-bus-*` LLM crons). Handler is for fleet agents.
 >
 > **True fix:** Remove handler cron from orchestrator.
 
@@ -191,12 +191,12 @@ When testing a bus or inter-agent feature, the test is incomplete until you prov
 5. **User quotes are guardrails:** The user's exact words ("I always want you to fix things you need to fix. You never need to ask me.") should be embedded verbatim.
 6. **Integration completeness:** When told to "integrate X like Y" or "wire X everywhere Y is referenced", map ALL touchpoints before starting — `search_files()` for every file referencing Y. Verify the count: N files referencing Y → N files must also reference X. Partial integration (80% done, 5 files left) is not done.
 
-**Real-world example (2026-07-21):** User said "wire cortex-preflight as deeply as survey-before-action." First pass got ~8/14 touchpoints. Missed AGENTS.md, change-checklist, doctor, and several other files. Only when user said "be thorough" and "you need to make this mandatory" did every file get patched. The correction: map ALL touchpoints before the first patch, not after.
+**Real-world example (2026-07-21):** User said "wire fleet-preflight as deeply as survey-before-action." First pass got ~8/14 touchpoints. Missed AGENTS.md, change-checklist, doctor, and several other files. Only when user said "be thorough" and "you need to make this mandatory" did every file get patched. The correction: map ALL touchpoints before the first patch, not after.
 
 8. **Ordering is structural: skills before lock.** The session-start ritual is not a suggestion — it is a numbered sequence. begin_change must be the LAST step, not the second one. Every always skill must be loaded via its own skill_view() call. The belief that "task-start loaded these" is the most common trust violation.
 
 **Checklist before begin_change:**
-- Eight skill_view() calls completed: agent-flow, reasoning-patterns, reflexion-check, change-checklist, survey-before-action, cortex-preflight, agent-contract
+- Eight skill_view() calls completed: agent-flow, reasoning-patterns, reflexion-check, change-checklist, survey-before-action, fleet-preflight, agent-contract
 - task-start was called first, then each skill was loaded separately
 - No shortcut: "I already called task-start, that covers it" is always wrong
 

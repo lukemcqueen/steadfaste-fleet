@@ -1,4 +1,4 @@
-<!-- Renamed from skills/autonomous-ai-agents/hermes-cortex-setup/references/llm-cron-model-fallback.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
+<!-- Renamed from skills/autonomous-ai-agents/hermes-fleet-setup/references/llm-cron-model-fallback.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
 
 # LLM Cron Model & Fallback Chain — Reference
 

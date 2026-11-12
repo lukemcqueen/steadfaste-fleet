@@ -59,13 +59,13 @@ if [ "$IS_MAC" = 1 ]; then
 else
   left=$(grep -Rl '\.hermes-cortex' "$HOME/.config/systemd/user" 2>/dev/null | wc -l)
   ck "0 unit files carry a \`.hermes-cortex\` path token (got $left)" "[ $left = 0 ]"
-  for s in cortex-bus.service hermes-cortex-dashboard.service health-vector.service; do
+  for s in fleet-bus.service hermes-cortex-dashboard.service health-vector.service; do
     st=$(systemctl --user is-active "$s" 2>/dev/null)
     ck "$s active (got $st)" "[ '$st' = 'active' ]"
   done
   ck "fleet-gateway.service unit-clean" "[ -f '${HOME}/.config/systemd/user/fleet-gateway.service' ]"
-  n=$(systemctl --user list-timers --no-legend 2>/dev/null | grep -c 'cortex-bridge' || true)
-  ck "cortex-bridge timers scheduled (got $n)" "[ '$n' -ge 15 ]"
+  n=$(systemctl --user list-timers --no-legend 2>/dev/null | grep -c 'fleet-bridge' || true)
+  ck "fleet-bridge timers scheduled (got $n)" "[ '$n' -ge 15 ]"
 fi
 
 # --- 6. bus health 200 (ADV-14077-3) ---

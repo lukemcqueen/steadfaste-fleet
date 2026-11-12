@@ -6,7 +6,7 @@
 
 **What happened:** Created 2 new crons (`local-cron-cost-report`, `local-trace-quality-watchdog`) without surveying existing `agent-scoring-activity-watchdog` which could have absorbed both features.
 
-**Root cause:** `cortex-preflight` had survey steps as suggestions, not enforcement. SOUL.md ritual had survey-before-action as step 5 in a prose list — easy to skip.
+**Root cause:** `fleet-preflight` had survey steps as suggestions, not enforcement. SOUL.md ritual had survey-before-action as step 5 in a prose list — easy to skip.
 
 **Fix applied:**
 1. SOUL.md MANDATORY SESSION-START RITUAL reordered to numbered 10-step sequence. survey-before-action is step 8 with explicit text: "BEFORE creating any new cron, script, mechanism, or file: search_files() with 3+ different terms AND call cronjob(action='list'). Extend before create."

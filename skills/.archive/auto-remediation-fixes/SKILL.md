@@ -42,7 +42,7 @@ When an API provider (OpenRouter, DeepSeek, Ollama) starts timing out:
 When an update cycle silently changes provider config:
 
 1. **Diff the deployed config vs repo source** — `config-drift-diagnostics` compares 3 locations.
-2. **Fix the repo source first**, then deploy — never patch the deployed copy directly (cortex-preflight rule).
+2. **Fix the repo source first**, then deploy — never patch the deployed copy directly (fleet-preflight rule).
 3. **Verify the running service actually reloaded** — file-on-disk ≠ change-live (Principle 15).
 
 ### Cron Prompts Referencing Missing Skills

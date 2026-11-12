@@ -725,7 +725,7 @@ crons:
   no_agent: true
   model: ''
   provider: ''
-- name: cortex-bus-workday
+- name: fleet-bus-workday
   scope: universal
   schedule: 0 8,20 * * 1-5
   script: session-active-guard.py
@@ -759,9 +759,9 @@ crons:
     If ANY answer is NO → output EXACTLY this one line and nothing else: QUALITY_G_BLOCKED
 
     If all YES → deliver as normal.'
-  skill: cortex-bus-automation
+  skill: fleet-bus-automation
   skills:
-  - cortex-bus-automation
+  - fleet-bus-automation
   deliver: telegram:{{HOME_CHANNEL}}
   workdir: ''
   no_agent: false

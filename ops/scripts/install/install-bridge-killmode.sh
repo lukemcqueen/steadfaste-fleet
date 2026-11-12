@@ -5,7 +5,7 @@
 # Keeps the bridge units' KillMode correct on every host that runs
 # fleet-update.sh.
 #
-# A cortex-bridge-*.service unit is Type=oneshot, whose systemd default
+# A fleet-bridge-*.service unit is Type=oneshot, whose systemd default
 # KillMode is control-group: when the tick's ExecStart exits, systemd
 # tears down the unit cgroup and SIGTERMs any process the job detached
 # (agent-message-handler.py spawns its UPDATE_REQUEST worker with
@@ -21,7 +21,7 @@
 #
 # Both halves of the repair are done here, together, because either alone
 # is a no-op:
-#   1. cortex-bus-bridge-generate.py --repair   (rewrites the unit files)
+#   1. fleet-bus-bridge-generate.py --repair   (rewrites the unit files)
 #   2. systemctl --user daemon-reload           (makes the manager load
 #      them — without the reload systemd keeps the OLD KillMode)
 # and then the LOADED state is read back, because a rewritten file that
@@ -70,12 +70,12 @@ _self_test() {
   : > "$log"
 
   local gen_src
-  gen_src="$(cd "$(dirname "$0")/.." && pwd)/cortex-bus-bridge-generate.py"
+  gen_src="$(cd "$(dirname "$0")/.." && pwd)/fleet-bus-bridge-generate.py"
   if [[ ! -f "$gen_src" ]]; then
     echo "self-test: generator not beside this script ($gen_src)" >&2
     return 3
   fi
-  cp "$gen_src" "$deploy/scripts/cortex-bus-bridge-generate.py"
+  cp "$gen_src" "$deploy/scripts/fleet-bus-bridge-generate.py"
 
   cat > "$bin/systemctl" <<'SHIM'
 #!/usr/bin/env bash
@@ -140,10 +140,10 @@ UNIT
   _check "no-units: no reload" 0 "$(_reloads)"
 
   # ── Case 2: a unit without KillMode is repaired and reloaded ─
-  _unit cortex-bridge-demo-a.service
+  _unit fleet-bridge-demo-a.service
   _run 0
   _check "repair: exit 0" 0 "$rc"
-  _check "repair: file fixed" yes "$(_has "$units/cortex-bridge-demo-a.service" 'KillMode=process')"
+  _check "repair: file fixed" yes "$(_has "$units/fleet-bridge-demo-a.service" 'KillMode=process')"
   _check "repair: reloaded once" 1 "$(_reloads)"
   _check "repair: reports the verified read-back" yes \
     "$(grep -q 'verified — 1 repaired unit' <<<"$out" && echo yes || echo no)"
@@ -154,10 +154,10 @@ UNIT
   _check "idempotent: exit 0" 0 "$rc"
   _check "idempotent: no reload" 0 "$(_reloads)"
   _check "idempotent: exactly one KillMode line" 1 \
-    "$(grep -c 'KillMode=process' "$units/cortex-bridge-demo-a.service")"
+    "$(grep -c 'KillMode=process' "$units/fleet-bridge-demo-a.service")"
 
   # ── Case 4: an explicit operator override is left alone ─────
-  cat > "$units/cortex-bridge-demo-b.service" <<'UNIT'
+  cat > "$units/fleet-bridge-demo-b.service" <<'UNIT'
 [Service]
 Type=oneshot
 KillMode=control-group
@@ -166,20 +166,20 @@ UNIT
   : > "$log"
   _run 0
   _check "override: exit 0" 0 "$rc"
-  _check "override: file untouched" yes "$(_has "$units/cortex-bridge-demo-b.service" 'KillMode=control-group')"
+  _check "override: file untouched" yes "$(_has "$units/fleet-bridge-demo-b.service" 'KillMode=control-group')"
   _check "override: no reload" 0 "$(_reloads)"
-  rm -f "$units/cortex-bridge-demo-b.service"
+  rm -f "$units/fleet-bridge-demo-b.service"
 
   # ── Case 5: a unit the repair cannot fix exits non-zero ─────
-  printf '%s\n' '[Unit]' 'Description=unrepairable' > "$units/cortex-bridge-demo-c.service"
+  printf '%s\n' '[Unit]' 'Description=unrepairable' > "$units/fleet-bridge-demo-c.service"
   : > "$log"
   _run 0
   _check "unrepairable: exit 1" 1 "$rc"
-  _check "unrepairable: names the unit" yes "$(grep -q 'cortex-bridge-demo-c.service' <<<"$out" && echo yes || echo no)"
-  rm -f "$units/cortex-bridge-demo-c.service"
+  _check "unrepairable: names the unit" yes "$(grep -q 'fleet-bridge-demo-c.service' <<<"$out" && echo yes || echo no)"
+  rm -f "$units/fleet-bridge-demo-c.service"
 
   # ── Case 6: a failed daemon-reload exits non-zero ───────────
-  _unit cortex-bridge-demo-d.service
+  _unit fleet-bridge-demo-d.service
   : > "$log"
   _run 1
   _check "reload-fails: exit 1" 1 "$rc"
@@ -212,17 +212,17 @@ if [[ "$(uname -s)" != "Linux" ]]; then
 fi
 
 shopt -s nullglob
-bridge_units=("${UNITS_DIR}"/cortex-bridge-*.service)
+bridge_units=("${UNITS_DIR}"/fleet-bridge-*.service)
 shopt -u nullglob
 if [[ ${#bridge_units[@]} -eq 0 ]]; then
   echo "install-bridge-killmode: no bridge units in ${UNITS_DIR} — nothing to repair"
   exit 0
 fi
 
-GEN="${CORTEX_DEPLOY_HOME}/scripts/cortex-bus-bridge-generate.py"
-[[ -f "$GEN" ]] || GEN="${REPO_DIR}/ops/scripts/cortex-bus-bridge-generate.py"
+GEN="${CORTEX_DEPLOY_HOME}/scripts/fleet-bus-bridge-generate.py"
+[[ -f "$GEN" ]] || GEN="${REPO_DIR}/ops/scripts/fleet-bus-bridge-generate.py"
 if [[ ! -f "$GEN" ]]; then
-  echo "install-bridge-killmode: ${#bridge_units[@]} bridge unit(s) present but no cortex-bus-bridge-generate.py — cannot repair" >&2
+  echo "install-bridge-killmode: ${#bridge_units[@]} bridge unit(s) present but no fleet-bus-bridge-generate.py — cannot repair" >&2
   exit 2
 fi
 

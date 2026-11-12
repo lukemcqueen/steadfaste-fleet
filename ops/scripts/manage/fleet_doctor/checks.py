@@ -1213,7 +1213,7 @@ def _bridge_owned_jobs() -> set:
     """Cron names owned by the standalone HC cron bridge, not by Hermes.
 
     The S2a migration hosts eligible simple no_agent jobs on user-scope
-    systemd timers (`cortex-bridge-<name>.timer`) and REMOVES the Hermes entry
+    systemd timers (`fleet-bridge-<name>.timer`) and REMOVES the Hermes entry
     so exactly one scheduler owns each job. Those names must therefore be
     excluded from the Hermes "expected crons" comparison, or every migrated
     job reports as missing.
@@ -1227,10 +1227,10 @@ def _bridge_owned_jobs() -> set:
     wants = Path.home() / ".config" / "systemd" / "user" / "timers.target.wants"
     if not wants.is_dir():
         return set()
-    prefix, suffix = "cortex-bridge-", ".timer"
+    prefix, suffix = "fleet-bridge-", ".timer"
     out = set()
     try:
-        for p in wants.glob("cortex-bridge-*.timer"):
+        for p in wants.glob("fleet-bridge-*.timer"):
             n = p.name
             if n.startswith(prefix) and n.endswith(suffix):
                 out.add(n[len(prefix):-len(suffix)])
@@ -1435,10 +1435,10 @@ def _bridge_unit_names() -> set:
     job with no unit file at all is a migration gap.
     """
     units = Path.home() / ".config" / "systemd" / "user"
-    prefix, suffix = "cortex-bridge-", ".timer"
+    prefix, suffix = "fleet-bridge-", ".timer"
     out = set()
     try:
-        for p in units.glob("cortex-bridge-*.timer"):
+        for p in units.glob("fleet-bridge-*.timer"):
             n = p.name
             if n.startswith(prefix) and n.endswith(suffix):
                 out.add(n[len(prefix):-len(suffix)])
@@ -1524,7 +1524,7 @@ def check_bridge_unit_killmode(res) -> None:
     2026-10-24). `KillMode=process` kills only the tick itself.
 
     Enabled units only: the ownership marker is
-    `timers.target.wants/cortex-bridge-*.timer` (the same filesystem-only
+    `timers.target.wants/fleet-bridge-*.timer` (the same filesystem-only
     convention as `_bridge_owned_jobs()`, so it works from a cron context with
     no DBus session). A DISABLED unit runs nothing and cannot lose a worker.
 
@@ -1540,7 +1540,7 @@ def check_bridge_unit_killmode(res) -> None:
     if not wants.is_dir():
         return
     missing = []
-    for timer in sorted(wants.glob("cortex-bridge-*.timer")):
+    for timer in sorted(wants.glob("fleet-bridge-*.timer")):
         svc = units_dir / (timer.name[: -len(".timer")] + ".service")
         try:
             text = svc.read_text()
@@ -2289,8 +2289,8 @@ def check_services(res):
           "HTTP 200 — bus service healthy via localhost:8903")
     elif bus_url == "000":
       res.add("Agent Bus (direct)", "FAIL",
-          "cortex-bus process running but port 8903 unreachable",
-          "Check: systemctl status cortex-bus (system) or systemctl --user status cortex-bus")
+          "fleet-bus process running but port 8903 unreachable",
+          "Check: systemctl status fleet-bus (system) or systemctl --user status fleet-bus")
     else:
       res.add("Agent Bus (direct)", "FAIL",
           f"HTTP {bus_url} — unexpected response",
@@ -2331,7 +2331,7 @@ def check_services(res):
     if "fleet_bus" in _bus_proc:
       res.add("Bus (non-orch guard)", "WARN",
           "fleet_bus process running on non-orch agent — should only run on orchestrator hosts",
-          "Stop: systemctl stop cortex-bus (system) or systemctl --user stop cortex-bus; then disable")
+          "Stop: systemctl stop fleet-bus (system) or systemctl --user stop fleet-bus; then disable")
 
   # Ollama
   out = run_bg([CURL, "-s", "http://localhost:11434/api/tags", "--max-time", "5"])
@@ -2379,7 +2379,7 @@ def check_system(res):
   if IS_LINUX:
     # Systemd scope is DESIGN-AWARE (2026-09-08). fleet-update.sh is
     # explicitly scope-aware: on migrated hosts Hermes services (gateway,
-    # cortex-bus, dashboard, health-vector) run as SYSTEM units
+    # fleet-bus, dashboard, health-vector) run as SYSTEM units
     # (multi-user.target) by design. A flat WARN whenever any hermes-*.service
     # exists in /etc/systemd/system/ was a false positive on those hosts, and
     # its suggested remediation (rm /etc/systemd/system/hermes-*.service)
@@ -2506,7 +2506,7 @@ def check_system(res):
   expected_user_units = {
     "steadfaste-fleet-dashboard.service",
     "steadfaste-fleet-langfuse.service",
-    "steadfaste-fleet-cortex-bus.service",
+    "steadfaste-fleet-fleet-bus.service",
   }
   if IS_LINUX:
     failed = run_bg(["systemctl", "--user", "list-units", "--state=failed",
@@ -5796,11 +5796,11 @@ def check_fleet_env(res: "Results") -> None:
     canonical) so legacy readers keep resolving the same file. Catches the two
     historical traps: a REAL file (not a symlink) at the deploy-dir .env path —
     once a stray symlink to ~/langfuse/.env — and a leftover retired
-    cortex-bus.conf that is not the sanctioned symlink.
+    fleet-bus.conf that is not the sanctioned symlink.
     """
     canon = HOME / "steadfaste-fleet" / ".env"
     deploy_env = CORTEX_HOME / ".env"
-    legacy = CORTEX_HOME / "cortex-bus.conf"
+    legacy = CORTEX_HOME / "fleet-bus.conf"
 
     if not canon.exists() and not legacy.exists() and not deploy_env.exists():
         res.add("fleet env", "SKIP", "no fleet env on this host (not installed)")
@@ -5824,18 +5824,18 @@ def check_fleet_env(res: "Results") -> None:
             problems.append("~/.steadfaste-fleet/.env symlink is broken")
     elif canon.exists():
         problems.append("~/.steadfaste-fleet/.env symlink is MISSING (run consolidate-env.sh)")
-    # cortex-bus.conf is retired (2026-10-17 rename to .env). A leftover real
+    # fleet-bus.conf is retired (2026-10-17 rename to .env). A leftover real
     # file is a conflict; a leftover symlink to the canonical is inert-but-stale.
     if legacy.exists() and not legacy.is_symlink():
-        problems.append("retired ~/.steadfaste-fleet/cortex-bus.conf is a real file — remove it")
+        problems.append("retired ~/.steadfaste-fleet/fleet-bus.conf is a real file — remove it")
     elif legacy.is_symlink():
         try:
             if legacy.resolve() != canon.resolve():
-                problems.append("retired cortex-bus.conf symlink points elsewhere")
+                problems.append("retired fleet-bus.conf symlink points elsewhere")
             else:
-                problems.append("retired cortex-bus.conf symlink remains — remove it")
+                problems.append("retired fleet-bus.conf symlink remains — remove it")
         except OSError:
-            problems.append("retired cortex-bus.conf symlink is broken")
+            problems.append("retired fleet-bus.conf symlink is broken")
 
     if problems:
         res.add("fleet env", "FAIL", "; ".join(problems),
@@ -5844,7 +5844,7 @@ def check_fleet_env(res: "Results") -> None:
     else:
         res.add("fleet env", "PASS",
                 "canonical ~/steadfaste-fleet/.env present (600); "
-                "~/.steadfaste-fleet/.env is the sanctioned symlink; cortex-bus.conf retired")
+                "~/.steadfaste-fleet/.env is the sanctioned symlink; fleet-bus.conf retired")
 
 
 def check_paused_cron_reasons(res) -> None:

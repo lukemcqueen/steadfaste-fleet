@@ -1,4 +1,4 @@
-<!-- Renamed from skills/autonomous-ai-agents/hermes-cortex/references/project-cortex-directory.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
+<!-- Renamed from skills/autonomous-ai-agents/hermes-cortex/references/project-fleet-directory.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
 
 # Project `.steadfaste-fleet/` Directory Convention
 

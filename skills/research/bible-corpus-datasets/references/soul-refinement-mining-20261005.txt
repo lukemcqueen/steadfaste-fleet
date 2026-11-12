@@ -19,18 +19,18 @@ TODAY'S SESSIONS
   07:01  cron         msgs=  22  local-job-opportunity-scanner · Oct 05 07:02
   07:37  cron         msgs= 142  orch-task-morning-pass · Oct 05 07:41
   08:49  cron         msgs=  79  agent-fixer-workday · Oct 05 08:52
-  08:50  cron         msgs=  74  cortex-bus-workday · Oct 05 08:52
+  08:50  cron         msgs=  74  fleet-bus-workday · Oct 05 08:52
   09:25  cron         msgs=  77  local-weekly-loop-eval · Oct 05 09:26
   10:18  INTERACTIVE  msgs= 275  Scrape Stephanus Bible text into CSV zip
   14:49  cron         msgs=  60  agent-fixer-workday · Oct 05 14:53
-  14:50  cron         msgs=  60  cortex-bus-workday · Oct 05 14:53
+  14:50  cron         msgs=  60  fleet-bus-workday · Oct 05 14:53
   16:25  INTERACTIVE  msgs=   0  
-  20:41  cron         msgs= 150  cortex-bus-evening · Oct 05 20:48
+  20:41  cron         msgs= 150  fleet-bus-evening · Oct 05 20:48
   20:49  cron         msgs=  68  agent-fixer-workday · Oct 05 20:51
-  20:50  cron         msgs=  50  cortex-bus-workday · Oct 05 20:51
+  20:50  cron         msgs=  50  fleet-bus-workday · Oct 05 20:51
   20:50  cron         msgs=  87  agent-fixer-evening · Oct 05 20:56
   21:35  cron         msgs=  42  orch-task-evening-pass · Oct 05 21:37
-  22:42  cron         msgs=  96  cortex-bus-evening · Oct 05 22:59
+  22:42  cron         msgs=  96  fleet-bus-evening · Oct 05 22:59
   22:51  cron         msgs=  47  agent-fixer-evening · Oct 05 23:01
   23:14  cron         msgs= 123  
 

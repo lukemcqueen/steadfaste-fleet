@@ -19,7 +19,7 @@
 | `core/` | 44 | `fleet_bus` 24, `governance` 19 |
 | `tools/` | 19 | `fleet-search` 18 + one script |
 | `plugins/` | 11 | governance-enforcer, mycortex-mem/-command, prompt-guard, hc-lean-index |
-| `mcp-servers/` | 6 | cortex-bus/context/sandbox, executor, loop-gov, task |
+| `mcp-servers/` | 6 | fleet-bus/context/sandbox, executor, loop-gov, task |
 | `evals/` | 2 | regression golden + suite |
 | misc root | several | see "root stray files" |
 

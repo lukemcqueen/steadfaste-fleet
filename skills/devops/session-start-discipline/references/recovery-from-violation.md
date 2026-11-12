@@ -12,7 +12,7 @@ If you caught yourself mid-session (or were corrected) for having called `begin_
    - `skill_view('reflexion-check')`
    - `skill_view('change-checklist')`
    - `skill_view('survey-before-action')`
-   - `skill_view('cortex-preflight')`
+   - `skill_view('fleet-preflight')`
    - `skill_view('agent-contract')`
 
 3. **Select reasoning pattern** — state it explicitly: "Using Plan-Execute-Verify with Reflexion."

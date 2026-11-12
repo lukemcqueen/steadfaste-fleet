@@ -56,7 +56,7 @@ rescheduling. Classification table for the DeepSeek case:
 ### 4. Decision rule — move only the free wins
 
 - **Do NOT move crons whose purpose is daytime responsiveness** (workday
-  auto-remediation: `agent-fixer-workday`, `cortex-bus-workday`,
+  auto-remediation: `agent-fixer-workday`, `fleet-bus-workday`,
   `orch-backlog-driver`). Their function beats the pennies (~$0.003–0.007
   extra per peak run at flash rates). Rescheduling them to off-peak-only
   guts the service to save cents.

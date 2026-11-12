@@ -170,6 +170,6 @@ than land that.
 
 ## Related
 - `steadfaste-fleet` — install/configure guide
-- `cortex-preflight` — pre-change checks and deploy pitfalls
+- `fleet-preflight` — pre-change checks and deploy pitfalls
 - `hermes-recovery` — disaster recovery
 - `doc-freshness` — keeping AGENTS.md/SOUL.md current

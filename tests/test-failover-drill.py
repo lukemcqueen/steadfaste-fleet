@@ -292,7 +292,7 @@ def phase2_autofailover(mod) -> None:
 def phase3_agent_fallback(mod) -> None:
     print("\n═══ Phase 3: All-Agent Fallback Config ═══")
     # Every worker's lib.fleet_bus must fall back to Esther's URL.
-    # We audit the documented worker config contract (cortex-bus-config.md §8)
+    # We audit the documented worker config contract (fleet-bus-config.md §8)
     # and Esther's own conf as the reference implementation.
     conf = _read_conf()
     primary = conf.get("CORTEX_BUS_URL", "")
@@ -312,7 +312,7 @@ def phase3_agent_fallback(mod) -> None:
     else:
         bad(f"worker fallback target DOWN: {ESTHER_BUS_EXTERNAL}")
 
-    # Documented worker contract from cortex-bus-config.md §8:
+    # Documented worker contract from fleet-bus-config.md §8:
     # primary=https://bus.example.org:13004, fallback=...:14004, AGENT_NAME set
     if "CORTEX_BASIC_AUTH" in conf or "CORTEX_BUS_AUTH" in conf:
         ok("auth configured (Basic) — worker HTTP client can authenticate")

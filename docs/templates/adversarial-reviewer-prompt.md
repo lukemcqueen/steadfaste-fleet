@@ -198,10 +198,10 @@ the provenance). For such a file judge ONLY:
 **Deliberate-keeps authority:** when `docs/rename-followups-steadfaste-fleet.md` is in the range,
 its keep list is the contract. Tokens it documents as deliberately kept are NOT findings:
 
-- the `cortex` short-name family — a SEPARATE naming layer from the hc sweep: `cortex-bus.service`,
+- the `cortex` short-name family — a SEPARATE naming layer from the hc sweep: `fleet-bus.service`,
   the whole `CORTEX_*` env-var family (`CORTEX_DEPLOY_HOME`, `CORTEX_BUS_URL`, `CORTEX_BASIC_AUTH`,
   `CORTEX_SESSION_KEY`, `CORTEX_PROFILE`, `CORTEX_OS`, `CORTEX_HOME`, …), `Cortex Dashboard` (the
-  dashboard component/service), `mycortex`, and `cortex-bus.conf` STALE-labeled teaching;
+  dashboard component/service), `mycortex`, and `fleet-bus.conf` STALE-labeled teaching;
 - `Hermes`/`hermes` (Hermes Agent runtime: `~/.hermes`, `hermes cron`, the `hermes-agent` skill)
   — a separate live product, never part of the `hermes-cortex` brand;
 - `hermes-cortex-dashboard.service` — the dashboard unit keeps its pre-rename name.

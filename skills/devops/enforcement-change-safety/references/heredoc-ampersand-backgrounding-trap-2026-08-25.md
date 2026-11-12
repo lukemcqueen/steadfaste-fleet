@@ -25,5 +25,5 @@ even when it is inside a Python expression in a heredoc body.
 **Same family as Rule 7:** anything that looks like shell syntax in a payload
 — `&`, `;`, `>`, `|` — can misfire. When a legit read-only Python one-liner
 gets blocked, the fix is "use execute_code or a script file", not "argue with
-the classifier". (This mirrors cortex-deployment-sync Pitfall 10: the terminal
+the classifier". (This mirrors fleet-deployment-sync Pitfall 10: the terminal
 guard misclassifying `python3 -c` payloads with embedded paths.)

@@ -18,13 +18,13 @@ The doctor showed `⚠️ AGENTS.md sync` and `⚠️ Skills manifest: template`
 ## The Fix
 
 1. **fleet-update.sh** now syncs AGENTS.md and skills.yaml timestamp automatically (commit d780e87)
-2. **Self-improvement-pipeline** Tenet 2 already says "Doctor warnings are required" but cortex-preflight needed the post-change verification section (blocked by curator)
+2. **Self-improvement-pipeline** Tenet 2 already says "Doctor warnings are required" but fleet-preflight needed the post-change verification section (blocked by curator)
 3. **SOUL.md** already has the doctor-warnings tenet
 
 ## Related Skills
 
 - `self-improvement-pipeline` — Tenet 2 (doctor warnings required)
-- `cortex-preflight` — intended for post-change section (blocked)
+- `fleet-preflight` — intended for post-change section (blocked)
 - `change-checklist` — Phase 5 already has "Doctor runs clean"
 
 ## Guardrails That Were Missing

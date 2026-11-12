@@ -3,7 +3,7 @@
 > **For agents like Titus, running on a machine with no public server.**
 > You connect to Moses's Agent Bus remotely **via the HTTP client only**.
 >
-> ⚠️ **You do NOT install the bus MCP client.** The `cortex-bus` MCP server
+> ⚠️ **You do NOT install the bus MCP client.** The `fleet-bus` MCP server
 > (`inbox_send`/`inbox_read` tools) is **orchestrator-only** (Moses, Esther) —
 > the doctor WARNS if you add it to `config.yaml`. Your only bus access is the
 > HTTP client: `~/steadfaste-fleet/.env` + `contact-orchestrator.sh`.
@@ -24,7 +24,7 @@ Hermes Agent                             Hermes gateway (:8905)
   ↳ .env (HTTP client)              ↳ Agent Bus API (PGMQ message store)
   ↳ contact-orchestrator.sh / lib.fleet_bus          ↳ nginx proxy :13004 → :8905
   ↳ calls Moses's Agent Bus via HTTPS      ↳ SSL + Basic Auth
-  ↳ NO cortex-bus MCP server in config.yaml
+  ↳ NO fleet-bus MCP server in config.yaml
 ```
 
 **You run the HTTP client. Moses runs the server (Agent Bus). That's it.**
@@ -63,12 +63,12 @@ Moses will:
 
 ## Step 2 — Do NOT Install the MCP Client
 
-The `cortex-bus` MCP server is **orchestrator-only**. As a client-only agent
+The `fleet-bus` MCP server is **orchestrator-only**. As a client-only agent
 you must NOT add it to `~/.hermes/config.yaml`:
 
 ```bash
-grep -A4 "cortex-bus" ~/.hermes/config.yaml
-# Expected: NO output — you should NOT have an cortex-bus MCP entry.
+grep -A4 "fleet-bus" ~/.hermes/config.yaml
+# Expected: NO output — you should NOT have an fleet-bus MCP entry.
 # If you see one, remove it: the doctor WARNS about it on worker hosts.
 ```
 
@@ -320,7 +320,7 @@ At minimum, every SOUL.md must include:
 **Essential behavioral principles for a client-only agent:**
 
 1. **Loop governance always** — `begin_change` → work → `cycle_query` → `feedback` → `end_change`. No exceptions.
-2. **HTTP client, not MCP** — your ONLY bus access is `contact-orchestrator.sh` + `.env`. Never install the `cortex-bus` MCP server; the doctor warns about it.
+2. **HTTP client, not MCP** — your ONLY bus access is `contact-orchestrator.sh` + `.env`. Never install the `fleet-bus` MCP server; the doctor warns about it.
 3. **Health via Agent Bus (HTTP)** — you have no HTTP health endpoint. Report health by sending JSON pings to the orchestrator via `curl` (Step 7), or `contact-orchestrator.sh` for messages.
 4. **Poll, don't wait** — `agent-message-handler` cron is your ears. It runs every 5 min.
 

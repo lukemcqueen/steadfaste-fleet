@@ -3,7 +3,7 @@
 #  bus-inbox-survey.sh — Reproducible Agent Bus state check
 #
 #  Answers, with defensible output, the questions the
-#  cortex-bus-{workday,evening,overnight} crons ask:
+#  fleet-bus-{workday,evening,overnight} crons ask:
 #    - any pending messages?
 #    - any urgent/critical items?   (per-message `priority`: int 0-100;
 #                                    >=10 urgent, >=20 critical; numeric

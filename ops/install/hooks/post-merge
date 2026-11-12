@@ -12,14 +12,14 @@
 set -euo pipefail
 
 if [[ "${SKIP_POST_MERGE:-}" == "1" ]]; then
-  echo "⚠️  post-merge: SKIP_POST_MERGE=1 — skipping cortex-update"
+  echo "⚠️  post-merge: SKIP_POST_MERGE=1 — skipping fleet-update"
   exit 0
 fi
 
 # Scope guard (2026-08-20): core.hooksPath is GLOBAL, so this hook fires in
 # EVERY git repo on the host — including oh-my-zsh's own auto-update repo.
-# A full cortex-update deploy for an unrelated repo pull is wasteful and
-# confusing (observed: oh-my-zsh update triggered a cortex-update run).
+# A full fleet-update deploy for an unrelated repo pull is wasteful and
+# confusing (observed: oh-my-zsh update triggered a fleet-update run).
 # Only auto-deploy when the pull/merge happened inside ~/steadfaste-fleet.
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")"
 if [[ "${REPO_ROOT}" != "${HOME}/steadfaste-fleet" ]]; then

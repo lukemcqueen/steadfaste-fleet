@@ -13,7 +13,7 @@ aliases:
   - survey-before-action
   - prove-before-create
   - test-driven-development
-  - cortex-preflight
+  - fleet-preflight
 related_skills:
   - task-orient
   - verify-and-ship

@@ -842,7 +842,7 @@ def cmd_add(content: str, agent: str | None, priority: int, project: str | None,
     # authority — and degrade to personal when the content fails, so
     # legit local tracking (e.g. a bus proposal about deployed paths)
     # still works instead of dying with a raw RLS error. (2026-08-21:
-    # cortex-bus-overnight fleet task_add failed exactly this way.)
+    # fleet-bus-overnight fleet task_add failed exactly this way.)
     if effective_scope == "fleet" and content:
         try:
             fleet_ok = psql("SELECT tasks.content_ok_for_fleet(?);", [content])

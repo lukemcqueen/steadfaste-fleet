@@ -27,8 +27,8 @@ behavioral_principles:
  - The health-vector.py service must run on port 8905 (127.0.0.1). This is what the deployed nginx `upstream health_backend` block expects. Do not change the port unless the nginx config explicitly defines a different upstream.
  - After the `src/` → `ops/` repo migration (July 2026), many deployed scripts retained stale `src/` paths. When fixing a script that references `src/scripts/` or `src/loop-governance/`, check if the file moved to `ops/scripts/` or `runtime/loop-governance/`. The old `src/` tree was completely removed. Grep for `src/` references in any script you patch as a matter of course.
  - Bus on 8903, health-vector on 8905. Never conflate them. The bus ExecStart must use the Hermes venv python (has uvicorn), not /usr/bin/python3.
- - Name the bus service file cortex-bus.service — the doctor checks for exactly that name.
- - Verify bus setup at three layers: (1) systemctl is-active cortex-bus.service, (2) curl :8903/health returns backend pgmq, (3) nginx upstream cortex_bus_backend matches :8903. A running process on a port is not enough.
+ - Name the bus service file fleet-bus.service — the doctor checks for exactly that name.
+ - Verify bus setup at three layers: (1) systemctl is-active fleet-bus.service, (2) curl :8903/health returns backend pgmq, (3) nginx upstream cortex_bus_backend matches :8903. A running process on a port is not enough.
  - After fleet-update , check ~/.hermes/scripts/ for symlinks that point outside the scripts dir. Cron's no_agent runtime rejects symlinks. Replace with real `cp` copies.
  - no_agent cron scripts don't inherit Hermes env vars. If a script needs CORTEX_BUS_TOKEN or CORTEX_BUS_URL, ensure they're set in `~/steadfaste-fleet/.env` — the ONE canonical fleet env (there is no deploy-dir `.env`; `~/.hermes/.env` is Hermes-owned and never merged).
  - After running install-orch-crons.sh, always check for stale old-name duplicate crons (bus-* vs orch-bus-*) and remove them. The installer doesn't auto-uninstall renamed crons.
@@ -38,7 +38,7 @@ behavioral_principles:
 trigger: User asks to install, set up, deploy, or bootstrap Steadfaste Fleet, or mentions 'fleet setup', 'fleet components'. The cron health report shows an agent as 🔴 unreachable — the fix is often missing health server + agent registry on that machine.
 ---
 
-<!-- Provenance: renamed from skills/autonomous-ai-agents/hermes-cortex-setup/SKILL.md
+<!-- Provenance: renamed from skills/autonomous-ai-agents/hermes-fleet-setup/SKILL.md
      on 2026-11-12 (hc→fleet brand sweep, commit 2dc01b0e). Content predates the
      range; the range swept the brand tokens only. -->
 
@@ -612,11 +612,11 @@ Changing an LLM cron's model has TWO layers of truth; editing only the live pin 
 **Fallback chain is GLOBAL, not per-cron** — config.yaml `fallback_providers`, consumed by cron sessions via `get_fallback_chain`. `hermes fallback add/remove/clear` are TTY-interactive only. Non-interactive path: `hermes config set fallback_providers '<json list>'` (current `set_config_value` parses structured list values). This chain is operator-owned — set it directly; no installer script writes it (the env-driven `install-fallback-providers.py` writer was removed 2026-09-09).
 
 **Env file location (2026-10, single-env refactor; updated 2026-10-17):** every script sources `~/steadfaste-fleet/.env` — the **ONE canonical fleet env** (gitignored). Concretely:
-- The deployed dir `~/.steadfaste-fleet/.env` is the **sanctioned back-compat symlink → the canonical env** (kept so legacy readers keep resolving the deploy-dir path). A **real file** (not a symlink) there is unowned — a doctor FAIL. The old `cortex-bus.conf` name (STALE, retired 2026-10-17) was migrated away; `consolidate-env.sh` migrates any leftover to the `.env` symlink.
+- The deployed dir `~/.steadfaste-fleet/.env` is the **sanctioned back-compat symlink → the canonical env** (kept so legacy readers keep resolving the deploy-dir path). A **real file** (not a symlink) there is unowned — a doctor FAIL. The old `fleet-bus.conf` name (STALE, retired 2026-10-17) was migrated away; `consolidate-env.sh` migrates any leftover to the `.env` symlink.
 - `~/.hermes/.env` is **Hermes-owned** (provider keys, Telegram) and is never merged.
-- All `cortex-bus.conf` references (STALE name) were swept to `.env`; if you find one, it's a regression — the only legitimate references are `ops/scripts/manage/consolidate-env.sh` (which performs the migration) and the doctor's `check_fleet_env` (which enforces the retirement).
+- All `fleet-bus.conf` references (STALE name) were swept to `.env`; if you find one, it's a regression — the only legitimate references are `ops/scripts/manage/consolidate-env.sh` (which performs the migration) and the doctor's `check_fleet_env` (which enforces the retirement).
 - Migrating a legacy host: just run `fleet-update.sh` — it runs `consolidate-env.sh` first (idempotent), which seeds the canonical env from the old conf if needed and creates the `.env` symlink. Verify with `bash ~/.steadfaste-fleet/scripts/consolidate-env.sh --check`.
-- The doctor has a `fleet env` check that FAILs on a missing canonical env, a real-file deploy-dir `.env`, a missing/misdirected sanctioned symlink, or a leftover `cortex-bus.conf` (STALE) — and points at this fix.
+- The doctor has a `fleet env` check that FAILs on a missing canonical env, a real-file deploy-dir `.env`, a missing/misdirected sanctioned symlink, or a leftover `fleet-bus.conf` (STALE) — and points at this fix.
 
 **opencode provider tiers** (verified 2026-08-31): `opencode-free` = keyless free tier (aliases `free`, no account needed); `opencode-zen` = paid, needs `OPENCODE_ZEN_API_KEY` (aliases `opencode`/`zen`); `opencode-go` = needs `OPENCODE_GO_API_KEY`. The free tier currently has NO working deepseek: `deepseek-v4-flash-free` was delisted (completion POST → `server_error: "Model is unavailable"`; keys ship as commented+EMPTY placeholders in `~/.hermes/.env`), and no `deepseek-v4-pro-free` exists. The live `GET /zen/v1/models` list can still show delisted models — verify availability with a real chat-completions POST, never trust the list. Full verification recipe: `references/llm-cron-model-fallback.md`.
 

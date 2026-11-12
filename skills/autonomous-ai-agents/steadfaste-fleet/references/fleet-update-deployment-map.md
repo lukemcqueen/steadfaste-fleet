@@ -1,4 +1,4 @@
-<!-- Renamed from skills/autonomous-ai-agents/hermes-cortex/references/cortex-update-deployment-map.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
+<!-- Renamed from skills/autonomous-ai-agents/hermes-cortex/references/fleet-update-deployment-map.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
 
 # fleet-update.sh Deployment Map
 

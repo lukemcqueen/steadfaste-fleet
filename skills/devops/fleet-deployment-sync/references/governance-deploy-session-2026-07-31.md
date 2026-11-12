@@ -9,7 +9,7 @@
 > `--orchestrator` token, chained forms (`cd … && bash …`), and direct `cp` of
 > enforcement files are BLOCKED for agents. **Deploy ≠ load:** the running
 > gateway keeps the old enforcer module until `hermes gateway restart`
-> (operator action — agents cannot). See `cortex-deployment-sync/SKILL.md` ⚡.
+> (operator action — agents cannot). See `fleet-deployment-sync/SKILL.md` ⚡.
 
 Full reproduction of the immutable-governance-file deploy failure and the proper recovery path. Client staging server (Linux, Ubuntu 24.04).
 

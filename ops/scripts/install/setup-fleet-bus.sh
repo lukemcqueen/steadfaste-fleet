@@ -5,7 +5,7 @@
 # Run ONCE on any machine to create the complete Agent Bus
 # monitoring pipeline:
 #  1. bus-watch (no_agent, every 10m) — detects messages
-#  2. cortex-bus (LLM-driven, every 30m) — reads + acts
+#  2. fleet-bus (LLM-driven, every 30m) — reads + acts
 #
 # Usage:
 #  bash setup-fleet-bus.sh       # auto-detect agent
@@ -19,7 +19,7 @@
 #  - Pulled steadfaste-fleet (for bus-watch.sh)
 #
 # After setup:
-#  hermes cron list | grep -E 'bus-watch|cortex-bus'
+#  hermes cron list | grep -E 'bus-watch|fleet-bus'
 # ─────────────────────────────────────────────────────────────
 set -euo pipefail
 
@@ -144,7 +144,7 @@ if $DRY_RUN; then
  echo ""
  echo -e "${YELLOW}[DRY RUN] Would create:${RESET}"
  echo " 1. bus-watch (no_agent, every 10m, deliver=local)"
- echo " 2. cortex-bus (LLM, every 30m, context_from=bus-watch)"
+ echo " 2. fleet-bus (LLM, every 30m, context_from=bus-watch)"
  echo ""
  exit 0
 fi
@@ -172,12 +172,12 @@ if [ -z "$WATCH_JOB_ID" ]; then
  WATCH_JOB_ID="REPLACE_ME"
 fi
 
-# ── Step 2: Create cortex-bus processor cron ───────────────
+# ── Step 2: Create fleet-bus processor cron ───────────────
 echo ""
-echo -e " ${BOLD}Step 2/2: Creating cortex-bus processor...${RESET}"
-EXISTING=$("$HERMES_CMD" cron list 2>/dev/null | grep -c "cortex-bus" || true)
+echo -e " ${BOLD}Step 2/2: Creating fleet-bus processor...${RESET}"
+EXISTING=$("$HERMES_CMD" cron list 2>/dev/null | grep -c "fleet-bus" || true)
 if [ "$EXISTING" -gt 0 ]; then
- warn "cortex-bus cron already exists — skipping"
+ warn "fleet-bus cron already exists — skipping"
 else
  # Build prompt with agent-specific values substituted
  PROMPT="Process messages from the Agent Bus for ${AGENT} using the Inbox Message Decision Framework.
@@ -205,13 +205,13 @@ IMPORTANT: Use https://your-domain.com:13004 for API calls (not localhost).
 The inbox MCP tool does not work from this machine."
 
  "$HERMES_CMD" cron create \
-  name=cortex-bus \
+  name=fleet-bus \
   schedule="*/30 * * * *" \
   context_from="${WATCH_JOB_ID}" \
   enabled_toolsets="web,terminal,file" \
   prompt="${PROMPT}" \
   deliver=origin 2>&1 | sed 's/^/  /'
- info "cortex-bus cron created (every 30 minutes, reads context from bus-watch)"
+ info "fleet-bus cron created (every 30 minutes, reads context from bus-watch)"
 fi
 
 # ── Test ────────────────────────────────────────────────────
@@ -231,8 +231,8 @@ fi
 echo ""
 echo -e "${GREEN}━━━ Pipeline setup complete for ${AGENT} ━━━${RESET}"
 echo " Detector: bus-watch (every 10m, silent unless new)"
-echo " Processor: cortex-bus (every 30m, reads + acts)"
+echo " Processor: fleet-bus (every 30m, reads + acts)"
 echo ""
 echo " Verify with:"
-echo "  hermes cron list | grep -E 'bus-watch|cortex-bus'"
+echo "  hermes cron list | grep -E 'bus-watch|fleet-bus'"
 echo ""

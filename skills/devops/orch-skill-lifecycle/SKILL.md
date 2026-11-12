@@ -270,7 +270,7 @@ Phase 2 — Evaluation:
 - Ledger: 3 pending learnings processed (1 applied, 1 evaluated, 1 retired)
 
 Phase 3 — Upgrade:
-- Patched: agent-flow (pitfall section), cortex-bus (new step)
+- Patched: agent-flow (pitfall section), fleet-bus (new step)
 - SOUL.md: 1 principle added
 - Upstreamed: 1 new skill from fleet (swap-refresh)
 - Ledger: dispositions written via learning-ledger.py set-status

@@ -65,7 +65,7 @@ meaning.
 - **Generic/third-party `src/` usage in skills** (e.g. other projects' `src/`
   paths in skill examples) is NOT a stale reference — verified case by case
   with `git grep -ln 'src/' -- skills/` (2026-11-06: 10 files — grok,
-  hermes-cortex-setup, openhands, agent-harness-design ×2, agent-health-
+  hermes-fleet-setup, openhands, agent-harness-design ×2, agent-health-
   monitoring, auto-remediation, codebase-portability ×3; each is a generic or
   third-party path, none points at this repo's retired tree). The purge slice
   re-runs that grep and re-checks each file before exempting it.

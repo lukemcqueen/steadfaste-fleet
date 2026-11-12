@@ -3,7 +3,7 @@
 Regression (2026-09-23): `_inbox_send_task` built
 `subject = f"Task: {description[:80]}"`. The Agent Bus rejects that at ingestion
 ("subject: required UPPER_CASE protocol name (A-Z0-9_)"), so EVERY orchestrator
-task delegation through the cortex-bus MCP tool failed with
+task delegation through the fleet-bus MCP tool failed with
 "Send failed across all endpoints" — observed live while delegating a
 verification task to titus. The receiver-side handler tolerates a `Task:`
 prefix, but that path is unreachable when the bus refuses the message first.

@@ -10,7 +10,7 @@ gets its own bot token + AGENT_NAME; the bridge maps:
 
 Per-agent identity, no hermes token reuse, stdlib-only (urllib). The
 bridge is transport-agnostic at the bus side — the SAME inbox_<AGENT>
-queue that the cortex-bus MCP reads/writes, so any agent with the bus MCP
+queue that the fleet-bus MCP reads/writes, so any agent with the bus MCP
 can already talk to the same inbox.
 
 Run: python3 -m pytest tests/test_telegram_bridge.py -q

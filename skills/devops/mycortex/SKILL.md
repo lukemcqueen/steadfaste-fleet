@@ -289,4 +289,4 @@ the window is truncated in the reviewer's view and reads as unverified.
 ## Related
 
 - `legacy-brain-maintenance` — the old system's lifecycle (autopilot, dream, PGLite); decommission target.
-- `cortex-deployment-sync` — pull/update/deploy cycle that ships mycortex files.
+- `fleet-deployment-sync` — pull/update/deploy cycle that ships mycortex files.

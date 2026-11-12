@@ -58,7 +58,7 @@ if [[ -x "${DEPLOY}/scripts/install-nginx.sh" ]]; then
   log "deploying nginx configs (install-nginx.sh)"
   bash "${DEPLOY}/scripts/install-nginx.sh" || warn "install-nginx.sh exited non-zero — check output"
 else
-  warn "install-nginx.sh not deployed — run cortex-update first, then re-run this"
+  warn "install-nginx.sh not deployed — run fleet-update first, then re-run this"
 fi
 
 nginx -t 2>/dev/null && nginx -s reload 2>/dev/null && log "nginx reloaded" || warn "nginx -t failed — fix configs before reload"

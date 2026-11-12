@@ -237,7 +237,7 @@ grep -rn 'old_dir/' . 2>/dev/null | grep -v '.git/'
 | `src/mcp-servers/` | `ops/services/` | MCP server code |
 | `src/offline/` | `ops/offline/` | Offline utilities |
 | `src/web-cache/` | `ops/web-cache/` | Web cache modules |
-|| `src/a2a/` | `ops/services/a2a/` (now deprecated, merged into cortex-bus) | Agent card templates |
+|| `src/a2a/` | `ops/services/a2a/` (now deprecated, merged into fleet-bus) | Agent card templates |
 
 **Fix using patch tool with exact quotes:**
 
@@ -284,7 +284,7 @@ references:
 grep -rn '"src"' path/to/scripts/*.py | grep -v 'discovery\|search\|candidate'
 ```
 
-**Concrete reference:** `references/cortex-path-migration-july2026.md` in this
+**Concrete reference:** `references/fleet-path-migration-july2026.md` in this
 skill directory has the full transcript and file-by-file map from the
 July 2026 `src/` → `ops/` migration.
 
@@ -615,7 +615,7 @@ grep -rc 'old-deploy-dir/' target-dir/ 2>/dev/null | grep -v ':0$'
 | `references/steadfaste-fleet-path-audit.md` | Full path audit of the steadfaste-fleet repo |
 | `references/mycortex-wrapper-crossplatform.md` | Concrete Pattern F example — mycortex-wrapper.sh |
 | `references/gh-cli-headless-install.md` | Install gh CLI without sudo + OAuth device-code flow |
-| `references/cortex-path-migration-july2026.md` | Stale pathlib path migration after `src/` → `ops/` restructure (Pattern G) |
+| `references/fleet-path-migration-july2026.md` | Stale pathlib path migration after `src/` → `ops/` restructure (Pattern G) |
 | `references/stale-syspath-post-runtime-restructure.md` | Stale `sys.path.insert` after `runtime/` → `core/` restructure (Pattern G2) |
 | `references/terminology-rename-agent-inbox-to-bus.md` | Full worked example — 17-file terminology rename (Pattern H) |
 | `references/python-import-cwd-debugging.md` | Debugging Python imports that fail from one CWD but not another (sys.path + __file__ resolution diagnosis) |

@@ -34,7 +34,7 @@
 | Prefix | Who runs it | Purpose |
 |--------|-------------|---------|
 | `orch-*` | **orchestrator hosts only** (moses/esther — host-derived, never self-claimed) | fleet-wide: bus audit/recover, fleet watchdog, regression gate, cost report, skill lifecycle/evaluate, bus worker, task passes |
-| `agent-*` | **every agent** (universal set) | per-agent local ops: fixer, cortex-bus inbox, watchdogs, dreams, memory/brain sync, prune |
+| `agent-*` | **every agent** (universal set) | per-agent local ops: fixer, fleet-bus inbox, watchdogs, dreams, memory/brain sync, prune |
 | `local-*` | **this machine** (per-host deliverables) | user-facing briefs (ai / sustainability / finance / news), soul refinement, weekly loop eval, job scanner |
 | `no_agent` | any (script-only, $0) | cheap watchdogs/relays; silent when clean |
 
@@ -47,7 +47,7 @@ host has no `cronjob` authority and the installer refuses). An orchestrator runs
 
 | Layer | Canonical cadence | Notes |
 |-------|-------------------|-------|
-| Workday LLM — fixer, cortex-bus inbox | **2×/day — 08:xx + 20:xx KST, weekdays** | ONE job each (was 3 jobs / 6 slots); the surviving job keeps `session-active-guard.py` (free skip when an interactive session is open) |
+| Workday LLM — fixer, fleet-bus inbox | **2×/day — 08:xx + 20:xx KST, weekdays** | ONE job each (was 3 jobs / 6 slots); the surviving job keeps `session-active-guard.py` (free skip when an interactive session is open) |
 | Backlog worker (orch) | **2×/day — 08:xx + 20:xx KST** | `deliver=local` — silent, records only |
 | Watchdogs / health (no_agent) | `*/5`–`*/30`, hourlies | cheap ($0) — keep; do NOT widen |
 | Maintenance — memory-prune, docs-prune | **weekly — Mon 04:xx KST** | colocate Monday, not daily |
@@ -187,16 +187,16 @@ should be one consolidated pass — merge before you add a third slot.
 | `agent-skill-drift-reconcile` | `0 */2 * * *` | no_agent | `manage/agent-skill-drift-reconcile.sh` | local |
 | `agent-md-prune-scan` | `0 4 * * 1` | no_agent | `agent-md-prune-scan.py` | local |
 | `agent-md-prune-apply` | `30 4 * * 1` | LLM | (prompt) | telegram |
-| `cortex-bus-workday` | `0 8,20 * * 1-5` | LLM | session-active-guard.py | telegram |
-| ~~`cortex-bus-evening`~~ | ~~`0 20,22 * * 1-5`~~ | ~~LLM~~ | ~~(prompt)~~ | ~~telegram~~ | ⚠️ **REMOVED 2026-11-07** — consolidated into `cortex-bus-workday` (2×/day) |
-| ~~`cortex-bus-overnight`~~ | ~~`0 23 * * 1-5`~~ | ~~LLM~~ | ~~(prompt)~~ | ~~telegram~~ | ⚠️ **REMOVED 2026-11-07** — consolidated into `cortex-bus-workday` |
+| `fleet-bus-workday` | `0 8,20 * * 1-5` | LLM | session-active-guard.py | telegram |
+| ~~`fleet-bus-evening`~~ | ~~`0 20,22 * * 1-5`~~ | ~~LLM~~ | ~~(prompt)~~ | ~~telegram~~ | ⚠️ **REMOVED 2026-11-07** — consolidated into `fleet-bus-workday` (2×/day) |
+| ~~`fleet-bus-overnight`~~ | ~~`0 23 * * 1-5`~~ | ~~LLM~~ | ~~(prompt)~~ | ~~telegram~~ | ⚠️ **REMOVED 2026-11-07** — consolidated into `fleet-bus-workday` |
 | `agent-daily-bible-reading` | `0 1 * * *` | LLM | agent-daily-bible-reading skill | origin |
 | `agent-daily-soul-refinement` | ~~`0 23 * * *`~~ | ~~LLM~~ | ~~soul-refinement skill~~ | ~~origin~~ | ⚠️ **ABSORBED 2026-08-02** — fleet-level daily soul refinement merged into `orch-skill-lifecycle`. Per-host variant is `local-agent-daily-soul-refinement`. |
 | `agent-weekly-loop-eval` | ~~`0 9 * * 1`~~ | ~~LLM~~ | ~~loop-governance skill~~ | ~~origin~~ | ⚠️ **ABSORBED 2026-08-02** — fleet-level weekly loop eval merged into `orch-skill-lifecycle`. Per-host variant is `local-agent-weekly-loop-eval`. |
 | `agent-no-verify-audit` | `every 60m` | no_agent | `manage/agent-no-verify-audit.py` | origin |
-| `agent-inbox-workday` | ~~`0 9-17 * * 1-5`~~ | ~~LLM~~ | ~~session-active-guard.py~~ | ~~origin~~ | ⚠️ **STALE/REMOVED 2026-08-10 on most hosts** — duplicate of `cortex-bus-workday` (post-rename leftover). **Still active on `gisu` as of 2026-08-25** (communications role; `9 9-17 * * 1-5`, verified enabled+ok via agent-cron-status EXEC). Verify per-host before assuming removal. |
-| `agent-inbox-evening` | ~~`0 18,20,22 * * 1-5`~~ | ~~LLM~~ | ~~(prompt)~~ | ~~origin~~ | ⚠️ **STALE/REMOVED 2026-08-10** — duplicate of `cortex-bus-evening` (post-rename leftover) |
-| `agent-inbox-overnight` | ~~`0 3 * * 1-5`~~ | ~~LLM~~ | ~~(prompt)~~ | ~~origin~~ | ⚠️ **STALE/REMOVED 2026-08-10** — duplicate of `cortex-bus-overnight` (post-rename leftover) |
+| `agent-inbox-workday` | ~~`0 9-17 * * 1-5`~~ | ~~LLM~~ | ~~session-active-guard.py~~ | ~~origin~~ | ⚠️ **STALE/REMOVED 2026-08-10 on most hosts** — duplicate of `fleet-bus-workday` (post-rename leftover). **Still active on `gisu` as of 2026-08-25** (communications role; `9 9-17 * * 1-5`, verified enabled+ok via agent-cron-status EXEC). Verify per-host before assuming removal. |
+| `agent-inbox-evening` | ~~`0 18,20,22 * * 1-5`~~ | ~~LLM~~ | ~~(prompt)~~ | ~~origin~~ | ⚠️ **STALE/REMOVED 2026-08-10** — duplicate of `fleet-bus-evening` (post-rename leftover) |
+| `agent-inbox-overnight` | ~~`0 3 * * 1-5`~~ | ~~LLM~~ | ~~(prompt)~~ | ~~origin~~ | ⚠️ **STALE/REMOVED 2026-08-10** — duplicate of `fleet-bus-overnight` (post-rename leftover) |
 | `fleet-bus-failover-watchdog` | `*/5 * * * *` | no_agent | `fleet-bus-failover-watchdog.py` | Telegram |
 | `agent-push-metrics` | `every 5m` | no_agent | `agent-push-metrics.sh` | local |
 | `agent-session-correction-scan` | `0 22 * * 0` | no_agent | `manage/agent-session-correction-scan.py` | local |
@@ -232,10 +232,10 @@ $0.22/M, out $0.66/M).
 **Fleet scheduling policy (O3/G-4, 2026-08-25; revised 2026-08-31):**
 LLM crons run off DeepSeek peak (KST 10–13 & 15–19) where function allows.
 Daytime slots moved off-peak: `orch-bus-worker` 08/14/20/22 KST (UTC
-23/05/11/13), `agent-fixer-workday`/`cortex-bus-workday` 08/14/20 KST,
-`agent-fixer-evening`/`cortex-bus-evening` 20/22 KST, `orch-task-evening-pass`
+23/05/11/13), `agent-fixer-workday`/`fleet-bus-workday` 08/14/20 KST,
+`agent-fixer-evening`/`fleet-bus-evening` 20/22 KST, `orch-task-evening-pass`
 21:00 KST, `orch-skill-lifecycle` 04:00 KST Mon/Wed/Fri (was daily). Overnight
-**batch** LLM crons stay off-peak: `cortex-bus-overnight` + `agent-fixer-overnight`
+**batch** LLM crons stay off-peak: `fleet-bus-overnight` + `agent-fixer-overnight`
 at 23:00 KST (08:00 KST — after the 07:00 KST morning passes), mycortex dream
 tiers at 05:00 KST (14:00 KST lunch-gap quiet). 22:00 UTC (07:00 KST) is the
 safe morning-pass window — do not pile batch work onto it. Live minutes differ

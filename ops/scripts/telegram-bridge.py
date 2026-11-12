@@ -6,14 +6,14 @@ coding agents (Claude Code, Codex, OpenCode, Blackbox, Grok, ...). Each
 agent configures its OWN bot token + AGENT_NAME; the bridge maps:
 
     Telegram update  →  POST {CORTEX_BUS_URL}/api/pgmq/send
-                        queue = inbox_<AGENT>   (same queue the cortex-bus
+                        queue = inbox_<AGENT>   (same queue the fleet-bus
                         MCP reads — bus-identical inbox, any agent)
     bus reply        ←  POST /api/pgmq/read on telegram_out_<AGENT>
                         → Telegram sendMessage to the originating chat
 
 FULL TWO-WAY (fixed 2026-08-24 — 1-way was useless):
-  * inbound:  Telegram → inbox_<AGENT> → agent reads via cortex-bus MCP
-  * outbound: agent replies via cortex-bus MCP inbox_send to
+  * inbound:  Telegram → inbox_<AGENT> → agent reads via fleet-bus MCP
+  * outbound: agent replies via fleet-bus MCP inbox_send to
     telegram_out_<AGENT> with body {"telegram_chat_id": <id>,
     "text": "...", "reply_to_message_id": <id>} → bridge forwards to
     Telegram. The telegram_chat_id is captured on the inbound message
@@ -42,7 +42,7 @@ never shared between agents.
 
 Expansion: to give a NEW coding agent a Telegram inbox — create a bot via
 BotFather, set its token + AGENT_NAME in its OWN 600-perm secrets file,
-register the cortex-bus MCP in the agent's .mcp.json (AGENT_NAME=<same>).
+register the fleet-bus MCP in the agent's .mcp.json (AGENT_NAME=<same>).
 The bridge is shared; only the identity changes.
 """
 from __future__ import annotations
@@ -143,7 +143,7 @@ def tg_send_message(token: str, chat_id, text: str, reply_to: int | None) -> boo
         return False
 
 
-# ── Bus API (POST /api/pgmq/send — same as cortex-bus MCP) ──
+# ── Bus API (POST /api/pgmq/send — same as fleet-bus MCP) ──
 
 def bus_send(bus_url: str, token: str, queue: str, message: dict) -> bool:
     payload = json.dumps({

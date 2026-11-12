@@ -82,7 +82,7 @@ Every session: read the skills manifest at `~/.steadfaste-fleet/skills.yaml` —
 19. **Test before release** — suite runs 0 failures before `end_change()`; `LOW` ships blocked.
 20. **Push before telling anyone to pull** — a fix on local disk is not in the repo.
 21. **Identity host-derived, not env** — orchestrator = hostname (`moses`/`esther`) + home dir, never `AGENT_ID`/`AGENT_TYPE` (spoofable). Git authorship from `~/.steadfaste-fleet/agent.env` (per-host, gitignored); missing it blocks commit.
-22. **Cross-session tasks** — `task-db.py` (see `task-persistence` skill). v2 lifecycle: `update <id> --status in_progress` before `begin_change`; `switch <target>` to change active task; `--status completed` after `end_change`. Bus-created tasks (S4): transition by correlation on ISSUES/PROPOSAL/IMPROVEMENTS processing — `task-db.py update --by-correlation <corr> --status completed` (see `cortex-bus-automation` skill). Entry/completion events notify Telegram.
+22. **Cross-session tasks** — `task-db.py` (see `task-persistence` skill). v2 lifecycle: `update <id> --status in_progress` before `begin_change`; `switch <target>` to change active task; `--status completed` after `end_change`. Bus-created tasks (S4): transition by correlation on ISSUES/PROPOSAL/IMPROVEMENTS processing — `task-db.py update --by-correlation <corr> --status completed` (see `fleet-bus-automation` skill). Entry/completion events notify Telegram.
 23. **Only our repo** — `~/steadfaste-fleet/` ours; `~/.hermes/` not-in-repo → don't touch; `~/.steadfaste-fleet/state/*` + `~/.hermes/config.yaml` → live config.
 24. **Sharing filter** — new/substantive only; already-in-Hermes/cortex ❌; PII-only ❌.
 25. **Self-test gate** — `fleet send` refuses without `--self-tested`; no bare `pass`.
@@ -136,13 +136,13 @@ Your change runs in more places than your session. Name all three before calling
 
 ## Bus Message Contract
 
-Every `/api/pgmq/send` is validated at ingestion — **400 + reason** on violation, **429** over quota. Envelope keys are allowlisted (`from` `to` `subject` `body` `correlation_id` `timestamp` `priority` `type`); `from` must be your authenticated agent name; `subject` is an UPPER_CASE protocol name; 64 KiB max/message · 600 sends/hr/agent. Full schema + rules: `skills/devops/cortex-bus/SKILL.md`.
+Every `/api/pgmq/send` is validated at ingestion — **400 + reason** on violation, **429** over quota. Envelope keys are allowlisted (`from` `to` `subject` `body` `correlation_id` `timestamp` `priority` `type`); `from` must be your authenticated agent name; `subject` is an UPPER_CASE protocol name; 64 KiB max/message · 600 sends/hr/agent. Full schema + rules: `skills/devops/fleet-bus/SKILL.md`.
 
 ---
 
 ## Inbox Message Decision Framework
 
-Classify each message on **Priority** (critical | urgent | normal | notification) × **Scope** (Simple <3 | Moderate 3–10 | Complex >10 | Multi-agent), then AUTO-ACT / DELEGATE / ESCALATE per the matrix in `skills/devops/cortex-bus/SKILL.md`.
+Classify each message on **Priority** (critical | urgent | normal | notification) × **Scope** (Simple <3 | Moderate 3–10 | Complex >10 | Multi-agent), then AUTO-ACT / DELEGATE / ESCALATE per the matrix in `skills/devops/fleet-bus/SKILL.md`.
 
 **After-action:** deliver what, how verified, evidence, cycle ID. See [`docs/setup-reference.md`](docs/setup-reference.md).
 
@@ -165,7 +165,7 @@ Non-orchestrators: submit proposals via the orchestrator inbox (`📝 PROPOSAL: 
 
 **RULE 7b: ENFORCEMENT CHAIN — fleet-update.sh IS THE ONLY UPDATE PATH.** Enforcement files (enforcer plugin, hooks, loop-gov-mcp.py, hermes-plugin-lock) update ONLY via `bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh`. Direct `sudo hermes-plugin-lock unlock` is REFUSED for non-orchestrators (audit-logged); exceptions: `--cortex-update` / `--orchestrator` (moses|esther). If DOGFOOD blocks you (deployed ≠ repo enforcer): run fleet-update.sh (lock-free), re-acquire, retry. ⚠️ **Deploy ≠ load:** gateway keeps the OLD enforcer until `hermes gateway restart` (agent-blocked — ask the operator; do not loop).
 
-**RULE 7c: BUS ACCESS — NON-ORCHESTRATORS USE THE HTTP CLIENT ONLY.** Non-orchestrators have the bus **HTTP client** (`~/steadfaste-fleet/.env` + `contact-orchestrator.sh`) and NOTHING ELSE. Never install the bus server or the `cortex-bus` MCP client — the doctor WARNS on both. Role matrix: `docs/bus-architecture.md`. **Bus ACL:** per queue via `bus.permissions`; `is_admin=true` bypasses (moses). Grants in `core/fleet_bus/schema/auth.sql`.
+**RULE 7c: BUS ACCESS — NON-ORCHESTRATORS USE THE HTTP CLIENT ONLY.** Non-orchestrators have the bus **HTTP client** (`~/steadfaste-fleet/.env` + `contact-orchestrator.sh`) and NOTHING ELSE. Never install the bus server or the `fleet-bus` MCP client — the doctor WARNS on both. Role matrix: `docs/bus-architecture.md`. **Bus ACL:** per queue via `bus.permissions`; `is_admin=true` bypasses (moses). Grants in `core/fleet_bus/schema/auth.sql`.
 
 **RULE 8: "PULL LATEST" = FULL REFRESH.** (1) `git pull origin main`, (2) `fleet-update.sh` — deploy, (3) run the doctor, (4) fix every issue until clean, (5) verify services, crons, skills.
 

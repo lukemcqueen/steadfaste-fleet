@@ -5,7 +5,7 @@
 ### Correction 1: Template is the single source of truth
 
 **Timeline:**
-1. Moses updated `profiles/personal/agent-profiles/moses/SOUL.md` with cortex-preflight reference and Integration Completeness Requirement
+1. Moses updated `profiles/personal/agent-profiles/moses/SOUL.md` with fleet-preflight reference and Integration Completeness Requirement
 2. Never updated `docs/templates/SOUL.md` — the canonical template
 3. User asked: "Why didn't you update the SOUL template?"
 4. Moses then discovered the template had been overwritten to 32 principles (wrong)
@@ -14,7 +14,7 @@
 
 **Permanent fix:**
 - `docs/templates/SOUL.md` restored to 12 principles
-- Added to both template and moses profile: cortex-preflight reference, Integration Completeness Requirement
+- Added to both template and moses profile: fleet-preflight reference, Integration Completeness Requirement
 - fleet-update.sh now syncs SOUL.md from template (not profile) to ~/.hermes/
 - self-improvement-pipeline Tenet #7: Template is the single source of truth
 
@@ -33,11 +33,11 @@
 ### Correction 3: Integration completeness
 
 **Timeline:**
-1. User said "integrate cortex-preflight as deeply as survey-before-action"
+1. User said "integrate fleet-preflight as deeply as survey-before-action"
 2. Moses touched ~8/14 files, missed AGENTS.md, change-checklist, doctor, and others
 3. User said "be thorough" and "you need to make this mandatory"
 
 **Permanent fix:**
-- All 14 files now reference cortex-preflight
+- All 14 files now reference fleet-preflight
 - SOUL.md: Integration Completeness Requirement added to Final Directive
 - self-improvement-pipeline Tenet #6: Integration completeness (already existed before this session)

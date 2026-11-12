@@ -214,7 +214,7 @@ removed — the fleet no longer auto-syncs `~/.hermes/SOUL.md`. To land a change
   18 → 17 stranded and took the path out of the list).
 - **Parity can regress WITHIN the same day it was fixed — a recovery commit is not a permanent
   state** (measured 2026-10-23). `ca9de57f` landed a full recovery at 18:18 (`0 stranded, 0 absent`),
-  yet the 23:15 pass measured **5 stranded** again: `devops/cortex-bus`, `devops/shared-repo-push-gates`,
+  yet the 23:15 pass measured **5 stranded** again: `devops/fleet-bus`, `devops/shared-repo-push-gates`,
   `devops/shell-scripting`, `skill-vetting`, `software-development/change-checklist`. Each was a lesson
   written to the deployed tree by a later cycle that same day — the drift guardrail then refused to
   overwrite it, so the fleet never received it. Never inherit yesterday's PASS: re-measure every pass.

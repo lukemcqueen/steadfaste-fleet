@@ -65,7 +65,7 @@ artifact that produces it.
 
 Verbatim, `ADV-11857-2` (medium, unverified-claim):
 
-> recommendation: "Commit the actual pytest and cortex-dogfood/cortex_doctor
+> recommendation: "Commit the actual pytest and fleet-dogfood/cortex_doctor
 > output to a repo evidence file or add a CI target that re-runs the committed
 > tests, so the passing claim is re-executable rather than self-reported."
 

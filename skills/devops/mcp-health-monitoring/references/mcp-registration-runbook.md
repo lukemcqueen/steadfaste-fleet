@@ -58,7 +58,7 @@ python3 ~/steadfaste-fleet/ops/scripts/manage/mcp_wiring.py      # then the audi
 ## Rules learned the hard way
 
 - **Audit paths, not names.** A name-in-config-text check once passed while the
-  entry was keyed `agent-bus` and the expectation said `cortex-bus` — which
+  entry was keyed `agent-bus` and the expectation said `fleet-bus` — which
   matched the *filename* in the args.
 - **A bare command name is a PATH lookup, not a relative path.** Treating
   `command: python3` as a path reports "python3 does not exist"; resolve it with

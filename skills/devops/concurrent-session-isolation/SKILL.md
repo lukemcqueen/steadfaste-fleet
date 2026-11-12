@@ -9,7 +9,7 @@ platforms: [linux, macos]
 metadata:
   hermes:
     tags: [governance, git, worktree, identity, concurrency, deploy]
-    related_skills: [governance-lock-lifecycle, governance-closeout, cross-agent-design, cortex-bus]
+    related_skills: [governance-lock-lifecycle, governance-closeout, cross-agent-design, fleet-bus]
 ---
 
 # Concurrent Sessions on One Host
@@ -51,7 +51,7 @@ paths and leave their in-flight files (tracked and untracked) untouched.
 | MCP server process | one session's blocking handler freezes the server for EVERY session sharing that parent — all calls time out at once | **keep handlers off-loop** — see "A wedged shared MCP server" below |
 | in-repo `.hermes-cortex/.governance-lock` | ONE path per repo shared by all sessions, so a peer's `end_change` could unlink your marker while you still hold your lock | **fixed** — `_release_lock` removes it only when the marker's `session_id` is its own (or absent); the session-scoped `.governance-<session>.json` stays authoritative either way |
 | handoff state dirs | one session's stale marker appears in another's sweep | scope — session subdir |
-| `cortex-update.sh` deploy | interleaved unlock/relock; a killed run leaves enforcement files WRITABLE | **serialise** — one deploy per host |
+| `fleet-update.sh` deploy | interleaved unlock/relock; a killed run leaves enforcement files WRITABLE | **serialise** — one deploy per host |
 | immutable enforcement flags | come off during a deploy that dies | **serialise** (pitfall 4) |
 
 **The principle: scope what can be scoped, serialise what cannot.** There is
@@ -149,7 +149,7 @@ git diff --cached --name-only                                     # only YOUR fi
    tree before closing — `begin_change` cannot be re-pointed mid-cycle, so a
    worktree-only change under a main-tree session is unclosable.
 4. **A deploy that exits non-zero can leave the enforcement files WRITABLE.**
-   `cortex-update.sh` unlocks the immutable targets early and relocks late, with no
+   `fleet-update.sh` unlocks the immutable targets early and relocks late, with no
    `EXIT` trap: a run that dies in between (non-zero exit, timeout, killed detached
    worker) leaves `chattr +i` off every target while the deploy merely looks failed.
    Detect with `hermes-plugin-lock status` — protected entries read
@@ -419,5 +419,5 @@ was a Z-suffixed UTC instant and the commit date carried a local offset. Use
 
 - `governance-closeout` — closing a cycle the gate refuses; the worktree/repo binding
   pitfall is stated there from the close-out side.
-- `governance-lock-lifecycle`, `cortex-bus`, `fleet-commands`, `sudoers-audit` —
+- `governance-lock-lifecycle`, `fleet-bus`, `fleet-commands`, `sudoers-audit` —
   relevant but USER-OWNED: `hermes curator adopt <name>` before extending them.

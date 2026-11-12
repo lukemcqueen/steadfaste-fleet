@@ -3,7 +3,7 @@
 
 The 2026-10-17 env-symlink rename made `~/.steadfaste-fleet/.env` the sanctioned
 back-compat symlink to the canonical `~/steadfaste-fleet/.env`, and retired
-`cortex-bus.conf`. `check_fleet_env` must FAIL on a REAL file (not a symlink) at
+`fleet-bus.conf`. `check_fleet_env` must FAIL on a REAL file (not a symlink) at
 the deploy-dir .env path — historically that path held a stray symlink to
 `~/langfuse/.env` — and PASS when the symlink correctly resolves.
 
@@ -116,12 +116,12 @@ def test_leftover_retired_cortex_bus_conf_is_flagged(tmp_path):
     canon.write_text("CORTEX_BUS_URL=http://localhost\n")
     canon.chmod(0o600)
     (deploy / ".env").symlink_to(canon)
-    (deploy / "cortex-bus.conf").symlink_to(canon)   # retired name left behind
+    (deploy / "fleet-bus.conf").symlink_to(canon)   # retired name left behind
     res = _Result()
     c.check_fleet_env(res)
     assert res.status() == "FAIL", res.rows
-    assert "cortex-bus.conf" in res.detail(), res.detail()
-    print("  leftover retired cortex-bus.conf symlink => FAIL ✓")
+    assert "fleet-bus.conf" in res.detail(), res.detail()
+    print("  leftover retired fleet-bus.conf symlink => FAIL ✓")
 
 
 def test_no_cortex_env_is_a_skip(tmp_path):

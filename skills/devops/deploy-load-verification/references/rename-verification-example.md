@@ -30,7 +30,7 @@ ps -eo pid,lstart,cmd | grep 'hermes_cli.main gateway' | grep -v grep
 ps -eo pid,lstart,cmd | grep mcp_stdio_watchdog | grep -v grep
 stat -c '%y %n' ~/.hermes/plugins/governance-enforcer/__init__.py ~/.hermes/config.yaml 2>/dev/null \
   || stat -f '%Sm %N' ~/.hermes/plugins/governance-enforcer/__init__.py ~/.hermes/config.yaml
-grep -n -iE 'agent-bus|cortex-bus' ~/.hermes/config.yaml   # HYPHENS, not underscores
+grep -n -iE 'agent-bus|fleet-bus' ~/.hermes/config.yaml   # HYPHENS, not underscores
 ```
 
 Note the grep trap: `grep -iE 'agent_bus|fleet_bus'` matched NOTHING in
@@ -41,14 +41,14 @@ pattern only matches Python package names. The initial grep only looked
 ## Secondary symptom: script config-path drift
 
 `report-agent-health.py` (no_agent watchdog deployed fleet-wide) read
-`CONFIG_FILE = ~/.hermes/cortex-bus.conf` — a path retired when bus config was
+`CONFIG_FILE = ~/.hermes/fleet-bus.conf` — a path retired when bus config was
 standardized at `~/steadfaste-fleet/.env` (commit `d2fd304d`). Result:
 exit 1 with `ERROR: CORTEX_BUS_FALLBACK_URL (or CORTEX_INBOX_URL) not set`,
 even though the canonical conf existed with the right values. When touching any
 bus script, grep for the retired path first:
 
 ```bash
-grep -rn "\.hermes/cortex-bus.conf" ~/steadfaste-fleet/ops/scripts/
+grep -rn "\.hermes/fleet-bus.conf" ~/steadfaste-fleet/ops/scripts/
 ```
 
 ## Lesson

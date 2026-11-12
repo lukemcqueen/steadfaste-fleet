@@ -242,7 +242,7 @@ _ARTIFACT_FROZEN = _REPO_ROOT / "docs" / "evidence" / "soul-refinement-window-20
 # The window's operator rows, quoted from the pass's own dump of the store
 # rather than recalled — including the one a match-anywhere rule ate.
 _OPERATOR_ROWS = (
-    "Time to fix the mycortex nightly dream for all agents. Ex: Cronjob Response: cortex-bus-workday",
+    "Time to fix the mycortex nightly dream for all agents. Ex: Cronjob Response: fleet-bus-workday",
     "fix this please. Titus Pi: The tooling deadlock - you should know about it",
     "Please check if this is true. We have multiple agents in the same repo (non-fleet).",
     "of course fix it. tdd with edge cases and review with deepseek pro.",
@@ -275,7 +275,7 @@ def test_a_leaning_marker_is_machine_but_a_quoted_one_is_not():
     assert mod.classify("   [Cron delivery: x]") == "machine"
     # MID-text: the operator quoting machine output. This is the case that cost
     # the 2026-10-27 pass the only still-open-looking request in its window.
-    quoted = "Time to fix the dream for all agents. Ex: Cronjob Response: cortex-bus-workday"
+    quoted = "Time to fix the dream for all agents. Ex: Cronjob Response: fleet-bus-workday"
     assert mod.classify(quoted) == "operator_prose", quoted
 
 

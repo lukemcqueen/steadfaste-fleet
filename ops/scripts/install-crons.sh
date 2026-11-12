@@ -168,7 +168,7 @@ create_cron() {
   # context with no DBus session. A DISABLED unit (a job paused for a reason:
   # bible-reading, hermes-update, …) is absent from wants/, so that job is
   # still created here, exactly as intended.
-  if [[ -e "${HOME}/.config/systemd/user/timers.target.wants/cortex-bridge-${name}.timer" ]]; then
+  if [[ -e "${HOME}/.config/systemd/user/timers.target.wants/fleet-bridge-${name}.timer" ]]; then
     info "Skipping '${name}' — owned by the HC cron bridge (systemd timer)"
     return 0
   fi
@@ -204,7 +204,7 @@ create_cron() {
     if ! $FORCE; then
       # Drift detection: check if existing cron's script, skill, OR prompt
       # differs from desired. Script-only checks miss skill renames on LLM
-      # crons (empty script) — e.g. the agent-inbox → cortex-bus-* rename
+      # crons (empty script) — e.g. the agent-inbox → fleet-bus-* rename
       # (2026-07-27) left deployed jobs referencing non-existent skills,
       # silently skipped by the scheduler every fire. Compare both. Prompt
       # comparison (2026-08-06) closes the prompt-only drift gap: repo
@@ -605,7 +605,7 @@ if $UNINSTALL; then
     "agent-system-alert-watchdog" \
     "agent-unannounced-probe" \
     "fleet-bus-failover-watchdog" \
-    "cortex-bus-workday"; do
+    "fleet-bus-workday"; do
   
   
   
@@ -779,7 +779,7 @@ create_cron "fleet-bus-failover-watchdog" "*/5 * * * *" \
   "true"
 
 # Bus processing — weekday (08/20 KST M-F — off-peak since 08-31)
-create_cron "cortex-bus-workday" "0 8,20 * * 1-5" \
+create_cron "fleet-bus-workday" "0 8,20 * * 1-5" \
   "session-active-guard.py" \
   "SESSION GUARD: the session-active guard output is injected as context. If it says ACTIVE, an interactive session is running — SKIP this tick entirely. Call NO tools, load NO skills, open NO governance, touch NOTHING. Reply with EXACTLY this single line and nothing else: [SILENT]. Proceed only when the guard says IDLE.
 
@@ -798,7 +798,7 @@ PUSHBACK CONTRACT (SOUL Principle 5): before acting on any message that requests
 4. Is it in English and in the correct format?
 If ANY answer is NO → output EXACTLY this one line and nothing else: QUALITY_G_BLOCKED
 If all YES → deliver as normal." \
-  "cortex-bus-automation" \
+  "fleet-bus-automation" \
   "terminal" \
   "telegram:${TELEGRAM_HOME_CHANNEL}" \
   "" \

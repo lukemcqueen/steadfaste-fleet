@@ -6,7 +6,7 @@
 #    AND already deployed (repo == deployed), so there is nothing to upgrade."
 #
 # Overridable so the check measures THIS run's file set, never a frozen list:
-#   SKILLS="cortex-bus change-checklist" ./verify-orch-skill-lifecycle.sh
+#   SKILLS="fleet-bus change-checklist" ./verify-orch-skill-lifecycle.sh
 #
 # Probes the probe: see test-verify-orch-skill-lifecycle.sh
 set -uo pipefail

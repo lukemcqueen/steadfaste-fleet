@@ -1926,7 +1926,7 @@ def _is_readonly_terminal_command(command: str) -> bool:
 # accept list — the migration is complete; a host on the old name is a straggler
 # the doctor's stale-home check flags.)
 _SANCTIONED_CORTEX_UPDATE_RE = re.compile(
-    r"^\s*(?:bash\s+)?(?:~|" + re.escape(str(Path.home())) + r")/steadfaste-fleet/ops/scripts/(?:cortex-update|fleet-update)\.sh"
+    r"^\s*(?:bash\s+)?(?:~|" + re.escape(str(Path.home())) + r")/steadfaste-fleet/ops/scripts/(?:fleet-update|fleet-update)\.sh"
     r"(?:\s+(?:--dry-run|--status|--delta|--clean-stale))*\s*$"
 )
 
@@ -2457,7 +2457,7 @@ def _check_pii_content_gate(tool_name: str, args: dict) -> Optional[dict]:
     Path-independence for the deny-list (2026-11-04, home-folder gap): these
     are the uniquely-personal identifiers (surname, operator WAN address) and
     must never be written anywhere — a home-folder write is one deploy/copy
-    (skill_manage -> skills, cortex-update deploy, git add of a local file)
+    (skill_manage -> skills, fleet-update deploy, git add of a local file)
     from the public repo. The shared-surface early-return that let the home
     folder through is removed for this class.
     """
@@ -3071,7 +3071,7 @@ def register(ctx):
                 skill_name = args.get("name", "")
                 if skill_name:
                     # Journals the credit (rehydrating first) so a plugin
-                    # reload — a cortex-update deploy — cannot strip this
+                    # reload — a fleet-update deploy — cannot strip this
                     # session's domain/adversarial credit mid-task.
                     _credit_skill(hermes_session_id, skill_name)
                     # ...and into HC's own store, which is what the pre-commit

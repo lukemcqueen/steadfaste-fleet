@@ -1,7 +1,7 @@
 """fleet_bus import-graph proof — the package resolves from its core/ runtime context.
 
 The live gateway runs `uvicorn fleet_bus.server:app` with
-WorkingDirectory/PYTHONPATH = repo `core/` (see ops/install/deploy/cortex-bus.service,
+WorkingDirectory/PYTHONPATH = repo `core/` (see ops/install/deploy/fleet-bus.service,
 service name retained until P5). These tests pin THAT resolution context: the
 `fleet_bus.*` dotted imports (including the sibling `fleet_bus.queue` helper
 dependency inside circuit_breaker/auth) must resolve when `core/` is the top of

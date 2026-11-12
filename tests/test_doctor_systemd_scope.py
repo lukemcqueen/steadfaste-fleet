@@ -4,7 +4,7 @@
 2026-09-08: the doctor unconditionally WARNed whenever any
 hermes-*.service existed in /etc/systemd/system/, assuming user-scope
 (~/.config/systemd/user/) is always correct. But fleet-update.sh is
-explicitly SCOPE-AWARE: on migrated hosts, Hermes gateway + cortex-bus +
+explicitly SCOPE-AWARE: on migrated hosts, Hermes gateway + fleet-bus +
 dashboard + health-vector run as SYSTEM units (multi-user.target) by
 design (2026-09-01 decision on moses after the user-scope boot
 port-fight).
@@ -111,7 +111,7 @@ def test_active_system_scope_passes(monkeypatch, scope_fixture):
     units = (
         "/etc/systemd/system/hermes-gateway.service\n"
         "/etc/systemd/system/steadfaste-fleet-dashboard.service\n"
-        "/etc/systemd/system/cortex-bus.service\n"
+        "/etc/systemd/system/fleet-bus.service\n"
     )
     fake = scope_fixture(units, "active")
     monkeypatch.setattr(checks, "run_bg", fake)

@@ -43,7 +43,7 @@ server** in `~/.hermes/config.yaml`:
 - Scans `~/.hermes/logs/mcp-stderr*.log` for import-crash signatures
   (watermark-based, catches the 2026-08-18 class on first fresh hit)
 - **Severity:** loop-governance / tasks down → CRITICAL "⚠️ GOVERNANCE OFFLINE —
-  ALL WRITES BLOCKED" (write-deadlock risk); agent-bus (a.k.a. cortex-bus) down
+  ALL WRITES BLOCKED" (write-deadlock risk); agent-bus (a.k.a. fleet-bus) down
   → WARNING (no deadlock); unknown servers probed generically at WARNING
 - **Strike logic:** 2 consecutive probe failures to alert (transient tolerance),
   hourly re-alert cap, "✅ MCP server recovered" notice when a server passes
@@ -146,7 +146,7 @@ incident are in `references/otel-skew-incident-2026-10-06.md`.
   loop-governance: `begin_change`, `end_change`, `check_lock`).
 - **Presence is not wiring — a name can match a FILENAME.** A "configured" check
   that looks for the server's NAME anywhere in `config.yaml` gives a false PASS:
-  the name also occurs in the args path (`cortex-bus` inside `fleet-bus-mcp.py`),
+  the name also occurs in the args path (`fleet-bus` inside `fleet-bus-mcp.py`),
   so a registration pointing at a missing venv, wrapper or script reads healthy
   while its tools never load. Audit by resolving the registered COMMAND and ARGS
   and checking those paths exist. Keep the expected-name map in ONE place (the

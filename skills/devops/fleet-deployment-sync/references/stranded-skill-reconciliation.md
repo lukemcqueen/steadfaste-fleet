@@ -1,6 +1,6 @@
 # Reconciling stranded deployed-only skills
 
-Topical depth for `cortex-deployment-sync` → "When the update reports stranded
+Topical depth for `fleet-deployment-sync` → "When the update reports stranded
 deployed-only skills". `ops/scripts/manage/reconcile-stranded-skills.py` is the tool;
 this is how to run it, how to judge what it reports, and the traps that cost time.
 

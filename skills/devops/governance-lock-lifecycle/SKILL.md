@@ -9,7 +9,7 @@ platforms: [linux, macos]
 metadata:
   hermes:
     tags: [governance, lock, fleet-update, loop-governance, deploy]
-    related_skills: [loop-governance, cortex-deployment-sync, cortex-preflight, two-hard-rules]
+    related_skills: [loop-governance, fleet-deployment-sync, fleet-preflight, two-hard-rules]
 ---
 
 # Governance Lock Lifecycle During Deploy Operations
@@ -18,7 +18,7 @@ metadata:
 
 ## The Core Mechanic
 
-`fleet-update.sh` runs `purge-stale-governance-locks.py` at the **END of EVERY run** — it removes **every** `.governance-*.json` lock file, **including your active session's lock**. This is by design (Pitfall 4 in `cortex-deployment-sync`), but the blast radius is bigger than most agents expect:
+`fleet-update.sh` runs `purge-stale-governance-locks.py` at the **END of EVERY run** — it removes **every** `.governance-*.json` lock file, **including your active session's lock**. This is by design (Pitfall 4 in `fleet-deployment-sync`), but the blast radius is bigger than most agents expect:
 
 1. **ALL terminal is gated, not just writes.** The enforcer's `GOVERNANCE LOCK REQUIRED` fires on ANY `terminal()` call without an active lock — even a read-only `grep` of the update log. `ls`, `grep`, `cat`, `git status` all blocked until you re-acquire.
 2. **`read_file` / `search_files` / `skill_view` are NOT gated.** These are the escape hatch for inspecting output between the purge and your re-acquire.
@@ -27,7 +27,7 @@ metadata:
 ## The Working Sequence (verified 2026-08-03)
 
 ```text
-begin_change(task_id="pull-latest-cortex-update")     # cycle #1
+begin_change(task_id="pull-latest-fleet-update")     # cycle #1
 git pull --rebase --autostash origin main
 fleet-update.sh > /tmp/update-full.log 2>&1          # redirect UNDER the lock
                                                       #   ← purge fires, lock GONE
@@ -479,6 +479,6 @@ rules make the second half safe, and all three are load-bearing:
 
 ## Related (user-owned, may need `hermes curator adopt`)
 
-- `cortex-deployment-sync` — deploy mechanics, invocation forms, immutable-file pitfalls
-- `cortex-preflight` — pre-flight checks + fleet-update side-effect table
+- `fleet-deployment-sync` — deploy mechanics, invocation forms, immutable-file pitfalls
+- `fleet-preflight` — pre-flight checks + fleet-update side-effect table
 - `loop-governance` — scoring internals, lock-lifecycle race history

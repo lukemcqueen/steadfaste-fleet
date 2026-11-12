@@ -404,7 +404,7 @@ def test_a_daemon_inside_SOMEONE_ELSES_service_is_not_supervised(tmp_path, monke
 def test_the_supervision_check_accepts_our_own_mainpid(tmp_path, monkeypatch):
     monkeypatch.setenv("INVOCATION_ID", "real")
     monkeypatch.setattr(DAEMON.Gateway, "_own_unit_name",
-                        lambda self: "cortex-gateway-esther0001.service")
+                        lambda self: "fleet-gateway-esther0001.service")
 
     class _Done:
         returncode = 0
@@ -455,8 +455,8 @@ def test_the_unit_name_is_read_from_our_own_cgroup(tmp_path, monkeypatch):
     monkeypatch.setattr(DAEMON.Path, "read_text",
                         lambda self, *a, **k: "0::/user.slice/user-1000.slice/"
                                               "user@1000.service/app.slice/"
-                                              "cortex-gateway-esther0001.service\n")
-    assert gw._own_unit_name() == "cortex-gateway-esther0001.service"
+                                              "fleet-gateway-esther0001.service\n")
+    assert gw._own_unit_name() == "fleet-gateway-esther0001.service"
     monkeypatch.setattr(DAEMON.Path, "read_text",
                         lambda self, *a, **k: "0::/user.slice/user-1000.slice/"
                                               "session-3.scope\n")

@@ -41,16 +41,16 @@ code; the brand lint's `RECORD_FILTER` exempts dated records, not these.
    tools that perform/verify the migration must keep the old name literal.
 3. **`hermes-cortex-dashboard.service`** — the dashboard service keeps its name.
 4. **`cortex` short-name family** — a SEPARATE naming layer, NOT covered by the
-   `hc` sweep: `cortex-bus`, `cortex-dashboard`, `Cortex Dashboard` (the dashboard
+   `hc` sweep: `fleet-bus`, `cortex-dashboard`, `Cortex Dashboard` (the dashboard
    component name), the whole `CORTEX_*` env-var family (`CORTEX_DEPLOY_HOME`,
    `CORTEX_BUS_URL`, `CORTEX_BASIC_AUTH`, `CORTEX_SESSION_KEY`, `CORTEX_PROFILE`,
-   `CORTEX_OS`, `CORTEX_HOME`, …), `mycortex`, `cortex-deployment-sync` skill,
+   `CORTEX_OS`, `CORTEX_HOME`, …), `mycortex`, `fleet-deployment-sync` skill,
    etc. Renaming `cortex` → `fleet` is a SECOND, larger sweep with its own
    runtime-contract risks (service names, env vars, DB roles).
 
 ## What changed on 2026-11-12 (the final hc sweep)
 
-- Skills renamed: `hermes-cortex` → `steadfaste-fleet`, `hermes-cortex-setup` →
+- Skills renamed: `hermes-cortex` → `steadfaste-fleet`, `hermes-fleet-setup` →
   `steadfaste-fleet-setup`, `hermes-cortex-maintenance` →
   `steadfaste-fleet-maintenance`, `hermes-cortex-repo-deploy` →
   `steadfaste-fleet-repo-deploy`. The old names are no longer load keys; the

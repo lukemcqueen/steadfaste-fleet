@@ -72,11 +72,11 @@ def test_the_consolidated_workday_crons_are_two_a_day():
     a single 08/20 weekday job each — no three-job trio, no midday slot."""
     installer = _installer_schedules()
     assert installer.get("agent-fixer-workday") == "0 8,20 * * 1-5"
-    assert installer.get("cortex-bus-workday") == "0 8,20 * * 1-5"
+    assert installer.get("fleet-bus-workday") == "0 8,20 * * 1-5"
     assert "agent-fixer-evening" not in installer
     assert "agent-fixer-overnight" not in installer
-    assert "cortex-bus-evening" not in installer
-    assert "cortex-bus-overnight" not in installer
+    assert "fleet-bus-evening" not in installer
+    assert "fleet-bus-overnight" not in installer
 
 
 def _create_cron_line_count() -> int:

@@ -18,7 +18,7 @@ each host's `cycle_query`/`feedback_accept` reads is that HOST's local DB:
   doctor) with the instruction: score each via `feedback_accept` (decision
   correct), then re-run doctor to confirm 0 fail.
 - Evidence: moses (3 cycles: skill-curation-2026-08-18#1,
-  orch-skill-evaluate-2026-08-18#1, cortex-bus-tick-0818#1) and titus
+  orch-skill-evaluate-2026-08-18#1, fleet-bus-tick-0818#1) and titus
   (4 cycles: skill-curation-mcp-deadlock-*, skill-client-*) both leaked
   cycles when the MCP deadlock blocked `end_change`; their UPDATE_RESULT
   doctors FAILed on exactly this while the update itself landed fine.

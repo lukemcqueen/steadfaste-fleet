@@ -25,7 +25,7 @@ Port **8905**, powered by `bus` schema on mycortex Postgres (port 15432).
 | Port | 8903 (server.py) | 8905 (systemd service) |
 | Nginx | 13004 → 8903 (old inbox) | 13004 → 8905 (after cutover) |
 
-**Service:** `cortex-bus.service` — systemd user service, auto-starts on boot.
+**Service:** `fleet-bus.service` — systemd user service, auto-starts on boot.
 **Circuit breaker:** Auto-degrades to old inbox if Postgres is unavailable (3 failures → file fallback).
 
 ### Old Inbox (file-based, deprecating)
@@ -50,7 +50,7 @@ The confusion is that "agent inbox" sounds like one thing. It's two (and was for
 MOSES / ESTHER (bus servers)     ORCHESTRATORS ONLY (MCP client)        WORKERS (HTTP path)
 ─────────────────────────────      ─────────────────────────────────────  ───────────────────────────
 Hermes gateway (:8905)         ~/.hermes/config.yaml                  ~/steadfaste-fleet/.env
- ↳ built-in Agent Bus API        ↳ mcp_servers.cortex-bus               ↳ CORTEX_BUS_URL + CORTEX_BASIC_AUTH
+ ↳ built-in Agent Bus API        ↳ mcp_servers.fleet-bus               ↳ CORTEX_BUS_URL + CORTEX_BASIC_AUTH
  ↳ stores messages (PGMQ)        ↳ runs fleet-bus-mcp.py as subprocess  ↳ contact-orchestrator.sh / lib.fleet_bus.bus_send
                      ↳ reads ~/steadfaste-fleet/.env
 nginx proxy (:13004 / :14004)       ↳ calls remote Agent Bus via HTTP
@@ -153,7 +153,7 @@ If you are Gisu, Joseph, Kustos, or Titus (worker):
 cd ~/steadfaste-fleet && git pull
 
 # 2. Ensure MCP client is in config.yaml
-grep -A4 "cortex-bus" ~/.hermes/config.yaml
+grep -A4 "fleet-bus" ~/.hermes/config.yaml
 # Should show: command: python3, args: [fleet-bus-mcp.py], enabled: true
 
 # 3. Create credentials file — YOUR OWN credentials
@@ -172,7 +172,7 @@ curl -s -u "your_username:your_password" \
  https://your-domain.com:13004/api/pgmq/queues
 ```
 
-**Workers (Gisu, Joseph, Kustos, Titus):** Do NOT add an `cortex-bus` entry to
+**Workers (Gisu, Joseph, Kustos, Titus):** Do NOT add an `fleet-bus` entry to
 `config.yaml` — the MCP client is orchestrator-only. Your bus access is the
 HTTP client (`~/steadfaste-fleet/.env` + `contact-orchestrator.sh`), which
 the installer sets up. Verify it with:

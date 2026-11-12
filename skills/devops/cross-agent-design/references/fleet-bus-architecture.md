@@ -2,7 +2,7 @@
 
 > **Quick reference: topology, auth, ACL, ports, consumption patterns.**
 > All values verified against live deployment.
-> Complementary to: `docs/reference/cortex-bus-config.md`
+> Complementary to: `docs/reference/fleet-bus-config.md`
 
 ---
 
@@ -10,7 +10,7 @@
 
 | Port | Service | Who uses it |
 |------|---------|-------------|
-| `:8903` | Bus backend (FastAPI, PGMQ) | Localhost — systemd `cortex-bus.service` |
+| `:8903` | Bus backend (FastAPI, PGMQ) | Localhost — systemd `fleet-bus.service` |
 | `:8905` | Health server (Flask, vector ping) | Fleet health checks — **NOT the bus** |
 | `:15432` | mycortex Postgres (`bus.*` schema) | Only Moses/Esther — contains ALL queues |
 | `:13004` | nginx → Bus (Moses, primary) | All agents via `CORTEX_BUS_URL` |
@@ -61,7 +61,7 @@ no_agent crons use Path A — `_read_config()` reads `CORTEX_BASIC_AUTH` from `.
 
 | Consumer | Freq | Handles | Where configured |
 |----------|------|---------|-----------------|
-| LLM cron (`cortex-bus-*`) | 10-60 min | **All** message types | Moses (3 crons: workday/evening/overnight) |
+| LLM cron (`fleet-bus-*`) | 10-60 min | **All** message types | Moses (3 crons: workday/evening/overnight) |
 | agent-worker service | ~30s | Only `workflow_step` type | May be on any agent |
 | MCP tools (`inbox_read`) | On-demand | Any | All agents, but requires a session |
 

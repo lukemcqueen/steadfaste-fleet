@@ -9,7 +9,7 @@ license: MIT
 metadata:
   hermes:
     tags: [deploy, verification, gateway, mcp, config, restart]
-    related_skills: [hermes-gateway-operations, cortex-bus, change-checklist]
+    related_skills: [hermes-gateway-operations, fleet-bus, change-checklist]
 ---
 
 # Deploy ≠ Load Verification
@@ -126,12 +126,12 @@ and only if the module reads it per turn.
 
 - The `mcp_servers.<name>:` key in `config.yaml` determines the exposed tool
   namespace: key `agent-bus` → tools `mcp__agent_bus__*` (hyphen → underscore).
-- Renaming the key (e.g. → `cortex-bus`) changes the tool namespace and breaks
+- Renaming the key (e.g. → `fleet-bus`) changes the tool namespace and breaks
   every skill/cron that references the old `mcp__<name>__*` tools — until the
   gateway restarts with the new key.
 - A rename that sweeps packages/skills/crons but leaves the config key = tool
   names stay old while docs claim the new ones. **Search config keys with
-  HYPHENS** (`grep -iE 'agent-bus|cortex-bus'`), never underscores — `agent_bus`
+  HYPHENS** (`grep -iE 'agent-bus|fleet-bus'`), never underscores — `agent_bus`
   matches the Python package, never the config key.
 
 ## Changing config.yaml

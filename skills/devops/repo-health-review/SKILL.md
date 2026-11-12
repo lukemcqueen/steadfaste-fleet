@@ -8,7 +8,7 @@ description: >-
   report. Run before major refactors or when asked to audit the repo.
 pinned: false
 related_skills:
-  - cortex-preflight
+  - fleet-preflight
   - documentation-auditing
   - change-checklist
 ---
@@ -195,7 +195,7 @@ grep -n 'is_orch\|IS_ORCH\|hostname\|agent.type' ops/scripts/manage/fleet_doctor
 
 #### 8b-2: register() Guard Coverage in fleet-update.sh
 
-Check whether orchestrator-only service files (dashboard, cortex-bus server, nginx configs) are **conditionally registered** or deployed to every agent:
+Check whether orchestrator-only service files (dashboard, fleet-bus server, nginx configs) are **conditionally registered** or deployed to every agent:
 
 ```bash
 # Are dashboard/bus/nginx files registered unconditionally?

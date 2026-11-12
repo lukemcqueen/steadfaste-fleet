@@ -1083,7 +1083,7 @@ per-job (no config.yaml key, no jobs.json field). The fleet applies 600s via
 `install-gateway-cron-timeout.sh` on every fleet-update (systemd drop-in on
 Linux, `~/.hermes/.env` on macOS); it activates on the next gateway restart.
 ⚠️ The 08-04 fleet experiment (30s probe, then 300s) broke the evening LLM
-crons (agent-fixer/cortex-bus/agent-inbox/soul-refinement): heavy
+crons (agent-fixer/fleet-bus/agent-inbox/soul-refinement): heavy
 non-streaming deepseek calls on accumulated daily workload exceeded 5
 minutes, killing 9/9 runs with 'idle for 300s'. 600s restores known-good
 behavior.

@@ -14,7 +14,7 @@ _contains_launchctl_gateway_lifecycle = verbs_re.search(text) AND label_re.searc
 ```
 
 fleet-update.sh legitimately contains BOTH halves:
-- Verb half: `launchctl unload/load` for com.hermes.cortex-bus / cortex-dashboard
+- Verb half: `launchctl unload/load` for com.hermes.fleet-bus / cortex-dashboard
   plists, `launchctl kickstart` for com.hermes.health-server (real macOS service
   management, lines ~623-670)
 - Label half: `com.hermes.gateway` in the launchd label loop, `hermes-gateway`
@@ -46,7 +46,7 @@ Zero guard changes, zero splices. Make the trigger literals unnecessary:
    for plist in "$HOME/Library/LaunchAgents/"*.plist; do
      [[ -e "$plist" ]] || continue
      case "$plist" in
-       *cortex-bus*|*cortex-dashboard*|*agent-inbox*|*ollama*|*health-server*|*gateway*)
+       *fleet-bus*|*cortex-dashboard*|*agent-inbox*|*ollama*|*health-server*|*gateway*)
          label=$(basename "$plist" .plist)
          launchctl list "$label" &>/dev/null 2>&1 || warn "$label: not registered"
          ;;

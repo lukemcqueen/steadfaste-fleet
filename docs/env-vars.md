@@ -11,7 +11,7 @@ The env file lives at `~/steadfaste-fleet/.env` (gitignored) — the single sour
 for all Cortex environment variables. It's auto-sourced by deploy scripts and `fleet-update.sh`.
 Every reference now points here. The deploy dir carries a **sanctioned back-compat symlink**,
 `~/.steadfaste-fleet/.env → ~/steadfaste-fleet/.env`, so legacy readers resolving the deploy-dir
-path keep working; the old `~/.steadfaste-fleet/cortex-bus.conf` name was retired 2026-10-17
+path keep working; the old `~/.steadfaste-fleet/fleet-bus.conf` name was retired 2026-10-17
 (`consolidate-env.sh` migrates it to the `.env` symlink). A **real file** (not a symlink) at
 `~/.steadfaste-fleet/.env` is unowned — a doctor FAIL. `~/.hermes/.env` is **Hermes-owned** —
 provider keys, Telegram, browser/terminal settings — and is never merged here.

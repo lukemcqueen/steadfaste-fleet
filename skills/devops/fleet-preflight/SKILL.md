@@ -1,5 +1,5 @@
 ---
-name: cortex-preflight
+name: fleet-preflight
 description: >-
   DEPRECATED alias — merged into survey-before-action (2026-08-20). Load
   survey-before-action instead; its "Repo-Specific Pre-Flight" section covers
@@ -17,7 +17,7 @@ related_skills:
 
 # DEPRECATED — use `survey-before-action`
 
-This skill was merged into `survey-before-action` on 2026-08-20 (which carries `aliases: [cortex-preflight]`). The repo-specific checks now live in its "Repo-Specific Pre-Flight" section.
+This skill was merged into `survey-before-action` on 2026-08-20 (which carries `aliases: [fleet-preflight]`). The repo-specific checks now live in its "Repo-Specific Pre-Flight" section.
 
 ## What to do instead
 

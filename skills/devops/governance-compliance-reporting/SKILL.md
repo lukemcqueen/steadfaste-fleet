@@ -5,7 +5,7 @@ category: devops
 description: Review agent commits for enforcement compliance.
 platforms: [linux, macos]
 related_skills:
-  - cortex-preflight
+  - fleet-preflight
   - repo-health-review
   - code-review
 ---

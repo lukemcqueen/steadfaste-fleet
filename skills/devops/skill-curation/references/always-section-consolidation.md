@@ -9,7 +9,7 @@ Session: Esther, 2026-08-20. Commit `e1a035fa`.
 |---|---|---|
 | `session-start-discipline` | `task-start` | todo-restore step (`task-db.py pending` → `todo()`), marker mechanics, known gaps; refs moved to `task-start/references/` |
 | `reasoning-patterns` | `agent-flow` | full 4-pattern table + how-to-choose, embedded in "How to route" |
-| `cortex-preflight` | `survey-before-action` | repo-specific pre-flight (git search, Hermes boundary, deploy verification), 5 deployment pitfalls |
+| `fleet-preflight` | `survey-before-action` | repo-specific pre-flight (git search, Hermes boundary, deploy verification), 5 deployment pitfalls |
 
 `change-checklist` slimmed: Phase 0b → one-line reference to survey-before-action
 Phase 0a; Phase 6 → one-line reference to reflexion-check.

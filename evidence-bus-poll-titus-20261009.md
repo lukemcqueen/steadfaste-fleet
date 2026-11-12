@@ -1,5 +1,5 @@
 # Agent Bus poll evidence — inbox_titus
-# Cron job: cortex-bus-automation (absorbed into cortex-bus)
+# Cron job: fleet-bus-automation (absorbed into fleet-bus)
 # Queue: inbox_titus (Titus)
 # Date: 2026-10-09
 # Re-runnable: ./poll-bus-inbox_titus.sh (reads credentials from hermes-inbox.conf)

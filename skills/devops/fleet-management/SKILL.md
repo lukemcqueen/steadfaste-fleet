@@ -11,11 +11,11 @@ author: Steadfaste Fleet
 license: MIT
 platforms: [linux, macos]
 related_skills:
-  - cortex-bus
+  - fleet-bus
   - agent-fundamentals
   - agent-health-monitoring
   - fleet-commands
-  - cortex-preflight
+  - fleet-preflight
 triggers:
   - "agent registry"
   - "fleet audit"
@@ -117,4 +117,4 @@ execute it.
 
 - `references/agent-registry-v4-schema.md` — full field reference for v4 schema
 - `docs/prd/PRD-005-enterprise-integration-v2.md` — PRD defining the 5 concerns
-- `skills/devops/cortex-bus/references/agent-registry.md` — bus-specific registry usage
+- `skills/devops/fleet-bus/references/agent-registry.md` — bus-specific registry usage

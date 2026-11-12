@@ -445,7 +445,7 @@ def check_fleet_bus():
             return  # Remote bus is reachable (401/403 = auth challenge = alive)
         
         add_issue("service_down", "high", "Remote Agent Bus unreachable", {
-            "service": "cortex-bus (remote)",
+            "service": "fleet-bus (remote)",
             "url": health_url,
             "endpoint_http": curl_out.strip() or "unreachable",
         })
@@ -456,15 +456,15 @@ def check_fleet_bus():
     svc_out = ""
     
     if sys.platform == "darwin":
-        svc_out, _, svc_rc = run("launchctl list com.hermes.cortex-bus 2>/dev/null | awk 'NR==2 {print $1}'")
+        svc_out, _, svc_rc = run("launchctl list com.hermes.fleet-bus 2>/dev/null | awk 'NR==2 {print $1}'")
         svc_ok = (svc_rc == 0 and svc_out.strip() not in ("", "-"))
         
         if not svc_ok:
-            fb_out, _, fb_rc = run("launchctl list com.hermes.cortex-bus-fallback 2>/dev/null | awk 'NR==2 {print $1}'")
+            fb_out, _, fb_rc = run("launchctl list com.hermes.fleet-bus-fallback 2>/dev/null | awk 'NR==2 {print $1}'")
             if fb_rc == 0 and fb_out.strip() not in ("", "-"):
                 svc_ok = True
     elif sys.platform.startswith("linux"):
-        svc_out, _, svc_rc = run("systemctl --user is-active cortex-bus.service 2>/dev/null")
+        svc_out, _, svc_rc = run("systemctl --user is-active fleet-bus.service 2>/dev/null")
         svc_ok = (svc_out.strip() == "active")
     
     curl_out, _, curl_rc = run("curl -s -o /dev/null -w '%{http_code}' http://localhost:8905/health 2>/dev/null")
@@ -472,7 +472,7 @@ def check_fleet_bus():
     
     if not svc_ok and not endpoint_ok:
         add_issue("service_down", "high", "Agent Bus is down (service inactive + endpoint unreachable)", {
-            "service": "cortex-bus.service",
+            "service": "fleet-bus.service",
             "service_status": svc_out.strip() or "unknown",
             "endpoint_http": curl_out.strip() or "unreachable",
         })

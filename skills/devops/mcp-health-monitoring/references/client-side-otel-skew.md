@@ -10,7 +10,7 @@ fix is verified end-to-end.
 ```
 ERROR tools.mcp_tool: MCP tool loop-governance/cache_search call failed:
   type object 'TraceFlags' has no attribute 'RANDOM_TRACE_ID'
-ERROR tools.mcp_tool: MCP tool cortex-bus/inbox_read call failed:
+ERROR tools.mcp_tool: MCP tool fleet-bus/inbox_read call failed:
   type object 'TraceFlags' has no attribute 'RANDOM_TRACE_ID'
 WARNING hermes_cli.plugins: Hook 'pre_api_request' callback on_pre_llm_request raised:
   'TraceFlags' object has no attribute 'random_trace_id'

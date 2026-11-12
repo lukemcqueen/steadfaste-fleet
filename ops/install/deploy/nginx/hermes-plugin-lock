@@ -151,7 +151,7 @@ _audit() {
 _require_sanctioned_caller() {
   local action="$1" token="${2:-}" ok=0 channel=""
   if [[ "$token" == "--cortex-update" ]]; then
-    ok=1; channel="cortex-update"
+    ok=1; channel="fleet-update"
   elif [[ "$token" == "--orchestrator" ]]; then
     case "$REAL_USER" in
       moses|esther) ok=1; channel="orchestrator-${REAL_USER}" ;;

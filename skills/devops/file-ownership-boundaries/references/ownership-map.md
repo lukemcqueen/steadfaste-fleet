@@ -22,7 +22,7 @@ grep -q "steadfaste-fleet" <<< "$filepath" && echo "OURS" || echo "CHECK FURTHER
 - `~/.hermes/skills/software-development/agent-flow/*` (absorbed reasoning-patterns 2026-08-20)
 - `~/.hermes/skills/software-development/reflexion-check/*`
 - `~/.hermes/skills/software-development/agent-contract/*`
-- `~/.hermes/skills/software-development/survey-before-action/*` (absorbed cortex-preflight 2026-08-20)
+- `~/.hermes/skills/software-development/survey-before-action/*` (absorbed fleet-preflight 2026-08-20)
 - `~/.hermes/skills/software-development/change-checklist/*`
 
 ## Edit Freely (Our Skills)

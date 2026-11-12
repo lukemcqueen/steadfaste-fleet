@@ -2,7 +2,7 @@
 
 ## The Failure Pattern
 
-The user said: "integrate X as deeply as Y" (referring to wiring `cortex-preflight` into every touchpoint that `survey-before-action` had).
+The user said: "integrate X as deeply as Y" (referring to wiring `fleet-preflight` into every touchpoint that `survey-before-action` had).
 
 I mapped about half the touchpoints, patched those, and stopped. The user then said "make sure this is integrated as deeply as survey before action, in governance, and any files necessary!"
 

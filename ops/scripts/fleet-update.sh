@@ -46,7 +46,7 @@ warn()  { echo -e "${YELLOW}⚠${RESET} $*"; }
 error() { echo -e "${RED}✗${RESET} $*"; }
 
 # ── Hermes config read — THE hermes-adapter seam ───────────────────────
-# The ONLY place cortex-update reaches into Hermes to READ a config value.
+# The ONLY place fleet-update reaches into Hermes to READ a config value.
 # Coding agents: if Hermes changes its config interface, rewrite THIS one
 # function — nothing else here knows Hermes internals.
 #
@@ -152,7 +152,7 @@ fi
 # Migrate the legacy bus conf into the canonical env FIRST (idempotent).
 # consolidate-env.sh seeds/migrates the canonical ~/steadfaste-fleet/.env and
 # creates the sanctioned back-compat symlink ~/.steadfaste-fleet/.env → canonical,
-# retiring the old cortex-bus.conf name. Every script reads ~/steadfaste-fleet/.env
+# retiring the old fleet-bus.conf name. Every script reads ~/steadfaste-fleet/.env
 # since the 2026-10 refactor, so a legacy host must be consolidated before
 # anything reads the env. Uses $HOME + bash only — identical on Linux and macOS.
 if [[ -f "${REPO_DIR}/ops/scripts/manage/consolidate-env.sh" ]]; then
@@ -463,7 +463,7 @@ register "ops/services/tasks/schema/v015__story-completion-verified-precondition
 # orchestrator write surface for a slice's plan/assignee/depends_on
 # (backlog 9fb2ddb6). Registering it is not cosmetic: the register map IS the
 # deploy, and a host whose DEPLOYED schema dir stops at v015 cannot reach v016
-# through cortex-update at all.
+# through fleet-update at all.
 register "ops/services/tasks/schema/v016__task-upsert-plan.sql" "${CORTEX_DEPLOY_HOME}/services/tasks/schema/v016__task-upsert-plan.sql"
 # v017: delegated verification — is_orchestrator is a CAPABILITY (pg_has_role on
 # tasks_verifier, no name list), verify_slice EXECUTE is widened to every profile
@@ -496,10 +496,6 @@ register "ops/scripts/manage/learning-collect.py"  "${CORTEX_DEPLOY_HOME}/script
 register_orch "ops/scripts/install/fleet-setup-langfuse.sh"   "${CORTEX_DEPLOY_HOME}/scripts/fleet-setup-langfuse.sh"
 register "ops/scripts/setup-fleet-langfuse.sh"         "${CORTEX_DEPLOY_HOME}/scripts/setup-fleet-langfuse.sh"
 register "ops/scripts/fleet-update.sh"           "${CORTEX_DEPLOY_HOME}/scripts/fleet-update.sh"
-# ONE-RELEASE forwarding shim for fleet-update.sh (P3): legacy cortex-update.sh
-# invocations (live crons, documented commands, the sanctioned gate) keep working.
-# Delete with the old name.
-register "ops/scripts/cortex-update.sh"           "${CORTEX_DEPLOY_HOME}/scripts/cortex-update.sh"
 register "ops/scripts/install/install-ollama.sh"          "${CORTEX_DEPLOY_HOME}/scripts/install-ollama.sh"
 register "ops/scripts/install/install-nginx.sh"           "${CORTEX_DEPLOY_HOME}/scripts/install-nginx.sh"
 register "ops/scripts/install/install-fail2ban.sh"         "${CORTEX_DEPLOY_HOME}/scripts/install-fail2ban.sh"
@@ -565,7 +561,6 @@ register "ops/scripts/secret-leak-detector.sh"            "${CORTEX_DEPLOY_HOME}
 register "ops/scripts/health/check-external-services.sh"   "${CORTEX_DEPLOY_HOME}/scripts/check-external-services.sh"
 register "ops/scripts/agent-secret-leak-watchdog.py"            "${CORTEX_DEPLOY_HOME}/scripts/agent-secret-leak-watchdog.py"
 register "ops/scripts/agent-security-posture-check.sh"                "${CORTEX_DEPLOY_HOME}/scripts/agent-security-posture-check.sh"
-register "ops/scripts/manage/cortex-doctor.py"        "${CORTEX_DEPLOY_HOME}/scripts/cortex-doctor.py"
 register "ops/scripts/manage/fleet-doctor.py"          "${CORTEX_DEPLOY_HOME}/scripts/fleet-doctor.py"
 register "ops/scripts/manage/fleet-git-reset.py"      "${CORTEX_DEPLOY_HOME}/scripts/fleet-git-reset.py"
 register "ops/scripts/manage/fleet-set-origin.sh"     "${CORTEX_DEPLOY_HOME}/scripts/fleet-set-origin.sh"
@@ -752,9 +747,6 @@ register "ops/install/hooks/post-merge"   "${CORTEX_DEPLOY_HOME}/hooks/post-merg
 # drift even when content hasn't changed.)
 declare -A MODE_OVERRIDES=(
   ["${CORTEX_DEPLOY_HOME}/hooks/post-merge"]="700"
-  # ONE-RELEASE forwarding shim must stay executable: legacy crons and the
-  # sanctioned gate invoke it via `bash`, but direct invocations exist too.
-  ["${CORTEX_DEPLOY_HOME}/scripts/cortex-update.sh"]="755"
 )
 
 # Deploy scripts (nginx security pipeline) — now deployed to /usr/local/sbin/
@@ -903,7 +895,7 @@ register "ops/scripts/cortex_lib/__init__.py"     "${CORTEX_DEPLOY_HOME}/scripts
 register "ops/scripts/cortex_lib/paths.py"        "${CORTEX_DEPLOY_HOME}/scripts/cortex_lib/paths.py"      # shim
 register "ops/scripts/fleet-bus-bridge-run.py"      "${CORTEX_DEPLOY_HOME}/scripts/fleet-bus-bridge-run.py"
 register "ops/scripts/fleet-bus-bridge-generate.py" "${CORTEX_DEPLOY_HOME}/scripts/fleet-bus-bridge-generate.py"
-# cortex-gateway — the decoupled gateway package (CR1 transport + CR2 backend seam)
+# fleet-gateway — the decoupled gateway package (CR1 transport + CR2 backend seam)
 register "ops/scripts/fleet_gateway/__init__.py"    "${CORTEX_DEPLOY_HOME}/scripts/fleet_gateway/__init__.py"
 # ONE-release shim for fleet_gateway (cortex->fleet, P2): the live gateway unit
 # still ExecStarts scripts/cortex_gateway/daemon.py until the P5 unit rename, and
@@ -1126,29 +1118,29 @@ register "ops/scripts/install/service-writer.sh"          "${CORTEX_DEPLOY_HOME}
 
 restart_fleet_bus() {
   # macOS launchd
-  if launchctl list com.hermes.cortex-bus 2>/dev/null | grep -q "PID"; then
+  if launchctl list com.hermes.fleet-bus 2>/dev/null | grep -q "PID"; then
     info "  Restarting Agent Bus (launchd)…"
     # unload+load (not bootout+bootstrap): the Hermes gateway lifecycle guard
     # (cron/lifecycle_guard.py) blocks literal `launchctl bootstrap` inside the
     # gateway process — even for non-gateway services. unload+load reloads the
     # plist with identical semantics and is not in the guard's blocked set.
-    launchctl unload "${HOME}/Library/LaunchAgents/com.hermes.cortex-bus.plist" 2>/dev/null || true
-    launchctl load "${HOME}/Library/LaunchAgents/com.hermes.cortex-bus.plist" 2>/dev/null || true
+    launchctl unload "${HOME}/Library/LaunchAgents/com.hermes.fleet-bus.plist" 2>/dev/null || true
+    launchctl load "${HOME}/Library/LaunchAgents/com.hermes.fleet-bus.plist" 2>/dev/null || true
     return
   fi
   # Linux systemd (scope-aware: system scope on migrated hosts, user scope elsewhere)
-  if SERVICE_CTL is-active cortex-bus >/dev/null 2>&1; then
+  if SERVICE_CTL is-active fleet-bus >/dev/null 2>&1; then
     info "  Restarting Agent Bus (systemd)…"
     systemctl daemon-reload 2>/dev/null || true
     systemctl --user daemon-reload 2>/dev/null || true
     # Suppress the user-scope twin when the system unit owns the bus:
     # an inactive-but-present user unit gets STARTED by `--user restart`,
     # then fights the system unit for port 8903 (crash loop, 2026-09-09).
-    if systemctl list-unit-files cortex-bus.service --no-legend 2>/dev/null | grep -q '^cortex-bus'; then
-      systemctl --user stop cortex-bus 2>/dev/null || true
-      systemctl --user mask cortex-bus 2>/dev/null || true
+    if systemctl list-unit-files fleet-bus.service --no-legend 2>/dev/null | grep -q '^fleet-bus'; then
+      systemctl --user stop fleet-bus 2>/dev/null || true
+      systemctl --user mask fleet-bus 2>/dev/null || true
     fi
-    SERVICE_CTL restart cortex-bus 2>&1 | sed 's/^/    /'
+    SERVICE_CTL restart fleet-bus 2>&1 | sed 's/^/    /'
   fi
 }
 
@@ -2639,7 +2631,7 @@ remove_cost_tracking() {
   # "cost keys NOT dropped…" on EVERY update. That line is not cosmetic: the queue-driven
   # updater treats exit=1 (the soft "nothing to update" code) as success ONLY when stderr is
   # empty (ops/scripts/agent/agent-message-handler.py l.519-522), so a harmless warning turned
-  # a completed update into "❌ cortex-update failed" across the fleet (operator, 2026-10-29).
+  # a completed update into "❌ fleet-update failed" across the fleet (operator, 2026-10-29).
   # Two changes, in order:
   #   1. the keys are ABSENT ⇒ no interpreter, no output, done;
   #   2. the keys are PRESENT ⇒ use an interpreter that can actually import the loader, by
@@ -2749,7 +2741,7 @@ verify_services() {
     for plist in "$HOME/Library/LaunchAgents/"*.plist; do
       [[ -e "$plist" ]] || continue
       case "$plist" in
-        *cortex-bus*|*cortex-dashboard*|*agent-inbox*|*ollama*|*health-server*|*gateway*)
+        *fleet-bus*|*cortex-dashboard*|*agent-inbox*|*ollama*|*health-server*|*gateway*)
           label=$(basename "$plist" .plist)
           if ! launchctl list "$label" &>/dev/null 2>&1; then
             warn "$label: not registered with launchd"
@@ -3064,7 +3056,7 @@ install_precommit_hook() {
 
 main() {
   # ── Single-instance mutex (single-instance deploy lock) ──────────────
-  # A concurrent cortex-update on the SAME repo (same CORTEX_DEPLOY_HOME) must
+  # A concurrent fleet-update on the SAME repo (same CORTEX_DEPLOY_HOME) must
   # refuse: both would unlock the same immutable enforcement files and race on
   # the deploy marker (observed: two `fleet-update.sh --force-all` in parallel
   # on moses). The per-deploy-home lock file means DIFFERENT repos on one server
@@ -3333,7 +3325,7 @@ main() {
   # schema below, which is register_orch-limited for the same reason).
   local mem_provider=""
     # Read memory.provider through the single hermes-adapter seam. This is the
-    # ONLY way cortex-update touches a Hermes config value — prefers the public
+    # ONLY way fleet-update touches a Hermes config value — prefers the public
     # `hermes config get` CLI, falls back to a raw PyYAML read via the cortex
     # venv (no hermes_cli import, no hermes binary required), fail-open empty.
     # A bare python3 without PyYAML would return empty and skip the migration
@@ -3725,10 +3717,10 @@ main() {
       # ── Non-orch guard: detect orchestrator-only service components ──
       # Bus server, nginx, systemd services — should not run on non-orch agents
       local _warned=false
-      if systemctl --user is-active cortex-bus &>/dev/null 2>&1; then
-        warn "🚫 Bus daemon (cortex-bus) running on non-orch agent — uninstall with:"
-        warn "    systemctl --user stop cortex-bus"
-        warn "    systemctl --user disable cortex-bus"
+      if systemctl --user is-active fleet-bus &>/dev/null 2>&1; then
+        warn "🚫 Bus daemon (fleet-bus) running on non-orch agent — uninstall with:"
+        warn "    systemctl --user stop fleet-bus"
+        warn "    systemctl --user disable fleet-bus"
         _warned=true
       fi
       if pgrep -f fleet_bus.server &>/dev/null 2>&1; then
@@ -3828,7 +3820,7 @@ main() {
   fi
 
   # ── Bridge KillMode auto-repair (fleet update path) ────────
-  # Every cortex-bridge-*.service is Type=oneshot, whose systemd default
+  # Every fleet-bridge-*.service is Type=oneshot, whose systemd default
   # KillMode (control-group) tears down the unit cgroup when the tick's
   # ExecStart exits — SIGTERMing any child the job detached (the
   # UPDATE_REQUEST worker agent-message-handler.py spawns with

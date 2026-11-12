@@ -23,7 +23,7 @@ OUT="${1:-$REPO/docs/evidence/gateway-cutover-evidence.md}"
 GUARD="$DEPLOY/scripts/fleet_gateway/guard_distinct_token.py"
 PROD_CONFIG="$DEPLOY/gateway.yaml"
 SECOND_CONFIG="$DEPLOY/gateway-esther0001.yaml"
-PROBE_UNIT="$HOME/.config/systemd/user/cortex-gateway-guard-probe.service"
+PROBE_UNIT="$HOME/.config/systemd/user/fleet-gateway-guard-probe.service"
 
 FAILED=0
 declare -a LINES=()
@@ -84,15 +84,15 @@ ExecStartPre=/usr/bin/python3 %h/.steadfaste-fleet/scripts/fleet_gateway/guard_d
 ExecStart=/bin/true
 PROBE
   systemctl --user daemon-reload >/dev/null 2>&1
-  systemctl --user start cortex-gateway-guard-probe.service >/dev/null 2>&1
+  systemctl --user start fleet-gateway-guard-probe.service >/dev/null 2>&1
   PROBE_RC=$?
-  PROBE_STATE="$(systemctl --user show cortex-gateway-guard-probe.service -p ActiveState -p ExecMainStatus --value 2>/dev/null | tr '\n' ' ')"
-  PROBE_JOURNAL="$(journalctl --user -u cortex-gateway-guard-probe.service --no-pager -n 20 2>/dev/null | grep -m1 'guard:' || echo '(no guard line)')"
+  PROBE_STATE="$(systemctl --user show fleet-gateway-guard-probe.service -p ActiveState -p ExecMainStatus --value 2>/dev/null | tr '\n' ' ')"
+  PROBE_JOURNAL="$(journalctl --user -u fleet-gateway-guard-probe.service --no-pager -n 20 2>/dev/null | grep -m1 'guard:' || echo '(no guard line)')"
   rm -f "$PROBE_UNIT"
   systemctl --user daemon-reload >/dev/null 2>&1
-  systemctl --user reset-failed cortex-gateway-guard-probe.service >/dev/null 2>&1
+  systemctl --user reset-failed fleet-gateway-guard-probe.service >/dev/null 2>&1
   _say '```'
-  _say "\$ systemctl --user start cortex-gateway-guard-probe.service"
+  _say "\$ systemctl --user start fleet-gateway-guard-probe.service"
   _say "start exit=$PROBE_RC   (expected: non-zero)"
   _say "unit state: $PROBE_STATE"
   _say "journal   : $PROBE_JOURNAL"
@@ -157,11 +157,11 @@ _say "## 6. Live bot untouched, enforcement locked"
 _say ""
 _say '```'
 LIVE_PID="$(systemctl --user show hermes-gateway.service -p MainPID --value 2>/dev/null)"
-SECOND_STATE="$(systemctl --user is-active cortex-gateway-esther0001.service 2>/dev/null)"
+SECOND_STATE="$(systemctl --user is-active fleet-gateway-esther0001.service 2>/dev/null)"
 LOCKED="$(hermes-plugin-lock status 2>/dev/null | grep -c '^----i')"
 UNLOCKED="$(hermes-plugin-lock status 2>/dev/null | grep -vc '^----i')"
 _say "hermes-gateway.service (LIVE) MainPID : ${LIVE_PID:-<not running>}"
-_say "cortex-gateway-esther0001.service     : ${SECOND_STATE:-<unknown>}"
+_say "fleet-gateway-esther0001.service     : ${SECOND_STATE:-<unknown>}"
 _say "enforcement targets locked            : $LOCKED"
 _say "enforcement targets unlocked          : $UNLOCKED   (expected 0)"
 _say '```'

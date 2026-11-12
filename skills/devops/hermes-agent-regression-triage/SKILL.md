@@ -207,7 +207,7 @@ It self-cleans via the silent `*_RESULT` handling.
 
 - `deploy-load-verification` — deployed-vs-repo matching (complementary)
 - `fleet-commands` — full bus dispatch protocol
-- `cortex-deployment-sync` — cortex update mechanics
+- `fleet-deployment-sync` — cortex update mechanics
 - `references/update-channel-resolution-timeout.md` — `hermes update` dies at
   channel resolution: partial-clone probe recipe and ruling-out measurements
 - Reference: `references/2026-08-25-stdio-children-dead-inversion.md` — full case study

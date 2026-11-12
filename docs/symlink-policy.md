@@ -133,7 +133,7 @@ transparently — no data is lost.
 ├── sessions/             [REAL]    ├── mcp-servers/      [REAL]
 ├── data/                 [REAL]    ├── evals/            [REAL]
 ├── ... (Hermes runtime)            ├── certs/            [REAL]
-│                                   ├── cortex-bus/      [REAL]
+│                                   ├── fleet-bus/      [REAL]
 │                                   ├── bin/              [REAL]
 ├── scripts → .steadfaste-fleet/       │
 │  .env                  [REAL]     │
@@ -171,7 +171,7 @@ The exception is container/CI environments with `--read-only` root filesystems
 
 ### Created during initial setup
 
-The symlinks below are created once during `install.sh` or `cortex-setup.sh`.
+The symlinks below are created once during `install.sh` or `fleet-setup.sh`.
 `fleet-update.sh` does NOT manage them — it only deploys content.
 
 ### What to do if a symlink breaks

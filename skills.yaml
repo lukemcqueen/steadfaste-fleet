@@ -14,7 +14,7 @@
 #
 # Consolidated 3 (2026-11-06): route → execute → verify.
 #   - task-orient absorbed task-start, agent-flow, session-start-discipline, reasoning-patterns
-#   - execute-right absorbed agent-contract, survey-before-action, cortex-preflight, prove-before-create, test-driven-development
+#   - execute-right absorbed agent-contract, survey-before-action, fleet-preflight, prove-before-create, test-driven-development
 #   - verify-and-ship absorbed change-checklist, reflexion-check
 # The enforcer _REQUIRED_SKILLS and doctor check_skills lists MUST stay in
 # sync with this section — any change here is a change to the write-gate.
@@ -50,5 +50,5 @@ on_task:
   pipeline:
     - name: ci-cd-pipeline
       why: GitHub Actions, caching, deployment patterns
-    - name: cortex-deployment-sync
+    - name: fleet-deployment-sync
       why: Pull-latest / fleet-update invocation sequence, immutable-file deploy, enforcer bypass forms

@@ -224,10 +224,10 @@ def _bridge_owned() -> set:
     wants = Path.home() / ".config" / "systemd" / "user" / "timers.target.wants"
     if not wants.is_dir():
         return set()
-    prefix, suffix = "cortex-bridge-", ".timer"
+    prefix, suffix = "fleet-bridge-", ".timer"
     out: set[str] = set()
     try:
-        for p in wants.glob("cortex-bridge-*.timer"):
+        for p in wants.glob("fleet-bridge-*.timer"):
             n = p.name
             if n.startswith(prefix) and n.endswith(suffix):
                 out.add(n[len(prefix):-len(suffix)])

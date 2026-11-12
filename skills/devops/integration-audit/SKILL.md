@@ -9,7 +9,7 @@ description: >-
   deployed-state drift, doctor, and syntax verification.
 pinned: true
 related_skills:
-  - cortex-preflight
+  - fleet-preflight
   - change-checklist
   - fleet-management
   - adversarial-verifier

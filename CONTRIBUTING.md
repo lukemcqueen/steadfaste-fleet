@@ -20,7 +20,7 @@
 - **Canonical skills** in `skills/` — organized by domain
 - **Documentation** in `docs/` — guides, templates, troubleshooting
 - **Deployment configs** in `deploy/` — nginx, Docker, patches
-- **Service/agent infra** in `ops/services/` (cortex-bus, dashboard) and `mcp-servers/` (fleet-bus-mcp, loop-governance)
+- **Service/agent infra** in `ops/services/` (fleet-bus, dashboard) and `mcp-servers/` (fleet-bus-mcp, loop-governance)
 
 When you make an improvement here, every agent running `fleet-update.sh` gets it
 on their next pull. This is the force multiplier.
@@ -32,7 +32,7 @@ Load them at the start of any contribution session:
 
 | Skill | What it covers | Load when ... |
 |-------|---------------|---------------|
-| `survey-before-action` | Pre-flight checklist — search existing resources + repo-specific pre-flight (git search, Hermes boundary, deploy verification; absorbed cortex-preflight 2026-08-20) | **Always** — before any file create/modify |
+| `survey-before-action` | Pre-flight checklist — search existing resources + repo-specific pre-flight (git search, Hermes boundary, deploy verification; absorbed fleet-preflight 2026-08-20) | **Always** — before any file create/modify |
 | `engineering-approach` | Communication standards, CLI design, version management | **Always** — communication with the user |
 | `public-contribution` | Decision tree for what to share, genericization patterns, commit workflow | When deciding what belongs in the public repo |
 | `repo-organization` | Canonical directory structure, naming conventions, consolidation rules | When deciding where a file goes |

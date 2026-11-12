@@ -129,4 +129,4 @@ immune to wall-clock races.
   (429 under pressure); this doc is the client's response to that signal.
 - [Inner Body JSON Fix](inner-body-json-fix.md) — the `body` auto-parse the
   outbox relies on for stable hashing.
-- `skills/devops/cortex-bus*` — bus diagnostics and operations.
+- `skills/devops/fleet-bus*` — bus diagnostics and operations.

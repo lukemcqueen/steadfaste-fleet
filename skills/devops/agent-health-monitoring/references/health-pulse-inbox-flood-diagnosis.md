@@ -25,7 +25,7 @@ Accumulation means the anchor-keep consumer is not pruning.
 health-vector-push.sh (every 10 min via launchd/systemd/cron)
   └─ POST /api/send {from: "titus", subject: "health", body: "{...}"}
       └─ Inbox API creates message file with status: unread
-          └─ File lands at the file-based inbox (legacy — see cortex-bus skill for current)\n
+          └─ File lands at the file-based inbox (legacy — see fleet-bus skill for current)\n
 [Orchestrator Side (Moses)]
 orch-team-health.py (no_agent cron, every 10 min)
   └─ GET /api/inbox?topic=health&limit=20

@@ -457,7 +457,7 @@ ACTUAL_HOOKS_RESOLVED=$(cd "$ACTUAL_HOOKS" 2>/dev/null && pwd || echo "$ACTUAL_H
 if [[ "$ACTUAL_HOOKS_RESOLVED" != "$EXPECTED_HOOKS" ]]; then
     # Pinned-repo carve-out: pin_repos_with_own_hooks() sets core.hooksPath
     # to a repo's OWN .git/hooks to preserve deploy-bare-repo hooks, and
-    # cortex-update refreshes the cortex hook FILES there. Governance IS
+    # fleet-update refreshes the cortex hook FILES there. Governance IS
     # running — the tripwire only exists to catch hooksPath pointing at a
     # dir with NO cortex hooks at all. Accept when the hooks dir carries
     # any cortex-managed hook (banner match); otherwise fail closed.
@@ -525,17 +525,17 @@ _sha256() {
 
 # ── Dogfood gate: deployed must match repo before commit ─────
 # P1-A hardening (2026-07-31): the previous self-heal auto-deployed the
-# enforcer via direct `sudo unlock + cp + lock`, bypassing cortex-update
+# enforcer via direct `sudo unlock + cp + lock`, bypassing fleet-update
 # (the sanctioned deploy path). Now:
 #   • Trigger is COMMITTED HEAD ≠ deployed (a dirty working tree is never
 #     trusted — editing the repo copy must not push it into the deployed
 #     enforcer). This also fixes the false block: when HEAD == deployed but
-#     the working tree has uncommitted edits, cortex-update could not have
+#     the working tree has uncommitted edits, fleet-update could not have
 #     resolved the old check (it deploys from origin, not local edits).
 #   • Orchestrator authoring a NEW enforcer change (AGENT_ID=moses|esther
 #     AND the staged change touches the enforcer) → auto-deploy the working
 #     tree, so the commit that introduces the change can land (origin/main
-#     doesn't have it yet — cortex-update could not satisfy the check
+#     doesn't have it yet — fleet-update could not satisfy the check
 #     pre-push). The orchestrator is the sanctioned author of this file.
 #   • Everyone else with HEAD ≠ deployed → HARD BLOCK: run fleet-update.sh.
 #     No silent drift acceptance.
@@ -782,7 +782,7 @@ _COMMITTER_DENY_FILES=(
   "mcp-servers/task-mcp.py"           "mcp-servers/executor-mcp.py"
   # deploy/guard scripts + review pipeline
   "ops/scripts/pre-commit-score"      "ops/scripts/fleet-update.sh"
-  "ops/scripts/pre-push-pull"         "ops/scripts/cortex-update.sh"
+  "ops/scripts/pre-push-pull"         "ops/scripts/fleet-update.sh"
   "ops/scripts/orch-bus/adversarial-review.py"
   "ops/scripts/manage/record-review.py"
   "ops/scripts/plan-review-check.py"
@@ -1455,7 +1455,7 @@ ORCHESTRATOR_ONLY_PATHS=(
   "^ops/scripts/pre-commit-score$"
   "^ops/scripts/pre-push-pull$"
   "^ops/scripts/install/"
-  "^ops/scripts/cortex-update\.sh$"
+  "^ops/scripts/fleet-update\.sh$"
   "^ops/scripts/manage/fleet_doctor/"
   "^skills/"
   "^tests/"
@@ -1478,7 +1478,7 @@ if [[ -n "$BLOCKED" ]]; then
   # array's paths (tests/, skills/, AGENTS.md, docs/templates/, install/…) are
   # open to committers by the operator's decision; the 16 files the array named
   # that a committer must still NOT touch (pre-commit-score, fleet-update.sh,
-  # pre-push-pull, cortex-update.sh) are now enforced by the _COMMITTER_DENY_*
+  # pre-push-pull, fleet-update.sh) are now enforced by the _COMMITTER_DENY_*
   # deny-list instead. Only plain non-orch agents are refused here.
   AGENT_TYPE="server"
   if _detect_orch; then

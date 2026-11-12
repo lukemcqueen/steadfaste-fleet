@@ -176,9 +176,9 @@ def test_resolve_mem_password_falls_back_to_cortex_env(tmp_path, store_module, m
     """
     monkeypatch.delenv("MYCORTEX_MEM_PASSWORD", raising=False)
     cortex_env = tmp_path / ".env"
-    cortex_env.write_text("MYCORTEX_MEM_PASSWORD=secret-from-cortex-env\nOTHER_KEY=1\n")
+    cortex_env.write_text("MYCORTEX_MEM_PASSWORD=secret-from-fleet-env\nOTHER_KEY=1\n")
 
-    assert store_module.resolve_mem_password(env_paths=[cortex_env]) == "secret-from-cortex-env"
+    assert store_module.resolve_mem_password(env_paths=[cortex_env]) == "secret-from-fleet-env"
 
 
 def test_resolve_mem_password_missing_env_returns_empty(tmp_path, store_module, monkeypatch):
