@@ -27,7 +27,10 @@ Send structured operational commands from the orchestrator (Moses) to any fleet 
 
 **Corrected 2026-08-02: Moses DOES run `agent-message-handler.py` on itself** (cron list shows it every 5 min, thousands of runs). It processes `inbox_moses` — `*_RESULT` replies, silent noise subjects (DOCTOR_TEST/STATUS_REQUEST/HEARTBEAT/PING), and any registered data-subjects. **Unknown subjects get ARCHIVED + an error response sent** within minutes of landing. So any NEW inbound message type to `inbox_orchestrator` (fleet agents sending data TO the orchestrator) MUST get a handler branch first, or the payload is destroyed from the live flow. Example: "Skill Stub Recovery" messages (full skill content from agents) were eaten as unknown until the handler was patched to stage them to `state/skill-stub-recovery/` (commit 8a38e486). Design: agents CANNOT write the repo — they send payloads to `inbox_orchestrator`; the handler stages them to a state dir; the orchestrator evaluates/copies later (store-first, evaluate-later).
 
-**Primary tool:** `fleet send <agent> <subject> <body>` (admin CLI, operates via docker exec into Postgres)
+**Primary tool:** `fleet send <agent> <subject> <body>` — invoke it as
+`~/.steadfaste-fleet/scripts/fleet send …` (the DEPLOYED wrapper; `fleet` is
+NOT on PATH — a bare `fleet` answers `command not found`. The repo keeps the
+launcher at `ops/scripts/fleet/bin/fleet` + the module beside it.)
 
 **Round-trip tool:** `fleet exec <agent> <script> [args...]` (sends EXEC, polls up to 5min for EXEC_RESULT)
 
@@ -543,6 +546,13 @@ After they report back, fix the identified issue (corrupt state file, handler cr
 
 ## Pitfalls
 
+- **`fleet` is not on PATH — always invoke the deployed wrapper by full path.**
+  `command -v fleet` finds nothing (nothing in the repo creates a PATH link;
+  the wrapper `~/.steadfaste-fleet/scripts/fleet` execs `fleet.py` beside it,
+  and the repo layout is `ops/scripts/fleet/bin/fleet` + `fleet/fleet.py` one
+  level up). A bare `fleet send …` / `fleet exec …` fails with `command not
+  found` while the tool works fine — write the full path, or `cd` into the
+  launcher's directory.
 - **Reads succeed while sends fail — `_bus_post` Bearer→Basic cascade was gated `not fallback` (FIXED 2026-08-30, commit `0302c267`).** When the primary bus was unreachable and the fallback proxy required Basic auth (nginx validates Basic, ignores Bearer), `bus_send`/`fleet send` failed with 401 while `bus_list_queues`/`fleet status` still worked (`_bus_get` had no gate). The backup orchestrator could read the fleet bus but never dispatch — exactly the failover path it exists for. Regression test: `test_bus_post_fallback_retries_basic_auth` (tests/test_bus_outbox.py). Symptom to recognize: `fleet status` says "Bus ok" but `fleet send` returns `Fallback bus also failed: HTTP Error 401`. Both `_bus_post` and `_bus_get` now retry Basic on primary AND fallback.
 - **UPDATE_REQUEST on a host with a stale/off-main repo silently succeeds without deploying (2026-08-21).** A host whose repo is (a) on a non-main branch (doctor `Repo branch` WARN — e.g. a leftover `titus/*` PR branch) or (b) pulling from a stale origin (`Repo sync` PASS with origin/main pinned at an old SHA) will report `UPDATE_RESULT success=true` with `git_sha_before == git_sha_after` — the handler's `git pull origin main` doesn't move a divergent branch, and fleet-update deploys whatever the working tree already has. **Check the target's doctor state BEFORE dispatching:** `fleet exec <agent> fleet-doctor.py --quiet` and read `Repo branch` / `Repo sync` / `Deploy sync`. If the target won't move, don't trust a same-SHA UPDATE_RESULT.
 - **Stale-host remediation: CLASSIFY with `git-main-sync.sh --check` before dispatching, and do NOT assume it is out of bus reach.** The deployed `git-main-sync.sh` supports a report-only mode — `fleet exec <agent> git-main-sync.sh --check --output-schema RAW` prints branch + `behind/ahead` and changes nothing. That is the cheapest way to tell the three cases apart, and the fix differs per case:

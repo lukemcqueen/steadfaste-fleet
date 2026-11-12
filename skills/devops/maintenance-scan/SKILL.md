@@ -197,6 +197,8 @@ looks for will otherwise certify itself.
 - **Prove the tightened warning BOTH ways** — it must still fire on the case it exists for and go
   silent on the case that was noise (see `change-checklist` Phase 1.5).
 
+**Adding a NEW doctor check** (not just fixing an existing finding) follows a specific leaf-module + registration shape so it is hermetic-testable and deploys — see `references/adding-doctor-checks.md`.
+
 ### Step 8: Fix
 Fix each issue without asking (Principle 2 — Be Proactive). Only escalate:
 - Data loss (rm -rf, DROP TABLE)

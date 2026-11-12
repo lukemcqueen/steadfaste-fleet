@@ -505,6 +505,15 @@ instead of asserting it — the claim a reviewer otherwise files as unverified �
 cheap half of the check, because the expensive half (the fixtures) is already written. Drive all
 of it against a THROWAWAY store: repoint the component's state directory at a temp path and
 never let the probe read or write live state, or the measurement mutates the thing it measures.
+**Repointing the state dir does NOT cover a module-level writer that hardcodes a host-global
+path — redirect the FUNCTION, not just the directory.** A session-marker function that writes
+`~/.hermes/session.id` (or any fixed absolute path) ignores the repointed dir, so a probe that
+simulates the module's own hooks (skill_view, begin_change) still clobbers the live file through
+the invoked module function. Monkeypatch that function to write into the throwaway path, and
+assert the live file's content is byte-unchanged after the probe runs. Sibling trap: when the
+probe REPLICATES a writer's raw writes instead of calling it, it must also replicate the
+writer's `mkdir(parents=True)` — the module's own function does it, the probe's raw
+`marker.write_text("")` does not, and the crash reads as a module bug.
 Add boundary cases to the same table while the harness exists — the inputs the existing tests
 never drive (a field present but its companion absent, a path that no longer resolves) — because
 executing the changed path is the only thing a static scan cannot do for you, and it is where

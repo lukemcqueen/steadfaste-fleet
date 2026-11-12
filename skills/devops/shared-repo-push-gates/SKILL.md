@@ -214,6 +214,11 @@ and invalidates the receipt, so push immediately after closing. Full detail:
   read probe is refused with no lock held, switch TOOL rather than rewording it: `read_file` and
   `search_files` are lock-free and cover the same ground (a grep over file contents, a listing that
   includes dotfiles). Rewording the same probe burns the call twice and teaches nothing.
+  **The sanctioned lock-free carve-outs match the BARE command only** — the enforcer's own
+  DOGFOOD-REQUIRED remedy (`bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh`) runs without a
+  lock, but `… | tail -5` or any compound is classified write-capable and refused with the generic
+  gate-2 text, which reads like a missing lock. Run the sanctioned command ALONE, then read its
+  output in the next call.
 - **A refusal naming `reviewed_blobs` means the receipt carries no blob list.** The receipt
   writer loads a range-blob helper by a repo-relative path resolved against the DEPLOYED root; if
   that file was never registered for deploy it is absent there, the receipt is written without
@@ -981,6 +986,12 @@ written while every code path looked correct.
   twice before `--git-dir=.git` produced the commit. Verify subject with `git log -1 --format=%s`.
   Prefer `-F <message-file>` whenever you control the file, but `--git-dir=.git` + pathspec is the
   reliable fallback when a multi-line body is already composed.
+  **A pathspec built from `git diff --cached --name-only --no-renames` COLLAPSES renames and
+  silently drops the sibling content edits.** The `--no-renames` list shows a rename as one
+  added path, so `git commit -F <msg> -- $(…)` lands the rename ('1 file changed') and leaves
+  the edited content files UNSTAGED — measured twice in one session. After ANY commit that used
+  a generated pathspec, `git status --short` must be EMPTY; when edits remain, commit them with
+  explicit paths (same message file) rather than re-running the generator.
 
 ## Verification
 

@@ -197,6 +197,21 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   derive expectations from the in-range source of truth, and exit a refused
   close via `rereview_change` (NEW note + evidence), never an unchanged
   `end_change`. Mechanics: `references/close-gate-review.md`.
+- **The per-blob window cannot see git rename pairs** — a rename-heavy range makes
+  EVERY renamed file come back as 'is this a rename? / confirm provenance'
+  (scope-drift), and a constitution rule claiming 'the file list shows both
+  paths' does not fix it because the window's file list genuinely lacks the
+  pair. The window CAN read the file's own text: put an HTML-comment provenance
+  line in each renamed file ('renamed from <old path> in the <sweep> sweep,
+  commit <sha>; content predates the range') and re-review — the finding resolves
+  on the file's own statement. Bulk-annotate all renamed files at once (git diff
+  --name-status -M against the range base) instead of fighting one rereview at a
+  time; the note is not in the per-blob material.
+- **Documented keeps still get flagged** — the reviewer reads the keep contract
+  literally: a kept token must carry its keep label ON ITS LINE ('kept name — …'
+  / STALE), not only in a central keep-list doc. Label the token inline and
+  verify the claim it rests on (e.g. the script that actually writes the kept
+  path) before re-reviewing.
 
 **Phase 2 — multi-OS:** hardcoded paths → portability helpers; systemctl vs
 launchctl vs brew by host.
