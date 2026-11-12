@@ -300,3 +300,5 @@ Doctor now {HEALTHY|WARNING|PASS} ✅
 ## Bonded Rule
 
 Do NOT ask "what should I work on?" after "look for work". Run the scan first.
+
+<!-- strand-e2e-test-1794477749 -- removed by esther after validating the auto-reconciler -->
