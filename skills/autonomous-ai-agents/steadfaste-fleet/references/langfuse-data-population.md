@@ -1,3 +1,5 @@
+<!-- Renamed from skills/autonomous-ai-agents/hermes-cortex/references/langfuse-data-population.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
+
 # Langfuse Sample Data Population
 
 When the Langfuse web container cycles restart (Next.js exits after init, Docker restart:always kicks in), the API is only available in brief ~2-second windows. Direct Postgres insertion via `docker exec` bypasses this entirely.

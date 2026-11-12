@@ -1,3 +1,5 @@
+<!-- Renamed from skills/autonomous-ai-agents/hermes-cortex/references/langfuse-v3-migration.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
+
 # Langfuse v3 Migration
 
 **Commits:** `650fc94` (added v2) → `a51c3a0` (upgraded to v3)

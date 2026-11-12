@@ -1,3 +1,5 @@
+<!-- Renamed from skills/autonomous-ai-agents/hermes-cortex/references/offline-knowledge-subcommands.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
+
 # offline_knowledge.py — Subcommand Architecture & Known Gaps
 
 ## Subcommand Pattern

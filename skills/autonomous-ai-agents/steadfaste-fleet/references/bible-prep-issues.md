@@ -1,3 +1,5 @@
+<!-- Renamed from skills/autonomous-ai-agents/hermes-cortex/references/bible-prep-issues.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
+
 # Known Issues — Offline Bible Prep
 
 Found while syncing steadfaste-fleet `d185ea1` (June 5, 2026). Both issues below exist in the repo and need upstream fixes from Moses.

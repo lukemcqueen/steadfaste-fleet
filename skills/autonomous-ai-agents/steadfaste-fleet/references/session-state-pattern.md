@@ -1,3 +1,5 @@
+<!-- Renamed from skills/autonomous-ai-agents/hermes-cortex/references/session-state-pattern.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
+
 # Session State: project_current_session.md
 
 The `project_current_session.md` file at each repo root is the canonical session state persistence mechanism for steadfaste-fleet projects. It replaces the legacy `.agentkore/sessions/current.md` pattern.

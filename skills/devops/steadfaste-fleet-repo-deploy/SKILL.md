@@ -6,6 +6,10 @@ description: "Use when committing to the steadfaste-fleet repo."
 platforms: [linux, macos]
 ---
 
+<!-- Provenance: renamed from skills/devops/hermes-cortex-repo-deploy/SKILL.md
+     on 2026-11-12 (hc→fleet brand sweep, commit 2dc01b0e). Content predates the
+     range; the range swept the brand tokens only. -->
+
 # Steadfaste Fleet Repo — Deploy & Push Gates
 
 Workflow for landing changes in `~/steadfaste-fleet` (shared public repo). The

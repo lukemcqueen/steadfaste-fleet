@@ -1,3 +1,5 @@
+<!-- Renamed from skills/autonomous-ai-agents/hermes-cortex/references/hermes-dot-dir-cleanup.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
+
 # Cleaning Up `.hermes/` Directories from Project Roots
 
 ## Problem

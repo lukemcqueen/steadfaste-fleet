@@ -1,3 +1,5 @@
+<!-- Renamed from skills/autonomous-ai-agents/hermes-cortex/references/install-update-650fc94.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
+
 # Install.sh Update — Langfuse, Cortex Dashboard, nginx
 
 **Commit:** 650fc94 (2026-06-04)

@@ -38,6 +38,10 @@ behavioral_principles:
 trigger: User asks to install, set up, deploy, or bootstrap Steadfaste Fleet, or mentions 'fleet setup', 'fleet components'. The cron health report shows an agent as 🔴 unreachable — the fix is often missing health server + agent registry on that machine.
 ---
 
+<!-- Provenance: renamed from skills/autonomous-ai-agents/hermes-cortex-setup/SKILL.md
+     on 2026-11-12 (hc→fleet brand sweep, commit 2dc01b0e). Content predates the
+     range; the range swept the brand tokens only. -->
+
 # Steadfaste Fleet Setup
 
 Walkthrough for installing the core Steadfaste Fleet components on a Linux (or macOS) machine. Each step is verified before moving to the next.

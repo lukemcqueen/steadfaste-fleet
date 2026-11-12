@@ -1,3 +1,5 @@
+<!-- Renamed from skills/autonomous-ai-agents/hermes-cortex/references/cron-model-migration.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
+
 # Cron Model Migration
 
 When switching an LLM-powered cron from one model/provider to another, **three layers** must be updated. Skipping any one leaves inconsistency — docs say one thing, cron runs another, script uses old model.

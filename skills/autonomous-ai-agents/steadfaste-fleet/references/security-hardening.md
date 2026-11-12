@@ -1,3 +1,5 @@
+<!-- Renamed from skills/autonomous-ai-agents/hermes-cortex/references/security-hardening.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
+
 # Steadfaste Fleet — Security Hardening Reference
 
 Commands and patterns for hardening a Steadfaste Fleet installation on macOS.

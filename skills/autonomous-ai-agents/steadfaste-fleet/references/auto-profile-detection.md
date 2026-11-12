@@ -1,3 +1,5 @@
+<!-- Renamed from skills/autonomous-ai-agents/hermes-cortex/references/auto-profile-detection.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
+
 # Auto-Profile Detection — Shell Wrapper Pattern
 
 Auto-inject `hermes --profile <name>` (the Hermes Agent CLI — a separate live

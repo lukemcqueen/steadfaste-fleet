@@ -1,3 +1,5 @@
+<!-- Renamed from skills/autonomous-ai-agents/hermes-cortex/references/2026-06-17-post-merge-bugfixes.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
+
 # Post-Merge Bugfix: Python 3.9 + Missing MAP Entry (2026-06-17)
 
 ## Context

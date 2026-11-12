@@ -1,3 +1,5 @@
+<!-- Renamed from skills/devops/hermes-cortex-maintenance/references/langfuse-cost-tracking-pricing-tiers.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
+
 # Langfuse Cost Tracking — Pricing Tiers, Backfill, Verification (3.206+/3.207+)
 
 Discovered 2026-08-11 while adding cost tracking to a self-hosted Langfuse

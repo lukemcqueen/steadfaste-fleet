@@ -1,3 +1,5 @@
+<!-- Renamed from skills/devops/hermes-cortex-maintenance/references/mcp-server-lifecycle.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
+
 # MCP Server Lifecycle — Add / Remove / Decommission
 
 How to manage MCP servers in `mcp_servers:` on an installed Cortex host

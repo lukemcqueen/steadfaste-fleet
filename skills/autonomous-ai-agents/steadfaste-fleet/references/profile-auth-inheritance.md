@@ -1,3 +1,5 @@
+<!-- Renamed from skills/autonomous-ai-agents/hermes-cortex/references/profile-auth-inheritance.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
+
 # Profile Auth.json Inheritance
 
 **DEPRECATED (June 2026):** Profile-per-project was abandoned. This file documents a problem that no longer applies with the current uber-agent + mycortex architecture. Kept for reference only.
