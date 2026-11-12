@@ -1,3 +1,4 @@
+<!-- renamed from skills/devops/auto-remediation/references/cortex-inbox-url.md in the cortex-to-fleet sweep; content predates the range (commit 353c3d54) -->
 # CORTEX_INBOX_URL Config Gap
 
 ## Failure Signal

@@ -1,3 +1,4 @@
+<!-- renamed from skills/devops/cortex-bus/references/forwarder-peer-resolution.md in the cortex-to-fleet sweep; content predates the range (commit 353c3d54) -->
 # Forwarder Role-Aware PEER Resolution — 2026-08-03
 
 ## The bug

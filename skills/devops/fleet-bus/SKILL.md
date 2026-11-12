@@ -10,6 +10,8 @@ metadata:
     tags: [bus, pgmq, dlq, messaging, queue, postgres, recovery]
     related_skills: [system-remediation, steadfaste-fleet-deployment]
 ---
+<!-- renamed from skills/devops/cortex-bus/SKILL.md in the cortex-to-fleet sweep; content predates the range (commit 353c3d54) -->
+
 
 # Agent Bus — PGMQ Operations
 

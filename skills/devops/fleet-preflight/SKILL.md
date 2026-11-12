@@ -14,6 +14,8 @@ related_skills:
   - change-checklist
   - agent-fundamentals
 ---
+<!-- renamed from skills/devops/cortex-preflight/SKILL.md in the cortex-to-fleet sweep; content predates the range (commit 353c3d54) -->
+
 
 # DEPRECATED — use `survey-before-action`
 

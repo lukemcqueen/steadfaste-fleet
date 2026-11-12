@@ -1,3 +1,4 @@
+<!-- renamed from skills/devops/cortex-deployment-sync/references/governance-deploy-session-2026-07-31.md in the cortex-to-fleet sweep; content predates the range (commit 353c3d54) -->
 # Governance Deploy Session Trace — 2026-07-31
 
 > ⚠️ **PARTIALLY SUPERSEDED (2026-08-04).** The immutable unlock→copy→re-lock

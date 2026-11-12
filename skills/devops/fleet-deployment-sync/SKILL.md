@@ -7,6 +7,8 @@ author: Steadfaste Fleet
 license: MIT
 platforms: [linux, macos]
 ---
+<!-- renamed from skills/devops/cortex-deployment-sync/SKILL.md in the cortex-to-fleet sweep; content predates the range (commit 353c3d54) -->
+
 
 # Cortex Deployment Sync
 

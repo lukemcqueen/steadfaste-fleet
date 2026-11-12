@@ -1,3 +1,4 @@
+<!-- renamed from skills/devops/cortex-bus/references/agent-registry.md in the cortex-to-fleet sweep; content predates the range (commit 353c3d54) -->
 # Agent Registry — Single Source of Truth for Agent Metadata
 
 ## Location

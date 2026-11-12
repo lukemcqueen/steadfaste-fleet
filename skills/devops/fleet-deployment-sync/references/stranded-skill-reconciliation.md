@@ -1,3 +1,4 @@
+<!-- renamed from skills/devops/cortex-deployment-sync/references/stranded-skill-reconciliation.md in the cortex-to-fleet sweep; content predates the range (commit 353c3d54) -->
 # Reconciling stranded deployed-only skills
 
 Topical depth for `fleet-deployment-sync` → "When the update reports stranded
