@@ -16,6 +16,24 @@ Governs how agent memory (MEMORY.md / USER.md) is structured, protected, and mai
 4. **Seed, don't migrate** — fresh installs get template seeds, not cloned memory from another machine.
 5. **Stratify by audience** — private facts → MEMORY.md. Public knowledge → `docs/`. Stale tasks → never save.
 
+## Writing to the brain — file tool only, never shell
+
+`~/brain` is deliberately NOT a git repo, so governance is repo-scoped and NO
+lock can ever cover a terminal write to it. The harness therefore sanctions
+only **file-tool** brain writes: `write_file`/`patch` with a path that resolves
+inside `~/brain`. Any shell write — `cat >`, `tee`, `>>`, heredoc, `echo`,
+`mkdir -p` — is refused with "no governed repo / no lock covers it" and the
+content is discarded, taking the lesson with it.
+
+- Save brain files (lessons, learnings, dream output, per-topic reference
+  `.md`) with `write_file(path="~/brain/<profile>/…", content=…)`; it creates
+  parent directories, so never `mkdir` first.
+- `save-lesson` and the learning-submission docs assume this form.
+- The read side is unaffected: `search_files`, `cd`, and the `mycortex` CLI
+  over `~/brain` stay free (reading never needs the write carve-out).
+- The carve-out relaxes ONLY the lock requirement — PII and adversarial gates
+  still apply to a brain write.
+
 ## MEMORY.md Structure
 
 Three sections, always in this order:
