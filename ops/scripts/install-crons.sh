@@ -599,6 +599,7 @@ if $UNINSTALL; then
     "agent-session-cache-build" \
     "agent-session-correction-scan" \
     "agent-session-mine" \
+    "agent-skill-drift-reconcile" \
     "agent-stale-ref-watchdog" \
     "agent-swap-refresh" \
     "agent-system-alert-watchdog" \
@@ -1098,6 +1099,19 @@ create_cron "agent-nginx-threat-pipeline" "0 5 * * *" \
   "" \
   "" \
   "telegram:${TELEGRAM_HOME_CHANNEL}" \
+  "" \
+  "true"
+
+# Skill-drift strand auto-recover (every 2h, no_agent) — reconciles any new
+# pure-superset skill strands back into the repo (the class-level fix for the
+# recurring doctor "skill drift" warn). Silent-when-clean; recovers are logged
+# locally, never spammed to the channel (internal housekeeping, not a user event).
+create_cron "agent-skill-drift-reconcile" "7 */2 * * *" \
+  "reconcile-skill-drift-auto.sh" \
+  "" \
+  "" \
+  "" \
+  "local" \
   "" \
   "true"
 

@@ -549,6 +549,17 @@ crons:
   no_agent: true
   model: ''
   provider: ''
+- name: agent-skill-drift-reconcile
+  scope: universal
+  schedule: 7 */2 * * *
+  script: reconcile-skill-drift-auto.sh
+  prompt: ''
+  skill: ''
+  deliver: local
+  workdir: ''
+  no_agent: true
+  model: ''
+  provider: ''
 - name: agent-no-verify-audit
   scope: universal
   schedule: '*/10 * * * *'
