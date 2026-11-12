@@ -31,10 +31,10 @@ no `brain-*` branches, no `legacy-brain/` directory, and no `private-data/`.
 ## The register() map
 
 `ops/scripts/fleet-update.sh` holds the deployment as data: a list of
-`register "<repo path>" "<deployed path>"` calls — **395** of them,
-of which **390** use the `${CORTEX_DEPLOY_HOME}/` deployed shape (the count the doc
+`register "<repo path>" "<deployed path>"` calls — **397** of them,
+of which **392** use the `${CORTEX_DEPLOY_HOME}/` deployed shape (the count the doc
 test parses) and **5** deploy to `${HOME}/…` paths (four langfuse files and the macOS
-dashboard plist). Reconcile on **395** when editing: 353 `register` + 42
+dashboard plist). Reconcile on **392** when editing: 355 `register` + 42
 `register_orch`. One-release shims each add an entry beside the renamed file they
 re-export (registered: `lib/cortex_bus.py` beside `lib/fleet_bus.py`;
 `manage/cortex_doctor/__init__.py` beside `manage/fleet_doctor/`;
@@ -48,9 +48,9 @@ stale — the doc test now passes against these numbers.
 `tests/test_repo_resource_paths.py` computes the map numbers, so change the doc in
 the same commit as any `register()` edit.)
 
-**The deployed path cannot be derived from the repo path.** Only 136 of the 390
+**The deployed path cannot be derived from the repo path.** Only 138 of the 392
 follow the obvious "strip the leading `ops/`" rule. **254 follow no rule at all**
-(plus the 5 `${HOME}/` shapes = 258 of the full 395),
+(plus the 5 `${HOME}/` shapes = 259 of the full 397),
 and every one of those also drops a subdirectory:
 
 | repo | deployed |
@@ -180,7 +180,7 @@ to `${CORTEX_DEPLOY_HOME}` (normally `~/.steadfaste-fleet`) and the mapping is
 | `ops/scripts/judgment.py` | `scripts/judgment.py` |
 | `ops/offline/hermes_paths.py` | `offline/hermes_paths.py` |
 
-Of the same 390 `${CORTEX_DEPLOY_HOME}/` `register()` calls (395 in total with the `${HOME}/` shapes), **253 follow no derivable rule** — the first two rows
+Of the same 392 `${CORTEX_DEPLOY_HOME}/` `register()` calls (397 in total with the `${HOME}/` shapes), **254 follow no rule at all** — the first two rows
 above both live under `ops/scripts/manage/` and deploy to different depths.
 
 So a component that *guesses* — strip `ops/`, strip a subdir, try a short list of

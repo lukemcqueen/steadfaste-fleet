@@ -180,6 +180,13 @@ done
 if [[ -f "${HOME}/.hermes/.env" ]]; then
   set -a; source "${HOME}/.hermes/.env"; set +a
 fi
+
+# CORTEX_* <-> FLEET_* compat mirror (env migration P4): keeps both spellings
+# resolving while hosts repoint their .env. Remove with release 2.
+if [[ -f "${REPO_DIR}/ops/scripts/lib/fleet-env-compat.sh" ]]; then
+  # shellcheck source=lib/fleet-env-compat.sh
+  source "${REPO_DIR}/ops/scripts/lib/fleet-env-compat.sh"
+fi
 CORTEX_DEPLOY_HOME="${CORTEX_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}"
 
 # ── Deploy-in-progress marker ───────────────────────────────────────────
@@ -612,6 +619,7 @@ register "ops/scripts/lib/toon_parse.py"                 "${CORTEX_DEPLOY_HOME}/
 # nothing about a module, and the old silent fallback to a PyYAML-less python3 made the
 # daily regression gate fail every day. Used by orch-daily-regression-gate.sh.
 register "ops/scripts/lib/python-with-module.sh"          "${CORTEX_DEPLOY_HOME}/scripts/lib/python-with-module.sh"
+register "ops/scripts/lib/fleet-env-compat.sh"            "${CORTEX_DEPLOY_HOME}/scripts/lib/fleet-env-compat.sh"
 # The CREATE step that pytest resolution depends on: idempotent, verified by import, age-gated
 # through ops/scripts/health/check-package-age.py. A harness that names a command a peer host does
 # not have has only moved the gap (ADV-13116-1 / ADV-13253-1).
@@ -932,6 +940,7 @@ register "docs/templates/fleet-gateway.service"     "${CORTEX_DEPLOY_HOME}/templ
 register "docs/templates/com.hermes.fleet-gateway.plist" "${CORTEX_DEPLOY_HOME}/templates/com.hermes.fleet-gateway.plist"
 register "ops/scripts/fleet_lib/tools.py"         "${CORTEX_DEPLOY_HOME}/scripts/fleet_lib/tools.py"
 register "ops/scripts/fleet_lib/models.py"        "${CORTEX_DEPLOY_HOME}/scripts/fleet_lib/models.py"
+register "ops/scripts/fleet_lib/env.py"           "${CORTEX_DEPLOY_HOME}/scripts/fleet_lib/env.py"
 
 # mycortex knowledge brain — schema, migration runner, import, CLI, parity harness
 register "ops/services/mycortex/migrate.py"          "${CORTEX_DEPLOY_HOME}/services/mycortex/migrate.py"
