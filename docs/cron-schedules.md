@@ -184,7 +184,7 @@ should be one consolidated pass — merge before you add a third slot.
 | `agent-auto-save-sessions` | `every 360m` | no_agent | `agent-auto-save-sessions.py` | local |
 | `agent-stale-ref-watchdog` | `0 5 * * *` | no_agent | `manage/agent-stale-ref-watchdog.sh` | origin |
 | `agent-swap-refresh` | `0 5 * * *` | no_agent | `agent-swap-refresh.py` | origin |
-| `agent-skill-drift-reconcile` | `0 */2 * * *` | no_agent | `manage/reconcile-skill-drift-auto.sh` | local |
+| `agent-skill-drift-reconcile` | `0 */2 * * *` | no_agent | `manage/agent-skill-drift-reconcile.sh` | local |
 | `agent-agents-md-prune-scan` | `0 4 * * 1` | no_agent | `agent-md-prune-scan.py` | local |
 | `agent-agents-md-prune-apply` | `30 4 * * 1` | LLM | (prompt) | telegram |
 | `cortex-bus-workday` | `0 8,20 * * 1-5` | LLM | session-active-guard.py | telegram |

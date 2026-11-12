@@ -552,7 +552,7 @@ crons:
 - name: agent-skill-drift-reconcile
   scope: universal
   schedule: 0 */2 * * *
-  script: reconcile-skill-drift-auto.sh
+  script: manage/agent-skill-drift-reconcile.sh
   prompt: ''
   skill: ''
   deliver: local

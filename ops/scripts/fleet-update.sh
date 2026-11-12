@@ -531,7 +531,7 @@ register "ops/scripts/post-commit-audit" "${CORTEX_DEPLOY_HOME}/scripts/post-com
 register "ops/scripts/prepare-commit-msg-session" "${CORTEX_DEPLOY_HOME}/scripts/prepare-commit-msg-session"
 register "ops/scripts/pre-push-pull" "${CORTEX_DEPLOY_HOME}/scripts/pre-push-pull"
 register "ops/scripts/manage/agent-no-verify-audit.py" "${CORTEX_DEPLOY_HOME}/scripts/manage/agent-no-verify-audit.py"
-register "ops/scripts/manage/reconcile-skill-drift-auto.sh" "${CORTEX_DEPLOY_HOME}/scripts/manage/reconcile-skill-drift-auto.sh"
+register "ops/scripts/manage/agent-skill-drift-reconcile.sh" "${CORTEX_DEPLOY_HOME}/scripts/manage/agent-skill-drift-reconcile.sh"
 register "ops/scripts/manage/agent-governance-auditor.py"            "${CORTEX_DEPLOY_HOME}/scripts/agent-governance-auditor.py"
 register "ops/scripts/manage/purge-stale-governance-locks.py" "${CORTEX_DEPLOY_HOME}/scripts/purge-stale-governance-locks.py"
 register "ops/scripts/manage/backfill-legacy-reaper-cycles.py" "${CORTEX_DEPLOY_HOME}/scripts/backfill-legacy-reaper-cycles.py"

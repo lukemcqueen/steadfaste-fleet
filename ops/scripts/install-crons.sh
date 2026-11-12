@@ -1107,7 +1107,7 @@ create_cron "agent-nginx-threat-pipeline" "0 5 * * *" \
 # recurring doctor "skill drift" warn). Silent-when-clean; recovers are logged
 # locally, never spammed to the channel (internal housekeeping, not a user event).
 create_cron "agent-skill-drift-reconcile" "0 */2 * * *" \
-  "manage/reconcile-skill-drift-auto.sh" \
+  "manage/agent-skill-drift-reconcile.sh" \
   "" \
   "" \
   "" \
