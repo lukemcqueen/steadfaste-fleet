@@ -8,6 +8,7 @@ behavioral_principles:
  - Always create a .env file in ~/steadfaste-fleet/ before running install-orch-crons.sh to avoid silent failure.
  - When sudo is unavailable, install Ollama from GitHub releases tarballs (not the official install.sh which requires root).
  - Before writing custom configs or inventing new approaches, check the repo's docs/ and ops/scripts/ first for existing documented solutions. Use the documented tools as primary; custom workarounds are a last resort.
+ - ⚠️ **Stale name — migrated.** Hermes Cortex was consolidated into steadfaste-fleet (repo ~/steadfaste-fleet, deploy ~/.steadfaste-fleet); the old hermes-cortex path is gone. Substitute ~/.steadfaste-fleet wherever this skill says hermes-cortex / ~/.hermes-cortex.
  - When setting up services on a target machine, inspect running configs FIRST — check /etc/nginx/sites-enabled/, systemctl --user list-units, ss -tlnp, ps aux. The deployed nginx upstream blocks define the correct internal ports. Never invent port assignments before checking what's already deployed. Check in order: (1) running machine configs, (2) hermes-cortex repo docs/, (3) agent-registry.template.json.
  - For systemd user services that run bun scripts, always set explicit PATH in Environment= — systemd does not inherit the user shell's PATH.
  - Verify each install step with a version check or doctor command before proceeding to the next.

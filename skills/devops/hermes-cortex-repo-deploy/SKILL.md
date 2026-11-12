@@ -6,6 +6,10 @@ description: "Use when committing to the hermes-cortex repo."
 platforms: [linux, macos]
 ---
 
+> ⚠️ **Stale name — migrated.** This skill governs the fleet repo, which is now **steadfaste-fleet**
+> (`~/steadfaste-fleet` repo, `~/.steadfaste-fleet` deploy). "Hermes Cortex" is the historical name;
+> the repo/home are the steady-fleet ones and the `hermes-cortex`/`~/.hermes-cortex` references are gone.
+
 # Hermes Cortex Repo — Deploy & Push Gates
 
 Workflow for landing changes in `~/steadfaste-fleet` (shared public repo). The

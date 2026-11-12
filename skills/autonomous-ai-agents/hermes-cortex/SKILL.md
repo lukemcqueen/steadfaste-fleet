@@ -6,6 +6,11 @@ tags: [setup, installation, mycortex, langfuse, dashboard, nginx, systemd, launc
 related_skills: [hermes-agent, docker-compose-common-issues]
 ---
 
+> ⚠️ **Stale name — migrated.** Hermes Cortex was consolidated into **steadfaste-fleet**: the
+> repo and deploy home are now `~/steadfaste-fleet` / `~/.steadfaste-fleet`; the old
+> `hermes-cortex` name and `~/.hermes-cortex` path are gone. Read this skill as governing the
+> steady-fleet deployment and substitute `~/.steadfaste-fleet` wherever it says `hermes-cortex`/`~/.hermes-cortex`.
+
 # Hermes Cortex Setup
 
 Hermes Cortex is the local AI infrastructure layer that provides:

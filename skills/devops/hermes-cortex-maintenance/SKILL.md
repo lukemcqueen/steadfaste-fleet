@@ -10,6 +10,11 @@ description: >-
   mycortex import, and recovery techniques.
 ---
 
+> ⚠️ **Stale name — migrated.** Hermes Cortex was consolidated into **steadfaste-fleet**: repo
+> `~/steadfaste-fleet`, deploy `~/.steadfaste-fleet`; the `~/.hermes-cortex` path is gone. Read
+> this as governing the steady-fleet deployment and substitute `~/.steadfaste-fleet` for
+> `hermes-cortex`/`~/.hermes-cortex`.
+
 # Hermes Cortex Maintenance v1.36.0
 
 > **Maintaining your Hermes Cortex install** — pulling upstream changes,
