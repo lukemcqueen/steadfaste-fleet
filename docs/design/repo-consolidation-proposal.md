@@ -73,7 +73,7 @@ meaning.
 ## Reference sweeps required by the moves (the real work)
 
 Every move rewrites references in: `ops/scripts/fleet-update.sh` register
-lines, `deploy-manifest.tsv` + `cortex_lib.paths.resolve_repo_resource`,
+lines, `deploy-manifest.tsv` + `fleet_lib.paths.resolve_repo_resource`,
 Hermes MCP registrations (`hermes mcp add <repo>/mcp-servers/…` — moving
 `mcp-servers/` requires re-registering the live MCP servers per the
 rename-sweep MCP recipe), cron jobs, tests (incl. golden-path fixtures),

@@ -159,7 +159,7 @@ finding it addressed came straight back on the next close.
 ## Never ASSUME a deployed path — resolve it; never let a fallback carry a conclusion
 
 The deployed path of a repo file CANNOT be derived from the repo path: 192 of ~289
-`register()` entries follow no rule (see the header of `ops/scripts/cortex_lib/paths.py`).
+`register()` entries follow no rule (see the header of `ops/scripts/fleet_lib/paths.py`).
 A probe that mirrors the repo layout under the deploy home therefore checks NOTHING, and
 paired with `2>/dev/null || echo "<conclusion>"` it prints that failure AS a finding — this
 is how the line "0 (deployed copy predates this commit)" reached a committed evidence file

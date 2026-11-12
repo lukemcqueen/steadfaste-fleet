@@ -1,6 +1,6 @@
 # Verifying a doctor check (hermetic RED/GREEN, no live files touched)
 
-For a new or changed check in `cortex_doctor/checks.py`, prove both branches
+For a new or changed check in `fleet_doctor/checks.py`, prove both branches
 against a temp tree, never by editing live host files (a ~/.claude/CLAUDE.md
 edit to test RED also trips the deployed doctor mid-test).
 
@@ -10,7 +10,7 @@ edit to test RED also trips the deployed doctor mid-test).
    package-relative imports (`from .immutability import ...`), so a bare
    `importlib.util.spec_from_file_location` + `exec_module` raises
    "attempted relative import with no known parent package". Put the doctor
-   package's dir on `sys.path` and `import cortex_doctor.checks`.
+   package's dir on `sys.path` and `import fleet_doctor.checks`.
 2. **Repoint the module's GLOBALS, not the files.** Checks read `HOME` /
    `CORTEX_REPO` at call time. Build a temp tree, plant the harness files
    there, then assign `chkmod.HOME = tmp` and `chkmod.CORTEX_REPO =

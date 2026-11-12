@@ -292,7 +292,7 @@ Every query tool (`task_pending`, `task_list`, `task_board`,
 scoped to the caller's OWN repo. Before this, they returned every repo's tasks,
 so an agent working in repo A adopted and reported work belonging to repo B.
 
-The repo is resolved by ONE helper — `ops/scripts/cortex_lib/session_repo.py`
+The repo is resolved by ONE helper — `ops/scripts/fleet_lib/session_repo.py`
 (`resolve_query_repo`), which mirrors the fleet's session-repo identity so task
 scoping and governance-lock identity agree:
 

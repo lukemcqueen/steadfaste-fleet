@@ -122,7 +122,7 @@ reason that file exists.
   `ops/services/mycortex-mem/context_tools.py` and
   `ops/scripts/session-autocheckpoint.py`, and pinned per chat by the
   fleet-gateway `command` backend for Pi:
-  `ops/scripts/cortex_gateway/agents.py` ("Declaring
+  `ops/scripts/fleet_gateway/agents.py` ("Declaring
   env: {\"CORTEX_SESSION_KEY\": \"{session_id}\"} makes each chat its own"),
   `ops/scripts/gateway-pi.example.yaml`.
 - `PI_SESSION_ID` — Pi's own variable, documented in the installed package at

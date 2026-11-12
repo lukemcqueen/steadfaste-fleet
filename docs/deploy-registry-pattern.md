@@ -63,7 +63,7 @@ and every one of those also drops a subdirectory:
 
 Two files under `ops/scripts/manage/` deploy to different depths. **Never guess a
 deployed path and never write a candidate list** — call
-`cortex_lib.paths.resolve_repo_resource()`, which reads the map — see the
+`fleet_lib.paths.resolve_repo_resource()`, which reads the map — see the
 **Repo-vs-Deployed Path Resolution** section at the end of this file.
 
 ## The generated manifest
@@ -78,7 +78,7 @@ ops/scripts/manage/task-db.py	/home/<user>/.steadfaste-fleet/scripts/task-db.py
 
 It is **generated, never hand-edited**, and lives at the deploy root rather than
 under `scripts/`, so the orphan sweep does not remove it. Read it with
-`cortex_lib.paths.deploy_manifest()`.
+`fleet_lib.paths.deploy_manifest()`.
 
 ## Adding a file
 
@@ -119,7 +119,7 @@ steadfaste-fleet/
 │   ├── deploy/      deploy helpers
 │   ├── install/     installers (fleet-profile.sh, bootstrap-brain.sh, …)
 │   ├── offline/     offline content tooling
-│   ├── scripts/     fleet-update.sh, cortex_lib/, health/, manage/, …
+│   ├── scripts/     fleet-update.sh, fleet_lib/, health/, manage/, …
 │   ├── services/    long-running services (mycortex-mem, …)
 │   └── web-cache/   web cache tooling
 ├── plugins/         Hermes plugins (governance-enforcer)
@@ -195,18 +195,18 @@ a path that exists in *neither* layout.
 resolver.**
 
 ```python
-## ── cortex_lib bootstrap — IDENTICAL in every MCP server; do not vary. ─────
-## cortex_lib/paths.py sits in the scripts dir in BOTH layouts (ops/scripts/
+## ── fleet_lib bootstrap — IDENTICAL in every MCP server; do not vary. ─────
+## fleet_lib/paths.py sits in the scripts dir in BOTH layouts (ops/scripts/
 ## in-repo, scripts/ deployed), so locate it by that dir rather than by guessing a
 ## relative depth. Guarded on purpose: the import failure is reported by whichever
 ## server actually needs the resource, naming what it wanted.
 resolve_repo_resource = repo_resource_candidates = None
 for _p in Path(__file__).resolve().parents:
-    if (_p / "cortex_lib" / "paths.py").is_file():
+    if (_p / "fleet_lib" / "paths.py").is_file():
         sys.path.insert(0, str(_p))
         break
 try:
-    from cortex_lib.paths import (  # noqa: E402
+    from fleet_lib.paths import (  # noqa: E402
         repo_resource_candidates, resolve_repo_resource)
 except ImportError:
     pass
@@ -215,7 +215,7 @@ _RESOURCE_REL = "ops/services/mycortex-mem/context_tools.py"
 _resource = resolve_repo_resource(_RESOURCE_REL) if resolve_repo_resource else None
 if _resource is None:
     _tried = ([str(p) for p in repo_resource_candidates(_RESOURCE_REL)]
-              if repo_resource_candidates else ["<cortex_lib.paths unavailable>"])
+              if repo_resource_candidates else ["<fleet_lib.paths unavailable>"])
     print(f"[my-server] ERROR: {_RESOURCE_REL} not found. Tried: "
           + ", ".join(_tried), file=sys.stderr)
     sys.exit(1)
@@ -255,7 +255,7 @@ One source of truth: the `register()` lines. The manifest is generated, never
 maintained by hand, and it lives at the deploy root (not under `scripts/`), so the
 deploy's orphan sweep does not remove it.
 
-Read it with `cortex_lib.paths.deploy_manifest()` (walk-up) or
+Read it with `fleet_lib.paths.deploy_manifest()` (walk-up) or
 `read_manifest(path)` (explicit path — use this in tests, since the repo has no
 manifest of its own and a walk-up lookup would always skip there).
 
