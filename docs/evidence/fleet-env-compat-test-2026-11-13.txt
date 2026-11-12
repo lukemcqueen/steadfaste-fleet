@@ -1,0 +1,10 @@
+# fleet-env-compat.sh hermetic test run — captured 2026-11-12 17:19 UTC
+# command: bash tests/test_fleet_env_compat.sh
+
+  ok  CORTEX_COMPAT_P1 mirrored to FLEET_COMPAT_P1
+  ok  FLEET_COMPAT_P2 mirrored to CORTEX_COMPAT_P2
+  ok  FLEET_COMPAT_P3 keeps its explicit value under both-set
+  ok  CORTEX_COMPAT_P3 keeps its explicit legacy value under both-set
+
+== RESULT: 4 ok, 0 failed ==
+exit_code=0

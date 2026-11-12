@@ -19,8 +19,17 @@ bad() { fails=$((fails+1)); echo "  FAIL $1"; }
 
 if [ ! -f "$COMPAT" ]; then bad "compat file missing: $COMPAT"; exit 1; fi
 
+# The compat iterates EVERY CORTEX_/FLEET_ var in the environment (env | sed), so
+# ambient leftovers on a host WOULD be mirrored and could confuse assertions.
+# Cleanse all test-prefixed vars before each phase.
+_cleanse_compat() {
+  local name
+  while IFS= read -r name; do [ -n "$name" ] && unset "$name"; done \
+    < <(env | sed -n 's/^\(CORTEX_COMPAT_[A-Z0-9_]*\|FLEET_COMPAT_[A-Z0-9_]*\)=.*/\1/p')
+}
+_cleanse_compat
+
 # (1) CORTEX_ -> FLEET_ mirror
-unset CORTEX_COMPAT_P1 FLEET_COMPAT_P1 CORTEX_COMPAT_P2 FLEET_COMPAT_P2 CORTEX_COMPAT_P3 FLEET_COMPAT_P3
 export CORTEX_COMPAT_P1="legacy-value-a"
 source "$COMPAT"
 if [ "${FLEET_COMPAT_P1:-}" = "legacy-value-a" ]; then ok "CORTEX_COMPAT_P1 mirrored to FLEET_COMPAT_P1"; else bad "C->F mirror (FLEET_COMPAT_P1='${FLEET_COMPAT_P1:-}')"; fi
@@ -43,3 +52,4 @@ unset CORTEX_COMPAT_P3 FLEET_COMPAT_P3
 echo
 echo "== RESULT: $pass ok, $fails failed =="
 [ "$fails" -eq 0 ]
+exit $?
