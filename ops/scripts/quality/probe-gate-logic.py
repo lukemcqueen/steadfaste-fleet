@@ -131,10 +131,10 @@ def main() -> int:
     # Redirect all state so we never touch the live governance directory.
     enforcer.GOVERNANCE_STATE_DIR = Path(tmp)
     enforcer._secondary_lock_path = lambda: Path(tmp) / ".secondary"
-    # The enforcer's _write_session_marker ALSO writes the host-global
-    # ~/.hermes/session.id fallback cache that every coding agent (Hermes,
-    # Pi, Claude, Codex) resolves session identity through — a probe run must
-    # never poison it, so redirect that write into the throwaway dir too.
+    # The enforcer's _write_session_marker ALSO writes the legacy
+    # ~/.hermes/session.id cache file (written, never read, by any current
+    # code path). A probe run must not touch live files, so redirect that
+    # write into the throwaway dir too.
     setattr(enforcer, "_write_session_marker", lambda sid: (
         (Path(tmp) / f".hermes-session-{sid}.id").write_text(sid)
         if sid else None))
