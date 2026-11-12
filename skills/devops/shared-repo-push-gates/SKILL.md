@@ -695,6 +695,20 @@ does not apply.
    file carries a "do NOT edit by hand" banner plus its own `--check` test
    (`generate-harnesses.py --check`, `gen-skills-manifest.py`), so fix the source it
    is generated from and re-run the generator.
+   - **Editing ANY skill fires the audit for `docs/SKILLS-MANIFEST.md`.** The
+     manifest is generated from the skills tree, so a skill edit makes the committed
+     copy stale and the commit reports it (`DOCS AUDIT: skills/ changed but
+     docs/SKILLS-MANIFEST.md is stale`). Regenerate with the WRAPPER, never a bare
+     `python3`: the wrapper picks an interpreter that has PyYAML, and the raw
+     generator on a host whose PATH `python3` lacks it exits non-zero, which the
+     audit reads as CHECK-FAILED rather than stale — `bash
+     ops/scripts/manage/gen-skills-manifest.sh`. Commit the result as its OWN commit
+     naming the generator (same rule as the generated-file note under the deploy-sync
+     gate). **Prove the regeneration is reproducible before committing: a second run
+     must print `fresh` and change nothing.** A big diff of reordered rows and
+     re-truncated descriptions is what a manifest predating the generator's current
+     logic looks like — the audit is reporting pre-existing drift, not something your
+     edit caused, so do not hand-merge it back.
 6. **Removing an INDEXED resource trips the expectation checks — fix the
    expectation side in the SAME change.** Every health check that holds a list
    of "what should exist" (the cron manifest, the doctor's expected-cron

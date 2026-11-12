@@ -115,6 +115,8 @@ fleet exec gisu fleet-doctor.py --quiet
 
 ⚠️ **`fleet exec <agent> -- <raw-command>` does NOT work — the `--` separator is NOT supported.** The EXEC handler only runs scripts that exist in `~/.steadfaste-fleet/scripts/` on the target; a `--` "raw command" attempt returns `Script not found: --` (exit -1). Verified 2026-08-11: `fleet exec titus -- "python3 -c ..."` failed exactly this way. Use `--output-schema RAW` (which skips RESULT validation) with a real deployed script — the RAW schema is about validation, not about raw shell execution. To run an arbitrary probe on a fleet agent, ship it as a script in the repo + register it in fleet-update.sh, or use an existing deployed probe (`fleet-doctor.py`, `agent-diagnostic.py`).
 
+**Escape hatch — EXEC also resolves an ABSOLUTE PATH as the command.** When `SCRIPTS_DIR/<command>` does not exist, the handler accepts a full filesystem path, so read-only system probes run without shipping a script: `{"command": "/usr/bin/ls", "params": ["-la", "/usr/local/sbin"]}`, `{"command": "/usr/bin/find", "params": ["/home/<user>", "-name", "*.orig"]}`, `{"command": "/usr/bin/printenv", "params": ["HOME"]}`. Bare names (`ls`, `find`) still fail — the path must be absolute. This also probes privilege state: `{"command": "/usr/bin/sudo", "params": ["-n", "true"]}` → exit 0 = NOPASSWD works, exit 1 `a password is required` = no silent elevation. Each EXEC round-trip costs one 5-min handler tick on client agents — batch the probes you can (send several EXECs in one pass, read results together), and remember the agent's HOME may not be what the registry suggests: `printenv HOME` first when a path lookup comes back "No such file or directory".
+
 It generates a `correlation_id`, sends the EXEC, then polls `inbox_moses` every 15s for up to 5min waiting for `EXEC_RESULT`.
 
 #### Schema-validated EXEC (S2)
@@ -355,6 +357,31 @@ nonexistent column. Write the SQL to a local file and feed it via STDIN from the
 (`ssh -o BatchMode=yes mosesaaron "sg docker -c 'docker exec -i mycortex-postgres psql -U mycortex -d mycortex -t -A'" < q.sql`)
 so no shell ever sees the SQL's quotes. And the audit_log column is `queue_name`,
 never `queue`.
+
+**Reading an EXEC_RESULT body — use `lib.fleet_bus` (HTTP, authoritative), not the mirror.**
+The live peek (`fleet inbox`, `bus_inbox_peek`) returns envelopes WITHOUT bodies, and the
+agent handler archives `*_RESULT` within seconds, so the body lives only in the archive.
+From the deployed scripts dir, the HTTP lib reads it directly (no ssh, no mirror):
+
+```bash
+cd ~/.steadfaste-fleet/scripts && ~/.steadfaste-fleet/venv/bin/python3 -c "
+import sys, json
+sys.path.insert(0, '.')
+from lib.fleet_bus import bus_archives
+msgs = bus_archives('inbox_moses', limit=20, since_minutes=30)
+for m in msgs:
+    b = m.get('body', {})
+    if b.get('subject') == 'EXEC_RESULT':
+        inner = json.loads(b.get('body','{}'))   # double-encoded JSON, same as SQL
+        print(inner.get('success'), inner.get('exit_code'))
+        print(inner.get('stdout'), inner.get('stderr'))
+"
+```
+The `body` field is double-encoded JSON (a JSON string inside the envelope) — parse it
+with `json.loads` once more before reading `stdout`/`stderr`/`success`. Results are keyed by
+`correlation_id` (filter by subject too, or your own request envelope comes back first).
+The 5-min handler tick means a fast-executed EXEC is already archived by the time you
+poll — always include `since_minutes` big enough to cover the round-trip.
 
 **Filter by SUBJECT, not correlation_id alone.** A correlation_id is on BOTH
 the request and its result, so `WHERE correlation_id = '<corr>'` returns the
