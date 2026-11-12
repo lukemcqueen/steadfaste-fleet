@@ -103,14 +103,16 @@ def test_the_tier_routes_by_surface_and_size():
     )
 
 
-def test_the_light_tier_spends_less_and_the_env_still_wins(monkeypatch):
-    """Spend is a tier decision now (2026-10-13): the deep model stays for enforcement/governance
-    and unusually large diffs; everything else is judged by the cheap one."""
+def test_the_light_tier_uses_the_canonical_reviewer_by_default_and_env_wins(monkeypatch):
+    """The light tier decides TRANSPORT and WAIT, not who judges (2026-10-18 operator
+    directive: FLASH SHOULD NOT BE THE REVIEWER DEFAULT — a cheap judge is a weaker
+    judge, and the light tier's class is ordinary code). The default is therefore the
+    canonical REVIEWER_MODEL_DEFAULT; only an explicit ADVERSARIAL_REVIEW_LIGHT_MODEL
+    makes a cheaper judge an auditable, operator-picked choice."""
     mod = _load()
     monkeypatch.setenv("ADVERSARIAL_REVIEW_LIGHT_MODEL", "")
-    assert mod._light_reviewer_model() == mod.REVIEWER_LIGHT_MODEL_DEFAULT
-    assert mod.REVIEWER_LIGHT_MODEL_DEFAULT != mod.REVIEWER_MODEL_DEFAULT, (
-        "the light tier must actually be cheaper than the heavy tier, or the split saves nothing"
+    assert mod._light_reviewer_model() == mod.REVIEWER_MODEL_DEFAULT, (
+        "the light tier must default to the canonical reviewer, not a cheaper one"
     )
     monkeypatch.setenv("ADVERSARIAL_REVIEW_LIGHT_MODEL", "someone/other-model")
     assert mod._light_reviewer_model() == "someone/other-model", "an operator's choice still wins"

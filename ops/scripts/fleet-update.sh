@@ -600,7 +600,6 @@ register "ops/scripts/manage/fleet-agent-manager.py"  "${CORTEX_DEPLOY_HOME}/scr
 register "ops/scripts/fleet/fleet.py"                "${CORTEX_DEPLOY_HOME}/scripts/fleet.py"
 register "ops/scripts/fleet/harness.py"              "${CORTEX_DEPLOY_HOME}/scripts/fleet-harness.py"
 register "ops/scripts/fleet/bin/fleet"               "${CORTEX_DEPLOY_HOME}/scripts/fleet"
-register "ops/scripts/fleet/bin/hc"                  "${CORTEX_DEPLOY_HOME}/scripts/hc"  # transition-compat alias
 register "ops/scripts/health/agent-stale-ref-watchdog.sh"            "${CORTEX_DEPLOY_HOME}/scripts/manage/agent-stale-ref-watchdog.sh"
 register "ops/scripts/manage/autonomy-classifier.py"                  "${CORTEX_DEPLOY_HOME}/scripts/manage/autonomy-classifier.py"
 register "ops/scripts/manage/orch-autonomy-digest.sh"                 "${CORTEX_DEPLOY_HOME}/scripts/manage/orch-autonomy-digest.sh"

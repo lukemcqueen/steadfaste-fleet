@@ -303,11 +303,11 @@ doctor run. Nothing is broken — the new tool works — but the warning is real
 file is dead weight that confuses the next reader into thinking the old tool exists.
 
 **Measured case (2026-11-06):** the `hc` CLI was renamed to `fleet` in commit
-`aa2de1ee` (`ops/scripts/hc/hc.py` → `ops/scripts/fleet/fleet.py`). The deploy map
+`aa2de1ee` on 2026-11-06 (`ops/scripts/hc/hc.py` → `ops/scripts/fleet/fleet.py`). The deploy map
 registered `ops/scripts/fleet/fleet.py` + `harness.py` (and a `bin/hc`
-transition-compat ALIAS), so `scripts/fleet.py` + `scripts/fleet-harness.py` deployed
-correctly. But the OLD `scripts/hc.py` and `scripts/hc-harness.py` stayed on disk
-forever, flagged `⚠️  Stale deploy: scripts/hc.py` / `scripts/hc-harness.py`.
+transition-compat ALIAS until 2026-11-12, when the alias was removed — migration
+complete), so `scripts/fleet.py` + `scripts/fleet-harness.py` deployed
+correctly. But the OLD `scripts/hc.py` and `scripts/hc-harness.py` (dated 2026-11-06) stayed on disk forever, flagged `⚠️  Stale deploy: scripts/hc.py` / `scripts/hc-harness.py`.
 
 **Diagnose it — distinguish a true rename-orphan from a still-live file:**
 
@@ -326,12 +326,13 @@ grep -rln '<old>\.py' ~/.steadfaste-fleet/scripts/ ~/.hermes/skills/ ~/steadfast
   | grep -vE '/<old>\.py$'      # hits are docs/comments only => safe
 ```
 
-**A transition-compat ALIAS is NOT the stale file — keep the alias, remove the .py.**
-In the `hc`→`fleet` case `scripts/hc` (no `.py`) is a small bash alias that
-`exec`s `scripts/fleet`; it is REGISTERED (`register "ops/scripts/fleet/bin/hc"`)
-and must stay so old invocations keep working. The orphans are the `.py` files the
-alias does not use. Confirm the alias execs the new name (`grep exec scripts/hc`)
-before deleting the old `.py` beside it.
+**A transition-compat ALIAS was kept during migration, then REMOVED when done (2026-11-12).**
+In the `hc`→`fleet` case `scripts/hc` (no `.py`) was a small bash alias that
+`exec`s `scripts/fleet`; it was REGISTERED (`register "ops/scripts/fleet/bin/hc"`)
+so old invocations kept working while hosts migrated. The migration is complete —
+the alias and its register line are deleted, and a leftover `scripts/hc` on a host
+is a straggler to remove (see the straggler checklist in `fleet-local-dir-rename.md`),
+not an alias to keep. The orphans were the `.py` files the alias did not use.
 
 **Remove it** (the doctor's own `Remove: rm …` line is the sanctioned action):
 

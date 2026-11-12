@@ -955,15 +955,16 @@ diff ~/.hermes/SOUL.md ~/steadfaste-fleet/docs/templates/SOUL.md
 
 ### Doctor reports `Stale deploy: scripts/<old>.py` after a rename
 
-**Symptom:** `fleet-doctor.py` warns `⚠️  Stale deploy: scripts/<old>.py` (e.g.
-`scripts/hc.py`, `scripts/hc-harness.py`) forever, even though the new tool works.
+**Symptom:** `fleet-doctor.py` warns `⚠️  Stale deploy: scripts/<old>.py` (e.g. the
+2026-11-06 `hc` rename's `scripts/hc.py`, `scripts/hc-harness.py`) forever, even though the new tool works.
 
-**Root cause:** the tool was RENAMED (measured: `hc` → `fleet`, commit `aa2de1ee`;
-`ops/scripts/hc/hc.py` → `ops/scripts/fleet/fleet.py`). The deploy map registered the
+**Root cause:** the tool was RENAMED on 2026-11-06 (`hc` → `fleet`, commit `aa2de1ee`; the
+`ops/scripts/hc/hc.py` → `ops/scripts/fleet/fleet.py` move, dated 2026-11-06). The deploy map registered the
 new paths, so `scripts/fleet.py` + `scripts/fleet-harness.py` deploy fine — but the
 OLD deployed copies are no longer registered and `fleet-update.sh` never removes them.
-A `bin/hc` transition-compat ALIAS stays registered and keeps working; only the old
-`.py` files are dead.
+A `bin/hc` transition-compat ALIAS was registered until 2026-11-12, then REMOVED — the
+migration is complete, no compat alias remains. If you find a `scripts/hc` file on a host,
+it is a leftover; remove it (see the straggler checklist in `fleet-local-dir-rename.md`).
 
 **Confirm it is a rename-orphan, not a live file:**
 

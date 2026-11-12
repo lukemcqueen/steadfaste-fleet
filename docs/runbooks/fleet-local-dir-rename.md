@@ -303,3 +303,40 @@ The names below are stable identifiers, not stale paths — do **not** sweep the
 - Historical `hermes-cortex` mentions in `docs/evidence/` and `docs/older/` — migration records.
 - The transition tools themselves: `fleet-set-origin.sh`, `migrate-home-dirs.sh`,
   `verify-rename-local.sh` reference the old paths on purpose.
+
+## Post-migration straggler checklist (verified on esther 2026-11-12)
+
+The migration is NOT complete until these are gone or confirmed absent on the host.
+Anything in the previous section is deliberately kept; anything below is a straggler.
+Run `bash tests/test_fleet_cli_brand.sh` (brand lint) + the doctor (`stale hermes-cortex
+folders` check) to verify, then walk this list:
+
+1. **Old home folders** — all three must be absent (doctor `Stale hermes-cortex folders`
+   WARNs on any; confirmed gone on esther):
+   ```bash
+   ls -d ~/hermes-cortex ~/.hermes-cortex ~/.local/lib/hermes-cortex   # expect: no such file
+   ```
+2. **Stale bytecode** — `.pyc` files compiled before the rename embed the old absolute
+   path in `co_filename`, so pytest tracebacks show phantom `~/hermes-cortex/...` lines
+   with `??` source. Sweep both trees (cache only — regenerates; confirmed: 327 dirs on
+   esther, incl. `tests/__pycache__`):
+   ```bash
+   find ~/steadfaste-fleet ~/.steadfaste-fleet -name __pycache__ -type d -not -path '*/.git/*' -exec rm -rf {} +
+   ```
+3. **Claude Code project record** — `~/.claude.json` `projects` keeps a key for the old
+   repo path (e.g. `"/home/<user>/hermes-cortex": {…}`). Remove that entry (the directory
+   no longer exists). Session **history** under `~/.claude/projects/-home-<user>-hermes-cortex/`
+   is a log — keep it (keep-logs-forever rule).
+4. **Stale tests asserting removed behavior** — a test pinned to a constant the code
+   deliberately removed (e.g. `REVIEWER_LIGHT_MODEL_DEFAULT`, removed 2026-10-18) fails
+   until updated to the current behavior. Grep for the removed name and fix the test, or
+   it reads as a phantom "hermes-cortex" failure via the stale bytecode above.
+5. **Confirmed clean on esther** (checked, nothing to do): cron job commands
+   (`~/.hermes/cron/jobs.json` — only historical `last_failure` text mentions the name),
+   systemd user units, nginx configs, `~/.steadfaste-fleet/.env`, `~/.hermes/config.yaml`,
+   `~/.pi` MCP manifests, `fleet-update.sh` registers, cron install arrays.
+6. **Deliberate non-stragglers**: `hc-*` worktree names (dev worktrees, not migration
+   refs), and every item in the "What is deliberately kept" section above. The `hc`
+   transition-compat CLI alias was REMOVED 2026-11-12 (shim file, its fleet-update
+   register line, and its brand-lint fixtures) — a leftover `scripts/hc` on any host
+   is a straggler; remove it.
