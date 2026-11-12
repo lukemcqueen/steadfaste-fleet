@@ -560,7 +560,7 @@ register "ops/scripts/governance-refused-close-advisory.sh"     "${CORTEX_DEPLOY
 # soul-sync-all.sh removed 2026-11-04 (SOUL.md decoupled — Hermes-owned)
 register "ops/scripts/agent/agents-doc-audit.py"          "${CORTEX_DEPLOY_HOME}/scripts/agents-doc-audit.py"
 register_orch "ops/scripts/agent/orch-restic-backup.py"        "${CORTEX_DEPLOY_HOME}/scripts/orch-restic-backup.py"
-register "ops/scripts/agent/agent-agents-md-prune-scan.py"      "${CORTEX_DEPLOY_HOME}/scripts/agent-agents-md-prune-scan.py"
+register "ops/scripts/agent/agent-md-prune-scan.py"      "${CORTEX_DEPLOY_HOME}/scripts/agent-md-prune-scan.py"
 register "ops/scripts/secret-leak-detector.sh"            "${CORTEX_DEPLOY_HOME}/scripts/secret-leak-detector.sh"
 register "ops/scripts/health/check-external-services.sh"   "${CORTEX_DEPLOY_HOME}/scripts/check-external-services.sh"
 register "ops/scripts/agent-secret-leak-watchdog.py"            "${CORTEX_DEPLOY_HOME}/scripts/agent-secret-leak-watchdog.py"

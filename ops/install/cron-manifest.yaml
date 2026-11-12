@@ -17,7 +17,7 @@ crons:
 - name: agent-agents-md-prune-scan
   scope: universal
   schedule: 0 4 * * 1
-  script: agent-agents-md-prune-scan.py
+  script: agent-md-prune-scan.py
   prompt: ''
   skill: ''
   deliver: local
@@ -551,7 +551,7 @@ crons:
   provider: ''
 - name: agent-skill-drift-reconcile
   scope: universal
-  schedule: 7 */2 * * *
+  schedule: 0 */2 * * *
   script: reconcile-skill-drift-auto.sh
   prompt: ''
   skill: ''

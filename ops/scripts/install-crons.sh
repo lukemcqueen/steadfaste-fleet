@@ -1106,8 +1106,8 @@ create_cron "agent-nginx-threat-pipeline" "0 5 * * *" \
 # pure-superset skill strands back into the repo (the class-level fix for the
 # recurring doctor "skill drift" warn). Silent-when-clean; recovers are logged
 # locally, never spammed to the channel (internal housekeeping, not a user event).
-create_cron "agent-skill-drift-reconcile" "7 */2 * * *" \
-  "reconcile-skill-drift-auto.sh" \
+create_cron "agent-skill-drift-reconcile" "0 */2 * * *" \
+  "manage/reconcile-skill-drift-auto.sh" \
   "" \
   "" \
   "" \
@@ -1138,7 +1138,7 @@ create_cron "agent-push-metrics" "every 5m" \
 # ── AGENTS.md auto-trim: daily scan + LLM apply (M-Sa) ──
 # Phase 1: deterministic scan — silent when clean, JSON report when candidates found
 create_cron "agent-agents-md-prune-scan" "0 4 * * 1" \
-  "agent-agents-md-prune-scan.py" \
+  "agent-md-prune-scan.py" \
   "" \
   "" \
   "" \
