@@ -141,8 +141,10 @@ _audit() {
 
 # ── Sanctioned-caller gate (2026-07-31) ────────────────────
 # unlock/update mutate the enforcement chain. Valid tokens:
-#   --cortex-update  → fleet-update.sh (the sanctioned deploy path);
-#                      allowed for every agent (fleet updates).
+#   --cortex-update  → fleet-update.sh (the sanctioned deploy path);  [old token,
+#                      accepted during the cortex→fleet token migration]
+#   --fleet-update   → fleet-update.sh (the sanctioned deploy path); the
+#                      canonical token; allowed for every agent (fleet updates).
 #   --orchestrator   → manual maintenance; REQUIRES the invoking Unix
 #                      account to be an orchestrator (moses|esther).
 #                      Bound to SUDO_USER (set by sudo) / USER, NOT to
@@ -150,7 +152,7 @@ _audit() {
 # No token, or a token from a non-orchestrator account → REFUSED + logged.
 _require_sanctioned_caller() {
   local action="$1" token="${2:-}" ok=0 channel=""
-  if [[ "$token" == "--cortex-update" ]]; then
+  if [[ "$token" == "--cortex-update" || "$token" == "--fleet-update" ]]; then
     ok=1; channel="fleet-update"
   elif [[ "$token" == "--orchestrator" ]]; then
     case "$REAL_USER" in
