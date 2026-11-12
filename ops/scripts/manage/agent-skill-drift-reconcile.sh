@@ -45,13 +45,19 @@ if git -C "$CORTEX_REPO" rev-parse --git-dir &>/dev/null; then
     _ABORT_RC=0
     git -C "$CORTEX_REPO" rebase --abort 2>/dev/null || _ABORT_RC=$?
     if [ "$_ABORT_RC" -ne 0 ]; then
-      log "could not abort a stale rebase (rc=$_ABORT_RC)"
-    else
-      log "aborted a stale rebase"
+      log "could not abort a stale rebase (rc=$_ABORT_RC) — lifting the lock and stopping; the repo needs a human"
+      rm -f "$_PIPE_MARKER" 2>/dev/null || true
+      rmdir "$_LOCK" 2>/dev/null || true
+      exit 1
     fi
+    log "aborted a stale rebase"
   fi
-  git -C "$CORTEX_REPO" cherry-pick --quit 2>/dev/null || log "cherry-pick --quit failed (rc=$?)"
-  git -C "$CORTEX_REPO" merge --quit 2>/dev/null || log "merge --quit failed (rc=$?)"
+  _CP_QUIT_RC=0
+  git -C "$CORTEX_REPO" cherry-pick --quit 2>/dev/null || _CP_QUIT_RC=$?
+  [ "$_CP_QUIT_RC" -eq 0 ] || log "cherry-pick --quit failed (rc=$_CP_QUIT_RC)"
+  _MG_QUIT_RC=0
+  git -C "$CORTEX_REPO" merge --quit 2>/dev/null || _MG_QUIT_RC=$?
+  [ "$_MG_QUIT_RC" -eq 0 ] || log "merge --quit failed (rc=$_MG_QUIT_RC)"
 fi
 
 # A scheduler run may start on a lagging checkout — pull other agents' commits
@@ -150,21 +156,29 @@ if [ -z "$STAGED" ]; then
   exit 0
 fi
 
-if git commit -m "auto: reconcile skill-drift strands (skills=${N}) [pipeline]" -- $STAGED >/dev/null 2>&1; then
-  log "committed ${N} skill(s) — deploying + pushing"
-else
-  log "commit refused — leaving the reconcile delta staged for a human; nothing pushed"
+_COMMIT_RC=0
+_COMMIT_LOG=$(git commit -m "auto: reconcile skill-drift strands (skills=${N}) [pipeline]" -- $STAGED 2>&1) || _COMMIT_RC=$?
+if [ "$_COMMIT_RC" -ne 0 ]; then
+  _reason=$(printf '%s\n' "$_COMMIT_LOG" | grep -viE '^$|^\\s*$' | tail -1)
+  log "commit refused (rc=$_COMMIT_RC): ${_reason:-see output} — delta left staged for a human; nothing pushed"
   exit 0
 fi
+log "committed ${N} skill(s) — deploying + pushing"
 
 # ── Deploy (satisfies deploy-sync + dogfood), then push ────────────
-if ! bash "$CORTEX_REPO/ops/scripts/fleet-update.sh" >/dev/null 2>&1; then
-  log "deploy failed — not pushing this cycle (will retry)"
+_DEPLOY_RC=0
+_DEPLOY_LOG=$(bash "$CORTEX_REPO/ops/scripts/fleet-update.sh" 2>&1) || _DEPLOY_RC=$?
+if [ "$_DEPLOY_RC" -ne 0 ]; then
+  _reason=$(printf '%s\n' "$_DEPLOY_LOG" | grep -E '❌|FAIL|error|Error' | tail -1)
+  log "deploy failed (rc=$_DEPLOY_RC): ${_reason:-see output} — not pushing this cycle"
   exit 0
 fi
-if git push origin main >/dev/null 2>&1; then
+_PUSH_RC=0
+_PUSH_LOG=$(git push origin main 2>&1) || _PUSH_RC=$?
+if [ "$_PUSH_RC" -eq 0 ]; then
   echo "[$(TS) skill-drift-reconcile] reconciled ${N} skill(s); committed + deployed + pushed"
 else
-  log "push blocked after deploy (retry next cycle)"
+  _reason=$(printf '%s\n' "$_PUSH_LOG" | grep -E '❌|error|rejected|blocked' | tail -1)
+  log "push blocked after deploy (rc=$_PUSH_RC): ${_reason:-see output} — retry next cycle"
   exit 0
 fi
