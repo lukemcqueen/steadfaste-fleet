@@ -142,6 +142,34 @@ leaves rows no classifier can group. The doctor reports any residue as `Task-id 
 this tool, so no host has to notice by itself. The normaliser is deliberately NOT run by the
 deploy: a doctor is not authorised to migrate an audit trail, and neither is a deploy.
 
+### Capture a command's rc BEFORE logging it — `if ! cmd; then log "rc=$?"` is always 0
+
+In the failure branch of `if ! cmd; then log "…(rc=$?)"` the `$?` is the exit status
+of the negated condition's evaluation (or the log command's own expansion), not the
+failed command's — it reads 0, so the log fabricates a clean-looking rc for a failure
+that actually happened. The `cmd || rc=$?` form is the one that captures the real
+code, because the `||` right-hand side runs with `$?` set to the left command's status.
+
+```bash
+# ❌ rc=0 even when git pull actually failed
+if ! git pull --ff-only >/dev/null 2>&1; then
+  log "pull failed (rc=$?)"
+fi
+
+# ✅ captures the real code, readable in the message
+pull_rc=0
+git pull --ff-only >/dev/null 2>&1 || pull_rc=$?
+if [ "$pull_rc" -ne 0 ]; then
+  log "pull failed (rc=$pull_rc)"
+fi
+```
+
+An automated reviewer catches this as `swallowed-error`: the branch "reports" the
+failure but the log carries a fabricated zero. Capture to a variable with `cmd || var=$?`
+and read `var`; never a bare `$?` inside the then-branch of a negated `if`. The
+`cmd || log "rc=$?"` form without the `if !` IS correct — `$?` there is the left
+command's status.
+
 ### A heredoc inside `$( )` breaks bash 3.2 — the apostrophe is only the trigger
 
 `X="$(python3 - "$a" <<'PY' ... PY )"` is a **bash 3.2 parser trap**. The body is

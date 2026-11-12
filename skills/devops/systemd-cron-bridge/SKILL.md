@@ -126,6 +126,14 @@ Use `references/systemd-timer-oncalendar.md` — the correct syntax variants and
 
 - **A unit test that invokes a delivery wrapper MUST route hermetically** — pass `--deliver local` + a temp `CORTEX_DEPLOY_HOME` so the run saves to a temp log and can never reach the real messenger. Omitting `--deliver` on a "does it execute" test makes every `pytest` run send a real message to the user's channel (subject `cron:<name>`), a side-effect a unit test must never have.
 - **The bridge runs the REPO-path runner, not the deployed copy** — units `ExecStart` the repo `ops/scripts/...` path. When testing, invoke the same path the timers use; a stale deployed copy lacks the latest flags and errors (`unrecognized arguments`). Deploy anyway for consistency but test the live path.
+- **Run the GENERATOR from the repo path, not the deployed copy** — `fleet-bus-bridge-generate.py`
+  computes its repo root inline as `Path(__file__).resolve().parent.parent.parent`, which assumes the
+  `ops/scripts/…` depth. Invoke the deployed `~/.steadfaste-fleet/scripts/fleet-bus-bridge-generate.py`
+  (two levels deep, no `ops/`) and every generated unit's `ExecStart` points at `$HOME/ops/scripts/…`
+  — one level short of the repo, so the bridged job fails at fire time with the runner not found.
+  Run the repo copy (`ops/scripts/fleet-bus-bridge-generate.py`), then `grep ExecStart
+  ~/.config/systemd/user/cortex-bridge-<job>.service` to confirm the path resolves before trusting the
+  timer. A pre-existing unit carrying this bad path is fixed by regenerating from the repo path.
 - **Resolve `manage/`-prefixed and `.sh` scripts correctly** — `_resolve_script` must resolve relatives under the deployed scripts dir (so `manage/agent-x.sh` and flat `agent-x.py` both land), else a migrated `.sh` or subdir job silently no-ops.
 - **A disabled quality watchdog is how garbage reaches the user** — if a user reports LLM-cron garbage delivered, check the watchdog timer is `active` (a `*/10` scan is the post-flight guard for exactly this); re-enable it before blaming the model. Pinning (`pinned:true`) locks the model but does NOT stop fallback substitution on provider outage — a garbage fallback model still runs and delivers.
 - **Migrate in batches with a counter-verification**, not one blind sweep: after each batch, cross-check timer count vs remaining `enabled` no_agent jobs; the two must be disjoint.
