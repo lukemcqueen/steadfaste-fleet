@@ -68,11 +68,11 @@ Sources under `~/steadfaste-fleet/` → dest under `~/.hermes/` or `~/`.
 
 ### Memory (Hermes-owned — NOT registered)
 
-`~/.hermes/memories/MEMORY.md` and `USER.md` are Hermes-owned. Cortex does
-NOT deploy or seed them (2026-08-05: a registered seed clobbered live
-memory on every deploy). Templates stay in `docs/templates/` as reference
-only; `memory-readme.seed.md` → `~/.steadfaste-fleet/memory/README.md` is the
-one exception (cortex-owned rubric doc, still registered).
+`~/.hermes/memories/MEMORY.md` and `USER.md` are Hermes-owned. The fleet deploy
+pipeline (`fleet-update.sh`) does NOT deploy or seed them (2026-08-05: a
+registered seed clobbered live memory on every deploy). Templates stay in
+`docs/templates/` as reference only; `memory-readme.seed.md` →
+`~/.steadfaste-fleet/memory/README.md` is the one exception (still registered).
 
 ### Langfuse
 | `deploy/docker-compose.langfuse.yml` | `~/langfuse/docker-compose.yml` | `restart_langfuse` |
@@ -132,7 +132,7 @@ file copies complete:
 |----------|---------|-------------|
 | `restart_legacy_sync` | `com.legacy-brain.sync-watch` | Unloads launchd, removes stale sync-watch.sh, re-runs install-legacy-sync.sh to regenerate script + reload plist |
 | `restart_langfuse` | Docker Compose stack | Runs `docker compose up -d` in `~/langfuse/` |
-| `restart_dashboard` | `com.hermes.cortex-dashboard` | Unloads/reloads launchd plist |
+| `restart_dashboard` | `com.hermes.cortex-dashboard` (kept name — the dashboard unit keeps its pre-rename identifier) | Unloads/reloads launchd plist |
 
 ### restart_legacy_sync Pitfall
 
@@ -140,7 +140,7 @@ Must call `launchctl bootout` BEFORE removing `sync-watch.sh`. Without it, launc
 KeepAlive keeps the old process alive, and `install-legacy-sync.sh` sees "already
 running" and skips regeneration. The plist then points to a deleted file.
 
-Fixed in commit 893ddc4. Verify after any cortex update:
+Fixed in commit 893ddc4. Verify after any fleet update:
 
 ```bash
 ls -la ~/.legacy-brain/sync-watch.sh    # must exist
