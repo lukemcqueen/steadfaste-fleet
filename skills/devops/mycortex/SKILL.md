@@ -168,7 +168,7 @@ hand-rolled invocation, and never only the unhardened path:
 
 ## Python requirements
 
-**All myfleet scripts use `#!/usr/bin/env python3` (portable)** — no `python3.12` hardcoding. Verified 2026-08-02: hosts run python3.10–3.12; code parses clean at 3.10 (no match/case or 3.12-only syntax). The earlier `python3.12` shebangs broke `agent-mycortex-sync` on python3.10/3.11 hosts (`env: 'python3.12': No such file or directory`, cron rc=127) — fixed fleet-wide. No venv/uv needed: stdlib-only, no external deps. If you add a script, use `#!/usr/bin/env python3`.
+**All mycortex scripts use `#!/usr/bin/env python3` (portable)** — no `python3.12` hardcoding. Verified 2026-08-02: hosts run python3.10–3.12; code parses clean at 3.10 (no match/case or 3.12-only syntax). The earlier `python3.12` shebangs broke `agent-mycortex-sync` on python3.10/3.11 hosts (`env: 'python3.12': No such file or directory`, cron rc=127) — fixed fleet-wide. No venv/uv needed: stdlib-only, no external deps. If you add a script, use `#!/usr/bin/env python3`.
 
 ## Migration to Dedicated mycortex-postgres (2026-08-05)
 
@@ -192,7 +192,7 @@ per-host, non-destructive (old container STOPPED, not removed; dump kept in
   hitting the dead `mycortex` DB. Fixed (2026-08-05).
 - mycortex CLI / migrate.py / task-db.py / fleet.py / orch-bus / retention /
   verifier / audit-watchdog / doctor hints all target `mycortex-postgres`.
-- Dead myfleet scripts deleted (mycortex-wrapper.sh, legacy-brain-doctor-summary.py,
+- Dead mycortex scripts deleted (mycortex-wrapper.sh, legacy-brain-doctor-summary.py,
   install-legacy-sync.sh); mycortex systemd units removed.
 - Doctor `mycortex daemon` check kept as decommission verification (PASS when the
   unit is disabled/absent).

@@ -1712,7 +1712,7 @@ Some pages embed successfully (showing progress) but others fail partway through
 
 **Root cause:** The default mycortex embed timeout (`AI_EMBED_TIMEOUT_MS`) is 60 seconds. Ollama's `nomic-embed-text:v1.5` takes longer than 60s to generate 768-dim embeddings for large documents.
 
-**Fix:** Set the environment variable in ALL myfleet scripts:
+**Fix:** Set the environment variable in ALL mycortex scripts:
 ```bash
 export MYCORTEX_AI_EMBED_TIMEOUT_MS=300000
 mycortex embed --stale
@@ -2180,5 +2180,5 @@ approach is `.steadfaste-fleet/` (project-anchored) + `~/.hermes/` (home-dir)
 - `references/fleet-update-deployment-map.md` — Full file map, restart functions, and the launchd bootout-before-rm pitfall
 - `references/offline-knowledge-subcommands.md` — Subcommand architecture pattern for offline_knowledge.py, the `lesson` tooling gap, and PATH setup
 - `references/mycortex-source-migration-export.md` — mycortex data export, cross-engine migration, and Postgres setup notes
-- `github.com/garrytan/mycortex` — Official myfleet repository (install via `bun install -g github:garrytan/mycortex`)
+- `github.com/garrytan/mycortex` — Official mycortex repository (install via `bun install -g github:garrytan/mycortex`)
 - `<private-repo-url>` — Private repo with personal config, brain content
