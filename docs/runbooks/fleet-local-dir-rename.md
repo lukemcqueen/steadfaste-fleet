@@ -133,6 +133,12 @@ python3 ~/steadfaste-fleet/ops/scripts/manage/fleet-doctor.py --quiet   # 0 fail
 curl -fsS 127.0.0.1:8903/health                                          # 200 (bus)
 grep -rl hermes-cortex ~/.config/systemd/user/ /usr/local/sbin/          # nothing
 grep -rl 'hermes-cortex' ~/.steadfaste-fleet/scripts/                    # nothing but the transition tools
+
+# Remaining non-path leftover surfaces (caches, pip lib, Claude data, stale state):
+grep -rl hermes-cortex ~/.local/lib/ ~/.cache/claude-cli-nodejs/ ~/.claude/projects/ 2>/dev/null  # nothing
+rm -rf ~/.local/lib/hermes-cortex        # empty pip install left-over iff present and empty
+# stale per-artifact completion proof: `~/.hermes-cortex` and `~/hermes-cortex` must not exist
+test ! -e ~/.hermes-cortex && test ! -e ~/hermes-cortex && echo "fully migrated: stale folders gone"
 ```
 
 ## macOS (Titus) differences
