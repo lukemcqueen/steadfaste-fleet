@@ -12,7 +12,7 @@ run at any time, with or without a governance lock.
 
 Use it to verify:
   * a deploy landed (run against the deployed copy vs the repo copy)
-  * gate 1 (7 always-skills marker) timing and content verification
+  * gate 1 (always-skills marker) timing and content verification
   * gate 2 (lock) message + the missing-MCP diagnostic
   * the read-only terminal classifier (what is lock-free vs write-class)
   * per-session skill credit surviving a plugin reload
@@ -39,14 +39,13 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-REQUIRED_SKILLS = [
-    "task-start",
-    "agent-flow",
-    "reflexion-check",
-    "change-checklist",
-    "survey-before-action",
-    "agent-contract",
-    "test-driven-development",
+# Fallback only: the LIVE required set is read from the loaded enforcer
+# (which derives it from skills.yaml always: at import), so an absorption
+# of always-skills cannot stale this probe again.
+REQUIRED_SKILLS_DEFAULT = [
+    "task-orient",
+    "execute-right",
+    "verify-and-ship",
 ]
 
 READ_ONLY_LOCKFREE = [
@@ -132,6 +131,17 @@ def main() -> int:
     # Redirect all state so we never touch the live governance directory.
     enforcer.GOVERNANCE_STATE_DIR = Path(tmp)
     enforcer._secondary_lock_path = lambda: Path(tmp) / ".secondary"
+    # The enforcer's _write_session_marker ALSO writes the host-global
+    # ~/.hermes/session.id fallback cache that every coding agent (Hermes,
+    # Pi, Claude, Codex) resolves session identity through — a probe run must
+    # never poison it, so redirect that write into the throwaway dir too.
+    setattr(enforcer, "_write_session_marker", lambda sid: (
+        (Path(tmp) / f".hermes-session-{sid}.id").write_text(sid)
+        if sid else None))
+    # Probe what THIS enforcer actually requires. The enforcer derives
+    # _REQUIRED_SKILLS from skills.yaml always: at import, so this stays
+    # correct across always-skill absorptions.
+    required_skills = sorted(getattr(enforcer, "_REQUIRED_SKILLS", None) or REQUIRED_SKILLS_DEFAULT)
 
     captured: dict = {}
     enforcer.register(
@@ -152,26 +162,30 @@ def main() -> int:
     lines.append("")
 
     # ── Gate 1: marker timing and content verification ────────────────────
-    lines.append("Gate 1 — 7 always-skills marker")
+    total = len(required_skills)
+    lines.append(f"Gate 1 — always-skills marker ({total} required)")
     sid = "probe_session_alpha"
     check("marker absent before any skill_view", enforcer._check_skills_loaded_marker(sid) is False)
-    for index, name in enumerate(REQUIRED_SKILLS, start=1):
+    for index, name in enumerate(required_skills, start=1):
         hook(tool_name="skill_view", args={"name": name}, session_id=sid)
         marker_ok = enforcer._check_skills_loaded_marker(sid)
-        if index < len(REQUIRED_SKILLS):
-            check(f"marker still absent after {index}/7 ({name})", marker_ok is False)
+        if index < total:
+            check(f"marker still absent after {index}/{total} ({name})", marker_ok is False)
         else:
-            check("marker created exactly on the 7th skill (serial calls work)", marker_ok is True)
+            check("marker created exactly on the final required skill (serial calls work)", marker_ok is True)
     # Repeat loads must not unmake the marker
-    hook(tool_name="skill_view", args={"name": "task-start"}, session_id=sid)
+    hook(tool_name="skill_view", args={"name": required_skills[0]}, session_id=sid)
     check("repeat skill_view keeps the marker valid", enforcer._check_skills_loaded_marker(sid) is True)
     # A session with no skills is still blocked
     check(
         "a different session is not credited by another session's loads",
         enforcer._check_skills_loaded_marker("probe_session_beta") is False,
     )
-    # Bare-touch bypass stays closed
+    # Bare-touch bypass stays closed. The marker dir is created lazily by the
+    # enforcer when the required set completes; create it here so a probe run
+    # cannot crash even if that write never fired.
     marker = enforcer._session_marker_path(sid)
+    marker.parent.mkdir(parents=True, exist_ok=True)
     marker.write_text("")
     check("hand-written empty marker rejected", enforcer._check_skills_loaded_marker(sid) is False)
     marker.write_text(f"session:{sid}|skills:wrongfingerprint")
@@ -290,7 +304,8 @@ def main() -> int:
                 enforcer._session_skills(content_sid) == set(enforcer._REQUIRED_SKILLS),
             )
 
-            (tree / "workflow" / "task-start" / "SKILL.md").write_text("body-v2\n")
+            changed_skill = required_skills[0]
+            (tree / "workflow" / changed_skill / "SKILL.md").write_text("body-v2\n")
             check(
                 "fingerprint changes when skill CONTENT changes",
                 enforcer._skills_fingerprint() != fp_before,
@@ -299,11 +314,11 @@ def main() -> int:
             check(
                 "only the changed skill loses credit",
                 enforcer._session_skills(content_sid)
-                == set(enforcer._REQUIRED_SKILLS) - {"task-start"},
+                == set(enforcer._REQUIRED_SKILLS) - {changed_skill},
             )
             check(
                 "stale_skills names exactly the changed skill",
-                enforcer._stale_skills(content_sid) == ["task-start"],
+                enforcer._stale_skills(content_sid) == [changed_skill],
             )
     finally:
         enforcer._skills_dir = original_skills_dir
