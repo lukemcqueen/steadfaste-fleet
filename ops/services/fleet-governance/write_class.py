@@ -188,8 +188,8 @@ def is_readonly_command(command: str) -> bool:
 # ── Sanctioned lock-free recovery command ────────────────────────────────────
 # (2026-11-12: the pre-migration repo name `hermes-cortex` was REMOVED from the
 # accept list — the migration is complete.)
-_SANCTIONED_CORTEX_UPDATE_RE = re.compile(
-    r"^\s*(?:bash\s+)?(?:~|" + re.escape(str(Path.home())) + r")/steadfaste-fleet/ops/scripts/(?:fleet-update|fleet-update)\.sh"
+_SANCTIONED_FLEET_UPDATE_RE = re.compile(
+    r"^\s*(?:bash\s+)?(?:~|" + re.escape(str(Path.home())) + r")/steadfaste-fleet/ops/scripts/(?:fleet-update)\.sh"
     r"(?:\s+(?:--dry-run|--status|--delta|--clean-stale))*\s*$"
 )
 
@@ -199,7 +199,7 @@ def is_sanctioned_fleet_update_command(command: str) -> bool:
         return False
     if _COMMAND_FORBIDDEN_METACHARS.search(command) or _COMMAND_SEPARATORS.search(command):
         return False
-    return _SANCTIONED_CORTEX_UPDATE_RE.fullmatch(command) is not None
+    return _SANCTIONED_FLEET_UPDATE_RE.fullmatch(command) is not None
 
 
 # ── /tmp cleanup is sanctioned and lock-free ─────────────────────────────────
