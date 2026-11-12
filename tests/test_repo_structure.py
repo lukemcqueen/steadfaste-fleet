@@ -200,7 +200,13 @@ def test_no_gbrain_legacy_refs_in_tracked_source():
          # brand lint's RECORD_FILTER; records are never falsified. Resurrected
          # refs in ACTIVE files (docs/, ops/, skills/, tests/) stay red.
          ":(exclude)docs/evidence",
-         ":(exclude)docs/older"],
+         ":(exclude)docs/older",
+         # The brand lint's own RECORD_FILTER literal (names the dated
+         # gbrain-reference-audit record token) and the rename-followups doc
+         # (documents that same token list) — meta-references to the record
+         # NAME, not legacy brain refs.
+         ":(exclude)tests/test_fleet_cli_brand.sh",
+         ":(exclude)docs/rename-followups-steadfaste-fleet.md"],
         cwd=REPO_ROOT, capture_output=True, text=True,
     ).stdout.strip()
     assert not hits, f"Legacy gbrain refs found in: {hits}"

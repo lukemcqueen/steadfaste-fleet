@@ -9,9 +9,9 @@ Traceback (most recent call last):
   File "...", line N, in <module>
     main()
   File "...", line M, in main
-    orphan_msg = _fix_gbrain_orphan_process()
-  File "...", line P, in _fix_gbrain_orphan_process
-    out, _, rc = _run(["systemctl", "--user", "is-active", "gbrain-autopilot"])
+    orphan_msg = _fix_orphan_process()
+  File "...", line P, in _fix_orphan_process
+    out, _, rc = _run(["systemctl", "--user", "is-active", "health-vector"])
 NameError: name '_run' is not defined
 ```
 
@@ -19,7 +19,7 @@ The cron `last_status` may show `ok` because the errored code path hasn't been t
 
 ## Root Cause
 
-A function body references a helper function `_run()` that was never defined in the module (missing import, copy-paste from another script, or the helper was removed in a refactor). The error sits dormant because the function only gets called on specific conditions (e.g. when `gbrain` is detected as DOWN).
+A function body references a helper function `_run()` that was never defined in the module (missing import, copy-paste from another script, or the helper was removed in a refactor). The error sits dormant because the function only gets called on specific conditions (e.g. when a service is detected as DOWN).
 
 ## Fix
 
@@ -35,7 +35,7 @@ def _scoped_run(cmd: list[str]) -> tuple[str, str, int]:
         return "", "", -1
 
 # Then replace every _run(...) with _scoped_run(...)
-out, _, rc = _scoped_run(["systemctl", "--user", "is-active", "gbrain-autopilot"])
+out, _, rc = _scoped_run(["systemctl", "--user", "is-active", "health-vector"])
 ```
 
 Benefits of the scoped approach:

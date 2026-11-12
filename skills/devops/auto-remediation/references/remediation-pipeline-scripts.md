@@ -19,7 +19,7 @@ All 6 scripts in the auto-remediation pipeline, their deployed paths, repo paths
 ```
 remediation-sensor.py (every 5m)
   │  Detects: missing scripts, git issues, disk/memory pressure,
-  │  service down, nginx issues, gbrain health, SSL certs, cron errors
+  │  service down, nginx issues, mycortex health, SSL certs, cron errors
   │  Output: JSON to ~/.hermes/cron/output/<job-id>/
   ▼
 agent-remediate-apply.py (every 10m)
