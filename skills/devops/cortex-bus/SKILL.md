@@ -686,6 +686,32 @@ orchestrator traffic:
 `ops/services/cortex-bus/server.py`) is **deleted**. If a 403 appears, check
 the agent's `can_write` array, not boolean flags.
 
+### Reading a pending message's FULL body (evaluating an inbox message)
+
+The peek responses carry METADATA only (`msg_id`, `from`, `subject`,
+`correlation_id`) — but the raw `/api/pgmq/peek/<queue>` response DOES include
+each message's `body` (the MCP tool trims it). To evaluate a pending request
+(an escalation, a handoff, a SKILL_DRIFT_RECOVERY_REQUEST), three rules decide
+where the body is and how to read it:
+
+- **Read it with `curl -u "$CORTEX_BASIC_AUTH" "$CORTEX_BUS_URL/api/pgmq/peek/<queue>?limit=100"`
+  and parse `messages[].body`.** Basic auth, not Bearer: nginx on the external
+  URL ignores Bearer and requires Basic; the Bearer token only works on the
+  local raw bus.
+- **Peer-enqueued messages are NOT in the local store.** For the BACKUP
+  orchestrator, `CORTEX_BUS_URL` points at the PEER's bus (esther → moses
+  `:13004`), so a psql query against the local `mycortex-postgres` or a curl to
+  the local `:8903` returns NOTHING for a message the MCP peek just showed —
+  that reads as "not found" but means "on the peer". Curl the URL the MCP
+  actually talks to (`CORTEX_BUS_URL`), never the local bus, to find a
+  peer-enqueued message.
+- **A message that vanished from peek moved to ARCHIVES — check who consumed it
+  before acting.** `/api/pgmq/archives/<queue>` carries `archived_at`; a
+  freshly-archived request means the orchestrator handler (or the peer) already
+  took it. Verify the work is not in flight on their side (git log, working
+  tree, an unmerged diff) before duplicating it — acting on a copy whose
+  original was consumed is how two sessions race to land the same change.
+
 ## Bus tokens silently expire at T+90d — rotation does NOT refresh `expires_at` (2026-10-14)
 
 **Symptom:** every authenticated endpoint on the LOCAL bus returns

@@ -922,10 +922,13 @@ written while every code path looked correct.
   that host until it clears — read WHICH check failed before debugging your commit, and
   re-run the deploy gate first, since deploying your own change is what usually retires
   a stale `❌ Deploy sync`. Clearing such a FAIL can be outside your authority — an
-  `AGENTS.md` refresh is an approval-gated write (the prompt times out while the
-  operator is away) — so commit locally, report the blocking check plus the local SHA
-  ("committed locally, not yet pushed"), and let the operator approve the fix. Never
-  bypass the gate or delete the check to silence it.
+  `AGENTS.md` or `CLAUDE.md` refresh is an approval-gated write to an agent-instruction
+  file, and a TIMED-OUT approval prompt is NO consent: the block states the user has NOT
+  consented and forbids re-attempting the edit via another path (terminal,
+  execute_code, a fresh begin_change). So commit the rest locally, report the blocking
+  check plus the local SHA ("committed locally, not yet pushed"), and wait for the
+  operator's explicit authorization — the doctor's `CLAUDE.md (dev repos)` reconcile
+  stays WARN until then. Never bypass the gate or delete the check to silence it.
 - The dogfood gate auto-runs fleet-update; its pull step failing with
   "cannot pull with rebase: You have unstaged changes" is a second
   fingerprint of the concurrent tree.

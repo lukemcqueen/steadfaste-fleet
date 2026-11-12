@@ -233,6 +233,39 @@ not a reason. Two rules that keep this honest:
   the deferral does not make the underlying work go away, so name it in the delivery.
 
 Known doctor-fix patterns:
+- **When the directive is to fix ALL warnings/info, work the FULL list, never the summary.**
+  Capture every warn/info line AND the REQUIRED ACTIONS block (the per-check remedy
+  lines) in the same pass — `fleet-doctor.py --quiet 2>&1 | grep -E '⚠️|ℹ️|REQUIRED' |
+  grep -v DEBUG`. A check printed with `[deferred …]` or `[deliberate …]` has its DETAIL
+  masked by the disposition: read that check's own `res.add(…)` call in
+  `ops/scripts/manage/fleet_doctor/checks.py` for the exact condition and remedy. The
+  classes and their fixes:
+  - `Skill drift: <cat>/<name>` — the doctor's drift check scans ONLY `**/SKILL.md`.
+    Recover: `reconcile-stranded-skills.py` report → `--apply` (pure supersets only) →
+    regenerate the parity table → commit as its OWN governed change. The deeper
+    `check-skill-drift-parity.py` ALSO flags deployed references/templates absent from the
+    repo, in two directions: files the repo's own SKILL.md references (`never-committed`)
+    are COPY deployed→repo and commit; paths deleted from repo history
+    (`dropped-from-repo` — renames, decommissions) are DELETE the deployed leftover —
+    never restore a deliberate deletion just to silence a parity row.
+  - `USER.md template (~/.hermes)` — mtime-only check (seed newer than live ⇒ "review the
+    template"). The seed is generic new-user boilerplate and a personalized live profile
+    is already the superset — nothing to merge; `touch` the live file to record the
+    review and the check passes.
+  - `Skills loadable (published)` — a foreign ~/.agents/skills SKILL.md with
+    loader-refused frontmatter; the usual defect is an unquoted `: ` (colon+space)
+    inside `description:` (YAML: "mapping values are not allowed here"). Fix the SOURCE
+    plugin repo first so the next install propagates it, then the deployed and
+    published copies.
+  - `CLAUDE.md (dev repos)` — agent-instruction file, approval-gated; a timed-out
+    approval prompt is NO consent, so it cannot be fixed in-session — report it and
+    wait for the operator's explicit authorization.
+  - `PENDING cycles` (INFO) — usually your own open cycle; clears when it closes.
+  - `loop-gov daemon` — a deploy artifact, not stale code: the deploy force-rewrites
+    `loop-gov-mcp.py` byte-identically (mtime advances past the daemon start) and the
+    startup stamp records ONE pid, so the un-stamped sibling daemon reads "COULD NOT
+    VERIFY by content" after EVERY deploy. Remedy: gateway restart; the durable fix is
+    a per-pid stamp map.
 - **`⚠️ MCP wiring (<server>) — registered against the HERMES venv`** → re-register against the
   fleet venv, keeping the deployed script paths as `--args`. `hermes mcp add` is INTERACTIVE: it
   asks `Enable all N tools?` and with stdin closed it prints `Cancelled.` and writes NOTHING while
