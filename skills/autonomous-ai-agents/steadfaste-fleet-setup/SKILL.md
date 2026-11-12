@@ -47,7 +47,7 @@ Walkthrough for installing the core Steadfaste Fleet components on a Linux (or m
 - Linux or macOS host
 - `curl`, `git`, `python3`, `unzip` available
 - Hermes Agent installed (the fleet skill set layers on top)
-- Target repo cloned: `git clone https://github.com/nousresearch/steadfaste-fleet.git ~/steadfaste-fleet`
+- Target repo cloned: `git clone https://github.com/lukemcqueen/steadfaste-fleet.git ~/steadfaste-fleet`
 
 ## Installation Steps
 
@@ -70,7 +70,13 @@ echo "Python3.12: $(python3.12 --version 2>/dev/null || echo 'MISSING')"
 git clone --depth 1 https://github.com/lukemcqueen/steadfaste-fleet.git ~/steadfaste-fleet
 ```
 
-**Pitfall — Installer script path bug:** The `install.sh` script references scripts at `$(_scripts)/install-ollama.sh` but the actual file is at `$(_scripts)/install/install-ollama.sh` (inside an `install/` subdirectory). Running `install.sh` directly will fail on step 1 with a "No such file or directory" error. Fix: run the individual install scripts manually rather than the monolithic installer, or symlink the paths.
+**Pitfall — Installer script path:** The `install.sh` Ollama step calls
+`bash "$(_scripts)/install/install-ollama.sh"` — a script that does NOT exist
+anywhere in `ops/install/` as of 2026-11-12 (verified: `find ops/install -iname
+'*ollama*'` is empty). The monolithic `install.sh` therefore FAILS at step 1
+("Installing Ollama"). Use the individual steps of this skill instead (step 1
+Ollama, etc.) rather than the monolithic installer until that reference is
+restored.
 
 ### 1. Install Ollama (Local LLM Server for Embeddings)
 
@@ -213,16 +219,16 @@ handle ongoing sync + pruning automatically.
 
 ### 5. Set Up Health Server (Agent Reachability)
 
-**IMPORTANT — use the documented tool first:** The canonical approach per `setup-reference.md` uses `health-vector.py` (simple Python `http.server`, no dependencies). Avoid inventing custom solutions — the repo ships documented scripts for each purpose. The FastAPI `health-server.py` is a richer alternative for when you need detailed diagnostics, but always start with the documented approach unless you have a specific reason not to.
+**IMPORTANT — use the documented tool first:** The canonical approach per `setup-reference.md` uses `health-vector.py` (simple Python `http.server`, no dependencies) — it is the ONLY health server in the repo (the FastAPI `health-server.py` was removed; see the note below). Avoid inventing custom solutions — the repo ships documented scripts for each purpose.
 
 Each agent machine runs a health server so the orchestrator (Moses) can poll its status. Without this, the health report shows the agent as 🔴 unreachable.
 
 #### Primary Approach: health-vector.py (Documented per setup-reference.md)
 
-This is the canonical approach. It's a zero-dependency HTTP server that outputs a compact 9-element vector. Ports per agent from the docs:
+This is the canonical approach. It's a zero-dependency HTTP server that outputs a compact 9-element vector. External (nginx) ports per agent — the agent's prefix + `007`; the INTERNAL health-vector port is ALWAYS 8905:
 
-| Agent | Port |
-|-------|------|
+| Agent | External (nginx) port |
+|-------|----------------------|
 | Moses/Gisu/Kustos | `:13007` |
 | Joseph | `:12007` |
 | Esther | `:14007` |
@@ -318,7 +324,7 @@ cat > ~/.steadfaste-fleet/state/agent-registry.json << 'EOF'
    "accessible": true,
    "platform": "linux",
    "health_method": "http",
-   "health_url": "http://127.0.0.1:8905/api/v1/health",
+   "health_url": "http://127.0.0.1:8905/health",
    "description": "<Agent Name> — <description>",
    "inbox_user": "<agent-name>",
    "inbox_watch_schedule": "every 10m",
@@ -552,6 +558,11 @@ Then run the installer:
 ```bash
 bash ~/steadfaste-fleet/ops/scripts/install-crons.sh
 ```
+
+`install-crons.sh` reads the DEPLOYED scripts dir (`~/.steadfaste-fleet/scripts`,
+line 41) and registers jobs whose script paths are relative to
+`~/.hermes/scripts/` (the cron runtime's dir — see the pitfalls below);
+`fleet-update.sh` keeps the two in sync.
 
 Expected output: "✓ Created: N new cron job(s)" where N is the number of scripts found (up to 28+).
 
