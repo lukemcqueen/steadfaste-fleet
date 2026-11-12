@@ -235,7 +235,7 @@ restart requirements — same rule applies. The regex branches:
 ## Pitfall 13: A peer's deploy holds the mutex — stand down, don't fight it
 
 `fleet-update.sh` guards itself with a mutex and prints
-`fleet-update mutex held: another deploy is running (~/.steadfaste-fleet/state/cortex-update.lock)`
+`fleet-update mutex held: another deploy is running (~/.steadfaste-fleet/state/fleet-update.lock)`
 then exits non-zero, followed by `relock ran on a FAILED exit (rc=1) — enforcement files
 re-secured` (the fail-safe doing its job, not a second fault). The lock FILE's mtime is useless
 evidence — it can be days old while a live holder exists. Read the process tree instead:

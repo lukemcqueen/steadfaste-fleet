@@ -25,14 +25,14 @@
 #  ── Usage (2026-07-31 hardening) ───────────────────────────
 #    sudo hermes-plugin-lock lock                      → any agent may lock
 #    sudo hermes-plugin-lock status                    → any agent may inspect
-#    sudo hermes-plugin-lock unlock --cortex-update    → SANCTIONED: the only
+#    sudo hermes-plugin-lock unlock --fleet-update    → SANCTIONED: the only
 #        sanctioned unlock channel. fleet-update.sh passes this token
 #        (it is the designated deploy mechanism for the enforcement chain).
 #        Allowed for every agent — this is the intended update path.
 #    sudo hermes-plugin-lock unlock --orchestrator     → ORCHESTRATOR EXCEPTION:
 #        manual maintenance, bound to the Unix account (SUDO_USER/USER must
 #        be moses or esther). NOT an env var — an account-level boundary.
-#    hermes-plugin-lock update --cortex-update / --orchestrator
+#    hermes-plugin-lock update --fleet-update / --orchestrator
 #        → self-update, gated identically (rewrites the helper itself).
 #
 #  Any unlock/update WITHOUT a valid token is REFUSED and AUDIT-LOGGED.
@@ -141,8 +141,6 @@ _audit() {
 
 # ── Sanctioned-caller gate (2026-07-31) ────────────────────
 # unlock/update mutate the enforcement chain. Valid tokens:
-#   --cortex-update  → fleet-update.sh (the sanctioned deploy path);  [old token,
-#                      accepted during the cortex→fleet token migration]
 #   --fleet-update   → fleet-update.sh (the sanctioned deploy path); the
 #                      canonical token; allowed for every agent (fleet updates).
 #   --orchestrator   → manual maintenance; REQUIRES the invoking Unix
@@ -152,7 +150,7 @@ _audit() {
 # No token, or a token from a non-orchestrator account → REFUSED + logged.
 _require_sanctioned_caller() {
   local action="$1" token="${2:-}" ok=0 channel=""
-  if [[ "$token" == "--cortex-update" || "$token" == "--fleet-update" ]]; then
+  if [[ "$token" == "--fleet-update" ]]; then
     ok=1; channel="fleet-update"
   elif [[ "$token" == "--orchestrator" ]]; then
     case "$REAL_USER" in
@@ -236,10 +234,10 @@ case "${1:-help}" in
     done
     ;;
   *)
-    echo "Usage: $0 {lock|status} | {unlock|update} {--cortex-update|--orchestrator}" >&2
+    echo "Usage: $0 {lock|status} | {unlock|update} {--fleet-update|--orchestrator}" >&2
     echo "" >&2
     echo "  lock/status              → any agent" >&2
-    echo "  unlock --cortex-update   → sanctioned (fleet-update.sh)" >&2
+    echo "  unlock --fleet-update   → sanctioned (fleet-update.sh)" >&2
     echo "  unlock --orchestrator    → orchestrator account only (moses|esther)" >&2
     echo "  update (same tokens)     → self-update, gated identically" >&2
     echo "" >&2

@@ -19,7 +19,7 @@ __SUDO_USERS__ ALL=(root) NOPASSWD: /usr/bin/systemctl restart nginx
 __SUDO_USERS__ ALL=(root) NOPASSWD: /bin/cp /tmp/blocked_ips.conf.new /etc/nginx/blocked_ips.conf
 
 # Fleet agents — governance enforcement helper (2026-07-31 hardening)
-# Gated inside the helper: unlock/update require --cortex-update (sanctioned)
+# Gated inside the helper: unlock/update require --fleet-update (sanctioned)
 # or --orchestrator (orchestrator Unix accounts). lock/status open to all.
 __SUDO_USERS__ ALL=(root) NOPASSWD: /usr/local/sbin/hermes-plugin-lock
 # Full nginx service installer + clean restart (fleet-update deploy targets)

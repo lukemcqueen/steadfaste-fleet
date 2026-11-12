@@ -15,7 +15,7 @@ set -euo pipefail
 
 # ── Sanctioned unlock channel (2026-07-31) ──
 # hermes-plugin-lock restricts unlock/update to a command-line token:
-#   sudo hermes-plugin-lock unlock --cortex-update
+#   sudo hermes-plugin-lock unlock --fleet-update
 # (env vars DON'T survive sudo on this host — sudoers has env_reset with
 # no SETENV/env_keep — so the token must be an argument, not an export.)
 # macOS runs the helper without sudo, where the arg token also works.
@@ -1279,8 +1279,8 @@ copy_file() {
       else
         # P1-A hardening: route exclusively through the gated helper
         # (direct chattr bypasses the sanctioned-caller gate). The
-        # --cortex-update token passes through sudoers arg matching.
-        sudo -n "$(command -v hermes-plugin-lock 2>/dev/null || echo /usr/local/sbin/hermes-plugin-lock)" unlock --cortex-update 2>/dev/null || true
+        # --fleet-update token passes through sudoers arg matching.
+        sudo -n "$(command -v hermes-plugin-lock 2>/dev/null || echo /usr/local/sbin/hermes-plugin-lock)" unlock --fleet-update 2>/dev/null || true
       fi
       # Unlocking the immutable flag does NOT restore write permission —
       # a file left 444 by a previous lock run (deploy_governance_plugin /
@@ -1380,18 +1380,18 @@ check_each_mapped_file() {
   local _lock_helper="${CORTEX_DEPLOY_HOME}/scripts/hermes-plugin-lock"
   if [[ "$_os" == "Darwin" ]]; then
     if [[ -f "$_lock_helper" ]]; then
-      bash "$_lock_helper" unlock --cortex-update 2>/dev/null || true
+      bash "$_lock_helper" unlock --fleet-update 2>/dev/null || true
     elif command -v hermes-plugin-lock &>/dev/null; then
-      hermes-plugin-lock unlock --cortex-update 2>/dev/null || true
+      hermes-plugin-lock unlock --fleet-update 2>/dev/null || true
     fi
   else
     # Linux: non-root chattr -i fails with "Operation not permitted", so
     # the previous `bash "$_lock_helper" unlock` silently left files locked
     # and the cp below aborted. Route through the sudo helper (NOPASSWD).
     if command -v hermes-plugin-lock &>/dev/null; then
-      sudo -n hermes-plugin-lock unlock --cortex-update 2>/dev/null || true
+      sudo -n hermes-plugin-lock unlock --fleet-update 2>/dev/null || true
     elif [[ -f "$_lock_helper" ]]; then
-      sudo -n "$_lock_helper" unlock --cortex-update 2>/dev/null || bash "$_lock_helper" unlock --cortex-update 2>/dev/null || true
+      sudo -n "$_lock_helper" unlock --fleet-update 2>/dev/null || bash "$_lock_helper" unlock --fleet-update 2>/dev/null || true
     fi
   fi
 
@@ -2193,7 +2193,7 @@ deploy_system_scripts() {
       if command -v sudo &>/dev/null; then
         # ── Self-deploy via update command (binary can update itself) ──
         if [[ "$script" == "hermes-plugin-lock" ]] && [[ -f "$dest" ]]; then
-          sudo -n "$dest" update --cortex-update 2>/dev/null && {
+          sudo -n "$dest" update --fleet-update 2>/dev/null && {
             if [[ "$_os" == "Darwin" ]]; then
               sudo chown "$(id -un)":staff "$dest" 2>/dev/null || true
             fi
@@ -2443,7 +2443,7 @@ deploy_governance_plugin() {
 
     # Remove immutability if set (uses sudo helper)
     if [[ -f "$dest" ]]; then
-      ${_lock_prefix} hermes-plugin-lock unlock --cortex-update 2>/dev/null || true
+      ${_lock_prefix} hermes-plugin-lock unlock --fleet-update 2>/dev/null || true
       info "    Removed immutability: ${file}"
     fi
 
@@ -3012,8 +3012,8 @@ install_precommit_hook() {
         # hooks/ is immutable (hermes-plugin-lock target): unlock, link, relock — and REPORT every
         # failure. Each one silently swallowed here leaves the host with either no trailer (every
         # close stays whole-window) or a WRITABLE enforcement dir; both must be visible.
-        if ! ${_prepmsg_lp} "$_prepmsg_helper" unlock --cortex-update; then
-          warn "  prepare-commit-msg hook NOT deployed: '${_prepmsg_lp} ${_prepmsg_helper} unlock --cortex-update' failed —"
+        if ! ${_prepmsg_lp} "$_prepmsg_helper" unlock --fleet-update; then
+          warn "  prepare-commit-msg hook NOT deployed: '${_prepmsg_lp} ${_prepmsg_helper} unlock --fleet-update' failed —"
           warn "    commits in this repo will carry NO Cortex-Session trailer (closes stay whole-window)"
         else
           rm -f "$prepmsg_dest" 2>/dev/null || true

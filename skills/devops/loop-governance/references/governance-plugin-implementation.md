@@ -292,7 +292,7 @@ mkdir -p ~/.hermes/plugins
 
 # The plugin deploys as a COPY via fleet-update.sh (not symlink — enables chattr +i).
 # fleet-update.sh is the ONLY sanctioned way to update the enforcement chain
-# (hermes-plugin-lock unlock/update require the --cortex-update token or an
+# (hermes-plugin-lock unlock/update require the --fleet-update token or an
 # orchestrator account since 2026-07-31):
 bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh
 

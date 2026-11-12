@@ -129,7 +129,7 @@ the operator never sees.
 
 ## Spoofable Unlock Tokens
 
-`hermes-plugin-lock unlock --cortex-update` historically accepted the token
+`hermes-plugin-lock unlock --fleet-update` historically accepted the token
 from ANY account with zero caller proof. The token was a string, not a caller.
 
 Fix pattern: **fresh root-owned marker file** created inside fleet-update.sh

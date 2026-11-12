@@ -576,9 +576,9 @@ if [[ "$_DOGFOOD_TOPLEVEL" == "${HOME}/steadfaste-fleet" && -n "$DOGFOOD_HEAD" &
       #           fails fast instead of prompting when sudoers is not set up.
       _dogfood_os=$(uname -s 2>/dev/null || true)
       if [[ "$_dogfood_os" == "Darwin" ]]; then
-        hermes-plugin-lock unlock --cortex-update 2>/dev/null || true
+        hermes-plugin-lock unlock --fleet-update 2>/dev/null || true
       else
-        sudo -n hermes-plugin-lock unlock --cortex-update 2>/dev/null || true
+        sudo -n hermes-plugin-lock unlock --fleet-update 2>/dev/null || true
       fi
       cp -f "$DOGFOOD_REPO" "$DOGFOOD_DEPLOY" 2>/dev/null || true
       if [[ "$_dogfood_os" == "Darwin" ]]; then
