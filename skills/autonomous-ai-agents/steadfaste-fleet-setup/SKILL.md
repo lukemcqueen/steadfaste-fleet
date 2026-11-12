@@ -74,13 +74,15 @@ echo "Python3.12: $(python3.12 --version 2>/dev/null || echo 'MISSING')"
 git clone --depth 1 https://github.com/lukemcqueen/steadfaste-fleet.git ~/steadfaste-fleet
 ```
 
-**Pitfall — Installer script path:** The `install.sh` Ollama step calls
-`bash "$(_scripts)/install/install-ollama.sh"` — a script that does NOT exist
-anywhere in `ops/install/` as of 2026-11-12 (verified: `find ops/install -iname
-'*ollama*'` is empty). The monolithic `install.sh` therefore FAILS at step 1
-("Installing Ollama"). Use the individual steps of this skill instead (step 1
-Ollama, etc.) rather than the monolithic installer until that reference is
-restored.
+**Pitfall — Installer script path (CORRECTED 2026-11-12):** The `install.sh`
+Ollama step calls `bash "$(_scripts)/install/install-ollama.sh"`. That script
+EXISTS at `ops/scripts/install/install-ollama.sh` (it implements the
+`install` / `service` / `wait` / `embed` / `build_qwen` subcommands) — an
+earlier note claimed it was missing because the survey ran `find ops/install`
+instead of `find ops/scripts/install`. Search the root the path actually
+resolves (`$(_scripts)` = `${REPO_ROOT}/ops/scripts`), never a sibling guess.
+The monolithic installer is functional for Ollama; the individual steps below
+remain the recommended per-host path (they allow no-sudo installs).
 
 ### 1. Install Ollama (Local LLM Server for Embeddings)
 
