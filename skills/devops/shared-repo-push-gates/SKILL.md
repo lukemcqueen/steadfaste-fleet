@@ -611,8 +611,17 @@ does not apply.
      **A THIRD source writes skills NOBODY touched: a background lesson/curation pipeline writes
      the DEPLOYED copies while you work.** Drift then appears on skills outside your change and
      REAPPEARS after you reconcile them — the same two skills drifted three times in one session,
-     the last time mid-deploy. Treat it as routine maintenance, not as a failure of your change:
-     recover with `python3 ops/scripts/manage/reconcile-stranded-skills.py --apply`, which applies
+     the last time mid-deploy. Treat it as routine maintenance, not as a failure of your change, and
+     KNOW that the pure-superset class now recovers ITSELF: the `agent-skill-drift-reconcile` no_agent
+     cron (every 2h, systemd bridge) runs `reconcile-stranded-skills.py --apply` and commits+pulls the
+     supersets, so a pure-superset strand usually resolves within two hours without you touching it.
+     Your remaining duty when the doctor still shows skill drift: (a) the need-review/DROP class — the
+     reconciler REFUSES it, so a deployed copy that REPLACES lines must be merged by hand (check the
+     DROP by PHRASE before merging); and (b) verify the reconciler is running, not silently failing —
+     grep its run log for a surfaced `reconcile-stranded-skills.py --apply failed` or a stuck git state
+     before you hand-reconcile something the cron would have done. Only hand-run
+     `python3 ops/scripts/manage/reconcile-stranded-skills.py --apply` when you need the recovery NOW
+     or the reconciler is down. When you DO run it, remember it applies
      the pure-superset class only and NAMES any file needing a real merge — a file whose deployed
      side REPLACES lines must be merged by hand, after reading the removals to confirm each is a
      stale lesson being rewritten rather than information being dropped. Then re-run
