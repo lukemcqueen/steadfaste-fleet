@@ -182,12 +182,16 @@ auto-created by the `agent-learning-collector` on its first tick (every 6h)
 and by `bootstrap-brain.sh` during install — the `mkdir -p` below is only
 needed for immediate use before the first collector run.
 
-During an active session, write a structured `.md` file:
+During an active session, write a structured `.md` file with the FILE TOOL
+(`write_file`), path inside `~/brain/learnings/pending/`. **Do NOT shell-write
+it** (`cat >`, heredoc, `tee`): the harness only sanctions `~/brain` writes
+through the file tool — a terminal write resolves no repo, so no lock can cover
+it and the gate refuses it. `write_file` creates parent directories itself:
 
-```bash
-mkdir -p ~/brain/learnings/pending
+```text
+# write_file(path="~/brain/learnings/pending/20261112-discovery.md", content="<markdown below>")
+# name convention: YYYYMMDD-<slug>.md  (e.g. 20261112-discovery.md)
 
-cat > ~/brain/learnings/pending/$(date +%Y%m%d)-discovery.md << 'EOF'
 ---
 title: Found a better pattern for X
 type: discovery
@@ -201,7 +205,6 @@ Why it's correct — commands run, outputs observed, files read.
 
 ### Recommendation
 What Moses should do with this: patch a skill, create one, update SOUL.md.
-EOF
 ```
 
 ### Supported Types

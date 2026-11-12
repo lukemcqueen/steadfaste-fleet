@@ -39,11 +39,16 @@ Each pointer fits in ~120 characters and carries a `→ /brain m <topic>` hint s
 
 ### 1. Create the Agent Brain
 
-Pick a location — typically `~/brain/<agent-name>/`:
+Pick a location — typically `~/brain/<agent-name>/`. Create the files with
+the FILE TOOL (`write_file`) — it creates parent directories itself, and the
+harness only sanctions `~/brain` writes through the file tool; a `mkdir`/`cat`
+in the terminal resolves no repo and is refused (no lock covers a brain write):
+
+```text
+# write_file(path="~/brain/moses/references/system.md", content=…)   ← creates dirs
+```
 
 ```bash
-mkdir -p ~/brain/moses/references
-cd ~/brain/moses
 git init
 git remote add origin <your-private-repo>
 ```
@@ -80,7 +85,7 @@ Example transformation:
 
 ### 3. Seed Brain References
 
-Create a `references/` directory in your agent brain with one file per memory topic. Each file has the full detail the agent needs when it drills in.
+Create a `references/` directory in your agent brain with one file per memory topic (via `write_file` — it creates the directory; never `mkdir`/`cat` in the terminal, which the harness refuses for `~/brain`). Each file has the full detail the agent needs when it drills in.
 
 ```markdown
 # references/crons.md

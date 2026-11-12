@@ -7,7 +7,10 @@ description: |
 
   Lessons are markdown files in `~/brain/lessons/` (YAML frontmatter + Problem/
   Root Cause/Solution sections), mined automatically by the daily
-  `daily-lesson-mine.sh` cron and indexed by mycortex.
+  `daily-lesson-mine.sh` cron and indexed by mycortex. WRITE them with the file
+  tool (write_file) at a ~/brain/lessons/ path — shell redirects to ~/brain are
+  refused by the harness gate (the brain is not a git repo, so no lock covers a
+  terminal write); only file-tool writes inside ~/brain are sanctioned.
 
   IMPORTANT: `offline_knowledge lesson create|search|index` does NOT exist —
   the `offline_knowledge` tool has only `bible` and `hymns` subcommands.
@@ -40,12 +43,22 @@ Do NOT save a lesson for:
 
 ## How to Create a Lesson
 
-After fixing a bug, write a markdown file directly to `~/brain/lessons/`
-(the `offline_knowledge lesson` subcommand does NOT exist — do not use it):
+After fixing a bug, write a markdown file **directly with the FILE TOOL** to
+`~/brain/lessons/` (the `offline_knowledge lesson` subcommand does NOT exist —
+do not use it).
 
-```bash
+> **⚠️ Use the file tool, never a shell redirect.** The harness ONLY sanctions
+> `~/brain` writes through `write_file`/`patch` with a path inside `~/brain`.
+> The brain is deliberately NOT a git repo, so a *terminal* write
+> (`cat >`, `tee`, `>>`, heredoc, `echo`) can never be lock-authorized —
+> it is refused with "no governed repo / no lock covers it" — and that refusal
+> also hits the lesson you were about to save. Everything below assumes
+> `write_file(path="~/brain/lessons/…", content="…")`, which creates parents.
+
+```text
 # Filename convention: YYYY-MM-DD_<timestamp>_<hash>.md
-LESSON="$HOME/brain/lessons/$(date +%F)_$(date +%H%M%S)_$RANDOM.md"
+# e.g. write_file(path="~/brain/lessons/2026-09-08_101522_a1b2c3.md", content=…)
+# (generate the name in your head: date + clock time + a short hash)
 ```
 
 ```markdown
