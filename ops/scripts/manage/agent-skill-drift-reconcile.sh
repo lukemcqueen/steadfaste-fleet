@@ -42,27 +42,44 @@ fi
 # ── Guard: abort on stale git state before touching anything ───
 if git -C "$CORTEX_REPO" rev-parse --git-dir &>/dev/null; then
   if git -C "$CORTEX_REPO" rebase --show-current &>/dev/null 2>&1; then
-    git -C "$CORTEX_REPO" rebase --abort 2>/dev/null || true
-    log "aborted a stale rebase"
+    if ! git -C "$CORTEX_REPO" rebase --abort 2>/dev/null; then
+      log "could not abort a stale rebase (rc=$?)"
+    else
+      log "aborted a stale rebase"
+    fi
   fi
-  git -C "$CORTEX_REPO" cherry-pick --quit 2>/dev/null || true
-  git -C "$CORTEX_REPO" merge --quit 2>/dev/null || true
+  git -C "$CORTEX_REPO" cherry-pick --quit 2>/dev/null || log "cherry-pick --quit failed (rc=$?)"
+  git -C "$CORTEX_REPO" merge --quit 2>/dev/null || log "merge --quit failed (rc=$?)"
 fi
 
 # A scheduler run may start on a lagging checkout — pull other agents' commits
 # first so the reconcile baseline is fresh (and we never re-strand work they
-# already committed). ff-only: never create a merge here.
-git -C "$CORTEX_REPO" pull --ff-only >/dev/null 2>&1 || true
+# already committed). ff-only: never create a merge here. A failed pull is
+# surfaced in the log (a stale baseline could re-strand a peer's committed
+# work); the cycle still proceeds so a transient network blip retries next run.
+if ! git -C "$CORTEX_REPO" pull --ff-only >/dev/null 2>&1; then
+  log "git pull --ff-only failed (rc=$?) — proceeding on the local baseline"
+fi
 
 # ── Snapshot the skill tree before, so we can stage ONLY the delta ──
 SCOPE="skills/ docs/evidence/ docs/SKILLS-MANIFEST.md"
 BEFORE=$(cd "$CORTEX_REPO" && git status --porcelain --untracked-files=all -- $SCOPE 2>/dev/null || true)
 
 # ── Recover the safe (pure-superset) strand class ────────────────
-(cd "$CORTEX_REPO" && python3 ops/scripts/manage/reconcile-stranded-skills.py --apply >/dev/null 2>&1) || true
+# A failed reconcile is SURFACED (not swallowed): if the reconciler breaks
+# (missing dep, permission, corrupt state), the run would otherwise silently
+# find "no changes" and mask a broken pipeline. We log it and continue — a
+# transient failure retries next cycle without crashing the watchdog.
+if ! (cd "$CORTEX_REPO" && python3 ops/scripts/manage/reconcile-stranded-skills.py --apply >/dev/null 2>&1); then
+  log "reconcile-stranded-skills.py --apply failed (rc=$?) — no recovery this cycle"
+fi
 # A recovered strand that touches a skill's frontmatter description makes the
-# skills manifest stale — regenerate it so the doc-audit gate stays green.
-(cd "$CORTEX_REPO" && bash ops/scripts/manage/gen-skills-manifest.sh >/dev/null 2>&1) || true
+# skills manifest stale — regenerate it so the doc-audit gate stays green. A
+# failed regen leaves the manifest stale and is logged (it could trip the
+# doc-audit gate on the commit below).
+if ! (cd "$CORTEX_REPO" && bash ops/scripts/manage/gen-skills-manifest.sh >/dev/null 2>&1); then
+  log "gen-skills-manifest.sh failed (rc=$?) — manifest may be stale for this commit"
+fi
 
 AFTER=$(cd "$CORTEX_REPO" && git status --porcelain --untracked-files=all -- $SCOPE 2>/dev/null || true)
 if [ "$AFTER" == "$BEFORE" ] || [ -z "$AFTER" ]; then
@@ -82,7 +99,10 @@ cd "$CORTEX_REPO"
 {
   printf '%s\n' "$AFTER"
 } | awk '{print $2}' | while IFS= read -r p; do
-  [ -n "$p" ] && git add -- "$p" 2>/dev/null || true
+  [ -n "$p" ] || continue
+  if ! git add -- "$p" 2>/dev/null; then
+    log "could not stage $p (rc=$?) — path may be missing or unreadable"
+  fi
 done
 
 # ── Fence-balance guard: never ship a corrupt skill ────────────────
