@@ -588,7 +588,7 @@ register "ops/scripts/manage/fleet_doctor/immutability.py" "${CORTEX_DEPLOY_HOME
 # as absent everywhere except the machine that wrote it.
 register "ops/scripts/manage/fleet_doctor/mcp_names.py"     "${CORTEX_DEPLOY_HOME}/scripts/fleet_doctor/mcp_names.py"
 register "ops/scripts/manage/fleet_doctor/jev.py"   "${CORTEX_DEPLOY_HOME}/scripts/fleet_doctor/jev.py"
-register "ops/scripts/manage/fleet_doctor/stale_hermes_cortex.py" "${CORTEX_DEPLOY_HOME}/scripts/fleet_doctor/stale_hermes_cortex.py"
+register "ops/scripts/manage/fleet_doctor/stale_premigration_home.py" "${CORTEX_DEPLOY_HOME}/scripts/fleet_doctor/stale_premigration_home.py"
 register "ops/scripts/manage/fleet_doctor/helpers.py" "${CORTEX_DEPLOY_HOME}/scripts/fleet_doctor/helpers.py"
 register "ops/scripts/manage/fleet_doctor/results.py" "${CORTEX_DEPLOY_HOME}/scripts/fleet_doctor/results.py"
 # Task-model integrity: migrations must actually deploy, and no slice may be
