@@ -178,6 +178,31 @@ So:
   definition. Reporting a bounded window as a contradiction is the failure this section exists to
   stop, and it cannot be answered by any edit to the file under review.
 
+## A renamed file's pre-existing content is CONTEXT, not a claim (2026-11-12)
+
+A sweep range (brand rename, e.g. hc→fleet) moves files without authoring them. A file whose
+content EXISTED at the range base (git shows the rename pair; its blob sha matches a pre-range
+blob) makes no NEW operational claims — its teaching was verified when it was authored. For such
+a file judge ONLY:
+
+- what THIS range changed about it (old-brand tokens swept, STALE labels correct, renamed
+  identifiers consistent, no dangling references introduced);
+- nothing else about its pre-existing operational assertions: they are CONTEXT, at most `info`.
+  Demanding a committed test for them is unsatisfiable by construction — the range did not write
+  them, and re-sending identical bytes cannot produce a different verdict.
+
+**Deliberate-keeps authority:** when `docs/rename-followups-steadfaste-fleet.md` is in the range,
+its keep list is the contract. Tokens it documents as deliberately kept are NOT findings:
+
+- the `cortex` short-name family (`cortex-bus.service`, `CORTEX_*` env vars, `mycortex`,
+  `cortex-bus.conf` STALE-labeled teaching) — a SEPARATE naming layer from the hc sweep;
+- `Hermes`/`hermes` (Hermes Agent runtime: `~/.hermes`, `hermes cron`, the `hermes-agent` skill)
+  — a separate live product, never part of the `hermes-cortex` brand;
+- `hermes-cortex-dashboard.service` — the dashboard unit keeps its pre-rename name.
+
+A `STALE` label on a line marks a kept literal — the sweep's own contract
+(`tests/test_fleet_cli_brand.sh` B7).
+
 ## Findings format (emit as JSON, nothing else after it)
 
 ```json
