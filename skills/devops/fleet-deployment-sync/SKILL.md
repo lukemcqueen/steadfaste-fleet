@@ -117,15 +117,26 @@ enforcement files re-locked? — is ambiguous. That is not a deploy bug and a cl
 re-run resolves it, but you lose the whole run.
 
 Run it as a **background** process with `notify=true`, redirect the FULL output to
-scratch, and append a real rc so you can read the verdict from the log:
+scratch, and append a real rc so you can read the verdict from the log. Bind the
+stamp to a shell variable ONCE — never write the timestamp twice:
 
 ```bash
 # background=true, notify=true
+stamp=$(date +%s)
 bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh \
-  > ~/.hermes/cache/scratch/fleet-update-<stamp>.log 2>&1
-echo "EXIT=$?" >> ~/.hermes/cache/scratch/fleet-update-<stamp>.log
+  > ~/.hermes/cache/scratch/fleet-update-$stamp.log 2>&1
+echo "EXIT=$?" >> ~/.hermes/cache/scratch/fleet-update-$stamp.log
 ```
 
+- **Two separate `$(date +%s)` expansions name TWO different files** — one for the
+  `>`, one for the `>>` — so `EXIT=$?` lands in a log WITHOUT the transcript (the
+  verdict and the run are split across files, and you must grep every
+  `fleet-update-*.log` — several stale from prior runs — to reconstruct which
+  exit code belongs to which run). Bind `<stamp>` to one variable so the redirect
+  and the append name the same file. A fixed literal name (`fleet-update-fleet.log`)
+  is the same trap from the other side: a second run clobbers the verdict of the first
+  (see Pitfall 25). Verify the verdict file actually contains the deploy transcript
+  before trusting its `EXIT=` line.
 - The redirect plus `echo "EXIT=$?"` captures the transcript AND the exit code;
   never judge the run from a `tail` of a pipe that already truncated it.
 - Poll with `ps -p <pid>` / `tail` on the log; do not start a second run while the
@@ -279,6 +290,31 @@ the content you intended (`git show HEAD:<path> | grep <marker>`), then drop the
 superseded stash (`git stash drop`) — never `git stash pop` a stash that conflicts
 with the commit you just made, and never `reset --hard` over work you cannot account
 for.
+
+**The variant that looks like data loss: the autostash is DROPPED, not left conflicted.**
+A timed-out pull can fast-forward the branch, drop the stash entry, and leave your
+uncommitted edits with NO `stash@{0}` and NO `UU` — `git stash list` empty, working tree
+clean, edits seemingly gone. They are not lost: the autostash commit is a dangling object.
+Recover before rebuilding:
+
+```bash
+git fsck --lost-found | grep 'dangling commit'    # one of these is your autostash
+# identify it by the reflog subject / parent — it reads "On main: autostash",
+# parent = your PRE-pull HEAD:
+git show --stat <dangling-sha> | head            # confirm it carries YOUR files
+# re-apply onto the present HEAD (3way tolerates unrelated origin changes):
+git diff <pre-pull-sha> <dangling-sha> -- <your-files> > /tmp/recover.patch
+git apply --3way /tmp/recover.patch              # or git apply --check first
+# verify the exact markers are back on disk, then commit normally; drop the stale
+# refs/stash if a leftover stash entry names the same sha.
+```
+
+A `git apply --3way` that errors `No valid patches in input` means the blob objects for
+three-way aren't reachable — fall back to a plain `git diff | git apply` (no 3way) from a
+clear base. Always verify with `grep <marker>` that the recovered edits are actually on
+disk before re-committing; a dangling commit picked by the WRONG `--lost-found` hit is work
+you did not mean to restore, so confirm the file list matches your change, not just that a
+commit exists.
 
 ## Pitfall 2: `blocked_ips.add` conflicts on every pull
 
