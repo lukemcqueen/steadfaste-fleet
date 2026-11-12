@@ -63,7 +63,7 @@
       "expect": "envelope", "body": "/stop", "thread": null, "media": 0,
       "reply_to": null, "tg_kind": "message",
       "gap": null,
-      "note": "the TRANSPORT still passes /stop through as a message; the DAEMON now recognises it, forwards it as tg_kind=command and interrupts the chat (G5/G6 closed) — asserted in tests/test_cortex_gateway_daemon_slice.py"
+      "note": "the TRANSPORT still passes /stop through as a message; the DAEMON now recognises it, forwards it as tg_kind=command and interrupts the chat (G5/G6 closed) — asserted in tests/test_fleet_gateway_daemon_slice.py"
     },
     {
       "name": "empty_text",

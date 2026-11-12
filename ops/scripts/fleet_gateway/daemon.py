@@ -1048,7 +1048,7 @@ class Gateway:
         The hermes backend is async (bus enqueue → None, reply arrives via
         poll_replies), but the seam also allows a backend that returns a reply
         directly — the original daemon sent it, and dropping it here was a
-        regression caught by test_cortex_gateway_daemon.py.
+        regression caught by test_fleet_gateway_daemon.py.
 
         A None reply is ambiguous on its own, so the BACKEND declares which it is
         (`async_replies`). For a synchronous backend None means the turn ENDED with

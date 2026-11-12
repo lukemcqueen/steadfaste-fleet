@@ -328,37 +328,3 @@ class TestImportGraphFromCoreContext:
         )
         assert r.returncode == 0, r.stderr
         assert "exercised" in r.stdout, r.stdout
-
-
-class TestCortexBusShimFromCoreContext:
-    """The one-release cortex_bus shim aliases fleet_bus from the SAME context."""
-
-    def _run(self, code: str) -> subprocess.CompletedProcess:
-        env = {"PYTHONPATH": str(CORE), "GIT_CONFIG_GLOBAL": "/dev/null"}
-        return subprocess.run(
-            [PY, "-c", code], capture_output=True, text=True, env=env, timeout=60
-        )
-
-    def test_shim_is_fleet_bus(self):
-        r = self._run(
-            "import cortex_bus, fleet_bus; "
-            "assert cortex_bus is fleet_bus"
-        )
-        assert r.returncode == 0, r.stderr
-
-    def test_shim_aliases_submodules(self):
-        r = self._run(
-            "import cortex_bus.server, cortex_bus.workflow.router; "
-            "import fleet_bus.server, fleet_bus.workflow.router; "
-            "assert cortex_bus.server is fleet_bus.server; "
-            "assert cortex_bus.workflow.router is fleet_bus.workflow.router"
-        )
-        assert r.returncode == 0, r.stderr
-
-    def test_shim_legacy_import_form(self):
-        r = self._run(
-            "from cortex_bus.queue import NotAvailableError, _load_config; "
-            "print(NotAvailableError.__name__)"
-        )
-        assert r.returncode == 0, r.stderr
-        assert r.stdout.strip() == "NotAvailableError"

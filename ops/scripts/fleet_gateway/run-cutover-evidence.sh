@@ -136,7 +136,7 @@ _say ""
 _say '```'
 TESTS="tests/test_gateway_cutover_guards.py tests/test_repo_resource_paths.py
 tests/test_deploy_marker_guard.py tests/test_gateway_modules_are_deployed.py
-tests/test_cortex_gateway_daemon.py tests/test_cortex_gateway_transport.py
+tests/test_fleet_gateway_daemon.py tests/test_fleet_gateway_transport.py
 tests/test_gateway_pairing.py"
 _PYTEST_LOG="$(mktemp)"
 (cd "$REPO" && "${PYTEST_PY:-$(command -v python3)}" -m pytest $TESTS -q > "$_PYTEST_LOG" 2>&1)

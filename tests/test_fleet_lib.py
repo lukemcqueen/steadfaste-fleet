@@ -118,30 +118,6 @@ def test_hermes_models_shim_reexports_fleet_lib(hermetic_scripts_path):
     assert shim.load_models_env is canonical.load_models_env
 
 
-# ── The ONE-RELEASE cortex_lib shim (the cortex->fleet transition) ─────────
-# cortex_lib/__init__.py aliases fleet_lib; the whole point of the shim is
-# that legacy imports resolve to the IDENTICAL callables, not copies. These
-# tests pin that identity on every submodule surface the shim must serve.
-def test_cortex_lib_shim_is_fleet_lib(hermetic_scripts_path):
-    fleet = importlib.import_module("fleet_lib")
-    legacy = importlib.import_module("cortex_lib")
-    assert legacy is fleet, "the cortex_lib shim must BE fleet_lib (sys.modules alias)"
-
-
-def test_cortex_lib_shim_reexports_fleet_lib_submodules(hermetic_scripts_path):
-    for sub in ("tz", "paths", "session_repo", "tools", "models"):
-        legacy = importlib.import_module(f"cortex_lib.{sub}")
-        canonical = importlib.import_module(f"fleet_lib.{sub}")
-        assert legacy is canonical, f"cortex_lib.{sub} must alias fleet_lib.{sub}"
-
-
-def test_cortex_lib_shim_paths_resolves_same_functions(hermetic_scripts_path):
-    legacy_paths = importlib.import_module("cortex_lib.paths")
-    canonical = importlib.import_module("fleet_lib.paths")
-    assert legacy_paths.resolve_repo_resource is canonical.resolve_repo_resource
-    assert legacy_paths.deploy_manifest is canonical.deploy_manifest
-
-
 # ── S1b: analyze-failures.py now uses fleet_lib.tools (no hermes_tools) ────
 def test_analyze_failures_uses_fleet_lib_not_hermes_tools():
     src = (SCRIPTS_DIR / "manage" / "analyze-failures.py").read_text()

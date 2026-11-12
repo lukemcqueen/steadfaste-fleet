@@ -568,10 +568,6 @@ register "ops/scripts/manage/migrate-home-dirs.sh"    "${CORTEX_DEPLOY_HOME}/scr
 register "ops/scripts/manage/verify-rename-local.sh" "${CORTEX_DEPLOY_HOME}/scripts/verify-rename-local.sh"
 register "ops/scripts/manage/cron_manifest.py"        "${CORTEX_DEPLOY_HOME}/scripts/manage/cron_manifest.py"
 register "ops/scripts/manage/fleet_doctor/__init__.py" "${CORTEX_DEPLOY_HOME}/scripts/fleet_doctor/__init__.py"
-# ONE-release shim for fleet_doctor (cortex->fleet, P2): legacy `cortex_doctor`
-# imports + `python3 -m cortex_doctor.cli` keep resolving while peers redeploy.
-# Delete with the old name.
-register "ops/scripts/manage/cortex_doctor/__init__.py" "${CORTEX_DEPLOY_HOME}/scripts/cortex_doctor/__init__.py"
 register "ops/scripts/manage/fleet_doctor/bus_alert.py" "${CORTEX_DEPLOY_HOME}/scripts/fleet_doctor/bus_alert.py"
 register "ops/scripts/manage/fleet_doctor/checks.py"   "${CORTEX_DEPLOY_HOME}/scripts/fleet_doctor/checks.py"
 register "ops/scripts/manage/fleet_doctor/cli.py"     "${CORTEX_DEPLOY_HOME}/scripts/fleet_doctor/cli.py"
@@ -884,23 +880,16 @@ register "ops/scripts/hermes_tz.py"                "${CORTEX_DEPLOY_HOME}/script
 # fleet_lib at runtime; the package MUST deploy alongside them or the deployed
 # shims break (import fails). Register file-by-file like core/governance —
 # register() maps single files, not directories.
-# NOTE: ops/scripts/cortex_lib/{__init__,paths}.py are the ONE-RELEASE shim that
-# aliases fleet_lib so non-redeployed callers keep resolving; DELETE them (and
-# their two register lines) when the old name is retired.
+# NOTE: the cortex_lib one-release shim (__init__.py / paths.py) was DELETED
+# 2026-11-12 when the old name retired; no register lines remain for it.
 register "ops/scripts/fleet_lib/__init__.py"      "${CORTEX_DEPLOY_HOME}/scripts/fleet_lib/__init__.py"
 register "ops/scripts/fleet_lib/tz.py"            "${CORTEX_DEPLOY_HOME}/scripts/fleet_lib/tz.py"
 register "ops/scripts/fleet_lib/paths.py"         "${CORTEX_DEPLOY_HOME}/scripts/fleet_lib/paths.py"
 register "ops/scripts/fleet_lib/session_repo.py"  "${CORTEX_DEPLOY_HOME}/scripts/fleet_lib/session_repo.py"
-register "ops/scripts/cortex_lib/__init__.py"     "${CORTEX_DEPLOY_HOME}/scripts/cortex_lib/__init__.py"   # shim
-register "ops/scripts/cortex_lib/paths.py"        "${CORTEX_DEPLOY_HOME}/scripts/cortex_lib/paths.py"      # shim
 register "ops/scripts/fleet-bus-bridge-run.py"      "${CORTEX_DEPLOY_HOME}/scripts/fleet-bus-bridge-run.py"
 register "ops/scripts/fleet-bus-bridge-generate.py" "${CORTEX_DEPLOY_HOME}/scripts/fleet-bus-bridge-generate.py"
 # fleet-gateway — the decoupled gateway package (CR1 transport + CR2 backend seam)
 register "ops/scripts/fleet_gateway/__init__.py"    "${CORTEX_DEPLOY_HOME}/scripts/fleet_gateway/__init__.py"
-# ONE-release shim for fleet_gateway (cortex->fleet, P2): the live gateway unit
-# still ExecStarts scripts/cortex_gateway/daemon.py until the P5 unit rename, and
-# not-yet-redeployed importers keep resolving the old name. Delete with it.
-register "ops/scripts/cortex_gateway/__init__.py"   "${CORTEX_DEPLOY_HOME}/scripts/cortex_gateway/__init__.py"
 register "ops/scripts/fleet_gateway/transport.py"   "${CORTEX_DEPLOY_HOME}/scripts/fleet_gateway/transport.py"
 register "ops/scripts/fleet_gateway/backend.py"     "${CORTEX_DEPLOY_HOME}/scripts/fleet_gateway/backend.py"
 register "ops/scripts/fleet_gateway/hermes_backend.py" "${CORTEX_DEPLOY_HOME}/scripts/fleet_gateway/hermes_backend.py"
@@ -1035,9 +1024,6 @@ register "ops/scripts/manage/agent-session-correction-scan.py" "${CORTEX_DEPLOY_
 # orch-bus-* scripts are orchestrator-only — run from repo path
 # Shared bus library for fleet scripts
 register "ops/scripts/lib/fleet_bus.py" "${CORTEX_DEPLOY_HOME}/scripts/lib/fleet_bus.py"
-# ONE-release shim for lib.fleet_bus (cortex->fleet, P2): legacy `from lib.cortex_bus
-# import bus_send` keeps resolving while peers redeploy. Delete with the old name.
-register "ops/scripts/lib/cortex_bus.py" "${CORTEX_DEPLOY_HOME}/scripts/lib/cortex_bus.py"
 # The bus core: bot_locks.py (used by the gateway AND msg-gateway) loads the bus core from
 # ~/.steadfaste-fleet/queue.py, so this destination is load-bearing, not cosmetic. Without it the
 # deployed gateway dies at startup with "fleet_bus queue.py not found (bus core missing)".
@@ -3574,7 +3560,6 @@ main() {
     for _f in "${CHANGED[@]}"; do
       case "$_f" in
         core/fleet_bus/*) _bus_changed=true ; break ;;
-        core/cortex_bus/*) _bus_changed=true ; break ;;  # one-release package shim
       esac
     done
   fi

@@ -5,7 +5,7 @@ The abstract interface an agent backend implements so the gateway dispatches
 an inbound envelope and collects the reply. hermes is the first adapter;
 pi and steadfaste plug into the SAME seam (no gateway change).
 
-Run: python3 -m pytest tests/test_cortex_gateway_backend.py -q
+Run: python3 -m pytest tests/test_fleet_gateway_backend.py -q
 """
 import sys
 from pathlib import Path

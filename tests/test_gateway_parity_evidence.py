@@ -21,10 +21,10 @@ _REPO = Path(__file__).resolve().parent.parent
 
 # The suites whose combined count the parity claim rests on.
 _SUITES = [
-    "tests/test_cortex_gateway_transport.py",
-    "tests/test_cortex_gateway_daemon.py",
-    "tests/test_cortex_gateway_backend.py",
-    "tests/test_cortex_gateway_key_guard.py",
+    "tests/test_fleet_gateway_transport.py",
+    "tests/test_fleet_gateway_daemon.py",
+    "tests/test_fleet_gateway_backend.py",
+    "tests/test_fleet_gateway_key_guard.py",
     "tests/test_msg_gateway.py",
     "tests/test_gateway_envelope.py",
     "tests/test_telegram_bridge.py",
@@ -39,14 +39,14 @@ _SUITES = [
 # parity file's "126 passed" as the total while the full surface was 243 — a reader
 # cannot tell the scope from the number, so the file now states both, measured.
 _SURFACE = [
-    "tests/test_cortex_gateway_backend.py",
-    "tests/test_cortex_gateway_daemon.py",
+    "tests/test_fleet_gateway_backend.py",
+    "tests/test_fleet_gateway_daemon.py",
     "tests/test_fleet_gateway_daemon_slice.py",
-    "tests/test_cortex_gateway_key_guard.py",
+    "tests/test_fleet_gateway_key_guard.py",
     "tests/test_fleet_gateway_parity_matrix.py",
-    "tests/test_cortex_gateway_systemd.py",
-    "tests/test_cortex_gateway_telegram_env.py",
-    "tests/test_cortex_gateway_transport.py",
+    "tests/test_fleet_gateway_systemd.py",
+    "tests/test_fleet_gateway_telegram_env.py",
+    "tests/test_fleet_gateway_transport.py",
     "tests/test_gateway_agent_registry.py",
     "tests/test_gateway_approvals.py",
     "tests/test_gateway_bus_shapes.py",

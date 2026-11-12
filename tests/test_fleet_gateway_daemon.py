@@ -6,7 +6,7 @@ Telegram poll → envelope → route → BackendAdapter.dispatch → reply →
 Telegram send, with poll_bot + drain_outbound and the dispatch/reply step
 between poll and drain. hermes is the reference backend (bus inbox/out_<agent>).
 
-Run: python3 -m pytest tests/test_cortex_gateway_daemon.py -q
+Run: python3 -m pytest tests/test_fleet_gateway_daemon.py -q
 """
 import sys
 from pathlib import Path

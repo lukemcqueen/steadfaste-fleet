@@ -760,7 +760,7 @@ def build_backends(specs: list, ctx: dict) -> dict:
     if not parsed:
         # An empty backends list is legitimate and documented: a gateway that only drains
         # outbound (or one mid-migration with no inbound agent yet). Returning {} keeps that
-        # door open — the previous implementation did, and test_cortex_gateway_key_guard
+        # door open — the previous implementation did, and test_fleet_gateway_key_guard
         # asserts it, including that the GATEWAY_SECRET guard is skipped when there is no
         # inbound backend to sign for.
         log.info("backends built: {} (none configured — outbound-only)")

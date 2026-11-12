@@ -5,7 +5,7 @@ Proves the extracted transport layer (TransportAdapter + TelegramAdapter +
 bus helpers) in ops/scripts/fleet_gateway/ preserves msg-gateway.py's exact
 behavior, importable as a package with no daemon/agent coupling.
 
-Run: python3 -m pytest tests/test_cortex_gateway_transport.py -q
+Run: python3 -m pytest tests/test_fleet_gateway_transport.py -q
 """
 import importlib.util
 import sys
