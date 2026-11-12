@@ -199,6 +199,15 @@ looks for will otherwise certify itself.
 
 **Adding a NEW doctor check** (not just fixing an existing finding) follows a specific leaf-module + registration shape so it is hermetic-testable and deploys — see `references/adding-doctor-checks.md`.
 
+**Run the doctor from the repo it should check.** The doctor resolves the repo
+under test from the shell's current directory — and the terminal cwd PERSISTS
+across calls, so a stray `cd` into another repo makes it scan the WRONG tree:
+the next run reports phantom failures (every fleet source 'missing', deploy
+revision 'not resolving', skills.yaml 'not parseable') that vanish when
+re-run from `~/steadfaste-fleet`. A FAILING doctor with those symptoms is a
+cwd artifact, not a regression — re-run from the fleet repo before diagnosing
+anything.
+
 ### Step 8: Fix
 Fix each issue without asking (Principle 2 — Be Proactive). Only escalate:
 - Data loss (rm -rf, DROP TABLE)
