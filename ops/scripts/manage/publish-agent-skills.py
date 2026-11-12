@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish the cortex-owned DEFAULT skills at the agent-visible location.
+"""Publish the fleet-owned DEFAULT skills at the agent-visible location.
 
 TWO ROLES, ONE OWNER EACH (cycle 13491)
 
@@ -182,7 +182,7 @@ def main() -> int:
     cortex_home = Path(os.environ.get("CORTEX_HOME", Path.home() / ".steadfaste-fleet"))
     ap = argparse.ArgumentParser(description=(__doc__ or "publish agent skills").split("\n")[0])
     ap.add_argument("--from", dest="defaults", default=str(cortex_home / "skills"),
-                    help="the cortex-owned DEFAULTS tree (owner of the content)")
+                    help="the fleet-owned DEFAULTS tree (owner of the content)")
     ap.add_argument("--to", dest="published", default=str(Path.home() / ".agents" / "skills"),
                     help="the agent-visible PUBLISHED location")
     ap.add_argument("--mode", choices=("root", "copy"), default="root")

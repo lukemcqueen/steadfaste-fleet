@@ -3,7 +3,7 @@
 # consolidate-env.sh — single .env source of truth (cortex layer)
 #
 # Merges the legacy bus config file (~/.steadfaste-fleet/fleet-bus.conf) into
-# the single cortex env file (~/steadfaste-fleet/.env), then creates
+# the single fleet env file (~/steadfaste-fleet/.env), then creates
 # ~/.steadfaste-fleet/.env as a SYMLINK to it so every existing reader keeps
 # working (doctor, forwarder, failover watchdog, contact-orchestrator, ...).
 # The legacy fleet-bus.conf name is retired: a host that still carries it
@@ -19,7 +19,7 @@
 # ─────────────────────────────────────────────────────────────
 set -euo pipefail
 
-REPO_ENV="${HOME}/steadfaste-fleet/.env"           # the canonical cortex env
+REPO_ENV="${HOME}/steadfaste-fleet/.env"           # the canonical fleet env
 DEPLOY_ENV="${HOME}/.steadfaste-fleet/.env"        # the sanctioned back-compat symlink (deploy dir)
 LEGACY="${HOME}/.steadfaste-fleet/fleet-bus.conf" # retired name — migrated to DEPLOY_ENV
 BACKUP="${LEGACY}.bak-$(date +%Y%m%d)"

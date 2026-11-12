@@ -344,7 +344,7 @@ bash ops/scripts/fleet-update.sh
 | Kustos | Work production | `~/steadfaste-fleet/plugins/governance-enforcer/` |
 | Joseph | Personal production | `~/steadfaste-fleet/plugins/governance-enforcer/` |
 
-The pattern is the same for all: plugin source in the Cortex repo → copy into `~/.hermes/plugins/` via fleet-update.sh (not symlink — uses chattr +i for immutability). The old `plugins/governance-enforcer` symlink has been removed — always use `plugins/governance-enforcer/`.
+The pattern is the same for all: plugin source in the fleet repo → copy into `~/.hermes/plugins/` via fleet-update.sh (not symlink — uses chattr +i for immutability). The old `plugins/governance-enforcer` symlink has been removed — always use `plugins/governance-enforcer/`.
 
 ### Deploy Script (automated)
 

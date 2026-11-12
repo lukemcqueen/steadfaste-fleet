@@ -116,7 +116,7 @@ work to appease it; fix the credential path.
   read as that identity.
 - **Resolve the credential the way the COMPONENT does, then check every source in that
   order.** Env-var first, then the env files in the component's documented precedence
-  (the cortex repo env outranks the deploy env, which outranks the Hermes env). A
+  (the fleet repo env outranks the deploy env, which outranks the Hermes env). A
   revoked value sitting in a HIGHER-priority source shadows the corrected one lower
 down — so a fresh rotation can appear to "not work" while the component keeps reading
   the old secret. Compare candidate values by hash or length; never print a secret.

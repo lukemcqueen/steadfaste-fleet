@@ -13,7 +13,7 @@
 >
 > A bare `.steadfaste-fleet/` is never the runtime dir. Agents that conflate them go
 > looking for the infra dir inside the project and report the overlay as "the Hermes
-> agent infra directory". It is also why the Cortex repo itself must carry **no**
+> agent infra directory". It is also why the fleet repo itself must carry **no**
 > repo-local `.steadfaste-fleet/` — inside `~/steadfaste-fleet` the name shadows the runtime
 > dir (doctor check `Repo-local .steadfaste-fleet`, see `docs/review-receipt-gate.md`).
 

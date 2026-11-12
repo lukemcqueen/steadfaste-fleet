@@ -139,7 +139,7 @@ SERVICES.extend([
 
 
 def _try_restore_scripts() -> str | None:
-    """Try to restore missing scripts from the cortex repo. Returns error or None."""
+    """Try to restore missing scripts from the fleet repo. Returns error or None."""
     restored = []
     critical = [
         "heartbeat.py", "agent-service-recovery.py", "agent-system-alert-watchdog.py",
@@ -166,7 +166,7 @@ def _try_restore_scripts() -> str | None:
                 return f"Failed to restore {name}: {e}"
     if restored:
         return None  # success
-    return "No scripts needed restoration or cortex repo missing"
+    return "No scripts needed restoration or fleet repo missing"
 
 
 def _status_text(svc: dict) -> str:
@@ -250,7 +250,7 @@ def main():
         statuses.append(f"{name}: ❌ DOWN — recovering...")
 
         if name == "scripts":
-            # Special handling: restore missing scripts from cortex repo
+            # Special handling: restore missing scripts from fleet repo
             err = _try_restore_scripts()
             if err:
                 actions.append(f"❌ {name}: {err}")

@@ -5509,7 +5509,7 @@ def _env_file_paths() -> list:
     """Env files to consult, MOST canonical first — and NOT Hermes.
 
     The gate is a cortex component, so it resolves its own configuration from the
-    cortex env before reaching into a Hermes-owned file. ~/.hermes/.env stays last
+    fleet env before reaching into a Hermes-owned file. ~/.hermes/.env stays last
     so a host whose credential happens to live there keeps working, but it is not
     the source of truth for cortex config.
     """
@@ -5527,7 +5527,7 @@ def _env_file_paths() -> list:
 def _env_value(name: str, default: str = "") -> str:
     """Resolve ONE config value, decoupled from Hermes.
 
-    Order: the PROCESS environment, then the canonical cortex env
+    Order: the PROCESS environment, then the canonical fleet env
     (CORTEX_ENV_FILE, else ~/steadfaste-fleet/.env, else the deploy root), and only
     then the Hermes-owned ~/.hermes/.env.
 

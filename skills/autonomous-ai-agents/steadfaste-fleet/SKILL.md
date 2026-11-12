@@ -30,7 +30,7 @@ Steadfaste Fleet is the local AI infrastructure layer that provides:
 ### Prerequisites
 
 ```bash
-# Verify Python 3.12+ (canonical interpreter for cortex scripts)
+# Verify Python 3.12+ (canonical interpreter for fleet scripts)
 python3 --version
 
 # Verify Docker (required for mycortex-postgres + Langfuse)
@@ -102,7 +102,7 @@ Steadfaste Fleet uses a **two-directory deployment model**:
 
 | Directory | Purpose | Managed by |
 |-----------|---------|-----------|
-| `~/.steadfaste-fleet/scripts/` | **Canonical runtime location** — all cortex scripts deployed here | `fleet-update.sh` register map |
+| `~/.steadfaste-fleet/scripts/` | **Canonical runtime location** — all fleet scripts deployed here | `fleet-update.sh` register map |
 | `~/.hermes/scripts/` | **Cron resolution** — Hermes Agent cron scheduler looks here | Symlinks → `~/.steadfaste-fleet/scripts/` |
 
 **How scripts flow:** Repo source → `fleet-update.sh ` → `~/.steadfaste-fleet/scripts/` → symlink → `~/.hermes/scripts/`. Do NOT manually copy scripts to `~/.hermes/scripts/` — always use `fleet-update.sh` to deploy, then create symlinks.
@@ -416,7 +416,7 @@ rm -f ~/.legacy-brain/sync-watch.sh
 bash ~/.hermes/scripts/install-legacy-sync.sh
 ```
 
-**Verification:** After a cortex update, check that sync-watch.sh exists and has a
+**Verification:** After a fleet update, check that sync-watch.sh exists and has a
 new PID:
 
 ```bash
@@ -594,7 +594,7 @@ When deploying to a new machine, verify `python3 --version` resolves to 3.12+. T
 
 **5. Cron prompt URLs must use external inbox address**
 
-After a cortex update that adds or modifies cron jobs, verify the cron prompt doesn't contain the old internal URL (`127.0.0.1:8903`). The external URL is `https://your-domain.com:13004`. Check:
+After a fleet update that adds or modifies cron jobs, verify the cron prompt doesn't contain the old internal URL (`127.0.0.1:8903`). The external URL is `https://your-domain.com:13004`. Check:
 
 ```bash
 hermes cron list | grep "inbox-processor\\|inbox-watchdog"
@@ -637,7 +637,7 @@ pulling manually, or (b) always use `` after any manual pull.
 `WorkingDirectory`, `StandardOutPath`, or `StandardErrorPath` causes the job to
 fail with **EX_CONFIG (exit code 78)** immediately on load.
 
-This affects ALL cortex plists: `com.hermes.health-server.plist`,
+This affects ALL fleet plists: `com.hermes.health-server.plist`,
 `com.hermes.fleet-dashboard.plist`, `com.hermes.agent-inbox.plist`, and any
 agent-created plists.
 
@@ -658,7 +658,7 @@ launchctl list com.hermes.health-server
 <string>$HOME/.hermes/scripts/health-server.py</string>
 ```
 
-**Affected files in the cortex repo (fixes applied in commit e1ff1c7):**
+**Affected files in the fleet repo (fixes applied in commit e1ff1c7):**
 - `ops/scripts/com.hermes.health-server.plist` — paths used `$HOME`
 - `ops/services/dashboard/com.hermes.fleet-dashboard.plist` — paths used `CORTEX_HOME`
 
@@ -860,8 +860,8 @@ Steadfaste Fleet uses a three-layer skill model with different purposes per laye
 | Layer | Location | Purpose | Managed by |
 |-------|----------|---------|-----------|
 | **Canonical source** | `~/steadfaste-fleet/skills/` | Public reusable skills distributed by the installer. These are the curated set — ~40 skills across devops, software-development, MCP, github, etc. | `git push` to repo |
-| **Global installed** | `~/.hermes/skills/` | Hermes Agent's primary skill directory (~150 skills). Contains cortex skills + ecosystem skills (apple/, creative/, gaming/, mlops/, testing/, etc.) | `fleet-update.sh sync_skills()` + manual additions |
-| **Project overrides** | `<consumer-project>/.steadfaste-fleet/skills/` | Project-specific skill overrides tracked in THAT project's repo. This overlay is for CONSUMER projects only — the Cortex repo itself must never carry one (inside `~/steadfaste-fleet` it shadowed the runtime dir name `~/.steadfaste-fleet` and made a stray governance marker indistinguishable from repo state). `fleet-update.sh` skips the overlay when the repo carries `mcp-servers/loop-gov-mcp.py`. | Tracked in the consumer project |
+| **Global installed** | `~/.hermes/skills/` | Hermes Agent's primary skill directory (~150 skills). Contains fleet skills + ecosystem skills (apple/, creative/, gaming/, mlops/, testing/, etc.) | `fleet-update.sh sync_skills()` + manual additions |
+| **Project overrides** | `<consumer-project>/.steadfaste-fleet/skills/` | Project-specific skill overrides tracked in THAT project's repo. This overlay is for CONSUMER projects only — the fleet repo itself must never carry one (inside `~/steadfaste-fleet` it shadowed the runtime dir name `~/.steadfaste-fleet` and made a stray governance marker indistinguishable from repo state). `fleet-update.sh` skips the overlay when the repo carries `mcp-servers/loop-gov-mcp.py`. | Tracked in the consumer project |
 
 ### How Skills Flow
 
@@ -873,7 +873,7 @@ skills/ (canonical, ~40 skills)
                       ~110 ecosystem skills untouched by sync
 ```
 
-**Key relationship:** `~/.steadfaste-fleet/skills/` is a symlink → `~/.hermes/skills/`. When `fleet-update.sh` calls `sync_skills()`, it copies from `skills/` to `~/.steadfaste-fleet/skills/`, the write resolves through the symlink to `~/.hermes/skills/`. Non-cortex skills (apple/, creative/, gaming/, etc.) are completely untouched — `sync_skills()` only overwrites files whose checksums differ from the source.
+**Key relationship:** `~/.steadfaste-fleet/skills/` is a symlink → `~/.hermes/skills/`. When `fleet-update.sh` calls `sync_skills()`, it copies from `skills/` to `~/.steadfaste-fleet/skills/`, the write resolves through the symlink to `~/.hermes/skills/`. Non-fleet skills (apple/, creative/, gaming/, etc.) are completely untouched — `sync_skills()` only overwrites files whose checksums differ from the source.
 
 ### Contrast with Script Deployment
 
@@ -892,7 +892,7 @@ The `sync_skills()` function in `fleet-update.sh` uses a checksum-based delta en
 ```bash
 # Called during every or delta update
 # Compares SHA256 of skills/<file> vs installed destination
-# Only copies when checksums differ — preserves non-cortex skills
+# Only copies when checksums differ — preserves non-fleet skills
 sync_skills() {
  local skill_repo="${REPO_DIR}/skills"
  local skill_dest="${HERMES_HOME}/skills" # resolves via symlink → ~/.hermes/skills/
@@ -1170,7 +1170,7 @@ hermes plugins list | grep langfuse
 
 ## Post-Update Verification
 
-After pulling latest cortex code and running `fleet-update.sh`, verify the update actually took effect:
+After pulling latest fleet code and running `fleet-update.sh`, verify the update actually took effect:
 
 ### 1. Check Deployment Map Completeness
 
@@ -1239,7 +1239,7 @@ If the update revealed missing registrations, compatibility issues, or bugs, rep
 
 ## Reporting Issues to the Orchestrator
 
-**Standing directive:** After every cortex update or install, report any bugs, missing registrations, compatibility issues, or improvement suggestions to the orchestrator (send to `inbox_orchestrator` — the shared orchestrator inbox). This is not optional — it's how the repo stays healthy.
+**Standing directive:** After every fleet update or install, report any bugs, missing registrations, compatibility issues, or improvement suggestions to the orchestrator (send to `inbox_orchestrator` — the shared orchestrator inbox). This is not optional — it's how the repo stays healthy.
 
 ### Where to Send
 
@@ -1289,7 +1289,7 @@ Schema migrations run **automatically** from `ops/services/mycortex/schema/`
 **If migrations fail:** run `~/.steadfaste-fleet/scripts/mycortex doctor` and check
 `ops/services/mycortex/migrate.py` output, then see Troubleshooting below.
 
-### Keep cortex-associated skills up to date
+### Keep fleet-associated skills up to date
 
 ```bash
 hermes skills check     # Check all installed skills for updates
@@ -1712,7 +1712,7 @@ Some pages embed successfully (showing progress) but others fail partway through
 
 **Root cause:** The default mycortex embed timeout (`AI_EMBED_TIMEOUT_MS`) is 60 seconds. Ollama's `nomic-embed-text:v1.5` takes longer than 60s to generate 768-dim embeddings for large documents.
 
-**Fix:** Set the environment variable in ALL mycortex scripts:
+**Fix:** Set the environment variable in ALL myfleet scripts:
 ```bash
 export MYCORTEX_AI_EMBED_TIMEOUT_MS=300000
 mycortex embed --stale
@@ -2180,5 +2180,5 @@ approach is `.steadfaste-fleet/` (project-anchored) + `~/.hermes/` (home-dir)
 - `references/fleet-update-deployment-map.md` — Full file map, restart functions, and the launchd bootout-before-rm pitfall
 - `references/offline-knowledge-subcommands.md` — Subcommand architecture pattern for offline_knowledge.py, the `lesson` tooling gap, and PATH setup
 - `references/mycortex-source-migration-export.md` — mycortex data export, cross-engine migration, and Postgres setup notes
-- `github.com/garrytan/mycortex` — Official mycortex repository (install via `bun install -g github:garrytan/mycortex`)
+- `github.com/garrytan/mycortex` — Official myfleet repository (install via `bun install -g github:garrytan/mycortex`)
 - `<private-repo-url>` — Private repo with personal config, brain content

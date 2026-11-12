@@ -13,7 +13,7 @@ and auto-detects macOS (Intel + ARM) vs Linux paths.
 | fail2ban not installed | `fail2ban not installed — skipping` |
 | fail2ban log not found | `fail2ban installed but no log file — skipping` |
 | `deploy/nginx/` dir missing | `mkdir -p` before append |
-| cortex repo missing | `cortex repo not found — skipping commit` |
+| fleet repo missing | `fleet repo not found — skipping commit` |
 | deploy script not found | `deploy-blocked-ips.sh not found — skipping` |
 | nginx binary not found | `nginx not found — skipping deploy` |
 | no `timeout`/`gtimeout` binary | Runs without timeout instead of failing |

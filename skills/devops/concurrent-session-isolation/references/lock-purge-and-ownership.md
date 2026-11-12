@@ -36,7 +36,7 @@ The consequence to watch: a purge sweep has no such filter — it removes any lo
 ## Recipe: prove three simultaneous sessions stay isolated
 
 Throwaway state dir and DB, then drive the REAL functions (see
-`docs/evidence/three-session-isolation-probe.py` in the cortex repo for a working instance):
+`docs/evidence/three-session-isolation-probe.py` in the fleet repo for a working instance):
 
 1. Load the MCP module by file path, then repoint `LOOP_DB` and `GOVERNANCE_STATE_DIR` at a
    `mkdtemp` tree BEFORE creating any lock or cycle.

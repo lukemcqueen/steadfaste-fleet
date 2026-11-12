@@ -616,7 +616,7 @@ When setting up a Python virtual environment:
 4. Fallback chain: `~/.local/bin/python3.12` → `/opt/homebrew/bin/python3.12` → `python3.12` → system `python3` (last resort with version guard)
 5. Recreate venv if switching Python versions: `rm -rf .venv && python3.12 -m venv .venv`
 6. Update the project's `./run` script's `cmd_pip()` to use the same fallback chain
-7. When adding a new `.py` script to the cortex repo, always set shebang to `#!/usr/bin/env python3.12` — the `env` fallback chain resolves `python3.12` on macOS via Homebrew or uv
+7. When adding a new `.py` script to the fleet repo, always set shebang to `#!/usr/bin/env python3.12` — the `env` fallback chain resolves `python3.12` on macOS via Homebrew or uv
 
 ### Python portable shebangs — use python3.12 not python3
 

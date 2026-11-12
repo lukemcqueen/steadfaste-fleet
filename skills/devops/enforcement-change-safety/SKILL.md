@@ -279,7 +279,7 @@ fi
   hook, copy the established candidate-loop pattern, don't invent a new one.**
 
 **Verify BEFORE shipping a hook change (all three):**
-1. Commit in the cortex repo → repo-local candidate wins (scan runs)
+1. Commit in the fleet repo → repo-local candidate wins (scan runs)
 2. Commit in a scratch project repo with NO `ops/` tree → deployed copy found
    (`git init /tmp/proj && git config core.hooksPath ~/.steadfaste-fleet/hooks`)
 3. Temporarily move the deployed tool aside → commit still blocked (exit 1),
@@ -396,7 +396,7 @@ to them must be doubly scoped or it will block innocent work in project repos:
    _REPO_TOP=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
    [[ "$_REPO_TOP" == "$CORTEX_REPO_TOP" ]]   # CORTEX_REPO_TOP=${HOME}/steadfaste-fleet
    ```
-   Non-cortex repos (client-repo-a, client-repo-b, client-web-app, pinned repos,
+   Non-fleet repos (client-repo-a, client-repo-b, client-web-app, pinned repos,
    ...) must NEVER run the steadfaste-fleet doctor — a failing cortex state must
    not block a client repo's push.
 2. **Orchestrator scope**: only orchestrator hosts run orchestrator-level
@@ -426,7 +426,7 @@ structural and greppable: the gate sits ABOVE the `IS_CORTEX_REPO` assignment
   gates use, so there is one scoping idiom to audit.
 - Prove it by real execution, not inspection: run the deployed hook from a
   throwaway `git init` repo and assert the gate does NOT fire (the hook still
-  runs its universal gates), then confirm it DOES fire in the cortex repo.
+  runs its universal gates), then confirm it DOES fire in the fleet repo.
 
 **Orchestrator-only path arrays must be repo-scoped too (Titus over-block):**
 the hardcoded `ORCHESTRATOR_ONLY_PATHS` array had UNANCHORED patterns
@@ -1434,7 +1434,7 @@ blocks correct work and the operator's own diagnosis gets sent down the wrong pa
 
 A gate meant to CHANGE an agent's behaviour (survey-before-build, plan-review, any ritual
 discipline) is placed by WHERE that agent commits, not by where the existing gate happens to
-live. The reflexion gate is scoped to the cortex repo because its proof needs a session a human
+live. The reflexion gate is scoped to the fleet repo because its proof needs a session a human
 manual commit lacks — but a dev agent (Pi, Claude Code, Codex) does its real work in PROJECT
 repos, so a survey gate wired only into the cortex-scoped reflexion gate governs NONE of it.
 Measure the agent's ACTIVE path (which repos it actually commits in) before placing the gate.

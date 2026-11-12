@@ -86,7 +86,7 @@ Fix pattern: candidate loop, repo-local first, then the canonically-deployed
 copy at `$HOME/.steadfaste-fleet/scripts/` (registered by fleet-update.sh on
 both Linux and macOS). Fail closed only if BOTH are missing. See
 `enforcement-change-safety` Rule 6 for the full pattern and the 3-branch
-verification (cortex repo / project repo / tool-missing).
+verification (fleet repo / project repo / tool-missing).
 
 When modifying hooks or the enforcer, test in a scratch project repo
 (`git init /tmp/t && git config core.hooksPath ~/.steadfaste-fleet/hooks`)

@@ -11,7 +11,7 @@
 #   exactly the ONE named variable and nothing else — no export, no source, no
 #   leaked names. The caller decides where the value goes.
 #
-# Search order: the canonical cortex env first, then the Hermes-owned env (where
+# Search order: the canonical fleet env first, then the Hermes-owned env (where
 # provider keys currently live). First match wins, so a value added to the cortex
 # env takes precedence without touching any consumer.
 #
@@ -45,5 +45,5 @@ for f in "${CORTEX_ENV_FILE:-$HOME/steadfaste-fleet/.env}" "$HOME/.hermes/.env";
   exit 0
 done
 
-echo "env-value: $name not found in the cortex env or the Hermes env" >&2
+echo "env-value: $name not found in the fleet env or the Hermes env" >&2
 exit 1

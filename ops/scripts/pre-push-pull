@@ -453,7 +453,7 @@ done
 # closed.)
 # ⚠️  SCOPE (Luke corrections 2026-08-05): this gate fires ONLY when
 # (a) the push is in the steadfaste-fleet repo AND (b) the host is an
-# orchestrator (moses/esther). Non-cortex repos (client-mwi,
+# orchestrator (moses/esther). Non-fleet repos (client-mwi,
 # client-works, ebm-website, pinned repos, ...) must NOT run the
 # steadfaste-fleet doctor — a failing steadfaste-fleet state must never
 # block a client repo's push. Non-orchestrator hosts never run it.

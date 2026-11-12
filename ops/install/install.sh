@@ -1634,7 +1634,7 @@ else
  skip "memory/README.md already exists or template not found"
 fi
 
-# memory/README.md is cortex-owned — seeded by fleet-update register map.
+# memory/README.md is fleet-owned — seeded by fleet-update register map.
 ok
 
 # ─────────────────────────────────────────────────────────────

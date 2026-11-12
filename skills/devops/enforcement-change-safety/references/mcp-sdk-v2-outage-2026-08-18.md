@@ -22,7 +22,7 @@ mcp package; the gateway resolved `python3` to its venv only via PATH).
 
 1. hermes-agent's venv upgraded to `mcp==2.0.0` (pinned in its pyproject —
    a CORE requirement; never downgrade it).
-2. mcp 2.0 removed the pre-1.0 decorator API used by all three cortex MCP
+2. mcp 2.0 removed the pre-1.0 decorator API used by all three fleet MCP
    servers (`@server.list_tools()` / `@server.call_tool()`).
 3. Servers crashed at import → no MCP tools → the enforcer's lock tool
    (`begin_change`) unavailable → every session write-deadlocked

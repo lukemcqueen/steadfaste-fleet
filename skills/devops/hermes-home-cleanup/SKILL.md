@@ -21,7 +21,7 @@ or audit what's safe to delete on a Hermes Agent server.
 
 **`~/.hermes/` is Hermes Agent territory.** Most of it is live agent
 machinery. Before labeling anything stale, verify against the **agent source**
-(`~/.hermes/hermes-agent/`), not just cortex scripts. Two false "stale"
+(`~/.hermes/hermes-agent/`), not just fleet scripts. Two false "stale"
 claims cost real time: `state-snapshots/` and `~/.hermes/hooks/` are both
 agent-owned. Grep the agent repo before you rm.
 
@@ -30,7 +30,7 @@ agent-owned. Grep the agent repo before you rm.
 ```bash
 # 1. Is it referenced by the agent source?
 grep -rn '<name>' ~/.hermes/hermes-agent/ 2>/dev/null | grep -v node_modules | grep -v venv | grep -v '\.git/'
-# 2. Is it referenced by cortex scripts (repo + deployed)?
+# 2. Is it referenced by fleet scripts (repo + deployed)?
 grep -rn '<name>' ~/steadfaste-fleet/ ~/.steadfaste-fleet/scripts/ ~/.hermes/plugins/ 2>/dev/null | grep -v '\.git/'
 # 3. Is it a live cron's state file? (renamed crons keep old state filenames!)
 python3 -c "import json;d=json.load(open('$HOME/.hermes/cron/jobs.json'));jobs=d.get('jobs',d) if isinstance(d,dict) else d;print([j.get('name') for j in jobs if isinstance(j,dict)])"
@@ -73,7 +73,7 @@ grep -rn '<name>' ~/.steadfaste-fleet/scripts/install*.sh ~/steadfaste-fleet/ops
 |------|----------|-------|
 | `~/.steadfaste-fleet/state/loop-governance.db` (0 bytes) | All scripts reference `data/loop-governance.db`, none reference `state/` copy. **Do NOT touch `data/loop-governance.db` — that is the live governance DB.** | 0 bytes (dead file) |
 | `~/.hermes/hermes-agent/__pycache__/`, `~/.steadfaste-fleet/{scripts,offline}/__pycache__/` | Regenerable bytecode (Python rebuilds on import) | ~2.5 MB, 800+ dirs |
-| `~/.steadfaste-fleet/a2a/task-state.db` | Zero references in agent source or cortex scripts (agent-card.json in same dir IS live) | 20 KB |
+| `~/.steadfaste-fleet/a2a/task-state.db` | Zero references in agent source or fleet scripts (agent-card.json in same dir IS live) | 20 KB |
 | `~/.hermes/state/post-commit-notify` + `.log` | Pre-migration leftovers: old hook wrote to `~/.hermes/state/`, current script writes to `~/.steadfaste-fleet/state/` | 3.5 KB |
 | `~/.hermes/cron/output/<hash>/` subdirs older than 30 days | Scheduler run artifacts; doctor does NOT read cron/output. **Keep loose named deliverables** (e.g. `sustainability-briefing-*.md/.docx`) | several MB, 1000s of files |
 

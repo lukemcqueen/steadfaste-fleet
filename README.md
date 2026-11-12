@@ -157,7 +157,7 @@ bash ops/scripts/fleet-update.sh     # delta update (changed files only)
 
 ## 🚚 Fleet Update Pipeline
 
-The fleet update pipeline orchestrates coordinated rollouts across all agents using the Agent Bus. Pre-flight checks verify bus health and git state; orchestrators dispatch `UPDATE_REQUEST` to each agent's inbox; agents poll, run `fleet-update.sh`, and post `UPDATE_RESULT` back; a rollback script re-dispatches `ROLLBACK_REQUEST` to failed agents. All fleet scripts use the shared `ops/scripts/lib/cortex_bus.py` library.
+The fleet update pipeline orchestrates coordinated rollouts across all agents using the Agent Bus. Pre-flight checks verify bus health and git state; orchestrators dispatch `UPDATE_REQUEST` to each agent's inbox; agents poll, run `fleet-update.sh`, and post `UPDATE_RESULT` back; a rollback script re-dispatches `ROLLBACK_REQUEST` to failed agents. All fleet scripts use the shared `ops/scripts/lib/fleet_bus.py` library.
 
 ---
 

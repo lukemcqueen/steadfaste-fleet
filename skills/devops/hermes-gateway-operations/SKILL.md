@@ -337,7 +337,7 @@ Enablement is a concrete sequence; books/detail: `pi-coding-agent`, `steadfaste-
    is `kind: command` with an ABSOLUTE launcher path: `command` is an argv list, so `~`/`$HOME`
    are NOT expanded and the launcher is often a symlink into a dir not on a service PATH — a
    relative or guessed path is a silent per-message no-op.
-2. **Env** in the cortex env (`~/steadfaste-fleet/.env`): the bot's `token_ref` var,
+2. **Env** in the fleet env (`~/steadfaste-fleet/.env`): the bot's `token_ref` var,
    `TELEGRAM_ALLOWED_USERS` (sender allowlist — REQUIRED; without it any Telegram user reaches
    a bot that RUNS CODE), `TELEGRAM_HOME_CHANNEL`, `GATEWAY_SECRET` (HMAC; the daemon refuses to
    start without it), `TELEGRAM_API_BASE` (the transport fails CLOSED without it — the standard
@@ -356,7 +356,7 @@ Pitfalls that cost a cycle here:
   (e.g. `MOSESPI_BOT_TOKEN`); two pollers on one token drop the live channel. This is the guard
   working, not a bug to bypass.
 - **The unit's `ExecStart` interpreter must actually have the deps.** The template defaults to
-  `/usr/bin/python3`; the cortex deps live in the fleet venv `~/.steadfaste-fleet/venv/bin/python3`.
+  `/usr/bin/python3`; the fleet deps live in the fleet venv `~/.steadfaste-fleet/venv/bin/python3`.
   Point BOTH `ExecStartPre` and `ExecStart` at the venv python, and when a dep is missing install
   it INTO that venv (age-gated) rather than routing around it — a bot-lock
   `ImportError: psycopg package required` is the daemon's Postgres bus dependency surfacing, not a

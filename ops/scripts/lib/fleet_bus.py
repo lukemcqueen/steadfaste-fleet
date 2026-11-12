@@ -6,7 +6,7 @@ Provides send/read/archive/list_queues functions using the Agent Bus HTTP API.
 Bus URL is read from .env (CORTEX_BUS_URL); when
 CORTEX_BUS_FALLBACK_URL is set, sends automatically retry the fallback bus
 per-call when the primary is unreachable (failover path, since 2026-08-04).
-Config file location: ~/steadfaste-fleet/.env (the ONE canonical cortex env)
+Config file location: ~/steadfaste-fleet/.env (the ONE canonical fleet env)
 
 Usage:
     from lib.fleet_bus import bus_send, bus_read, bus_archive, bus_list_queues

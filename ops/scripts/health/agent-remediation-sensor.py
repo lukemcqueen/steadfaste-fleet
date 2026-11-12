@@ -95,17 +95,17 @@ def check_scripts():
 
 
 def check_git():
-    """Check git health of cortex repo."""
+    """Check git health of fleet repo."""
     if not CORTEX_REPO.exists():
         return
     # Detached HEAD
     out, _, rc = run(f"cd {CORTEX_REPO} && git symbolic-ref -q HEAD 2>/dev/null")
     if rc != 0:
-        add_issue("git_issue", "medium", "Detached HEAD in cortex repo", {"repo": str(CORTEX_REPO)})
+        add_issue("git_issue", "medium", "Detached HEAD in fleet repo", {"repo": str(CORTEX_REPO)})
     # Merge conflicts
     out, _, _ = run(f"cd {CORTEX_REPO} && git status --porcelain 2>/dev/null | grep -c '^UU'")
     if out.strip() and int(out.strip()) > 0:
-        add_issue("git_issue", "critical", "Merge conflicts in cortex repo", {"repo": str(CORTEX_REPO)})
+        add_issue("git_issue", "critical", "Merge conflicts in fleet repo", {"repo": str(CORTEX_REPO)})
     # Dirty scripts
     out, _, _ = run(f"cd {CORTEX_REPO} && git status --porcelain -- ops/scripts/ 2>/dev/null | head -3")
     if out.strip():

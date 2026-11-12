@@ -39,7 +39,7 @@ HERMES_HOME="${HERMES_HOME:-${HOME_DIR}/.hermes}"
 CORTEX_DEPLOY_HOME="${CORTEX_DEPLOY_HOME:-${HOME_DIR}/.steadfaste-fleet}"
 
 # ── Resolve the intended cap ─────────────────────────────────
-# Priority: runtime env > ~/steadfaste-fleet/.env — the ONE canonical cortex env.
+# Priority: runtime env > ~/steadfaste-fleet/.env — the ONE canonical fleet env.
 # The deploy dir (~/.steadfaste-fleet) holds no .env: it is a deployed path.
 # No fleet fallback: an unset cap is a valid state (control host / value not
 # yet chosen) — NEVER invent one.

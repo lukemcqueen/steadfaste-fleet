@@ -268,7 +268,7 @@ fi
 # ── Step 4: Commit & push ──
 log "── Step 4: Commit ──"
 if [ ! -d "$CORTEX_REPO" ]; then
-  error "Cortex repo not found at ${CORTEX_REPO} — skipping commit"
+  error "fleet repo not found at ${CORTEX_REPO} — skipping commit"
 else
   cd "$CORTEX_REPO"
   BLOCKED_FILE="${CORTEX_REPO}/ops/install/deploy/nginx/blocked_ips.add"

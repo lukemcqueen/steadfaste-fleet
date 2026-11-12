@@ -4,7 +4,7 @@
 
 A gate meant to change an agent's behaviour (survey-before-build, plan review,
 any ritual discipline) is placed by WHERE that agent commits, not by where an
-existing gate happens to live. A reflexion gate wired only into the cortex repo
+existing gate happens to live. A reflexion gate wired only into the fleet repo
 governs NONE of a dev agent's work in project repos — the exact failure that made
 Titus-style agents build without surveying. The fix reused the EXISTING generic
 skill-checker (`reflexion-check.py --skill <name>`) in a loop over the ritual

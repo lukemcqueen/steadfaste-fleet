@@ -82,7 +82,7 @@ fi
 
 # ── Ensure repo exists ──
 if [ ! -d "$CORTEX_REPO" ]; then
-  echo "✗ Cortex repo not found at ${CORTEX_REPO}"
+  echo "✗ fleet repo not found at ${CORTEX_REPO}"
   exit 1
 fi
 

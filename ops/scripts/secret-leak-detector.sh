@@ -209,7 +209,7 @@ for FILE in $STAGED_FILES; do
   # Matches: user@domain.tld (domain must start with a letter, which
   # skips asset filenames like icon@2x.png). Domain checked against
   # the placeholder allowlist. BLOCKS in the public repo, WARNS in
-  # project/client repos (never breaks non-cortex work).
+  # project/client repos (never breaks non-fleet work).
   # Scans STAGED_CONTENT (docs-class PII, like patterns 5/6).
   EMAIL_RE='[A-Za-z0-9._%+-]+@[A-Za-z][A-Za-z0-9.-]*\.[A-Za-z]{2,}'
   if echo "$STAGED_CONTENT" | grep -Eo "$EMAIL_RE" >/dev/null 2>&1; then

@@ -18,7 +18,7 @@ The script adds `~/.steadfaste-fleet/scripts/` to `sys.path` first, then imports
 
 ## Root Cause
 
-Hermes shared modules (`hermes_paths.py`, `hermes_models.py`, `hermes_tz.py`, `platform_utils.py`) live in `~/.hermes/scripts/`. Scripts deployed via `~/steadfaste-fleet/ops/offline/` or `~/.steadfaste-fleet/scripts/` add the cortex scripts dir to `sys.path` but not the Hermes scripts dir. The import fails because the module isn't in either location the code checks.
+Hermes shared modules (`hermes_paths.py`, `hermes_models.py`, `hermes_tz.py`, `platform_utils.py`) live in `~/.hermes/scripts/`. Scripts deployed via `~/steadfaste-fleet/ops/offline/` or `~/.steadfaste-fleet/scripts/` add the fleet scripts dir to `sys.path` but not the Hermes scripts dir. The import fails because the module isn't in either location the code checks.
 
 ## Fix
 

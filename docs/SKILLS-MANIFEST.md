@@ -201,7 +201,7 @@ their domain.
 | `fleet-bus-messaging` | 1.0.0 | DEPRECATED alias — merged into fleet-bus. Load fleet-bus instead. | `skill_view(name='fleet-bus-messaging')` |
 | `fleet-bus-polling` | 1.0.0 | DEPRECATED alias — merged into fleet-bus. Load fleet-bus instead. | `skill_view(name='fleet-bus-polling')` |
 | `fleet-commands` | 1.6.0 | Send operational commands to fleet agents via the PGMQ bus — message format, delivery verification, bus_acc... | `skill_view(name='fleet-commands')` |
-| `fleet-deployment-sync` | 1.0.0 | Use when pulling latest or running cortex update. | `skill_view(name='fleet-deployment-sync')` |
+| `fleet-deployment-sync` | 1.0.0 | Use when pulling latest or running fleet update. | `skill_view(name='fleet-deployment-sync')` |
 | `fleet-management` | 1.0.0 | Fleet-level agent management for Steadfaste Fleet — agent registry, fleet ready score, fleet-audit CLI, add... | `skill_view(name='fleet-management')` |
 | `fleet-preflight` | 1.1.0 | DEPRECATED alias — merged into survey-before-action (2026-08-20). Load survey-before-action instead; its "R... | `skill_view(name='fleet-preflight')` |
 | `fresh-tomato-router` | 1.0.0 | Interact with FreshTomato/DD-WRT routers programmatically via curl — authentication, nvram access, port for... | `skill_view(name='fresh-tomato-router')` |
@@ -212,7 +212,7 @@ their domain.
 | `governance-closeout` | 1.0.0 | Use when a governed change will not close. | `skill_view(name='governance-closeout')` |
 | `governance-compliance-reporting` | 1.0.0 | Review agent commits for enforcement compliance. | `skill_view(name='governance-compliance-reporting')` |
 | `governance-identity-hardening` | 1.0.0 | Use when hardening orchestrator identity or unlock tokens. | `skill_view(name='governance-identity-hardening')` |
-| `governance-lock-lifecycle` | 1.1.0 | Use when blocked after cortex update or end_change rejects. | `skill_view(name='governance-lock-lifecycle')` |
+| `governance-lock-lifecycle` | 1.1.0 | Use when blocked after fleet update or end_change rejects. | `skill_view(name='governance-lock-lifecycle')` |
 | `governance-sentinel` | 1.0.0 | DEPRECATED alias — merged into loop-governance. Load loop-governance instead. | `skill_view(name='governance-sentinel')` |
 | `health-external-verification` | 1.0.0 | Verify your health endpoint is externally reachable by testing the URL end-to-end instead of assuming local... | `skill_view(name='health-external-verification')` |
 | `hermes-agent-regression-triage` | 1.0.0 | Use when hermes-agent breaks after update or won't update. | `skill_view(name='hermes-agent-regression-triage')` |

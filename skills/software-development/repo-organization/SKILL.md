@@ -28,7 +28,7 @@ Steadfaste Fleet uses three distinct layers, each with a clear purpose:
 | Layer | Path | Purpose | Backed up? |
 |-------|------|---------|------------|
 | **Repo** | `~/steadfaste-fleet/` | Public source code, skills, docs, installer | ✅ Git (GitHub) |
-| **Consumer overlay** | `<project>/.steadfaste-fleet/` | Per-PROJECT agent data (sessions, memory, skills) for consumer projects seeded by `seed-project.sh`. The Cortex repo itself must NOT carry one (removed 2026-10-07) — `fleet-update.sh` skips it when the repo is the Cortex repo. | ✅ Git (in that project) |
+| **Consumer overlay** | `<project>/.steadfaste-fleet/` | Per-PROJECT agent data (sessions, memory, skills) for consumer projects seeded by `seed-project.sh`. The fleet repo itself must NOT carry one (removed 2026-10-07) — `fleet-update.sh` skips it when the repo is the fleet repo. | ✅ Git (in that project) |
 | **Hermes Config** | `~/.hermes/` | Hermes Agent runtime (config, logs, cache, DBs) | ❌ Machine-local |
 
 **Rule:** Never put agent-generated data in the repo root. Never put source code in `~/.hermes/`. Never put logs in the repo.

@@ -21,7 +21,7 @@ CORTEX_ENV = HOME / "steadfaste-fleet" / ".env"
 LEGACY_MODELS_ENV = HERMES_HOME / "models.env"
 CONFIG_FILE = HERMES_HOME / "config.yaml"
 
-# ── Cortex repo discovery ───────────────────────────────────────
+# ── fleet repo discovery ───────────────────────────────────────
 CORTEX_REPO = Path(os.environ.get("CORTEX_REPO", ""))
 if not CORTEX_REPO.is_dir() or not (CORTEX_REPO / "AGENTS.md").exists():
     for candidate in [HOME / "steadfaste-fleet", HOME / "src" / "steadfaste-fleet"]:
@@ -31,7 +31,7 @@ if not CORTEX_REPO.is_dir() or not (CORTEX_REPO / "AGENTS.md").exists():
 # Normalize to an absolute path. When the env var is unset and the doctor
 # runs from the repo cwd, Path("") stays relative "." — then the
 # repo_dir == CORTEX_REPO exclusion in check_dev_repo_agents compares an
-# absolute path against a relative one, never matches, and the cortex repo
+# absolute path against a relative one, never matches, and the fleet repo
 # itself gets flagged as a stale dev repo (2026-08-10).
 CORTEX_REPO = CORTEX_REPO.resolve()
 

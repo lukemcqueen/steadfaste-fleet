@@ -80,7 +80,7 @@ AGENT_NAME="${AGENT_NAME:-${DEFAULT_AGENT:-pi}}"
 
 for f in "$LOOP_GOV" "$TASK_MCP" "$EXECUTOR_MCP" "$BUS_MCP" "$CONTEXT_MCP"; do
   if [[ ! -f "$f" ]]; then
-    echo "Warning: cortex MCP server not found: $f"
+    echo "Warning: fleet MCP server not found: $f"
     echo "  Run fleet-update.sh first, then this script."
   fi
 done
@@ -382,7 +382,7 @@ fi
 if [[ -z "$PY_CMD" ]]; then
   {
     echo "ERROR: no python3 on this host can 'import mcp' — refusing to write $PI_MCP."
-    echo "  A config naming such an interpreter starts every cortex MCP server dead"
+    echo "  A config naming such an interpreter starts every fleet MCP server dead"
     echo "  (begin_change, tasks, bus and the memory tools unreachable), so your"
     echo "  existing mcp.json is left exactly as it is. Fix one, then re-run:"
     echo "    ${PYTHON:-python3} -m pip install mcp"
@@ -482,12 +482,12 @@ if mode == "remove":
     removed = [n for n in GOVERNANCE if n in servers]
     for n in removed:
         del servers[n]
-    print("Removed cortex MCP servers:", ", ".join(removed) if removed else "(none present)")
+    print("Removed fleet MCP servers:", ", ".join(removed) if removed else "(none present)")
 else:
     prior = set(servers) & set(GOVERNANCE)
     servers.update(GOVERNANCE)
     added = [n for n in GOVERNANCE if n not in prior]
-    print("Registered cortex MCP servers (user scope):", ", ".join(GOVERNANCE))
+    print("Registered fleet MCP servers (user scope):", ", ".join(GOVERNANCE))
     if added:
         print("  newly added:", ", ".join(added))
     else:

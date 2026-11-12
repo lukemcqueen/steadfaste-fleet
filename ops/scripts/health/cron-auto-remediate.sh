@@ -39,7 +39,7 @@ case "${ACTION}" in
       fi
     done
 
-    # Check cortex repo
+    # Check fleet repo
     if [ -d "${CORTEX_REPO}" ]; then
       cd "${CORTEX_REPO}"
       # Check git health

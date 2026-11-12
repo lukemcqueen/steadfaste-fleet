@@ -819,7 +819,7 @@ repo state, audited range, the task's description, the diff stat, and the diff:
 A close that succeeds may mean the review passed, or that the review never ran.
 Only the gate's own log separates those, and the gate writes **two** places:
 
-- **`~/.steadfaste-fleet/logs/loop-governance.log`** — the cortex-owned record
+- **`~/.steadfaste-fleet/logs/loop-governance.log`** — the fleet-owned record
   (bounded: rotates at 5 MB, 3 backups). **Read this one first**: it is ours, it
   sits with the other cortex logs, and it does not depend on Hermes's rotation.
 - `~/.hermes/logs/mcp-stderr.log` — stderr, captured by the harness. Useful for

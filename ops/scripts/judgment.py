@@ -287,14 +287,14 @@ def _env_file_paths(env: dict) -> list:
 
 
 def _env_file_secret(name: str, env: dict) -> str:
-    """Resolve a credential from the cortex env FILES when it is absent from the
+    """Resolve a credential from the fleet env FILES when it is absent from the
     process environment.
 
     2026-10-02: the gate runs as a long-lived server spawned by the gateway, whose
     process environment does not necessarily carry the judge credential — so every
     in-gate triage call returned 'unavailable' while a direct probe with the env
     sourced worked. The client is a cortex component like the gate, so it resolves
-    the credential the same way: process env first, then the cortex env, Hermes
+    the credential the same way: process env first, then the fleet env, Hermes
     last. Only the NAMED key is extracted, and files are re-read per call.
     """
     if not name:
@@ -316,7 +316,7 @@ def _invoke(provider_cfg: dict, body: dict, env: dict, fn=None) -> dict:
     api_key_env = provider_cfg.get("api_key_env", "")
     key = (env.get(api_key_env) or "").strip()
     if fn is None and not key:
-        # Fall back to the cortex env files, NOT a different credential.
+        # Fall back to the fleet env files, NOT a different credential.
         key = _env_file_secret(api_key_env, env)
     if fn is None and not key:
         raise RuntimeError(f"judgment: missing API key env {api_key_env}")

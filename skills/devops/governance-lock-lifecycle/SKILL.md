@@ -2,7 +2,7 @@
 name: governance-lock-lifecycle
 version: 1.1.0
 category: devops
-description: "Use when blocked after cortex update or end_change rejects."
+description: "Use when blocked after fleet update or end_change rejects."
 author: Steadfaste Fleet curator
 license: MIT
 platforms: [linux, macos]

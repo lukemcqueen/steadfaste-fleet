@@ -2,7 +2,7 @@
 name: fleet-deployment-sync
 version: 1.0.0
 category: devops
-description: "Use when pulling latest or running cortex update."
+description: "Use when pulling latest or running fleet update."
 author: Steadfaste Fleet
 license: MIT
 platforms: [linux, macos]
@@ -12,7 +12,7 @@ platforms: [linux, macos]
 
 # Cortex Deployment Sync
 
-**Class of task:** any "pull latest", "cortex update", "update from repo", or repo→runtime deployment operation on a Steadfaste Fleet machine. Also covers diagnosing why `fleet-update.sh` FAILED on specific files.
+**Class of task:** any "pull latest", "fleet update", "update from repo", or repo→runtime deployment operation on a Steadfaste Fleet machine. Also covers diagnosing why `fleet-update.sh` FAILED on specific files.
 
 ## ⚡ THE SANCTIONED INVOCATION (2026-08-04 — supersedes 2026-07-31 guidance)
 
@@ -53,7 +53,7 @@ date) — investigate those warnings; do not assume the enforcer is current.
 
 ## The proper sequence (user directive, 2026-07-31)
 
-> "Whenever there's a governance mechanism change you NEED to cortex update as this is the proper path. no shortcuts."
+> "Whenever there's a governance mechanism change you NEED to fleet update as this is the proper path. no shortcuts."
 
 1. `git pull --rebase origin main` — resolve conflicts (see Pitfall 2). If unstaged changes block the rebase, use `git pull --rebase --autostash origin main`.
 2. **`bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh`** — the sanctioned lock-free invocation (see ⚡ above)

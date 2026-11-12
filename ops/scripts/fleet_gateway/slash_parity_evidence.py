@@ -47,7 +47,7 @@ def _load_gateway(config: Path, chat, tmp: Path):
         raise SystemExit(3)
     secret = os.environ.get("GATEWAY_SECRET", "")
     if not secret:
-        print("GATEWAY_SECRET is unset — source the cortex env first "
+        print("GATEWAY_SECRET is unset — source the fleet env first "
               "(~/steadfaste-fleet/.env)", file=sys.stderr)
         raise SystemExit(3)
     backends = agents.build_backends(

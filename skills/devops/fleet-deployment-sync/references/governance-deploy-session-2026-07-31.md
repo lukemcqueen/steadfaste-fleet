@@ -16,7 +16,7 @@ Full reproduction of the immutable-governance-file deploy failure and the proper
 
 ## Trigger
 
-User: "pull latest and cortex update!" → `git pull --rebase origin main` failed with uncommitted changes (a non-orchestrator edit to `ops/install/deploy/docker-compose.langfuse.yml` — orchestrator-only path, pre-commit hook blocks non-orch commits).
+User: "pull latest and fleet update!" → `git pull --rebase origin main` failed with uncommitted changes (a non-orchestrator edit to `ops/install/deploy/docker-compose.langfuse.yml` — orchestrator-only path, pre-commit hook blocks non-orch commits).
 
 ## What happened
 
@@ -80,7 +80,7 @@ grep -n "adversarial\|pycache" ~/.hermes/plugins/governance-enforcer/__init__.py
 
 ## User directives captured this session
 
-1. "whenever there's a governance mechanism change you NEED to cortex update as this is the proper path. no shortcuts." — the immutable-file deploy is the canonical example.
+1. "whenever there's a governance mechanism change you NEED to fleet update as this is the proper path. no shortcuts." — the immutable-file deploy is the canonical example.
 2. "DO NOT UPDATE SOURCE" — during pull-latest/doctor-fix, don't modify repo source to silence warnings. Accept non-failure warnings (SOUL.md reverse drift, skill drift) as-is.
 3. "rerun simply" / "just run it simply!" — for the doctor re-run, use the plain `fleet-update.sh` invocation, not repeated `fleet-update.sh` cycles.
 

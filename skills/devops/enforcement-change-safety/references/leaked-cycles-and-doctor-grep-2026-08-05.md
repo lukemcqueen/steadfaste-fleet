@@ -74,7 +74,7 @@ The pre-push doctor gate I first shipped ran on EVERY push in EVERY repo
 which doc-only pushes bypassed). Luke's two corrections:
 
 1. "This is ONLY FOR STEADFASTE-FLEET updates... does not apply to non-hermes
-   cortex repos" → repo-top check.
+   fleet repos" → repo-top check.
 2. "really only applied to orchestrators in practice" → _detect_orch.
 
 ```bash
@@ -94,8 +94,8 @@ if [[ "$_REPO_TOP" == "$CORTEX_REPO_TOP" ]] && _detect_orch && [[ -f "$CORTEX_DO
 
 Verified scope matrix (bash harness with _detect_orch stubbed to return 1):
 - project repo + test files → ALLOWED (the Titus fix)
-- cortex repo + tests/, core/governance/tests/, fleet_doctor/ → BLOCKED
-- cortex repo + regular code → ALLOWED
+- fleet repo + tests/, core/governance/tests/, fleet_doctor/ → BLOCKED
+- fleet repo + regular code → ALLOWED
 
 ## 4. Orchestrator-only array over-block (commit 95997d0c)
 

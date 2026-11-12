@@ -176,7 +176,7 @@ installer: `install-pi-mcp.sh` warns and registers the rest, so 3-of-4 looks nor
 
 Pi advertises each skill's NAME + DESCRIPTION at startup and loads the body on demand.
 
-**Exposure is ALL skills, from the cortex-owned published tree — NOT a curated subset.**
+**Exposure is ALL skills, from the fleet-owned published tree — NOT a curated subset.**
 The manifest no longer governs what a coding agent can read; it stays the record of the
 ritual skills Hermes must load before a write. Do not "restore" a curated set from
 `skills.yaml#always` — a subset here is exactly what was removed, and the operator asked for
@@ -251,7 +251,7 @@ It writes `~/.pi/agent/settings.json` — `"extensions": [<fleet-context.ts>, <f
 and `"skills": ["~/.agents/skills"]` — and RETIRES a pre-existing `~/.pi/agent/cortex-skills`
 link farm when one is found: a stale farm keeps Pi loading a curated subset beside the whole
 tree. Idempotent, and it preserves the user's other keys. It no longer reads `skills.yaml` at
-all — the manifest is cortex-owned at the REPO ROOT (`skills.yaml`, synced to
+all — the manifest is fleet-owned at the REPO ROOT (`skills.yaml`, synced to
 `~/.steadfaste-fleet/skills.yaml` by `fleet-update.sh`) and is the record of Hermes's ritual set,
 not the source of a coding agent's exposure.
 
@@ -277,7 +277,7 @@ HOST-scope one (every Pi project on the machine).
   builder script, a JSON index, a shell script that fixes up links) has no owner: not deployed,
   not verified, gone with the machine. The supported route is the published tree
   (`~/.agents/skills`, produced by `ops/scripts/manage/publish-agent-skills.py` from the
-  cortex-owned defaults) registered once at user scope. Wire the WHOLE library deliberately,
+  fleet-owned defaults) registered once at user scope. Wire the WHOLE library deliberately,
   and expect its cost at startup: every installed skill's name + description is preloaded, so
   the size of that tree IS the session's context cost.
 - **The skills half needs PyYAML and must not pick its interpreter by PATH.** `command -v python3`
@@ -497,7 +497,7 @@ backend. `pi` itself needs no new adapter — it is DECLARED, not coded:
   the operator's chat id ONLY; likewise `GATEWAY_SECRET` (HMAC signing key) is
   mandatory — the daemon refuses to start without it, because an empty key makes
   every bus signature forgeable. The bot+config are assembled per host: env vars
-  into the canonical cortex env (`~/steadfaste-fleet/.env`), `gateway.yaml` from the
+  into the canonical fleet env (`~/steadfaste-fleet/.env`), `gateway.yaml` from the
   example, then `enable --now` the unit. Full reference: `docs/templates/
   fleet-gateway.service` + `docs/design/fleet-gateway.md` (CR5 pi = the record,
   live on the second-bot `@Esther0001Bot`).
@@ -505,7 +505,7 @@ backend. `pi` itself needs no new adapter — it is DECLARED, not coded:
   WORKING gateway.** The transport resolves the API base at call time and refuses
   to build a URL without it (`TELEGRAM_API_BASE is not set — refusing to build a
   Telegram API URL`), so the unit starts, reports `active`, and then backs off on
-  every poll. Set it in the cortex env (`TELEGRAM_API_BASE=https://api.telegram.org`
+  every poll. Set it in the fleet env (`TELEGRAM_API_BASE=https://api.telegram.org`
   for the standard API) — Hermes's own gateway supplies this internally, so a
   migration surfaces it as a NEW requirement. Verify a working gateway from the
   JOURNAL, not `systemctl is-active`: `journalctl --user -u fleet-gateway.service`
@@ -518,7 +518,7 @@ backend. `pi` itself needs no new adapter — it is DECLARED, not coded:
   default `ExecStart=/usr/bin/python3 …/daemon.py` crash-loops (`Restart=always`
   spins it) on `ImportError: psycopg package required` the moment the bot-lock layer
   tries to reach the PGMQ Postgres — the system python has neither psycopg nor the
-  cortex deps. Repoint both `ExecStartPre`/`ExecStart` at
+  fleet deps. Repoint both `ExecStartPre`/`ExecStart` at
   `<host>/.steadfaste-fleet/venv/bin/python3`, and make sure `psycopg[binary]` is
   installed in that venv (the fleet venv historically lacks it — the same gap that
   keeps `fleet-update.sh` from exiting clean). `pg_isready -h 127.0.0.1 -p <pg-port>`
@@ -560,10 +560,10 @@ can print its own environment. Supply exactly one variable:
                 "key": "!bash ~/.steadfaste-fleet/scripts/env-value.sh OPENROUTER_API_KEY"}}
 ```
 
-`env-value.sh` prints one named value (cortex env first, then the Hermes env, first
+`env-value.sh` prints one named value (fleet env first, then the Hermes env, first
 match wins), fails closed when absent, and refuses a name that isn't
 `^[A-Z][A-Z0-9_]*$` so it can't become a pattern. Point it at a Hermes-only key and
-copy that key into the cortex env: no harness should reach into a Hermes-owned file
+copy that key into the fleet env: no harness should reach into a Hermes-owned file
 for a provider key.
 
 Verify all three, in this order — the last one is the only real proof:
@@ -591,7 +591,7 @@ steadfaste `docs/design/coding-cost-routing.md`:
 Measured 2026-10-15 (pi 1.2.0): the built-ins are `read`, `bash`, `powershell`,
 `edit`, `write`, `grep`, `find`, `ls`, plus `codemode`/`tool_search` — and
 `tool_search` ranks the LOCAL tool registry (deferred/MCP tools), never the
-network. The five cortex MCP servers expose no search either. So "research
+network. The five fleet MCP servers expose no search either. So "research
 this" and "review this repo" had no online path at all, and the gateway-served
 agent is no exception: the gateway only spawns this same pi.
 
@@ -656,7 +656,7 @@ agent is no exception: the gateway only spawns this same pi.
 ## Several pi agents in ONE repo — project-scoped state, and the commit sweep
 
 pi keeps USER scope in `~/.pi/agent`, but for a TRUSTED PROJECT it also writes
-`.pi/settings.json` and `.pi/mcp.json` **inside the checkout**, and the cortex extensions add
+`.pi/settings.json` and `.pi/mcp.json` **inside the checkout**, and the fleet extensions add
 to that (the context extension checkpoints at `turn_end`, so those writes happen every turn).
 Hermes keeps all of it in `~/.hermes`, so this hazard does not exist for Hermes agents and
 nobody who has only run Hermes will expect it.

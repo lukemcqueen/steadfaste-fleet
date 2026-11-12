@@ -274,7 +274,7 @@ curl -s http://127.0.0.1:<PORT>/
 - Default `HEALTH_HOSTNAME` is `"t"` — set it to your agent's name so the orchestrator can identify the host
 - `h` field shows the full hostname string (e.g. `"esther"`), not just the first letter
 - The compact vector at `/` and `/health` is all the orchestrator needs
-- **CRITICAL — add `Environment=PATH=` to the service unit.** `health-vector.py` uses `shutil.which()` to detect ollama and mycortex. Systemd does NOT inherit the user shell's PATH — if `~/.local/bin` isn't in the service's PATH, ollama/mycortex report as `0` (not installed), and `services` cascades to `-1` because not all key services are found. The vector goes from 7/9 → 5/7. Always include:
+- **CRITICAL — add `Environment=PATH=` to the service unit.** `health-vector.py` uses `shutil.which()` to detect ollama and mycortex. Systemd does NOT inherit the user shell's PATH — if `~/.local/bin` isn't in the service's PATH, ollama/myfleet report as `0` (not installed), and `services` cascades to `-1` because not all key services are found. The vector goes from 7/9 → 5/7. Always include:
  ```
  Environment=PATH=/home/<user>/.local/bin:/home/<user>/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
  ```

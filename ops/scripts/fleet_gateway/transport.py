@@ -42,7 +42,7 @@ def api_base() -> str:
         raise RuntimeError(
             "TELEGRAM_API_BASE is not set — refusing to build a Telegram API URL "
             "(a missing base silently yields '/bot<token>/method'). Set it in the "
-            "cortex env; see ops/scripts/gateway.yaml.example.")
+            "fleet env; see ops/scripts/gateway.yaml.example.")
     return base
 
 

@@ -382,7 +382,7 @@ next deploy.** The cron-model chain is the canonical example (2026-08-31):
   if not j.get('no_agent')]"`). A pin that survives a deploy is real; one that
   doesn't means the manifest still disagrees.
 - **Remove the writer, not just its auto-run** (2026-09-08 → 09-09): the two
-  cortex scripts that WROTE operator-owned `config.yaml` model/fallback keys
+  fleet scripts that WROTE operator-owned `config.yaml` model/fallback keys
   (`install-model-default.sh`, `install-fallback-providers.py`) were first
   de-registered from auto-run (d709d752), then removed entirely — source,
   register lines, deployed copies, env vars, docs. A config-writer must be

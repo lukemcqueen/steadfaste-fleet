@@ -1,7 +1,7 @@
 """Doctor warning/info DISPOSITIONS — a deferred warning must be a RECORDED decision.
 
 Operator, 2026-10-20: "I'm getting tired of seeing agents just gloss over the warnings after a
-cortex update. Can we encourage the agents to fix warnings and info too? I don't want mandatory,
+fleet update. Can we encourage the agents to fix warnings and info too? I don't want mandatory,
 however, I don't want them to just ignore it every time."
 
 Why guidance alone had not worked: the doctor's own REQUIRED ACTIONS block ended every remedy with

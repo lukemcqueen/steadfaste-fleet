@@ -32,13 +32,13 @@ while [[ $# -gt 0 ]]; do
 done
 SESSION_FILE="$REPO_DIR/.steadfaste-fleet/sessions/current.md"
 
-# The Cortex repo carries no .steadfaste-fleet/ (removed 2026-10-07: inside
+# The fleet repo carries no .steadfaste-fleet/ (removed 2026-10-07: inside
 # ~/steadfaste-fleet that name shadowed the runtime dir ~/.steadfaste-fleet and made a
 # governance marker indistinguishable from repo state). Session state is RUNTIME
 # state, so fall back to the deploy home. A consumer PROJECT still keeps its
 # tracked overlay, which is why the repo-local path is preferred when present.
 # Previously this hard-exited 1, so deleting the repo dir made the 2-hourly cron
-# fail on every run for the Cortex repo itself.
+# fail on every run for the fleet repo itself.
 if [ ! -f "$SESSION_FILE" ]; then
     SESSION_FILE="${HOME}/.steadfaste-fleet/sessions/current.md"
     mkdir -p "$(dirname "$SESSION_FILE")"

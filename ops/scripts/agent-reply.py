@@ -42,7 +42,7 @@ def _agent_name(explicit: str = "") -> str:
 
 
 def _bus_config() -> tuple:
-    """(bus_url, headers) from the cortex env — the same source every other client uses."""
+    """(bus_url, headers) from the fleet env — the same source every other client uses."""
     sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
     import lib.fleet_bus as cb  # noqa: PLC0415
     auth = {}
@@ -105,7 +105,7 @@ def main(argv=None) -> int:
 
     bus_url, headers = _bus_config()
     if not bus_url:
-        raise SystemExit("agent-reply: CORTEX_BUS_URL is not configured (checked the cortex env)")
+        raise SystemExit("agent-reply: CORTEX_BUS_URL is not configured (checked the fleet env)")
 
     ok = publish_reply(bus_url, headers, agent, reply)
     if not ok:

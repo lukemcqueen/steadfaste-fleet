@@ -587,7 +587,7 @@ Before the plugin existed, a **loop-gov-mcp.py** script was written to provide `
 # Create the plugins directory if it doesn't exist
 mkdir -p ~/.hermes/plugins
 
-# Symlink the plugin from the Hermes Cortex repo
+# Symlink the plugin from the Hermes fleet repo
 ln -sf ~/steadfaste-fleet/plugins/governance-enforcer ~/.hermes/plugins/
 
 # Verify
@@ -609,7 +609,7 @@ HERMES_PLUGINS_DEBUG=1 hermes
 
 ## Fleet Installation (All Agents)
 
-The plugin source lives in the Hermes Cortex repo. To deploy to all agents:
+The plugin source lives in the Hermes fleet repo. To deploy to all agents:
 
 ```bash
 # Source of truth (commit and push first if modified)
@@ -627,7 +627,7 @@ bash ops/scripts/fleet-update.sh
 
 ### Common Path (All Agents)
 
-All fleet agents use the same path pattern — plugin source in the Cortex repo
+All fleet agents use the same path pattern — plugin source in the fleet repo
 is symlinked into `~/.hermes/plugins/`:
 
 | Location | Path |

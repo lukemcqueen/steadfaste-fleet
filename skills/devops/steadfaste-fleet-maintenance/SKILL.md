@@ -34,7 +34,7 @@ standalone maintenance cron jobs.
 ### Install the timer
 
 ```bash
-# Install via cortex update cron script
+# Install via fleet update cron script
 bash ~/steadfaste-fleet/ops/scripts/install/install-fleet-update-cron.sh
 ```
 
@@ -52,7 +52,7 @@ systemctl --user list-timers | grep steadfaste-fleet-update
 hermes update --yes
 ```
 
-### 2. Update the cortex repo layer
+### 2. Update the fleet repo layer
 
 ```bash
 cd ~/steadfaste-fleet

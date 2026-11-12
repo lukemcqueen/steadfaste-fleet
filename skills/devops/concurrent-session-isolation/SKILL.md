@@ -3,7 +3,7 @@ name: concurrent-session-isolation
 version: 1.0.0
 category: devops
 description: "Use when two or more agent sessions share one host."
-author: Hermes Cortex curator
+author: Steadfaste Fleet curator
 license: MIT
 platforms: [linux, macos]
 metadata:

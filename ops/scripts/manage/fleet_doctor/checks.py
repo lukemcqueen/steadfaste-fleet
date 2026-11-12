@@ -58,7 +58,7 @@ from .results import Results
 ORPHAN_REAPER_TAG = "[orphan-reaper]"
 
 
-# The ONE canonical cortex env (gitignored). Module-level so tests can
+# The ONE canonical fleet env (gitignored). Module-level so tests can
 # redirect it: monkeypatch.setattr(checks, "CORTEX_ENV_FILE", tmp_path / ".env").
 CORTEX_ENV_FILE = Path.home() / "steadfaste-fleet" / ".env"
 
@@ -642,10 +642,10 @@ def _is_git_repo(repo_dir):
 
 
 def _is_cortex_worktree(repo_dir):
-  """True when repo_dir is a git WORKTREE of the cortex repo itself.
+  """True when repo_dir is a git WORKTREE of the fleet repo itself.
 
   A worktree carries the CORTEX repo's own AGENTS.md on a session branch, so judging it as a dev
-  repo warns about a block that belongs to the cortex repo (check_repo's job) and points the
+  repo warns about a block that belongs to the fleet repo (check_repo's job) and points the
   printed fix at a session branch. Measured 2026-10-14 on ~/hc-session2 (the
   pre-rename session-worktree name; the convention is now ~/fleet-session2). The `.git` FILE names
   the real gitdir, so the common dir decides.
@@ -719,7 +719,7 @@ def check_dev_repo_agents(res: "Results") -> None:
       # warning plus a fix command that cannot run (2026-10-14).
       continue
     if _is_cortex_worktree(repo_dir):
-      # A worktree of the cortex repo is the cortex repo on another branch, not a dev repo.
+      # A worktree of the fleet repo is the fleet repo on another branch, not a dev repo.
       continue
     found_repos.append(repo_dir)
 
@@ -2020,7 +2020,7 @@ VM_QUERY_DEFAULT = "http://127.0.0.1:8428"
 def _env_file_value(key: str) -> str:
   """Read one KEY=value from the agent env file (no sourcing, no code execution).
 
-  Precedence matches agent-push-metrics.sh: the ONE canonical cortex env
+  Precedence matches agent-push-metrics.sh: the ONE canonical fleet env
   (~/steadfaste-fleet/.env), then the legacy ~/.steadfaste-fleet/steadfaste-fleet.env.
   The deploy dir (~/.steadfaste-fleet) holds no .env — it is a deployed path.
   """
@@ -3288,7 +3288,7 @@ def check_governance(res):
 
   # ── Pi harness (a coding agent this fleet runs) ──
   # Pi's PRESENCE decides, never a version in a doc: no Pi on this host is not a fault. A
-  # host WITH Pi whose cortex skills/extension are unwired has silently lost the adapter —
+  # host WITH Pi whose fleet skills/extension are unwired has silently lost the adapter —
   # the deploy now RUNS install-pi-integration.sh, and this is the drift guard that says
   # whether it landed. `--check` is read-only: it reports the registration, it adds none.
   pi_dir = HOME / ".pi" / "agent"
@@ -3310,7 +3310,7 @@ def check_governance(res):
         _pi_last = _pi_txt.splitlines()[-1] if _pi_txt else f"exit {pi_proc.returncode}"
         if pi_proc.returncode == 0:
           res.add("Pi integration", "PASS",
-                  f"cortex skills + extension registered ({_pi_last})")
+                  f"fleet skills + extension registered ({_pi_last})")
         else:
           res.add("Pi integration", "WARN", _pi_last,
                   "Run: bash ~/.steadfaste-fleet/scripts/install-pi-integration.sh   (then re-check)")
@@ -6049,7 +6049,7 @@ def check_orphan_cycle_resolution(res) -> None:
             f"{detail} — no bare MOVE_ON left behind by the reaper")
 
 def check_repo_local_cortex_dir(res):
-  """The Cortex repo must NOT carry a .steadfaste-fleet/ directory.
+  """The fleet repo must NOT carry a .steadfaste-fleet/ directory.
 
   Why this is a check and not a comment: this directory was removed on
   2026-10-07 precisely because, inside ~/steadfaste-fleet, its name shadows the
@@ -6073,7 +6073,7 @@ def check_repo_local_cortex_dir(res):
   """
   stray = CORTEX_REPO / ".steadfaste-fleet"
   if not stray.exists():
-    res.add("Repo-local .steadfaste-fleet", "PASS", "absent — correct for the Cortex repo")
+    res.add("Repo-local .steadfaste-fleet", "PASS", "absent — correct for the fleet repo")
     return
   try:
     entries = sorted(p.name for p in stray.iterdir())

@@ -225,8 +225,8 @@ PROBE
   #    set (empty) on every case so the verdict never depends on the CWD this test runs in.
   _st_decide() { if _commit_scope_guard "$1" "$2"; then echo refuse; else echo allow; fi; }
   [[ "$(GIT_INDEX_FILE= _st_decide "${HOME}/steadfaste-fleet" 0)" == "refuse" ]] \
-    && _st_ok "the cortex repo REFUSES a bare commit" \
-    || _st_bad "the cortex repo did not refuse a bare commit"
+    && _st_ok "the fleet repo REFUSES a bare commit" \
+    || _st_bad "the fleet repo did not refuse a bare commit"
   [[ "$(GIT_INDEX_FILE= _st_decide "$_st_repo" 0)" == "refuse" ]] \
     && _st_ok "ANOTHER repo is now IN SCOPE — a bare commit there is refused too" \
     || _st_bad "an unrelated repo was ALLOWED a bare commit — the widening did not take"
@@ -237,8 +237,8 @@ PROBE
     && _st_ok "a SANCTIONED pipeline commit is exempt" \
     || _st_bad "the sanctioned pipeline commit was refused"
   [[ "$(GIT_INDEX_FILE="$_st_dir/other-index" _st_decide "${HOME}/steadfaste-fleet" 0)" == "allow" ]] \
-    && _st_ok "the cortex repo ALLOWS a partial commit (the remedy actually works)" \
-    || _st_bad "a partial commit in the cortex repo was refused — the remedy would be blocked"
+    && _st_ok "the fleet repo ALLOWS a partial commit (the remedy actually works)" \
+    || _st_bad "a partial commit in the fleet repo was refused — the remedy would be blocked"
   [[ "$(GIT_INDEX_FILE="$_st_dir/other-index" _st_decide "$_st_repo" 0)" == "allow" ]] \
     && _st_ok "ANOTHER repo ALLOWS a partial commit too (the same remedy works there)" \
     || _st_bad "a partial commit in another repo was refused — its remedy would be blocked"
@@ -1548,7 +1548,7 @@ fi
 # point at the sanctioned deploy path (2026-08-04 hardening — previously
 # this silently skipped every staged file when the script was absent,
 # which was a bypass: security/guard changes could land unscanned).
-# Resolve adversarial-verify.py — repo-local copy (cortex repo itself) first,
+# Resolve adversarial-verify.py — repo-local copy (fleet repo itself) first,
 # then the canonically-deployed copy (fleet-update.sh registers it to
 # $HOME/.steadfaste-fleet/scripts/adversarial-verify.py on BOTH Linux and macOS).
 # Project repos have no ops/ tree, so the deployed copy is the only one there.

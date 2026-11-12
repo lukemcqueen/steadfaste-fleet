@@ -73,7 +73,7 @@ PUBLISHED_SKILLS="${PI_PUBLISHED_SKILLS_DIR:-${HOME}/.agents/skills}"
 
 # ── WEB SEARCH — the pi agent must be able to look things up online ────────
 # Measured 2026-10-15: pi ships read/bash/edit/write/grep/find/ls and the five
-# cortex MCP servers expose no search, so "research this" or "review this repo"
+# fleet MCP servers expose no search, so "research this" or "review this repo"
 # had NO online path at all — the gateway-served agent included, because the
 # gateway only spawns this same pi. pi-web-access adds web_search,
 # source_check, fetch_content and get_search_content (URL/GitHub/PDF/YouTube).
@@ -243,7 +243,7 @@ def tree_count(root):
     """
     return len(_walk_pi_skills(root, apply_ignore_rules=False))
 
-# Every cortex-owned extension, by basename. ONE list: registration, the
+# Every fleet-owned extension, by basename. ONE list: registration, the
 # strip/replace path and the check all read it, so a new extension cannot be
 # added to one and forgotten in another (the pre-2026-10-14 bug: the check
 # asserted one filename, so a second extension looked wired and was not).

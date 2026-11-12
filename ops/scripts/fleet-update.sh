@@ -296,7 +296,7 @@ done
 # clobbered live MEMORY.md on every deploy (7× in a day) because the live
 # file is personalized and always differs from the template. Fail CLOSED on
 # such targets so a re-add breaks the deploy loudly instead of overwriting
-# user data. See docs/troubleshooting.md -> "Memory got wiped after a cortex update".
+# user data. See docs/troubleshooting.md -> "Memory got wiped after a fleet update".
 _assert_register_dest_safe() {
   local dest="$1"
   case "$dest" in
@@ -310,7 +310,7 @@ _assert_register_dest_safe() {
     *"/memories/"*|"${HOME}/.hermes/"*)
       echo "❌ REFUSED: register target '${dest/$HOME/~}' is Hermes-owned user data." >&2
       echo "   Memory and config files under ~/.hermes/ belong to Hermes — never deploy them." >&2
-      echo "   See docs/troubleshooting.md -> \"Memory got wiped after a cortex update\"." >&2
+      echo "   See docs/troubleshooting.md -> \"Memory got wiped after a fleet update\"." >&2
       exit 1
       ;;
   esac
@@ -1081,7 +1081,7 @@ register_orch "ops/services/bus/agent-card/agent-card.json"                "${CO
 # with the blank seed template — the hash always differs because the live file
 # is personalized, so needs_update() clobbered it on every run (7× on
 # 2026-08-05). Seeds remain in docs/templates/ for reference only.
-# memory-readme.seed.md is a cortex-owned rubric doc (NOT user memory) — safe
+# memory-readme.seed.md is a fleet-owned rubric doc (NOT user memory) — safe
 # to keep syncing via the generic hash path.
 register "docs/templates/memory-readme.seed.md" "${CORTEX_DEPLOY_HOME}/memory/README.md"
 
@@ -1746,12 +1746,12 @@ sync_skills() {
   fi
 
   # ── Pass 2: Project-level overrides (.steadfaste-fleet/skills/) ──
-  # This overlay is for CONSUMER projects only. Inside the Cortex repo itself
+  # This overlay is for CONSUMER projects only. Inside the fleet repo itself
   # it shadowed the runtime directory name (~/.steadfaste-fleet) and made a stray
   # governance marker indistinguishable from legitimate repo state. The Cortex
   # repo is identified by carrying the loop-gov MCP server.
   local override_skills="${REPO_DIR}/.steadfaste-fleet/skills"
-  # Identity test: the Cortex repo carries BOTH its loop-gov MCP server and this
+  # Identity test: the fleet repo carries BOTH its loop-gov MCP server and this
   # script. A CONSUMER project carries neither, so this cannot misfire on a
   # project that merely happens to have an mcp-servers/ dir. Two files, not one:
   # a single-file test is a heuristic that could wrongly disable a consumer's
@@ -3273,7 +3273,7 @@ main() {
   _skills_pub="${CORTEX_DEPLOY_HOME}/scripts/publish-agent-skills.py"
   if [[ -f "$_skills_owner" && -f "$_skills_pub" ]]; then
     if ! python3 "$_skills_owner" >/dev/null 2>&1; then
-      error "the skills tree is not cortex-owned (inverter refused or could not verify)"
+      error "the skills tree is not fleet-owned (inverter refused or could not verify)"
       info  "  report:   python3 \"$_skills_owner\" --check"
       info  "  decision: --adopt-borrower | --keep-borrower (when BOTH paths are real dirs)"
       _DEFERRED_FAILURES+=("skills tree ownership not inverted")

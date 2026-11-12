@@ -87,5 +87,5 @@ When `overall` < 5 on your traces:
 
 ## Deployment
 
-Script lives at `ops/scripts/manage/llm-judge-scorer.py` in the cortex repo.
+Script lives at `ops/scripts/manage/llm-judge-scorer.py` in the fleet repo.
 Deployed to `~/.hermes/scripts/llm-judge-scorer.py` via `fleet-update`.

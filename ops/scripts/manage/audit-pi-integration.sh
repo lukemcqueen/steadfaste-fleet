@@ -309,7 +309,7 @@ fi
 
 # ── Layer 6: web search (free providers) ──
 # Without this the pi agent has NO online path at all: pi's built-in tools are
-# local (read/bash/edit/write/grep/find/ls) and the five cortex MCP servers
+# local (read/bash/edit/write/grep/find/ls) and the five fleet MCP servers
 # expose no search, so "research this" / "review this repo" fails with an error
 # that reads like a broken tool instead of a missing package. Both halves are
 # checked because either alone is inert: a DECLARATION with nothing on disk
