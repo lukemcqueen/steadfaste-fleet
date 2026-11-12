@@ -1924,9 +1924,13 @@ def _is_readonly_terminal_command(command: str) -> bool:
 # agent" (AGENTS.md RULE 7b) — this makes that promise true.
 # (2026-11-12: the pre-migration repo name `hermes-cortex` was REMOVED from the
 # accept list — the migration is complete; a host on the old name is a straggler
-# the doctor's stale-home check flags.)
-_SANCTIONED_CORTEX_UPDATE_RE = re.compile(
-    r"^\s*(?:bash\s+)?(?:~|" + re.escape(str(Path.home())) + r")/steadfaste-fleet/ops/scripts/(?:fleet-update|fleet-update)\.sh"
+# the doctor's stale-home check flags. The sanctioned script NAME is
+# fleet-update.sh ONLY: cortex-update.sh was a one-release shim and no longer
+# exists after this push, so a straggler host necessarily still runs a
+# PRE-migration enforcer that already accepts its own old name — no dual-accept
+# is needed here.)
+_SANCTIONED_FLEET_UPDATE_RE = re.compile(
+    r"^\s*(?:bash\s+)?(?:~|" + re.escape(str(Path.home())) + r")/steadfaste-fleet/ops/scripts/(?:fleet-update)\.sh"
     r"(?:\s+(?:--dry-run|--status|--delta|--clean-stale))*\s*$"
 )
 
@@ -1945,7 +1949,7 @@ def _is_sanctioned_fleet_update_command(command: str) -> bool:
     # read-only compound (`... | tail -1`) is not the sanctioned deploy call.
     if _COMMAND_FORBIDDEN_METACHARS.search(command) or _COMMAND_SEPARATORS.search(command):
         return False
-    return _SANCTIONED_CORTEX_UPDATE_RE.fullmatch(command) is not None
+    return _SANCTIONED_FLEET_UPDATE_RE.fullmatch(command) is not None
 
 
 # ── /tmp cleanup is sanctioned and lock-free (2026-10-30) ───────────────────
