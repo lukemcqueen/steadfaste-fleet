@@ -602,7 +602,9 @@ does not apply.
      BEFORE the deploy+push — never to re-deploy on top of it. Symptom, fix and
      the standing habit are in `references/skill-drift-gate-2026-08-27.md`:
      after ANY `skill_manage` patch in this repo, sync the deployed copy back to
-     repo source in the same cycle. Treating it as "pre-existing drift I cannot
+     repo source in the same cycle. The full two-class recovery walkthrough
+     (SKILL.md supersets vs parity-absent references/templates, with the
+     delete-vs-commit decision for each) is `references/skill-drift-recovery.md`. Treating it as "pre-existing drift I cannot
      explain" wastes the cycle — it is always the skill you just edited, OR a
      peer's in-flight skill work (never `cp` over a skill another session is
      mid-edit on — it is theirs to land, and its diff is the tell).

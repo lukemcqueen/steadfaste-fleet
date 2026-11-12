@@ -712,6 +712,25 @@ where the body is and how to read it:
   tree, an unmerged diff) before duplicating it — acting on a copy whose
   original was consumed is how two sessions race to land the same change.
 
+### `fleet send`: the self-test gate, and which subjects reach an agent
+
+- **Every send to a fleet agent is REFUSED until the identical flow ran on
+  yourself.** `fleet send <agent> <subject> <body>` demands: send to your
+  own agent, run `agent-message-handler.py --once`, verify the handler
+  processed it, then re-send with `--self-tested`. That gate proves the
+  TRANSPORT — it says nothing about whether the subject has correct
+  semantics, so a passing self-test does not mean the message will reach
+  the agent's session.
+- **Unknown subjects bounce: the handler archives the message and answers
+  with an error result — it never reaches the agent's session.** Sending
+  an ad-hoc subject (a grant notice, a custom request label) produces
+  exactly that bounce. The subjects that reach an agent are the protocol
+  set (`EXEC`, `UPDATE_REQUEST`, `TASK_REQUEST`, ...) plus `FLEET_NOTICE`,
+  which the handler explicitly notifies + archives + answers
+  `FLEET_NOTICE_RESULT` on. For an informational message to a worker, use
+  `FLEET_NOTICE`, and afterwards verify the msg_id is PENDING in the
+  target queue (peek), never trusting the send confirmation alone.
+
 ## Bus tokens silently expire at T+90d — rotation does NOT refresh `expires_at` (2026-10-14)
 
 **Symptom:** every authenticated endpoint on the LOCAL bus returns

@@ -378,6 +378,27 @@ resolved the WRONG repo can therefore re-tag that same wrong repo on every later
   index and the next session can commit it) — so the follow-on session finishes the work
   instead of rediscovering it.
 
+### Pitfall 11: The `loop-gov daemon` doctor WARN re-fires after EVERY fleet-update — only a gateway restart clears it
+
+The doctor's `loop-gov daemon` check verifies the running loop-gov MCP
+daemons by CONTENT: each daemon records a stamp
+(`~/.steadfaste-fleet/state/loop-gov-daemon.json`) that holds ONE pid plus
+the sha256 of the module it loaded. Two daemons run (review and
+loop-governance roles) but only the last one to start owns the stamp slot
+— the other daemon can never be content-verified and falls back to
+mtime-vs-start comparison. `fleet-update.sh` force-rewrites every mapped
+file, so `loop-gov-mcp.py`'s mtime advances past both daemons' start even
+when the bytes are byte-identical — after EVERY deploy the unstamped
+daemon reads "COULD NOT VERIFY by content" and the WARN re-fires no matter
+how recently the gateway restarted. The check only passes while the module
+mtime predates the daemon start, i.e. after a gateway restart that follows
+the last deploy. So: read the WARN as a deploy artifact, not stale code;
+clear it with `hermes gateway restart` after the final deploy; and never
+hand-edit or fabricate the stamp file — the check is only meaningful if
+the daemon itself wrote it. Root cause is the single-slot stamp: the
+durable fix is a per-pid stamp map so every daemon is verified by content
+and the byte-identical rewrite stops re-warning.
+
 ### A wide close judges a WAVE of blobs per pass — concurrency, never a longer window
 
 A close refused with **"N blob(s) of the push range still carry no review verdict"** names the exact

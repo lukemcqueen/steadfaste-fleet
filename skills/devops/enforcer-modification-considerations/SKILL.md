@@ -309,6 +309,44 @@ The pre-commit hook enforces orchestrator-only paths (from `docs/orchestrator-on
 
 ---
 
+## 5a. Changing a fleet-committer capability — the deny-list boundary and its tests
+
+The committer boundary in `ops/scripts/pre-commit-score` is a DENY-LIST,
+not an allow-list: a committer may write ANY fleet path EXCEPT
+`_COMMITTER_DENY_FILES` (exact names: core mcp-servers, deploy/guard
+scripts, review pipeline, both config files, AGENTS.md/SOUL.md) and
+`_COMMITTER_DENY_DIRS` (prefixes). Identity lives in
+`docs/fleet-committers.txt`, keyed by the DIRECTORY-SERVICES home
+(resolved via getent/dscl — a macOS NFS home like `/Users/<name>` is the
+format, NOT the Unix username), exact-match against the COMMITTED copy. A
+second hardcoded `ORCHESTRATOR_ONLY_PATHS` array is committer-RELAXED by
+design; `docs/orchestrator-only-paths.txt` governs plain non-committer
+agents only — opening a path for committers needs no change to the config
+list.
+
+Moving a path out of (or into) the deny boundary:
+
+- **Flip the tests FIRST.** `tests/test_orchestrator_identity.py` extracts
+the REAL deny arrays and the matching loop from the committed hook and
+pins an expectation for every deny dir and every ALLOWED/DENIED verdict —
+TDD RED on the test change, then the hook edit, then GREEN. A hook change
+without its test flip breaks the suite.
+- **Audit the describers in the same commit.** AGENTS.md
+§Orchestrator-Only Domains, the header comments of
+docs/orchestrator-only-paths.txt, and any skill row describing who may
+write the path all go stale the instant the deny-list moves — edit them
+in the SAME change.
+- **Opening a path is not opening the gates.** The committer's commit on
+the opened path still runs the full chain (adversarial scan, review
+receipt, doctor, PII).
+- **The two config files are self-protecting** (`docs/fleet-committers.txt`,
+`docs/orchestrator-only-paths.txt`): editable ONLY by a true orchestrator
+(`_detect_orch`), never by the committer-widened IS_ORCH — otherwise a
+committer adds its own home row or lifts a restriction (privilege
+escalation). Keep that gate where it is.
+
+---
+
 ## 6. DOGFOOD Auto-Deploy vs `fleet-update.sh`
 
 Two mechanisms deploy the enforcer:
