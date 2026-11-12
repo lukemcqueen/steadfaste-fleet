@@ -181,9 +181,13 @@ So:
 ## A renamed file's pre-existing content is CONTEXT, not a claim (2026-11-12)
 
 A sweep range (brand rename, e.g. hc→fleet) moves files without authoring them. A file whose
-content EXISTED at the range base (git shows the rename pair; its blob sha matches a pre-range
-blob) makes no NEW operational claims — its teaching was verified when it was authored. For such
-a file judge ONLY:
+content EXISTED at the range base makes no NEW operational claims — its teaching was verified
+when it was authored. The structural fact you CAN see: **the range's file list names every file
+in play, and a renamed file appears under BOTH paths** (the old path as the rename source, the
+new path as the destination — the sweep commit records git rename pairs). When the file list
+shows the old path and the new path for the same content, it is a rename: its pre-existing
+content is CONTEXT, and demanding provenance beyond the file list is unsatisfiable (the pair is
+the provenance). For such a file judge ONLY:
 
 - what THIS range changed about it (old-brand tokens swept, STALE labels correct, renamed
   identifiers consistent, no dangling references introduced);
@@ -194,8 +198,10 @@ a file judge ONLY:
 **Deliberate-keeps authority:** when `docs/rename-followups-steadfaste-fleet.md` is in the range,
 its keep list is the contract. Tokens it documents as deliberately kept are NOT findings:
 
-- the `cortex` short-name family (`cortex-bus.service`, `CORTEX_*` env vars, `mycortex`,
-  `cortex-bus.conf` STALE-labeled teaching) — a SEPARATE naming layer from the hc sweep;
+- the `cortex` short-name family — a SEPARATE naming layer from the hc sweep: `cortex-bus.service`,
+  the whole `CORTEX_*` env-var family (`CORTEX_DEPLOY_HOME`, `CORTEX_BUS_URL`, `CORTEX_BASIC_AUTH`,
+  `CORTEX_SESSION_KEY`, `CORTEX_PROFILE`, `CORTEX_OS`, `CORTEX_HOME`, …), `Cortex Dashboard` (the
+  dashboard component/service), `mycortex`, and `cortex-bus.conf` STALE-labeled teaching;
 - `Hermes`/`hermes` (Hermes Agent runtime: `~/.hermes`, `hermes cron`, the `hermes-agent` skill)
   — a separate live product, never part of the `hermes-cortex` brand;
 - `hermes-cortex-dashboard.service` — the dashboard unit keeps its pre-rename name.
