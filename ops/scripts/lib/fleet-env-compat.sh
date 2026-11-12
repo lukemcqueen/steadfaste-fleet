@@ -13,6 +13,8 @@
 #
 # This is the shell twin of python fleet_lib.env.get(). When the migration is
 # complete (release 2) this file and the python CORTEX_ fallback are removed.
+# Behavior is pinned by the committed hermetic test tests/test_fleet_env_compat.sh
+# (run evidence: docs/evidence/fleet-env-compat-test-2026-11-13.txt).
 #
 # This file is deliberately not exec'd on its own; it is meant to be sourced.
 
