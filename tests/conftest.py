@@ -55,3 +55,32 @@ def _no_real_notifications(tmp_path_factory):
     os.environ["TELEGRAM_NOTIFY_STATE_DIR"] = str(scratch / "state")
     os.environ.pop("TELEGRAM_HOME_CHANNEL", None)
     yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _no_host_wide_hooks(tmp_path_factory):
+    """Point GIT_CONFIG_GLOBAL at a minimal config so throwaway test repos
+    never inherit the host's global core.hooksPath.
+
+    This host sets core.hooksPath globally to the fleet hooks, and the
+    pre-commit hook REFUSES bare commits and AGENTS.md-less commits — so any
+    test that creates a temp repo and runs `git commit` dies in setup (the
+    same fragility test_session_scoped_review's _sandbox_hooks documents).
+    The suite's temp repos are deliberately governance-free: point every
+    subprocess git at a minimal global config (identity only, no hooksPath).
+
+    The fleet repo itself is unaffected: its own core.hooksPath is set
+    repo-locally and still fires the hooks. A hook-behaviour test that
+    genuinely needs the fleet hooks in a temp repo opts back in per repo
+    (core.hooksPath = ~/.steadfaste-fleet/hooks), never via the global.
+    """
+    import subprocess as _sp
+
+    cfg = tmp_path_factory.mktemp("gitconfig") / "global"
+    name = _sp.run(["git", "config", "--global", "user.name"],
+                   capture_output=True, text=True).stdout.strip() or "test"
+    email = _sp.run(["git", "config", "--global", "user.email"],
+                    capture_output=True, text=True).stdout.strip() or "test@localhost"
+    cfg.write_text(f"[user]\n\tname = {name}\n\temail = {email}\n")
+    os.environ["GIT_CONFIG_GLOBAL"] = str(cfg)
+    yield
