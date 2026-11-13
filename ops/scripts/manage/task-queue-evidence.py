@@ -233,6 +233,19 @@ def main() -> int:
           db_version == newest,
           f"DB={db_version if db_version is not None else 'unreadable'} repo={newest}")
 
+    def _harness_test(cwd) -> str | None:
+        """The harness test present in this tree.
+
+        The CORTEX->FLEET sweep renamed ``tests/test_hc_harness.py`` to
+        ``tests/test_fleet_harness.py``, so the pinned baseline only has the OLD
+        name. Running whichever exists keeps the before/after a real (non-vacuous)
+        run on both trees.
+        """
+        for name in ("test_fleet_harness.py", "test_hc_harness.py"):
+            if (Path(cwd) / "tests" / name).is_file():
+                return name
+        return None
+
     # 7 — the pre-existing failures, reproduced on a tree WITHOUT this change.
     #     A git WORKTREE, not `git stash`: the stash would also stash this script's
     #     own untracked output file mid-run and delete it from under the redirect.
@@ -256,7 +269,11 @@ def main() -> int:
                         "pytest (python-with-module.sh exit 3)", "not-run")
         env = {**os.environ, "PYTHONHASHSEED": "0",
                "PYTEST_ADDOPTS": "-p no:cacheprovider"}
-        r = subprocess.run([py, "-m", "pytest", "tests/test_fleet_harness.py",
+        test_file = _harness_test(cwd)
+        if test_file is None:
+            return ("", "COULD NOT VERIFY - no tests/test_fleet_harness.py nor "
+                        "tests/test_hc_harness.py in this tree", "not-run")
+        r = subprocess.run([py, "-m", "pytest", f"tests/{test_file}",
                             "-q"], cwd=cwd, capture_output=True, text=True,
                            timeout=300, env=env)
         full = (r.stdout or "") + (r.stderr or "")
@@ -327,13 +344,15 @@ def main() -> int:
     # can check.
     print("\n## Raw test output — `tests/test_fleet_harness.py`\n")
     print("`fleet harness` and its registry were failing their own tests before this fix;")
-    print("the same file is re-run at the parent of the commit that last touched it, so")
-    print("the claim is a measured before/after rather than an assertion.\n")
+    print("the before is re-run in a worktree at the pinned baseline "
+          f"{REGRESSION_BASELINE[:12]} (the CORTEX->FLEET sweep renamed "
+          "test_hc_harness -> test_fleet_harness, so the baseline tree runs the old "
+          "name), so the claim is a measured before/after rather than an assertion.\n")
     print("### With this change applied\n")
     print("```")
     print(with_changes_full.strip() or "(no output)")
     print("```\n")
-    print("### On a HEAD~1 worktree (this change absent)\n")
+    print(f"### At the pinned baseline {REGRESSION_BASELINE[:12]} (before the fix)\n")
     print("```")
     print(clean_tree_full.strip() or "(no output)")
     print("```")
