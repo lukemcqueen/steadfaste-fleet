@@ -15,8 +15,8 @@
 # ─────────────────────────────────────────────────────────────
 set -euo pipefail
 
-CORTEX_REPO="${HOME}/steadfaste-fleet"
-SCRIPTS_DIR="${CORTEX_REPO}/ops/scripts"
+FLEET_REPO="${HOME}/steadfaste-fleet"
+SCRIPTS_DIR="${FLEET_REPO}/ops/scripts"
 
 # ── Canonical forbidden patterns — matched exactly, no false positives ──
 FORBIDDEN_PATTERNS=(

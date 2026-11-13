@@ -36,8 +36,8 @@ from pathlib import Path
 from typing import Any, Optional
 
 # ── Paths ──────────────────────────────────────────────────────────────
-CORTEX_REPO = Path(os.environ.get("CORTEX_REPO", os.path.expanduser("~/steadfaste-fleet")))
-MANIFEST_PATH = CORTEX_REPO / "ops" / "install" / "cron-manifest.yaml"
+FLEET_REPO = Path(os.environ.get("FLEET_REPO", os.path.expanduser("~/steadfaste-fleet")))
+MANIFEST_PATH = FLEET_REPO / "ops" / "install" / "cron-manifest.yaml"
 JOBS_FILE = Path(os.environ.get("HERMES_HOME", os.path.expanduser("~/.hermes"))) / "cron" / "jobs.json"
 
 # Scopes

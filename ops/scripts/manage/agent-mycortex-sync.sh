@@ -18,8 +18,8 @@
 # ─────────────────────────────────────────────────────────────
 set -uo pipefail
 
-CORTEX_HOME="${CORTEX_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}"
-MYCORTEX="${CORTEX_HOME}/scripts/mycortex"
+FLEET_HOME="${FLEET_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}"
+MYCORTEX="${FLEET_HOME}/scripts/mycortex"
 
 if [[ ! -x "$MYCORTEX" ]]; then
   echo "❌ agent-mycortex-sync: mycortex CLI not found at ${MYCORTEX} — run fleet-update.sh"
