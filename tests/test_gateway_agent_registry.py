@@ -266,7 +266,7 @@ def test_output_shape_is_declared_not_guessed():
     prints something unexpected — and the wrong guess sends chatter to the human.
     """
     spec = A.AgentSpec(name="pi", kind="command", output="last_line",
-                       command=["/bin/sh", "-c", "echo 'CORTEX_RESUME session x'; echo 'the answer'"])
+                       command=["/bin/sh", "-c", "echo 'FLEET_RESUME session x'; echo 'the answer'"])
     reply = A.CommandBackend(spec).dispatch(_inbound("q"))
     assert reply["body"] == "the answer", reply["body"]
     print("  output=last_line skips the agent's chatter ✓")
@@ -329,8 +329,8 @@ def test_command_backend_pins_session_identity_via_spec_env():
     """
     spec = A.AgentSpec(name="pi", kind="command", session="per_chat",
                        command=[sys.executable, "-c",
-                                "import os;print(os.environ.get('CORTEX_SESSION_KEY',''))"],
-                       env={"CORTEX_SESSION_KEY": "{session_id}"})
+                                "import os;print(os.environ.get('FLEET_SESSION_KEY',''))"],
+                       env={"FLEET_SESSION_KEY": "{session_id}"})
     backend = A.CommandBackend(spec)
     a = backend.dispatch(_inbound("first", chat=111))["body"]
     b = backend.dispatch(_inbound("second", chat=222))["body"]

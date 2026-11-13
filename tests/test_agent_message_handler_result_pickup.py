@@ -24,7 +24,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 def handler_module(monkeypatch):
     """Load agent-message-handler.py by file path (hyphenated name)."""
     monkeypatch.setenv("AGENT_NAME", "test-agent")
-    monkeypatch.setenv("CORTEX_BUS_NO_OUTBOX", "1")
+    monkeypatch.setenv("FLEET_BUS_NO_OUTBOX", "1")
     src = REPO_ROOT / "ops" / "scripts" / "agent" / "agent-message-handler.py"
     spec = importlib.util.spec_from_file_location("agent_message_handler", src)
     amh = importlib.util.module_from_spec(spec)

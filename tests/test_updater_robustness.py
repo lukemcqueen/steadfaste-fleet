@@ -29,7 +29,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 CHANGE_VALIDATE = REPO / "ops" / "scripts" / "change-validate.sh"
-CORTEX_UPDATE = REPO / "ops" / "scripts" / "fleet-update.sh"
+FLEET_UPDATE = REPO / "ops" / "scripts" / "fleet-update.sh"
 UNREGISTERED_TOOL = "ops/scripts/manage/verify-landed.py"   # checkout-only by design
 
 STUBS = """set -uo pipefail
@@ -37,9 +37,9 @@ warn() { echo "WARN: $*"; }
 info() { echo "INFO: $*"; }
 error() { echo "ERROR: $*"; }
 _DEFERRED_FAILURES=()
-export CORTEX_DEPLOY_HOME=/nonexistent-deploy-home
+export FLEET_DEPLOY_HOME=/nonexistent-deploy-home
 # Set by change-validate.sh before §3; relative to cwd, which is the fixture repo.
-export CORTEX_UPDATE="./ops/scripts/fleet-update.sh"
+export FLEET_UPDATE="./ops/scripts/fleet-update.sh"
 """
 
 
@@ -125,7 +125,7 @@ def test_the_block_reads_the_ADDED_filter_not_every_staged_file():
 
 
 def _venv_block() -> str:
-    return STUBS + _extract(CORTEX_UPDATE,
+    return STUBS + _extract(FLEET_UPDATE,
                             "─ The fleet venv must EXIST and be able to RUN what we point at it ─",
                             "── Ensure tasks MCP server registered")
 

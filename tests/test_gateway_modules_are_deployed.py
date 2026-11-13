@@ -21,7 +21,7 @@ def _registered() -> set:
         line = line.strip()
         if not line.startswith("register ") or "fleet_gateway/" not in line:
             continue
-        # register "ops/scripts/fleet_gateway/x.py" "${CORTEX_DEPLOY_HOME}/scripts/fleet_gateway/x.py"
+        # register "ops/scripts/fleet_gateway/x.py" "${FLEET_DEPLOY_HOME}/scripts/fleet_gateway/x.py"
         src = line.split('"')[1]
         out.add(Path(src).name)
     return out
@@ -45,8 +45,8 @@ def test_the_bus_core_the_gateway_loads_is_registered_at_the_path_it_probes():
         if line.startswith("register ") and "core/fleet_bus/queue.py" in line:
             dests["queue.py"] = line.split('"')[3]        # the destination, 4th quoted field
     assert dests, "core/fleet_bus/queue.py is not registered — the deployed gateway cannot start"
-    assert "${CORTEX_DEPLOY_HOME}/queue.py" == dests["queue.py"], (
-        f"the bus core must deploy to ${{CORTEX_DEPLOY_HOME}}/queue.py (what bot_locks probes), "
+    assert "${FLEET_DEPLOY_HOME}/queue.py" == dests["queue.py"], (
+        f"the bus core must deploy to ${{FLEET_DEPLOY_HOME}}/queue.py (what bot_locks probes), "
         f"not {dests['queue.py']}")
     loader = (REPO / "ops" / "scripts" / "bot_locks.py").read_text()
     assert '".steadfaste-fleet" / "queue.py"' in loader, \
@@ -56,9 +56,9 @@ def test_the_bus_core_the_gateway_loads_is_registered_at_the_path_it_probes():
 
 def test_that_guard_would_catch_a_wrong_destination():
     """Control: a register line pointing somewhere else must fail the check."""
-    right = "${CORTEX_DEPLOY_HOME}/queue.py"
-    wrong = "${CORTEX_DEPLOY_HOME}/scripts/queue.py"
-    assert right != wrong and wrong != "${CORTEX_DEPLOY_HOME}/queue.py"
+    right = "${FLEET_DEPLOY_HOME}/queue.py"
+    wrong = "${FLEET_DEPLOY_HOME}/scripts/queue.py"
+    assert right != wrong and wrong != "${FLEET_DEPLOY_HOME}/queue.py"
     print("  control: a wrong destination is rejected ✓")
 
 
@@ -104,8 +104,8 @@ def test_the_agent_reply_entrypoint_is_registered_for_deploy():
             dests["agent-reply.py"] = line.split('"')[3]
     assert dests, ("ops/scripts/agent-reply.py is not in the deploy register, so the deployed host "
                    "has no agent-reply: the documented reply path cannot run there")
-    assert "${CORTEX_DEPLOY_HOME}/scripts/agent-reply.py" == dests["agent-reply.py"], (
-        f"agent-reply.py must deploy to ${{CORTEX_DEPLOY_HOME}}/scripts/agent-reply.py, "
+    assert "${FLEET_DEPLOY_HOME}/scripts/agent-reply.py" == dests["agent-reply.py"], (
+        f"agent-reply.py must deploy to ${{FLEET_DEPLOY_HOME}}/scripts/agent-reply.py, "
         f"not {dests['agent-reply.py']}")
     # Premise: the CLI test still loads the script BY REPO PATH — that is exactly why a
     # green suite could hide a missing deployed copy, so the guard is only meaningful

@@ -204,7 +204,7 @@ def test_deploy_registry_doc_counts_match_the_register_map():
     which is exactly what the adversarial gate flagged. Compute them, assert them.
     """
     rows = re.findall(
-        r'^(?:register|register_orch)\s+"([^"]+)"\s+"\$\{CORTEX_DEPLOY_HOME\}/([^"]+)"',
+        r'^(?:register|register_orch)\s+"([^"]+)"\s+"\$\{FLEET_DEPLOY_HOME\}/([^"]+)"',
         UPDATE_SH.read_text(), re.M)
     assert rows, "no register() rows parsed — fix the parser, not the doc"
 
@@ -242,7 +242,7 @@ def test_every_registered_file_is_tracked_by_git():
     the commit, so the unit's ExecStartPre pointed at a file no other host has.
     """
     rows = re.findall(
-        r'^(?:register|register_orch)\s+"([^"]+)"\s+"\$\{CORTEX_DEPLOY_HOME\}/[^"]+"',
+        r'^(?:register|register_orch)\s+"([^"]+)"\s+"\$\{FLEET_DEPLOY_HOME\}/[^"]+"',
         UPDATE_SH.read_text(), re.M)
     assert rows, "no register() rows parsed — fix the parser, not the assertion"
 

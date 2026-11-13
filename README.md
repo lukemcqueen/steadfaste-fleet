@@ -121,10 +121,10 @@ bash ~/steadfaste-fleet/ops/install/install.sh
 bash ~/steadfaste-fleet/ops/install/install.sh --check
 
 # macOS — Laptop profile: lean, no Docker
-CORTEX_PROFILE=laptop bash ~/steadfaste-fleet/ops/install/install.sh
+FLEET_PROFILE=laptop bash ~/steadfaste-fleet/ops/install/install.sh
 
 # Linux — auto-detects systemd, apt/dnf/pacman
-CORTEX_OS=linux bash ~/steadfaste-fleet/ops/install/install.sh
+FLEET_OS=linux bash ~/steadfaste-fleet/ops/install/install.sh
 ```
 
 `install.sh` installs: Ollama (localhost-bound), the mycortex knowledge brain (git-in → shared Postgres index), the web cache, ~390 shared skills, scoring hooks + MCP servers, the offline stack, and — server profile only — Langfuse + the dashboard behind nginx with hardening.
@@ -132,10 +132,10 @@ CORTEX_OS=linux bash ~/steadfaste-fleet/ops/install/install.sh
 **Configuration:**
 
 ```bash
-export CORTEX_OS="linux"                # Auto-detected: darwin, linux, windows
-export CORTEX_PROFILE="laptop"          # 'server' (default) or 'laptop'
-export CORTEX_SOURCES="me,shared,default"  # Brain source names
-export CORTEX_HOME="$HOME"              # User home directory
+export FLEET_OS="linux"                # Auto-detected: darwin, linux, windows
+export FLEET_PROFILE="laptop"          # 'server' (default) or 'laptop'
+export FLEET_SOURCES="me,shared,default"  # Brain source names
+export FLEET_USER_HOME="$HOME"              # User home directory
 ```
 
 **OS support:** macOS (launchd, Homebrew) · Linux (systemd, apt/dnf/pacman) · Windows (winget/choco, limited)

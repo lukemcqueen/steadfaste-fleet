@@ -113,16 +113,16 @@ REPO_DIR="${REPO_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 # ── Detect real user (works even under sudo) ─────────────────
 if [ -n "${SUDO_USER:-}" ]; then
   if command -v getent &>/dev/null; then
-    FLEET_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
+    FLEET_USER_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
   fi
-  FLEET_HOME="${FLEET_HOME:-$HOME}"
+  FLEET_USER_HOME="${FLEET_USER_HOME:-$HOME}"
 elif [ -n "${HOME:-}" ]; then
-  FLEET_HOME="${HOME}"
+  FLEET_USER_HOME="${HOME}"
 else
   if command -v getent &>/dev/null; then
-    FLEET_HOME="$(getent passwd "$(whoami)" | cut -d: -f6)"
+    FLEET_USER_HOME="$(getent passwd "$(whoami)" | cut -d: -f6)"
   fi
-  FLEET_HOME="${FLEET_HOME:-$HOME}"
+  FLEET_USER_HOME="${FLEET_USER_HOME:-$HOME}"
 fi
 
 # Walk up to find repo root (signature file: AGENTS.md at the root)
@@ -2101,8 +2101,8 @@ deploy_nginx_configs() {
     fi
   fi
   # Fall back to self-signed ~/certs/
-  if [[ -z "$ssl_cert" && -f "${FLEET_HOME}/certs/fullchain.pem" && -f "${FLEET_HOME}/certs/privkey.pem" ]]; then
-    ssl_cert="${FLEET_HOME}/certs/fullchain.pem"; ssl_key="${FLEET_HOME}/certs/privkey.pem"
+  if [[ -z "$ssl_cert" && -f "${FLEET_USER_HOME}/certs/fullchain.pem" && -f "${FLEET_USER_HOME}/certs/privkey.pem" ]]; then
+    ssl_cert="${FLEET_USER_HOME}/certs/fullchain.pem"; ssl_key="${FLEET_USER_HOME}/certs/privkey.pem"
   fi
   fi  # closes 'if [[ -z "$ssl_cert" ]]' (already preserved from live config)
 
@@ -2122,7 +2122,7 @@ deploy_nginx_configs() {
     -e "s|__NGINX_BREW_DIR__|${brew_dir}|g" \
     -e "s|__NGINX_LOG_DIR__|${log_dir}|g" \
     -e "s|__HTPASSWD_FILE__|${htpasswd}|g" \
-    -e "s|__FLEET_HOME__|${FLEET_HOME}|g" \
+    -e "s|__FLEET_USER_HOME__|${FLEET_USER_HOME}|g" \
     -e "s|__SSL_CERT__|${ssl_cert:-__SSL_CERT__}|g" \
     -e "s|__SSL_CERT_KEY__|${ssl_key:-__SSL_CERT_KEY__}|g" \
     -e "/listen[[:space:]]/s|127\\.0\\.0\\.1:13\\([0-9][0-9][0-9]\\)|127.0.0.1:${port_prefix}\\1|g" \
@@ -2227,7 +2227,7 @@ deploy_system_scripts() {
 
   # Remove old local copies — canonical version is now in /usr/local/sbin/
   local home_link="${FLEET_DEPLOY_HOME}/scripts/install-nginx-full.sh"
-  local agent_link="${FLEET_HOME}/.steadfaste-fleet/scripts/install-nginx-full.sh"
+  local agent_link="${FLEET_USER_HOME}/.steadfaste-fleet/scripts/install-nginx-full.sh"
   [[ -f "$home_link" ]] && rm -f "$home_link"
   [[ -f "$agent_link" ]] && rm -f "$agent_link"
 }

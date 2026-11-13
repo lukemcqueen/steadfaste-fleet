@@ -38,7 +38,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 # Discrimination seam: point it at a pre-change module and this file MUST fail —
 # that revision sends no reasoning budget and enforces only the socket timeout.
-SERVER = Path(os.environ.get("CORTEX_LOOP_GOV_SERVER", REPO / "mcp-servers" / "loop-gov-mcp.py"))
+SERVER = Path(os.environ.get("FLEET_LOOP_GOV_SERVER", REPO / "mcp-servers" / "loop-gov-mcp.py"))
 BASE_URL_ENV = "ADVERSARIAL_REVIEW_BASE_URL"
 
 
@@ -233,7 +233,7 @@ def test_the_call_has_a_hard_wall_clock_deadline(tmp_path):
 
 def test_the_ceiling_follows_the_caller_not_the_reviewer(tmp_path):
     """Verifies the wait ceiling is resolved per CALLER: 240s with no marker, the CLI
-    ceiling when CORTEX_LOOP_GOV_CLIENT=cli, and that an env override clamps to whichever
+    ceiling when FLEET_LOOP_GOV_CLIENT=cli, and that an env override clamps to whichever
     caller's ceiling applies.
     """
     mod = _load_server(tmp_path)
@@ -269,7 +269,7 @@ def test_the_cli_adapter_marks_itself_so_the_budget_is_not_clamped(tmp_path):
     reports as a failure rather than as a passing skip.
     """
     adapter = REPO / "ops" / "scripts" / "loop-gov.py"
-    saved = os.environ.pop("CORTEX_LOOP_GOV_CLIENT", None)
+    saved = os.environ.pop("FLEET_LOOP_GOV_CLIENT", None)
     try:
         spec = importlib.util.spec_from_file_location("loop_gov_adapter_under_test", adapter)
         assert spec is not None and spec.loader is not None, f"cannot load {adapter}"
@@ -288,16 +288,16 @@ def test_the_cli_adapter_marks_itself_so_the_budget_is_not_clamped(tmp_path):
         )
     finally:
         if saved is not None:
-            os.environ["CORTEX_LOOP_GOV_CLIENT"] = saved
+            os.environ["FLEET_LOOP_GOV_CLIENT"] = saved
         else:
-            os.environ.pop("CORTEX_LOOP_GOV_CLIENT", None)
+            os.environ.pop("FLEET_LOOP_GOV_CLIENT", None)
 
 
 def test_the_pre_change_revision_is_unbounded(tmp_path):
     """Discrimination: the baseline must FAIL these same checks."""
     if SERVER == REPO / "mcp-servers" / "loop-gov-mcp.py":
         print("SKIP: this is the discrimination case — run it with "
-              "CORTEX_LOOP_GOV_SERVER=<pre-change copy>")
+              "FLEET_LOOP_GOV_SERVER=<pre-change copy>")
         return
     src = SERVER.read_text()
     assert '"reasoning"' not in src, (

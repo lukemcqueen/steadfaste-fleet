@@ -4,7 +4,7 @@
 2026-09-08 fleet-wide clobber (esther/joseph/kustos/gisu): fleet-update.sh
 auto-ran install-fallback-providers.py + install-model-default.sh on every
 sync/deploy, overwriting operator-owned ~/.hermes/config.yaml
-model.default + fallback_providers. A per-host CORTEX_SKIP_MODEL_CONVERGENCE
+model.default + fallback_providers. A per-host FLEET_SKIP_MODEL_CONVERGENCE
 flag in gitignored .env only protected moses — every other agent was clobbered.
 
 2026-09-09: both writer scripts were removed entirely (source, register lines,
@@ -50,10 +50,10 @@ def test_removed_config_writers_absent_from_cortex_update():
 
 
 def test_no_model_convergence_skip_flag_logic_remains():
-    """The CORTEX_SKIP_MODEL_CONVERGENCE opt-out is gone (removed with the calls)."""
+    """The FLEET_SKIP_MODEL_CONVERGENCE opt-out is gone (removed with the calls)."""
     text = _script_text()
-    assert "CORTEX_SKIP_MODEL_CONVERGENCE" not in text, (
-        "Stale CORTEX_SKIP_MODEL_CONVERGENCE logic remains — the convergence "
+    assert "FLEET_SKIP_MODEL_CONVERGENCE" not in text, (
+        "Stale FLEET_SKIP_MODEL_CONVERGENCE logic remains — the convergence "
         "calls were removed outright; the per-host skip flag is a vestige of "
         "the opt-out anti-pattern and must not linger."
     )

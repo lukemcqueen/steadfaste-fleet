@@ -25,10 +25,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -n "${SUDO_USER:-}" ]; then
   FLEET_REPO="${FLEET_REPO:-$(getent passwd "$SUDO_USER" | cut -d: -f6)/steadfaste-fleet}"
-  FLEET_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
+  FLEET_USER_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
 else
   FLEET_REPO="${FLEET_REPO:-${HOME}/steadfaste-fleet}"
-  FLEET_HOME="${HOME}"
+  FLEET_USER_HOME="${HOME}"
 fi
 
 # ── Source user environment ──────────────────────────────────
@@ -160,9 +160,9 @@ for src in "${FLEET_REPO}/ops/install/deploy/nginx/hermes-zone-defs.conf" "${FLE
             done
           fi
         fi
-        if [ -z "$ssl_cert" ] && [ -f "${FLEET_HOME}/certs/fullchain.pem" ] && [ -f "${FLEET_HOME}/certs/privkey.pem" ]; then
-          ssl_cert="${FLEET_HOME}/certs/fullchain.pem"
-          ssl_key="${FLEET_HOME}/certs/privkey.pem"
+        if [ -z "$ssl_cert" ] && [ -f "${FLEET_USER_HOME}/certs/fullchain.pem" ] && [ -f "${FLEET_USER_HOME}/certs/privkey.pem" ]; then
+          ssl_cert="${FLEET_USER_HOME}/certs/fullchain.pem"
+          ssl_key="${FLEET_USER_HOME}/certs/privkey.pem"
         fi
       fi
 
@@ -183,7 +183,7 @@ for src in "${FLEET_REPO}/ops/install/deploy/nginx/hermes-zone-defs.conf" "${FLE
         -e "s|__NGINX_CONFIG_DIR__|${NGINX_CONFIG_DIR}|g" \
         -e "s|__NGINX_LOG_DIR__|${NGINX_LOG_DIR}|g" \
         -e "s|__HTPASSWD_FILE__|${NGINX_HTPASSWD}|g" \
-        -e "s|__FLEET_HOME__|${FLEET_HOME}|g" \
+        -e "s|__FLEET_USER_HOME__|${FLEET_USER_HOME}|g" \
         -e "s|__SSL_CERT__|${ssl_cert:-__SSL_CERT__}|g" \
         -e "s|__SSL_CERT_KEY__|${ssl_key:-__SSL_CERT_KEY__}|g" \
         -e "/listen[[:space:]]/s|127\\.0\\.0\\.1:13\\([0-9][0-9][0-9]\\)|127.0.0.1:${port_prefix}\\1|g" \

@@ -184,7 +184,7 @@ def main() -> None:
 
     print("\n6. Tamper-evident ledger")
     with tempfile.TemporaryDirectory() as td:
-        os.environ["CORTEX_HOME"] = td
+        os.environ["FLEET_DEPLOY_HOME"] = td
         out = subprocess.run(
             [sys.executable, str(CLASSIFIER), "--replay", "--db", str(db), "--ledger"],
             capture_output=True, text=True, env={**os.environ},
@@ -195,7 +195,7 @@ def main() -> None:
         if ledger.exists():
             lines = ledger.read_text().strip().splitlines()
             check("ledger append-only format", len(lines) == 1 and "|" in lines[0])
-        os.environ.pop("CORTEX_HOME", None)
+        os.environ.pop("FLEET_DEPLOY_HOME", None)
 
     print("\n7. JSON --classify shape")
     r = classify("git push --force")
@@ -221,9 +221,9 @@ def main() -> None:
     check("digest counts overrides", re.search(r"Luke overrode in window:\s+1", report) is not None, report)
     check("digest excludes outside-window", "ancient-unknown-op" not in report, report)
 
-    print("\n9. O4-S2 digest — ledger append in temp CORTEX_HOME")
+    print("\n9. O4-S2 digest — ledger append in temp FLEET_DEPLOY_HOME")
     with tempfile.TemporaryDirectory() as td:
-        os.environ["CORTEX_HOME"] = td
+        os.environ["FLEET_DEPLOY_HOME"] = td
         out2 = subprocess.run(
             [sys.executable, str(CLASSIFIER), "--digest", "--hours", "24",
              "--db", str(db2), "--ledger"],
@@ -237,7 +237,7 @@ def main() -> None:
             check("digest ledger append-only format", len(lines) == 1 and "|" in lines[0])
             fields = lines[0].split("|")
             check("digest ledger has hash chain fields", len(fields) == 4, lines[0][:120])
-        os.environ.pop("CORTEX_HOME", None)
+        os.environ.pop("FLEET_DEPLOY_HOME", None)
 
     print()
     if FAILURES:

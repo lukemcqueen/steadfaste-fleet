@@ -74,20 +74,20 @@ def test_backends():
     saved = {k: os.environ.get(k) for k in (
         "ADVERSARIAL_REVIEW_BACKEND", "ADVERSARIAL_REVIEW_AGENT_CMD",
         "ADVERSARIAL_REVIEW_AGENT_NAME", "ADVERSARIAL_REVIEW_API_KEY_ENV",
-        "ADVERSARIAL_REVIEWER_MODEL", "CORTEX_ENV_FILE",
-        "CORTEX_REPO", "CORTEX_DEPLOY_HOME")}
+        "ADVERSARIAL_REVIEWER_MODEL", "FLEET_ENV_FILE",
+        "FLEET_REPO", "FLEET_DEPLOY_HOME")}
     try:
         for k in saved:
             os.environ.pop(k, None)
         # Isolate from the deployed cortex config: this host's ./cortex.env repo
         # .env sets ADVERSARIAL_REVIEW_BACKEND=agent, which would break the
         # "llm is the default backend" sentinel assertions below. Point every
-        # cortex env source (CORTEX_ENV_FILE, the repo .env via CORTEX_REPO, and
+        # cortex env source (FLEET_ENV_FILE, the repo .env via FLEET_REPO, and
         # the deploy home) at an EMPTY temp dir so the resolver finds nothing.
         with tempfile.TemporaryDirectory() as _td:
-            os.environ["CORTEX_ENV_FILE"] = str(Path(_td) / "empty.env")
-            os.environ["CORTEX_REPO"] = _td
-            os.environ["CORTEX_DEPLOY_HOME"] = _td
+            os.environ["FLEET_ENV_FILE"] = str(Path(_td) / "empty.env")
+            os.environ["FLEET_REPO"] = _td
+            os.environ["FLEET_DEPLOY_HOME"] = _td
 
             _check("default backend is llm", mcp._reviewer_backend() == "llm")
             _check("llm records the MODEL as the reviewer",
@@ -157,7 +157,7 @@ def test_env_resolution():
     cortex env, and ~/.hermes/.env only as a last resort — read per call."""
     mcp = _load()
     saved = {k: os.environ.get(k) for k in
-             ("CORTEX_ENV_FILE", "GOV_TEST_KEY", "GOV_TEST_KEY2", "ADVERSARIAL_TRIAGE_MODEL", "CORTEX_REPO")}
+             ("FLEET_ENV_FILE", "GOV_TEST_KEY", "GOV_TEST_KEY2", "ADVERSARIAL_TRIAGE_MODEL", "FLEET_REPO")}
     try:
         # The shell that runs this test may already export the enable switch (it
         # does on this host), and the PROCESS env is legitimately consulted first —
@@ -169,7 +169,7 @@ def test_env_resolution():
             f = Path(td) / "cortex.env"
             f.write_text('GOV_TEST_KEY="from-cortex-file"\nADVERSARIAL_TRIAGE_MODEL=from-cortex-file\n')
 
-            os.environ["CORTEX_ENV_FILE"] = str(f)
+            os.environ["FLEET_ENV_FILE"] = str(f)
 
             _check("value is read from the canonical cortex env",
                    mcp._env_value("GOV_TEST_KEY") == "from-cortex-file",
@@ -178,7 +178,7 @@ def test_env_resolution():
                    mcp._env_value("GOV_TEST_KEY") == "from-cortex-file")
 
             # the canonical cortex env BEATS the Hermes file for the same name
-            # (the repo .env sets this to 'jev'; CORTEX_ENV_FILE must win)
+            # (the repo .env sets this to 'jev'; FLEET_ENV_FILE must win)
             _check("the cortex file WINS over ~/.hermes/.env, not the reverse",
                    mcp._env_value("ADVERSARIAL_TRIAGE_MODEL") == "from-cortex-file",
                    mcp._env_value("ADVERSARIAL_TRIAGE_MODEL"))

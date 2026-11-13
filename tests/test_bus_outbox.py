@@ -33,7 +33,7 @@ def _load(name, path):
 @pytest.fixture()
 def outbox(tmp_path, monkeypatch):
     """Load bus_outbox against a temp retry dir."""
-    monkeypatch.setenv("CORTEX_BUS_RETRY_DIR", str(tmp_path / "bus-retry"))
+    monkeypatch.setenv("FLEET_BUS_RETRY_DIR", str(tmp_path / "bus-retry"))
     mod = _load("bus_outbox", _LIB / "bus_outbox.py")
     return mod
 
@@ -41,7 +41,7 @@ def outbox(tmp_path, monkeypatch):
 @pytest.fixture()
 def fleet_bus(outbox, monkeypatch, tmp_path):
     """Load fleet_bus with the outbox retry dir pointing at temp."""
-    monkeypatch.setenv("CORTEX_BUS_RETRY_DIR", str(tmp_path / "bus-retry"))
+    monkeypatch.setenv("FLEET_BUS_RETRY_DIR", str(tmp_path / "bus-retry"))
     mod = _load("fleet_bus", _LIB / "fleet_bus.py")
     return mod
 
@@ -223,7 +223,7 @@ def test_bus_send_success_no_outbox(fleet_bus, monkeypatch, tmp_path):
 
 
 def test_bus_send_no_outbox_env_fails_hard(fleet_bus, monkeypatch, tmp_path):
-    monkeypatch.setenv("CORTEX_BUS_NO_OUTBOX", "1")
+    monkeypatch.setenv("FLEET_BUS_NO_OUTBOX", "1")
     monkeypatch.setattr(fleet_bus, "_bus_post",
                         lambda e, p, fallback=False: (_ for _ in ()).throw(ConnectionError("down")))
     r = fleet_bus.bus_send("inbox_test", {"subject": "PING"})
@@ -242,11 +242,11 @@ def test_bus_send_no_outbox_env_fails_hard(fleet_bus, monkeypatch, tmp_path):
 # ────────────────────────────────────────────────────────────────
 def test_bus_post_fallback_retries_basic_auth(monkeypatch, tmp_path):
     """Primary unreachable → fallback 401s Bearer → must retry Basic and succeed."""
-    monkeypatch.setenv("CORTEX_BUS_RETRY_DIR", str(tmp_path / "bus-retry"))
-    monkeypatch.setenv("CORTEX_BUS_URL", "http://127.0.0.1:13004")
-    monkeypatch.setenv("CORTEX_BUS_FALLBACK_URL", "http://127.0.0.1:14004")
-    monkeypatch.setenv("CORTEX_BUS_TOKEN", "hbus_test_token")
-    monkeypatch.setenv("CORTEX_BASIC_AUTH", "user:pass")
+    monkeypatch.setenv("FLEET_BUS_RETRY_DIR", str(tmp_path / "bus-retry"))
+    monkeypatch.setenv("FLEET_BUS_URL", "http://127.0.0.1:13004")
+    monkeypatch.setenv("FLEET_BUS_FALLBACK_URL", "http://127.0.0.1:14004")
+    monkeypatch.setenv("FLEET_BUS_TOKEN", "hbus_test_token")
+    monkeypatch.setenv("FLEET_BASIC_AUTH", "user:pass")
     mod = _load("fleet_bus", _LIB / "fleet_bus.py")
 
     seen = []  # (url, auth_header)

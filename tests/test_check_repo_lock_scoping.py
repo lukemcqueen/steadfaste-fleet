@@ -29,14 +29,14 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-# CORTEX_LOOP_GOV_SERVER is the discrimination seam: point it at the PRE-FIX
+# FLEET_LOOP_GOV_SERVER is the discrimination seam: point it at the PRE-FIX
 # server (git show <rev>:mcp-servers/loop-gov-mcp.py > /tmp/pre-fix.py) and this
 # suite MUST fail. A test that has never failed on the broken revision proves
 # nothing about the fix.
 import os as _os
 
 SERVER = Path(
-    _os.environ.get("CORTEX_LOOP_GOV_SERVER", REPO / "mcp-servers" / "loop-gov-mcp.py")
+    _os.environ.get("FLEET_LOOP_GOV_SERVER", REPO / "mcp-servers" / "loop-gov-mcp.py")
 )
 
 

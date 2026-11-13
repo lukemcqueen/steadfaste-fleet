@@ -278,10 +278,10 @@ def phase2_autofailover(mod) -> None:
     # Config audit: while active, primary must be local
     conf = _read_conf()
     if not mod.DRY_RUN and LIVE:
-        if conf.get("CORTEX_BUS_URL", "").startswith("http://127.0.0.1"):
+        if conf.get("FLEET_BUS_URL", "").startswith("http://127.0.0.1"):
             ok(".env primary = local (acting orchestrator)")
         else:
-            bad(".env primary NOT local", str(conf.get("CORTEX_BUS_URL")))
+            bad(".env primary NOT local", str(conf.get("FLEET_BUS_URL")))
     else:
         warn("config swap not executed (dry-run) — not audited")
 
@@ -295,8 +295,8 @@ def phase3_agent_fallback(mod) -> None:
     # We audit the documented worker config contract (fleet-bus-config.md §8)
     # and Esther's own conf as the reference implementation.
     conf = _read_conf()
-    primary = conf.get("CORTEX_BUS_URL", "")
-    fallback = conf.get("CORTEX_BUS_FALLBACK_URL", "")
+    primary = conf.get("FLEET_BUS_URL", "")
+    fallback = conf.get("FLEET_BUS_FALLBACK_URL", "")
     if primary.startswith("https://bus.example.org:13004"):
         ok(f"Esther primary = Moses :13004 ({primary})")
     else:
@@ -314,7 +314,7 @@ def phase3_agent_fallback(mod) -> None:
 
     # Documented worker contract from fleet-bus-config.md §8:
     # primary=https://bus.example.org:13004, fallback=...:14004, AGENT_NAME set
-    if "CORTEX_BASIC_AUTH" in conf or "CORTEX_BUS_AUTH" in conf:
+    if "FLEET_BASIC_AUTH" in conf or "FLEET_BUS_AUTH" in conf:
         ok("auth configured (Basic) — worker HTTP client can authenticate")
     else:
         warn("no Basic auth key found in Esther conf (orchestrator uses Bearer — acceptable)")
@@ -526,7 +526,7 @@ def cleanup(mod) -> None:
                 ok("removed test failover marker")
             # restore conf to standby (primary=Moses) if the watchdog swapped it
             conf = _read_conf()
-            if conf.get("CORTEX_BUS_URL", "").startswith("http://127.0.0.1"):
+            if conf.get("FLEET_BUS_URL", "").startswith("http://127.0.0.1"):
                 mod.swap_bus_config(active=False)
                 ok("restored .env to standby (primary=Moses)")
             else:

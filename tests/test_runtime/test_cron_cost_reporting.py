@@ -219,7 +219,7 @@ def test_weekly_report_target_is_configurable(tmp_path):
     audit = _audit(tmp_path, [{"job_id": "jobA", "total_tokens": 10}])
     db = _sessions_db(tmp_path, [("cron_jobA_d1", "cron", time.time(), 1, 1, 3.0)])
     r = _run(REPORT, "--audit", str(audit), "--state-db", str(db), "--days", "7",
-             env_extra={"CORTEX_COST_DAILY_TARGET_USD": "2"})
+             env_extra={"FLEET_COST_DAILY_TARGET_USD": "2"})
     assert r.returncode == 1
     assert "FLEET COST ABOVE TARGET" in r.stdout
 

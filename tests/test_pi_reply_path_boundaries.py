@@ -39,7 +39,7 @@ from fleet_gateway import daemon as D            # noqa: E402
 _PI_SHAPED = (
     "echo \"1. Apple\"; echo \"2. Banana\"; echo \"3. Cherry\"; "
     "echo \"Warning: No project session found; creating a new session\" >&2; "
-    "echo \"CORTEX_RESUME session facts=3\" >&2"
+    "echo \"FLEET_RESUME session facts=3\" >&2"
 )
 
 

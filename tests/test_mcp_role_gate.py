@@ -1,4 +1,4 @@
-"""Hermetic test for the CORTEX_MCP_ROLE gate on mcp-servers/loop-gov-mcp.py.
+"""Hermetic test for the FLEET_MCP_ROLE gate on mcp-servers/loop-gov-mcp.py.
 
 Drives the REAL binary (importing it from the repo path) under each role and
 asserts the exposed tool surface:
@@ -45,23 +45,23 @@ REVIEW_EXPECT = set(mod.REVIEW_TOOLS)
 
 
 class _role_ctx:
-    """Context manager overriding CORTEX_MCP_ROLE, restored on exit."""
+    """Context manager overriding FLEET_MCP_ROLE, restored on exit."""
 
     def __init__(self, role):
         self.role = role
-        self.saved = os.environ.get("CORTEX_MCP_ROLE")
+        self.saved = os.environ.get("FLEET_MCP_ROLE")
 
     def __enter__(self):
         if self.role is None:
-            os.environ.pop("CORTEX_MCP_ROLE", None)
+            os.environ.pop("FLEET_MCP_ROLE", None)
         else:
-            os.environ["CORTEX_MCP_ROLE"] = self.role
+            os.environ["FLEET_MCP_ROLE"] = self.role
 
     def __exit__(self, *exc):
         if self.saved is None:
-            os.environ.pop("CORTEX_MCP_ROLE", None)
+            os.environ.pop("FLEET_MCP_ROLE", None)
         else:
-            os.environ["CORTEX_MCP_ROLE"] = self.saved
+            os.environ["FLEET_MCP_ROLE"] = self.saved
 
 
 def _full_names() -> set:

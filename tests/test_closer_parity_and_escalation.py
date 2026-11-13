@@ -69,7 +69,7 @@ def _load_mcp(tmp: Path):
 def _load_sweep(tmp: Path):
     spec = importlib.util.spec_from_file_location("sweep_closer_parity", SWEEP)
     mod = importlib.util.module_from_spec(spec)
-    with mock.patch.dict(os.environ, {"CORTEX_HOME": str(tmp / ".steadfaste-fleet")}):
+    with mock.patch.dict(os.environ, {"FLEET_DEPLOY_HOME": str(tmp / ".steadfaste-fleet")}):
         spec.loader.exec_module(mod)
     return mod
 
@@ -138,7 +138,7 @@ def test_the_sweep_exits_nonzero_when_it_could_not_resolve_cycles():
         result = sweep.sweep()
         assert result.kept_unresolved == 1 and result.removed == 0
         proc = subprocess.run([sys.executable, str(SWEEP)], capture_output=True, text=True,
-                              env={**os.environ, "CORTEX_HOME": str(home)}, timeout=120)
+                              env={**os.environ, "FLEET_DEPLOY_HOME": str(home)}, timeout=120)
         assert proc.returncode == 2, f"rc={proc.returncode} — an operator-action outcome must not exit 0"
         assert "OPERATOR ACTION" in proc.stdout and "❌" in proc.stdout, proc.stdout
 
@@ -158,7 +158,7 @@ def test_the_sweep_reports_a_corrupt_lock_file_instead_of_skipping_it_forever():
         assert len(result.corrupt) == 1, f"corrupt={result.corrupt}"
         assert path.exists(), "a corrupt lock is still SOMEONE's lock — report it, do not delete it"
         proc = subprocess.run([sys.executable, str(SWEEP)], capture_output=True, text=True,
-                              env={**os.environ, "CORTEX_HOME": str(home)}, timeout=120)
+                              env={**os.environ, "FLEET_DEPLOY_HOME": str(home)}, timeout=120)
         assert proc.returncode == 2 and "CORRUPT" in proc.stdout, proc.stdout
 
 

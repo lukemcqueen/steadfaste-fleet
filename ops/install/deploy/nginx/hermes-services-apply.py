@@ -8,7 +8,7 @@ Substitutes placeholders in hermes-services.conf:
   __NGINX_CONFIG_DIR__ → OS-aware nginx config directory
   __NGINX_LOG_DIR__    → OS-aware nginx log directory
   __HTPASSWD_FILE__    → htpasswd file path
-  __FLEET_HOME__      → user home directory
+  __FLEET_USER_HOME__      → user home directory
 
 SSL cert discovery order (first found wins):
   1. FLEET_SSL_CERT_PATH / FLEET_SSL_CERT_KEY_PATH env vars (explicit paths)
@@ -304,7 +304,7 @@ def process_template(
     nginx_config_dir,
     nginx_log_dir,
     htpasswd_file,
-    cortex_home,
+    fleet_user_home,
     ssl_cert_path,
     ssl_cert_key_path,
     port_prefix,
@@ -317,7 +317,7 @@ def process_template(
         "__NGINX_CONFIG_DIR__": str(nginx_config_dir),
         "__NGINX_LOG_DIR__": str(nginx_log_dir),
         "__HTPASSWD_FILE__": str(htpasswd_file),
-        "__FLEET_HOME__": str(cortex_home),
+        "__FLEET_USER_HOME__": str(fleet_user_home),
     }
 
     # SSL placeholders — only substitute if we found valid certs
@@ -415,9 +415,9 @@ def main():
     sudo_user = os.environ.get("SUDO_USER")
     if sudo_user:
         import pwd
-        cortex_home = Path(pwd.getpwnam(sudo_user).pw_dir)
+        fleet_user_home = Path(pwd.getpwnam(sudo_user).pw_dir)
     else:
-        cortex_home = Path.home()
+        fleet_user_home = Path.home()
 
     # Template path
     template_path = args.template
@@ -464,7 +464,7 @@ def main():
             domain=domain,
             explicit_cert=args.cert,
             explicit_key=args.key,
-            user_home=str(cortex_home),
+            user_home=str(fleet_user_home),
         )
 
     # ── Process template ──
@@ -485,7 +485,7 @@ def main():
         nginx_config_dir=config_dir.parent,
         nginx_log_dir=log_dir,
         htpasswd_file=htpasswd,
-        cortex_home=cortex_home,
+        fleet_user_home=fleet_user_home,
         ssl_cert_path=cert_path,
         ssl_cert_key_path=key_path,
         port_prefix=port_prefix,
@@ -573,7 +573,7 @@ def main():
                 nginx_config_dir=config_dir.parent,
                 nginx_log_dir=log_dir,
                 htpasswd_file=htpasswd,
-                cortex_home=cortex_home,
+                fleet_user_home=fleet_user_home,
                 ssl_cert_path=cert_path,
                 ssl_cert_key_path=key_path,
                 port_prefix=port_prefix,
@@ -665,7 +665,7 @@ def main():
                 nginx_config_dir=config_dir.parent,
                 nginx_log_dir=log_dir,
                 htpasswd_file=htpasswd,
-                cortex_home=cortex_home,
+                fleet_user_home=fleet_user_home,
                 ssl_cert_path=cert_path,
                 ssl_cert_key_path=key_path,
                 port_prefix=port_prefix,
@@ -702,7 +702,7 @@ def main():
             nginx_config_dir=config_dir.parent,
             nginx_log_dir=log_dir,
             htpasswd_file=htpasswd,
-            cortex_home=cortex_home,
+            fleet_user_home=fleet_user_home,
             ssl_cert_path=cert_path,
             ssl_cert_key_path=key_path,
             port_prefix=port_prefix,

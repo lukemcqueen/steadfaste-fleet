@@ -25,7 +25,7 @@ What this file pins, in the order it matters:
      and listing an empty store exits 0.
 
 No test touches the live doctor state: every store here is a temp path, and the one CLI run is
-given its own HERMES_CORTEX_HOME.
+given its own FLEET_DEPLOY_HOME.
 """
 import json
 import os
@@ -40,7 +40,7 @@ PKG = REPO / "ops" / "scripts" / "manage" / "fleet_doctor"
 
 # The doctor is a package (`fleet_doctor`) whose modules use relative imports, so the test loads
 # the REAL modules through the package rather than by file path: a by-path load would break
-# `from .config import CORTEX_HOME` and prove nothing about what runs.
+# `from .config import FLEET_DEPLOY_HOME` and prove nothing about what runs.
 sys.path.insert(0, str(PKG.parent))
 from fleet_doctor import dispositions as disp_pkg  # noqa: E402
 from fleet_doctor import results as results_pkg  # noqa: E402
@@ -196,7 +196,7 @@ def test_f_a_failed_write_is_loud() -> None:
 def test_g_end_to_end_through_the_cli() -> None:
     print("G. the CLI: a refused record exits non-zero and says why; an empty store lists as empty")
     with tempfile.TemporaryDirectory() as td:
-        env = {**os.environ, "HERMES_CORTEX_HOME": td}
+        env = {**os.environ, "FLEET_DEPLOY_HOME": td}
         # A record for a check that cannot exist must fail visibly (this runs the quick check set).
         r = subprocess.run([sys.executable, str(REPO / "ops" / "scripts" / "manage" /
                                                "fleet-doctor.py"),

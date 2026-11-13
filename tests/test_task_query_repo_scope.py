@@ -6,7 +6,7 @@ views returned EVERY repo's tasks for an agent, so agents picked up and
 reported work belonging to another repository. This file pins the contract:
 
   * the repo is resolved from the caller's own session identity
-    (explicit arg -> injected repo_path/repo_slug -> CORTEX_SESSION_REPO -> the
+    (explicit arg -> injected repo_path/repo_slug -> FLEET_SESSION_REPO -> the
     MCP child's cwd git repo);
   * an UNRESOLVABLE repo returns NO tasks (operator rule, 2026-10-14) — never
     "all repos";
@@ -84,26 +84,26 @@ def _git_init(path: Path):
 # ── resolution ladder ───────────────────────────────────────────
 
 def test_explicit_repo_wins_over_everything(tmp_path, monkeypatch):
-    monkeypatch.setenv("CORTEX_SESSION_REPO", "from-env")
+    monkeypatch.setenv("FLEET_SESSION_REPO", "from-env")
     r = task_db.resolve_query_repo("explicit-repo")
     assert r is not None and r.slug == "explicit-repo" and r.source == "explicit"
 
 
 def test_injected_repo_path_wins_over_env(tmp_path, monkeypatch):
     root = _git_init(tmp_path / "project-a")
-    monkeypatch.setenv("CORTEX_SESSION_REPO", "from-env")
+    monkeypatch.setenv("FLEET_SESSION_REPO", "from-env")
     r = task_db.resolve_query_repo(None, repo_path=str(root))
     assert r is not None and r.slug == "project-a" and r.source == "injected"
 
 
 def test_injected_repo_slug_is_honoured(monkeypatch):
-    monkeypatch.delenv("CORTEX_SESSION_REPO", raising=False)
+    monkeypatch.delenv("FLEET_SESSION_REPO", raising=False)
     r = task_db.resolve_query_repo(None, repo_slug="steadfaste")
     assert r is not None and r.slug == "steadfaste" and r.source == "injected"
 
 
 def test_injected_repo_path_must_be_a_real_git_repo(tmp_path, monkeypatch):
-    monkeypatch.delenv("CORTEX_SESSION_REPO", raising=False)
+    monkeypatch.delenv("FLEET_SESSION_REPO", raising=False)
     plain = tmp_path / "not-a-repo"
     plain.mkdir()
     monkeypatch.chdir(tmp_path)
@@ -112,21 +112,21 @@ def test_injected_repo_path_must_be_a_real_git_repo(tmp_path, monkeypatch):
 
 
 def test_env_name_form_is_used_as_declared_slug(monkeypatch):
-    monkeypatch.setenv("CORTEX_SESSION_REPO", "steadfaste")
+    monkeypatch.setenv("FLEET_SESSION_REPO", "steadfaste")
     r = task_db.resolve_query_repo()
     assert r is not None and r.slug == "steadfaste" and r.source == "env"
 
 
 def test_env_absolute_path_form_uses_basename(tmp_path, monkeypatch):
     root = _git_init(tmp_path / "project-b")
-    monkeypatch.setenv("CORTEX_SESSION_REPO", str(root))
+    monkeypatch.setenv("FLEET_SESSION_REPO", str(root))
     r = task_db.resolve_query_repo()
     assert r is not None and r.slug == "project-b" and r.source == "env"
 
 
 def test_cwd_git_repo_is_the_last_resort(tmp_path, monkeypatch):
     root = _git_init(tmp_path / "project-c")
-    monkeypatch.delenv("CORTEX_SESSION_REPO", raising=False)
+    monkeypatch.delenv("FLEET_SESSION_REPO", raising=False)
     monkeypatch.chdir(root)
     r = task_db.resolve_query_repo()
     assert r is not None and r.slug == "project-c" and r.source == "cwd"
@@ -134,14 +134,14 @@ def test_cwd_git_repo_is_the_last_resort(tmp_path, monkeypatch):
 
 def test_unknown_repo_resolves_to_none(tmp_path, monkeypatch):
     """No explicit arg, no injection, no env, cwd not a git repo -> None."""
-    monkeypatch.delenv("CORTEX_SESSION_REPO", raising=False)
+    monkeypatch.delenv("FLEET_SESSION_REPO", raising=False)
     monkeypatch.chdir(tmp_path)
     assert task_db.resolve_query_repo() is None
 
 
 def test_git_missing_is_could_not_verify_not_a_crash(tmp_path, monkeypatch):
     """A host without git (or a repo-less cwd) must fail CLOSED — no traceback."""
-    monkeypatch.delenv("CORTEX_SESSION_REPO", raising=False)
+    monkeypatch.delenv("FLEET_SESSION_REPO", raising=False)
     monkeypatch.chdir(tmp_path)
 
     def no_git(*a, **kw):
@@ -160,7 +160,7 @@ def test_invalid_explicit_repo_label_fails_closed():
 
 
 def test_cli_rejects_a_bad_repo_label_with_a_usable_message(tmp_path, monkeypatch):
-    monkeypatch.delenv("CORTEX_SESSION_REPO", raising=False)
+    monkeypatch.delenv("FLEET_SESSION_REPO", raising=False)
     monkeypatch.chdir(tmp_path)
     _out, err, exc = _run_capture(
         task_db.cmd_list, None, None, None, None, "../etc", None, None, None)
@@ -176,7 +176,7 @@ def test_repo_all_declares_a_fleet_view():
 # ── FAIL-CLOSED: unknown repo -> ZERO tasks ─────────────────────
 
 def test_pending_fail_closed_returns_empty_and_does_not_query(tmp_path, monkeypatch):
-    monkeypatch.delenv("CORTEX_SESSION_REPO", raising=False)
+    monkeypatch.delenv("FLEET_SESSION_REPO", raising=False)
     monkeypatch.chdir(tmp_path)
     with patch.object(task_db, "psql") as mock_psql:
         out, _err, exc = _run_capture(task_db.cmd_pending)
@@ -186,7 +186,7 @@ def test_pending_fail_closed_returns_empty_and_does_not_query(tmp_path, monkeypa
 
 
 def test_list_fail_closed_returns_no_rows(tmp_path, monkeypatch):
-    monkeypatch.delenv("CORTEX_SESSION_REPO", raising=False)
+    monkeypatch.delenv("FLEET_SESSION_REPO", raising=False)
     monkeypatch.chdir(tmp_path)
     with patch.object(task_db, "psql") as mock_psql:
         out, _err, exc = _run_capture(
@@ -197,7 +197,7 @@ def test_list_fail_closed_returns_no_rows(tmp_path, monkeypatch):
 
 
 def test_board_fail_closed_reports_unknown_repo(tmp_path, monkeypatch):
-    monkeypatch.delenv("CORTEX_SESSION_REPO", raising=False)
+    monkeypatch.delenv("FLEET_SESSION_REPO", raising=False)
     monkeypatch.chdir(tmp_path)
     with patch.object(task_db, "psql") as mock_psql:
         out, _err, exc = _run_capture(task_db.cmd_list_board)
@@ -290,7 +290,7 @@ def test_claimable_and_assigned_are_scoped():
 # ── mint path: a new row inherits the session repo ──────────────
 
 def _add_capture(repo_arg, tmp_path, monkeypatch):
-    monkeypatch.delenv("CORTEX_SESSION_REPO", raising=False)
+    monkeypatch.delenv("FLEET_SESSION_REPO", raising=False)
     root = _git_init(tmp_path / "project-mint")
     monkeypatch.chdir(root)
     with patch.object(task_db, "psql", return_value="") as mock_psql:
@@ -313,7 +313,7 @@ def test_add_explicit_repo_wins(tmp_path, monkeypatch):
 
 
 def test_add_without_a_resolvable_repo_stays_untagged(tmp_path, monkeypatch):
-    monkeypatch.delenv("CORTEX_SESSION_REPO", raising=False)
+    monkeypatch.delenv("FLEET_SESSION_REPO", raising=False)
     monkeypatch.chdir(tmp_path)  # not a git repo
     with patch.object(task_db, "psql", return_value="") as mock_psql:
         _out, _err, exc = _run_capture(
@@ -326,7 +326,7 @@ def test_add_without_a_resolvable_repo_stays_untagged(tmp_path, monkeypatch):
 def test_fail_closed_costs_no_db_contact_even_for_v4_views(tmp_path, monkeypatch):
     """The fail-closed path must not touch the schema probe either: an unknown
     repo returns nothing regardless of what the database holds."""
-    monkeypatch.delenv("CORTEX_SESSION_REPO", raising=False)
+    monkeypatch.delenv("FLEET_SESSION_REPO", raising=False)
     monkeypatch.chdir(tmp_path)
     for fn in (task_db.cmd_list_board, task_db.cmd_list_claimable,
                task_db.cmd_list_assigned):

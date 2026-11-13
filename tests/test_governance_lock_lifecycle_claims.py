@@ -69,7 +69,7 @@ def main() -> int:
             "task_id": "demo", "session_id": "sess_TEST", "status": "executing",
             "heartbeat_at": "2099-01-01T00:00:00Z", "ttl_seconds": 3600,
         }))
-        os.environ["HERMES_CORTEX_STATE_DIR"] = str(state_dir)
+        os.environ["HERMES_FLEET_STATE_DIR"] = str(state_dir)
         try:
             read_none = mcp._read_lock(None)
         except Exception as exc:  # noqa: BLE001
@@ -84,7 +84,7 @@ def main() -> int:
             lock.exists(),
             str(lock),
         )
-        os.environ.pop("HERMES_CORTEX_STATE_DIR", None)
+        os.environ.pop("HERMES_FLEET_STATE_DIR", None)
 
     # --- B: terminal transition is reachable and releases the lock ---------
     executing = "executing"

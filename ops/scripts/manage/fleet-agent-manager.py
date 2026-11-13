@@ -31,8 +31,8 @@ from pathlib import Path
 logger = logging.getLogger("fleet-agent-manager")
 
 # ── Paths ────────────────────────────────────────────────────
-FLEET_HOME = Path(os.environ.get("FLEET_DEPLOY_HOME", Path.home() / ".steadfaste-fleet"))
-SECRETS_FILE = FLEET_HOME / "agent-secrets.yaml"
+FLEET_DEPLOY_HOME = Path(os.environ.get("FLEET_DEPLOY_HOME", Path.home() / ".steadfaste-fleet"))
+SECRETS_FILE = FLEET_DEPLOY_HOME / "agent-secrets.yaml"
 NGINX_HTPASSWD = Path("/etc/nginx/.hermes-htpasswd")
 BUS_URL = os.environ.get("FLEET_BUS_URL", "http://127.0.0.1:8903")
 
@@ -192,13 +192,13 @@ def _create_queue(queue_name: str) -> bool:
 def _write_agent_labels(agent_name: str, labels: dict) -> None:
     """Write a local agent-labels.json for the handler to read during label checks.
     
-    The labels file is written to the agent's FLEET_HOME directory so
+    The labels file is written to the agent's FLEET_DEPLOY_HOME directory so
     agent-message-handler.py can read it without bus access.
     Labels are used for canary deployment targeting.
     """
     if not labels:
         return
-    labels_path = FLEET_HOME / "agent-labels.json"
+    labels_path = FLEET_DEPLOY_HOME / "agent-labels.json"
     try:
         labels_path.write_text(json.dumps(labels, indent=2))
         labels_path.chmod(0o644)

@@ -47,7 +47,7 @@ def _run(stub: str) -> tuple[int, str]:
             # aborting on the failed substitution.
             "set -uo pipefail\n"
             "warn() { printf 'WARN: %s\\n' \"$*\"; }\n"
-            f"CORTEX_REPO={root / 'repo'}\n"
+            f"FLEET_REPO={root / 'repo'}\n"
             "REAL_USER=test\n"
             "REAL_HOME=$HOME\n" + _block()
         )

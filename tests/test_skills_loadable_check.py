@@ -49,7 +49,7 @@ def _run(monkeypatch, tmp_path, files):
     repo.mkdir(parents=True, exist_ok=True)
     for rel, text in files.items():
         _skill(repo, rel, text)
-    monkeypatch.setattr(checks, "CORTEX_REPO", repo)
+    monkeypatch.setattr(checks, "FLEET_REPO", repo)
     monkeypatch.setenv("HOME", str(tmp_path / "home"))   # no ~/.agents/skills here
     res = Results()
     checks.check_skills_loadable(res)

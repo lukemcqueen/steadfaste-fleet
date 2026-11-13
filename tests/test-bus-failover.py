@@ -39,7 +39,7 @@ TOKEN = ""
 try:
     for line in CONFIG_FILE.read_text().splitlines():
         line = line.strip()
-        if line.startswith("CORTEX_BUS_TOKEN"):
+        if line.startswith("FLEET_BUS_TOKEN"):
             TOKEN = line.split("=", 1)[1].strip().strip("'\"")
 except Exception:
     pass
@@ -186,15 +186,15 @@ print("\n═══ 4. Peer (Esther) Health Detection ═══")
 # Load peer config the same way the forwarder does
 PEER_URL = os.environ.get("BUS_FORWARDER_PEER_URL", "")
 PEER_TOKEN = os.environ.get("BUS_FORWARDER_PEER_TOKEN",
-                            os.environ.get("CORTEX_BUS_TOKEN", TOKEN))
+                            os.environ.get("FLEET_BUS_TOKEN", TOKEN))
 PEER_AUTH = os.environ.get("BUS_FORWARDER_PEER_AUTH",
-                           os.environ.get("CORTEX_BASIC_AUTH", ""))
+                           os.environ.get("FLEET_BASIC_AUTH", ""))
 
 # Fallback: parse from config file
 if not PEER_URL and CONFIG_FILE.exists():
     for line in CONFIG_FILE.read_text().splitlines():
         line = line.strip()
-        if line.startswith("CORTEX_BUS_FALLBACK_URL"):
+        if line.startswith("FLEET_BUS_FALLBACK_URL"):
             PEER_URL = line.split("=", 1)[1].strip().strip("'\"")
 
 if not PEER_URL:

@@ -11,12 +11,12 @@ Why it happened: `core.hooksPath` is set GLOBALLY (~/.steadfaste-fleet/hooks), s
 `pre-commit-score` runs in EVERY repo on the host. The DOGFOOD check compares
 the steadfaste-fleet repo's HEAD enforcer against the DEPLOYED copy — a
 cortex-internal sync state that no other repo can act on. It ran before the
-`IS_CORTEX_REPO` guard (computed much later in the script), so one stale
+`IS_FLEET_REPO` guard (computed much later in the script), so one stale
 deploy on one host hard-blocked every ordinary commit in every unrelated repo.
 That is the "gates must be scoped to what they govern" rule.
 
 The fix: the DOGFOOD block is guarded by the same `${HOME}/steadfaste-fleet`
-comparison the IS_CORTEX_REPO guard uses.
+comparison the IS_FLEET_REPO guard uses.
 
 Run: python3 -m pytest tests/test_dogfood_gate_scoping.py -q
 """

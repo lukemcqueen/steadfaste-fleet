@@ -33,7 +33,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 @pytest.fixture()
 def handler_module(monkeypatch):
     monkeypatch.setenv("AGENT_NAME", "test-agent")
-    monkeypatch.setenv("CORTEX_BUS_NO_OUTBOX", "1")
+    monkeypatch.setenv("FLEET_BUS_NO_OUTBOX", "1")
     src = REPO_ROOT / "ops" / "scripts" / "agent" / "agent-message-handler.py"
     spec = importlib.util.spec_from_file_location("agent_message_handler_mint", src)
     amh = importlib.util.module_from_spec(spec)

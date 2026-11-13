@@ -3,7 +3,7 @@
 
 Measured 2026-10-13: four `Config (X) — defined but zero consumer scripts reference it` INFO
 items for JUDGE_MODEL / EMBEDDING_MODEL / CODING_MODEL / CREATIVE_MODEL. Three of them were
-false: the scan iterated `CORTEX_REPO/ops/scripts` NON-recursively, while the consumers live in
+false: the scan iterated `FLEET_REPO/ops/scripts` NON-recursively, while the consumers live in
 `ops/scripts/manage/`, `ops/offline/` and `mcp-servers/`. A check that cannot see its input
 reports the input as missing — the same shape as a checker with no parser blaming the artifact.
 
@@ -113,7 +113,7 @@ def test_the_default_roots_are_the_repo_script_trees():
     mcp-servers/ (structurally — the ambient paths are not this host's under a full suite)."""
     import inspect
     src = inspect.getsource(_load().find_script_consumers)
-    for needle in ('CORTEX_REPO / "ops"', 'CORTEX_REPO / "core"', 'CORTEX_REPO / "mcp-servers"'):
+    for needle in ('FLEET_REPO / "ops"', 'FLEET_REPO / "core"', 'FLEET_REPO / "mcp-servers"'):
         assert needle in src, f"default roots must include {needle}"
     print("  the default roots are the repo's ops/core/mcp-servers trees ✓")
 

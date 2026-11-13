@@ -32,7 +32,7 @@ STDLIB = set(getattr(sys, "stdlib_module_names", ()))
 # A run of a python FILE: `python3 x.py`, `python3 ./x.py`, `python3 "$dir/x.py"`.
 RUN = re.compile(r"""(?<![\w-])python3?\s+["']?([\w./${}-]*\.py)""")
 # Either the shared arbiter, or an explicit declared interpreter.
-ARBITER = ("python-with-module.sh", "CORTEX_PYTHON")
+ARBITER = ("python-with-module.sh", "FLEET_PYTHON")
 
 SHELL_GLOBS = ("ops/**/*.sh", "scripts/**/*.sh", "**/*.service", "**/*.plist", "**/*.timer")
 

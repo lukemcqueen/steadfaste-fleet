@@ -236,7 +236,7 @@ def test_fail_open_message_is_not_an_exception():
 def test_identity_precedence_args_beat_env(monkeypatch):
     pytest.importorskip("mcp")
     tools = _load_tools()
-    monkeypatch.setenv("CORTEX_SESSION_HARNESS", "envharness")
+    monkeypatch.setenv("FLEET_SESSION_HARNESS", "envharness")
     assert tools.resolve_identity({"harness": "argharness"})[0] == "argharness"
     assert tools.resolve_identity({})[0] == "envharness"
 
@@ -244,17 +244,17 @@ def test_identity_precedence_args_beat_env(monkeypatch):
 def test_explicit_session_key_env_wins_outright(monkeypatch):
     pytest.importorskip("mcp")
     tools = _load_tools()
-    monkeypatch.setenv("CORTEX_SESSION_KEY", "pi:repo:main")
+    monkeypatch.setenv("FLEET_SESSION_KEY", "pi:repo:main")
     assert tools.resolve_identity({}) == ("pi:repo:main", "", "")
 
 
 def test_session_key_includes_all_three_axes(monkeypatch):
     pytest.importorskip("mcp")
     srv = _load_server()
-    monkeypatch.delenv("CORTEX_SESSION_KEY", raising=False)
-    monkeypatch.setenv("CORTEX_SESSION_HARNESS", "pi")
-    monkeypatch.setenv("CORTEX_SESSION_REPO", "steadfaste-fleet")
-    monkeypatch.setenv("CORTEX_SESSION_BRANCH", "main")
+    monkeypatch.delenv("FLEET_SESSION_KEY", raising=False)
+    monkeypatch.setenv("FLEET_SESSION_HARNESS", "pi")
+    monkeypatch.setenv("FLEET_SESSION_REPO", "steadfaste-fleet")
+    monkeypatch.setenv("FLEET_SESSION_BRANCH", "main")
     assert _load_tools().session_key_from({}) == "pi:steadfaste-fleet:main"
 
 

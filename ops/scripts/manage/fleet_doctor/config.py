@@ -23,7 +23,7 @@ HOME = Path.home()
 IS_MAC = sys.platform == "darwin"
 IS_LINUX = sys.platform == "linux"
 HERMES_HOME = Path(os.environ.get("HERMES_HOME", HOME / ".hermes"))
-FLEET_HOME = Path(os.environ.get("FLEET_DEPLOY_HOME") or HOME / ".steadfaste-fleet")
+FLEET_DEPLOY_HOME = Path(os.environ.get("FLEET_DEPLOY_HOME") or HOME / ".steadfaste-fleet")
 JOBS_FILE = HERMES_HOME / "cron" / "jobs.json"
 FLEET_ENV = HOME / "steadfaste-fleet" / ".env"
 LEGACY_MODELS_ENV = HERMES_HOME / "models.env"
@@ -51,7 +51,7 @@ INSTALL_DREAM_CRONS = SCRIPTS_SRC / "install" / "install-dream-crons.sh"
 # Marker created by install-dream-crons.sh when the optional dream layer is
 # installed; removed on --uninstall. The doctor only EXPECTS dream crons when
 # this marker exists — optional layer, conditional expectation (Luke 2026-08-06).
-DREAM_LAYER_MARKER = FLEET_HOME / "state" / "dream-layer-installed"
+DREAM_LAYER_MARKER = FLEET_DEPLOY_HOME / "state" / "dream-layer-installed"
 INSTALL_SCRIPT = FLEET_REPO / "ops" / "install" / "install.sh"
 INSTALL_OLLAMA = SCRIPTS_SRC / "install" / "install-ollama.sh"
 INSTALL_SCORE_HOOK = SCRIPTS_SRC / "install" / "install-score-hook.sh"
@@ -179,7 +179,7 @@ CORE_FOOTPRINT = [
 ]
 
 # ── Bus alert config paths ──────────────────────────────────────
-REPO_OWNERS_PATH = FLEET_HOME / "config" / "repo-owners.yaml"
+REPO_OWNERS_PATH = FLEET_DEPLOY_HOME / "config" / "repo-owners.yaml"
 REPO_OWNERS_TEMPLATE = FLEET_REPO / "docs" / "templates" / "repo-owners.yaml"
 BUS_CONFIG_PATHS = [
     HOME / "steadfaste-fleet" / ".env",

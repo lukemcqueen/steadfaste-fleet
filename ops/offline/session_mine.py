@@ -38,11 +38,11 @@ EMBEDDING_MODEL = get_model("EMBEDDING_MODEL", "nomic-embed-text:v1.5")
 
 # ── Config ──────────────────────────────────────────────────
 HOME = Path.home()
-FLEET_HOME = HOME / ".steadfaste-fleet"
+FLEET_DEPLOY_HOME = HOME / ".steadfaste-fleet"
 LESSONS = HOME / "brain" / "lessons"
 INDEX_FILE = HOME / "offline" / "lessons-index.json"
 
-SESSION_DB = FLEET_HOME / "sessions.db"  # Hermes session store
+SESSION_DB = FLEET_DEPLOY_HOME / "sessions.db"  # Hermes session store
 
 # Error/fix patterns to search for in session history
 SEARCH_QUERIES = [
@@ -90,8 +90,8 @@ def _get_session_db_path() -> Optional[Path]:
     """Find the Hermes session database."""
     candidates = [
         SESSION_DB,
-        FLEET_HOME / "state.db",
-        FLEET_HOME / "hermes-agent" / "sessions.db",
+        FLEET_DEPLOY_HOME / "state.db",
+        FLEET_DEPLOY_HOME / "hermes-agent" / "sessions.db",
         HOME / ".hermes-agent" / "sessions.db",
         HOME / ".hermes" / "state.db",                # primary Hermes session store
         HOME / ".hermes" / "data" / "sessions.db",

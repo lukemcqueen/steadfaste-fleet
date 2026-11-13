@@ -33,7 +33,7 @@ _DEFERRED_FAILURES=()
 error() { echo "ERROR: $*"; }
 info()  { echo "INFO:  $*"; }
 warn()  { echo "WARN:  $*"; }
-CORTEX_DEPLOY_HOME="${CORTEX_DEPLOY_HOME:-$HOME/.steadfaste-fleet}"
+FLEET_DEPLOY_HOME="${FLEET_DEPLOY_HOME:-$HOME/.steadfaste-fleet}"
 """
 EPILOGUE = 'echo "DEFERRED=${#_DEFERRED_FAILURES[@]}"\n'
 
@@ -74,7 +74,7 @@ def _run_block(home, deploy_home):
         script.write_text(PREAMBLE + extract_block() + EPILOGUE)
         return subprocess.run(
             ["bash", str(script)], capture_output=True, text=True,
-            env={**os.environ, "HOME": str(home), "CORTEX_DEPLOY_HOME": str(deploy_home)},
+            env={**os.environ, "HOME": str(home), "FLEET_DEPLOY_HOME": str(deploy_home)},
         )
 
 

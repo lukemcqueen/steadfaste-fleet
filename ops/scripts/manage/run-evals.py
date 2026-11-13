@@ -40,13 +40,13 @@ except ImportError:
 # ── Configuration ────────────────────────────────────────────────
 
 HOME = Path.home()
-FLEET_HOME = HOME / ".steadfaste-fleet"
-EVALS_DIR = FLEET_HOME / "evals"
+FLEET_DEPLOY_HOME = HOME / ".steadfaste-fleet"
+EVALS_DIR = FLEET_DEPLOY_HOME / "evals"
 TRACES_DIR = EVALS_DIR / "traces"
 REPORTS_DIR = EVALS_DIR / "reports"
 EVALS_REPO_DIR = HOME / "steadfaste-fleet" / "evals"
-SCRIPTS_DIR = FLEET_HOME / "scripts"
-SKILLS_MANIFEST = FLEET_HOME / "skills.yaml"
+SCRIPTS_DIR = FLEET_DEPLOY_HOME / "scripts"
+SKILLS_MANIFEST = FLEET_DEPLOY_HOME / "skills.yaml"
 DOCTOR = SCRIPTS_DIR / "fleet-doctor.py"
 TASK_DB = SCRIPTS_DIR / "task-db.py"
 

@@ -69,17 +69,17 @@ def test_the_promotion_lock_records_the_repo(monkeypatch):
     # scorable cycle — unclosable by end_change). This fixture has a dead DB, so the create is
     # stubbed here; the refusal itself is pinned by the next test.
     m._create_pending_cycle = lambda task_id, session_id, note: 4242
-    saved = os.environ.get("CORTEX_SESSION_REPO")
-    os.environ["CORTEX_SESSION_REPO"] = str(_REPO)
+    saved = os.environ.get("FLEET_SESSION_REPO")
+    os.environ["FLEET_SESSION_REPO"] = str(_REPO)
     try:
         m._promote_issue_to_task({"task_id": "promoted-placeholder",
                                   "description": "regression placeholder",
                                   "issue_event_id": None, "ttl": 3600})
     finally:
         if saved is None:
-            os.environ.pop("CORTEX_SESSION_REPO", None)
+            os.environ.pop("FLEET_SESSION_REPO", None)
         else:
-            os.environ["CORTEX_SESSION_REPO"] = saved
+            os.environ["FLEET_SESSION_REPO"] = saved
     assert captured, "the handler must still write a lock"
     assert captured.get("repo_path"), (
         "a promotion lock with no repo_path cannot be closed by end_change: " + repr(captured))

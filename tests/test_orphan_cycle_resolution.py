@@ -111,15 +111,15 @@ def _status(res: Results, name: str) -> str:
 
 
 def _doctor_case(tmp: Path, cycle_task: str, cycle_session: str, hold_lock: bool) -> str:
-    """Build a temp CORTEX_HOME holding one reaper-tagged close; return the check's status.
+    """Build a temp FLEET_DEPLOY_HOME holding one reaper-tagged close; return the check's status.
 
-    Restores `doc.CORTEX_HOME` on the way out (success AND failure): it is
+    Restores `doc.FLEET_DEPLOY_HOME` on the way out (success AND failure): it is
     MODULE state shared with every other test in the process, and leaving it
     pointing at a deleted temp dir silently disabled `check_governance()` for
     everything that ran afterwards (2026-10-02).
     """
-    original_home = doc.CORTEX_HOME
-    setattr(doc, "CORTEX_HOME", tmp)
+    original_home = doc.FLEET_DEPLOY_HOME
+    setattr(doc, "FLEET_DEPLOY_HOME", tmp)
     try:
         (tmp / "data").mkdir(parents=True, exist_ok=True)
         (tmp / "state").mkdir(parents=True, exist_ok=True)
@@ -142,7 +142,7 @@ def _doctor_case(tmp: Path, cycle_task: str, cycle_session: str, hold_lock: bool
         doc.check_orphan_cycle_resolution(res)
         return _status(res, "Orphan-cycle resolution")
     finally:
-        setattr(doc, "CORTEX_HOME", original_home)
+        setattr(doc, "FLEET_DEPLOY_HOME", original_home)
 
 
 def test_orphan_cycle_resolution() -> None:
@@ -209,8 +209,8 @@ def test_orphan_cycle_resolution() -> None:
 def test_the_orphan_cases_do_not_leak_the_doctor_home() -> None:
     """Regression: the cases point the SHARED checks module at a temp home.
 
-    `_doctor_case` did `setattr(doc, "CORTEX_HOME", tmp)` and never restored it,
-    so once this module ran, `fleet_doctor.checks.CORTEX_HOME` pointed at a
+    `_doctor_case` did `setattr(doc, "FLEET_DEPLOY_HOME", tmp)` and never restored it,
+    so once this module ran, `fleet_doctor.checks.FLEET_DEPLOY_HOME` pointed at a
     DELETED temp directory for the rest of the process. Every later test that
     called `check_governance()` read that missing home and silently produced no
     "PENDING cycles" entry — which is exactly how
@@ -218,15 +218,15 @@ def test_the_orphan_cases_do_not_leak_the_doctor_home() -> None:
     run while passing alone (2026-10-02). Module-level state a test mutates must
     be restored on the way out, success or failure.
     """
-    before = doc.CORTEX_HOME
+    before = doc.FLEET_DEPLOY_HOME
     with tempfile.TemporaryDirectory() as td:
         _doctor_case(Path(td), "leak-task", "leak-session", hold_lock=False)
-        assert doc.CORTEX_HOME == before, (
-            "the temp CORTEX_HOME leaked into the shared fleet_doctor.checks module "
+        assert doc.FLEET_DEPLOY_HOME == before, (
+            "the temp FLEET_DEPLOY_HOME leaked into the shared fleet_doctor.checks module "
             "while the temp dir still existed")
-        leaked = doc.CORTEX_HOME
-    assert doc.CORTEX_HOME == before, (
-        f"fleet_doctor.checks.CORTEX_HOME is still {leaked!r} after the temp dir was "
+        leaked = doc.FLEET_DEPLOY_HOME
+    assert doc.FLEET_DEPLOY_HOME == before, (
+        f"fleet_doctor.checks.FLEET_DEPLOY_HOME is still {leaked!r} after the temp dir was "
         f"removed (expected {before!r}) — later tests in this process read a dead home")
 
 

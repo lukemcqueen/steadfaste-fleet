@@ -29,9 +29,9 @@ AUDIT = Path(_env) if _env else (
 )
 
 REGISTER = (
-    'register "scripts/foo.sh" "${CORTEX_DEPLOY_HOME}/scripts/foo.sh"\n'
-    'register "scripts/bar.py" "${CORTEX_DEPLOY_HOME}/scripts/bar.py"\n'
-    'register "scripts/baz.sh" "${CORTEX_DEPLOY_HOME}/scripts/baz.sh"\n'
+    'register "scripts/foo.sh" "${FLEET_DEPLOY_HOME}/scripts/foo.sh"\n'
+    'register "scripts/bar.py" "${FLEET_DEPLOY_HOME}/scripts/bar.py"\n'
+    'register "scripts/baz.sh" "${FLEET_DEPLOY_HOME}/scripts/baz.sh"\n'
 )
 FOO_REPO = "#!/usr/bin/env bash\nset -euo pipefail\necho foo\n"
 BAR_REPO = "#!/usr/bin/env python3\nprint('bar')\n"
@@ -68,8 +68,8 @@ def _mkfixture() -> tuple[str, str]:
 def _run(repo: str, deploy: str, state_dir: str) -> tuple[int, str]:
     """Run the audit against the fixture; isolate its state file via HOME."""
     env = dict(os.environ)
-    env["CORTEX_REPO"] = repo
-    env["CORTEX_HOME"] = deploy
+    env["FLEET_REPO"] = repo
+    env["FLEET_DEPLOY_HOME"] = deploy
     os.makedirs(state_dir, exist_ok=True)
     env["HOME"] = state_dir
     proc = subprocess.run(

@@ -1,7 +1,7 @@
 """psql must never prompt for a password — every invocation carries `-w`.
 
 Regression for the TUI-pollution bug: without `-w`, psql prompts on /dev/tty when
-`MYCORTEX_MEM_PASSWORD` is empty or the PGPASSFILE is wrong. That prompt is invisible
+`MYFLEET_MEM_PASSWORD` is empty or the PGPASSFILE is wrong. That prompt is invisible
 to the harness (it never reaches stdout/stderr) and hangs the caller instead of
 failing, so the fail-open contract reads it as "memory unavailable" only after a
 timeout — or never.
@@ -23,7 +23,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parent.parent
-STORE = Path(os.environ.get("MYCORTEX_MEM_STORE_PATH",
+STORE = Path(os.environ.get("MYFLEET_MEM_STORE_PATH",
                             REPO / "ops" / "services" / "mycortex-mem" / "store.py"))
 PLUGIN = REPO / "plugins" / "mycortex-mem" / "__init__.py"
 
@@ -164,8 +164,8 @@ def _psql_standin(tmp_path: Path) -> Path:
 
 
 def test_resolve_mem_password_env_var_wins(store_module, monkeypatch):
-    """A harness-set MYCORTEX_MEM_PASSWORD overrides any .env file value."""
-    monkeypatch.setenv("MYCORTEX_MEM_PASSWORD", "override-from-env")
+    """A harness-set MYFLEET_MEM_PASSWORD overrides any .env file value."""
+    monkeypatch.setenv("MYFLEET_MEM_PASSWORD", "override-from-env")
     assert store_module.resolve_mem_password(env_paths=[Path("/nonexistent/.env")]) == "override-from-env"
 
 
@@ -174,9 +174,9 @@ def test_resolve_mem_password_falls_back_to_cortex_env(tmp_path, store_module, m
     ~/steadfaste-fleet/.env), the store resolves the password from the canonical cortex
     .env so the provider is available without any service-specific env injection.
     """
-    monkeypatch.delenv("MYCORTEX_MEM_PASSWORD", raising=False)
+    monkeypatch.delenv("MYFLEET_MEM_PASSWORD", raising=False)
     cortex_env = tmp_path / ".env"
-    cortex_env.write_text("MYCORTEX_MEM_PASSWORD=secret-from-fleet-env\nOTHER_KEY=1\n")
+    cortex_env.write_text("MYFLEET_MEM_PASSWORD=secret-from-fleet-env\nOTHER_KEY=1\n")
 
     assert store_module.resolve_mem_password(env_paths=[cortex_env]) == "secret-from-fleet-env"
 
@@ -184,7 +184,7 @@ def test_resolve_mem_password_falls_back_to_cortex_env(tmp_path, store_module, m
 def test_resolve_mem_password_missing_env_returns_empty(tmp_path, store_module, monkeypatch):
     """No env var and no reachable .env must yield '' — the psql -w path then fails
     fast with 'no password supplied' rather than prompting (see the prompt test)."""
-    monkeypatch.delenv("MYCORTEX_MEM_PASSWORD", raising=False)
+    monkeypatch.delenv("MYFLEET_MEM_PASSWORD", raising=False)
     assert store_module.resolve_mem_password(env_paths=[tmp_path / "does-not-exist.env"]) == ""
 
 
@@ -192,7 +192,7 @@ def test_store_macos_cmd_uses_resolved_password_in_pgpass(tmp_path, store_module
     """The macOS branch must write the RESOLVED password (env override) into the
     PGPASSFILE — an empty password here is exactly the 'provider reports unavailable'
     failure the gateway saw before the .env fallback existed."""
-    monkeypatch.setenv("MYCORTEX_MEM_PASSWORD", "pgpass-secret")
+    monkeypatch.setenv("MYFLEET_MEM_PASSWORD", "pgpass-secret")
     connection = store_module.PgConnection()
     connection._is_macos = True
     _cmd, env = connection._cmd("mycortex_mem_reader")
@@ -210,7 +210,7 @@ def test_store_fails_fast_and_never_prompts_without_a_password(store_module, tmp
     """
     bindir = _psql_standin(tmp_path)
     monkeypatch.setenv("PATH", f"{bindir}:{os.environ['PATH']}")
-    monkeypatch.setenv("MYCORTEX_MEM_PASSWORD", "")
+    monkeypatch.setenv("MYFLEET_MEM_PASSWORD", "")
 
     connection = store_module.PgConnection()
     connection._is_macos = True  # the branch whose argv starts with `psql`

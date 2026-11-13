@@ -19,7 +19,7 @@ Three defects followed, and fixing any ONE of them alone changes nothing:
      ever recorded;
   2. the checker (`store.py::loaded_skill`) hard-coded `tool_name = 'skill_view'`
      → a read of the skill's file could not count even if it were recorded;
-  3. the writer keyed its row to `CORTEX_SESSION_KEY` (`fleet-pi-<chat>`) while the
+  3. the writer keyed its row to `FLEET_SESSION_KEY` (`fleet-pi-<chat>`) while the
      reflexion gate queries the ACTIVE LOCK's `session_id` (`sess_<hex>` for a
      non-Hermes caller) → the two could never agree.
 
@@ -42,7 +42,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-SERVER = Path(os.environ.get("CORTEX_LOOP_GOV_SERVER", REPO / "mcp-servers" / "loop-gov-mcp.py"))
+SERVER = Path(os.environ.get("FLEET_LOOP_GOV_SERVER", REPO / "mcp-servers" / "loop-gov-mcp.py"))
 STORE_PATH = REPO / "ops" / "services" / "mycortex-mem" / "store.py"
 EXTENSION = REPO / "ops" / "install" / "harnesses" / "pi" / "extensions" / "fleet-context.ts"
 
@@ -378,7 +378,7 @@ def test_the_extension_asks_the_shared_cli_for_the_session_id():
     # The event must be keyed EXPLICITLY. Passing no session_key is what silently
     # fell back to an env-derived key and made the evidence unfindable, and it is
     # invisible in a diff — so the construct itself is asserted, not the absence of
-    # one name (the file's own comment mentions CORTEX_SESSION_KEY to explain why
+    # one name (the file's own comment mentions FLEET_SESSION_KEY to explain why
     # it is gone, and a bare-name search would report that explanation as the bug).
     assert "session_key: sessionKey" in src, (
         "the extension stopped passing an explicit session_key — the evidence "

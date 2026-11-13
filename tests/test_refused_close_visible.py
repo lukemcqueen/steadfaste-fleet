@@ -241,7 +241,7 @@ def test_tests_do_not_pollute_the_production_log() -> None:
 
     Premise, checked rather than assumed (adversarial finding ADV-10463-1 asked this
     point directly): loop-gov-mcp.py builds its RotatingFileHandler AT IMPORT TIME
-    over (CORTEX_DEPLOY_HOME or Path.home()/".steadfaste-fleet")/logs/loop-governance.log.
+    over (FLEET_DEPLOY_HOME or Path.home()/".steadfaste-fleet")/logs/loop-governance.log.
     Patching mcp.HOME afterwards redirects where the gate looks for the REPO, not where
     it logs — so the production log is the correct file to assert on.
 
@@ -251,7 +251,7 @@ def test_tests_do_not_pollute_the_production_log() -> None:
     the silencing on, the same run appends nothing. If the reviewer's concern were
     true, DIRECTION 1 would fail and this test would fail with it.
     """
-    log_path = (Path(os.environ.get("CORTEX_DEPLOY_HOME") or (Path.home() / ".steadfaste-fleet"))
+    log_path = (Path(os.environ.get("FLEET_DEPLOY_HOME") or (Path.home() / ".steadfaste-fleet"))
                 / "logs" / "loop-governance.log")
 
     def _run_gate() -> None:

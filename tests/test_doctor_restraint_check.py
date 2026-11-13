@@ -32,7 +32,7 @@ def _entry(res):
 
 
 def test_nonexistent_restraint_reports_fail(tmp_path, monkeypatch):
-    monkeypatch.setattr(checks, "CORTEX_REPO", tmp_path)
+    monkeypatch.setattr(checks, "FLEET_REPO", tmp_path)
     _write_registry(tmp_path, {
         "verify-before-declare": {"restraint": "doctor:check_does_not_exist_xyz"},
     })
@@ -45,7 +45,7 @@ def test_nonexistent_restraint_reports_fail(tmp_path, monkeypatch):
 
 
 def test_all_restraints_present_reports_pass(tmp_path, monkeypatch):
-    monkeypatch.setattr(checks, "CORTEX_REPO", tmp_path)
+    monkeypatch.setattr(checks, "FLEET_REPO", tmp_path)
     _write_registry(tmp_path, {
         "verify-before-declare": {"restraint": "doctor:check_governance"},
     })
@@ -57,8 +57,8 @@ def test_all_restraints_present_reports_pass(tmp_path, monkeypatch):
 
 
 def test_hook_and_skill_restraints_resolve(tmp_path, monkeypatch):
-    monkeypatch.setattr(checks, "CORTEX_REPO", tmp_path)
-    monkeypatch.setattr(checks, "CORTEX_HOME", tmp_path / "cortex-home")
+    monkeypatch.setattr(checks, "FLEET_REPO", tmp_path)
+    monkeypatch.setattr(checks, "FLEET_DEPLOY_HOME", tmp_path / "cortex-home")
     monkeypatch.setattr(checks, "HERMES_HOME", tmp_path / "hermes-home")
 
     repo = tmp_path

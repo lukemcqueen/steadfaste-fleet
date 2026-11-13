@@ -51,7 +51,7 @@ def test_the_dev_repo_scan_does_not_warn_about_a_non_repo(tmp_path, monkeypatch)
     (proj / ".git").mkdir(parents=True)
     (proj / "AGENTS.md").write_text("# no efficiency block here\n")
     monkeypatch.setattr(checks, "HOME", tmp_path)
-    monkeypatch.setattr(checks, "CORTEX_REPO", _REPO)
+    monkeypatch.setattr(checks, "FLEET_REPO", _REPO)
 
     res = Results()
     checks.check_dev_repo_agents(res)
@@ -76,7 +76,7 @@ def test_a_worktree_of_the_cortex_repo_is_not_a_dev_repo(tmp_path, monkeypatch):
     (wt / "AGENTS.md").write_text("# cortex worktree, no efficiency block\n")
 
     monkeypatch.setattr(checks, "HOME", tmp_path)
-    monkeypatch.setattr(checks, "CORTEX_REPO", cortex)
+    monkeypatch.setattr(checks, "FLEET_REPO", cortex)
     res = Results()
     checks.check_dev_repo_agents(res)
     offenders = [c for c in res.checks if "fleet-session2" in c["name"]]
@@ -98,7 +98,7 @@ def test_a_worktree_of_another_repo_is_still_a_dev_repo(tmp_path, monkeypatch):
     (wt / "AGENTS.md").write_text("# client worktree, no efficiency block\n")
 
     monkeypatch.setattr(checks, "HOME", tmp_path)
-    monkeypatch.setattr(checks, "CORTEX_REPO", cortex)
+    monkeypatch.setattr(checks, "FLEET_REPO", cortex)
     res = Results()
     checks.check_dev_repo_agents(res)
     offenders = [c for c in res.checks
@@ -114,7 +114,7 @@ def test_a_real_dev_repo_without_the_block_still_warns(tmp_path, monkeypatch):
     subprocess.run(["git", "-C", str(proj), "init", "-q"], check=True, capture_output=True)
     (proj / "AGENTS.md").write_text("# client repo, no efficiency block\n")
     monkeypatch.setattr(checks, "HOME", tmp_path)
-    monkeypatch.setattr(checks, "CORTEX_REPO", _REPO)
+    monkeypatch.setattr(checks, "FLEET_REPO", _REPO)
 
     res = Results()
     checks.check_dev_repo_agents(res)

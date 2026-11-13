@@ -13,9 +13,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-FLEET_HOME="${FLEET_HOME:-$HOME/steadfaste-fleet}"
+FLEET_REPO_HOME="${FLEET_REPO_HOME:-$HOME/steadfaste-fleet}"
 STATE_DIR="$HOME/.steadfaste-fleet/state"
-TEMPLATE="$FLEET_HOME/ops/install/deploy/agent-registry.template.json"
+TEMPLATE="$FLEET_REPO_HOME/ops/install/deploy/agent-registry.template.json"
 TARGET="$STATE_DIR/agent-registry.json"
 LOCAL_OVERRIDE="$HOME/.steadfaste-fleet/state/agent-registry.local.json"
 

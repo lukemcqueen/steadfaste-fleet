@@ -41,12 +41,12 @@ class NotRun(Exception):
 
 
 def test_the_declared_fleet_interpreter_is_preferred():
-    """CORTEX_PYTHON is ONE name for "the fleet interpreter". Seven scripts each carried their
+    """FLEET_PYTHON is ONE name for "the fleet interpreter". Seven scripts each carried their
     own clean-env probe before it existed; a caller should read this instead."""
     py = str(VENV / "bin" / "python3")
     if not Path(py).exists():
         raise NotRun("no fleet venv on this host — nothing to resolve against")
-    r = _run("--print", "yaml", env={"CORTEX_PYTHON": py})
+    r = _run("--print", "yaml", env={"FLEET_PYTHON": py})
     assert r.returncode == 0, (r.returncode, r.stdout, r.stderr)
     assert r.stdout.strip() == py, r.stdout
 
@@ -65,8 +65,8 @@ def test_the_declaration_is_read_from_agent_env():
         raise NotRun("no fleet venv on this host — no declaration to read")
     d = Path(tempfile.mkdtemp(prefix="pwm-declaration-"))
     f = d / "agent.env"
-    f.write_text(f"AGENT_NAME=test-host\nCORTEX_PYTHON={py}\n")
-    r = _run("--print", "yaml", env={"CORTEX_PYTHON": "", "CORTEX_ENV_FILE": str(f)})
+    f.write_text(f"AGENT_NAME=test-host\nFLEET_PYTHON={py}\n")
+    r = _run("--print", "yaml", env={"FLEET_PYTHON": "", "FLEET_ENV_FILE": str(f)})
     assert r.returncode == 0, (r.returncode, r.stdout, r.stderr)
     assert r.stdout.strip() == py, r.stdout
     print("  the declaration in agent.env was read ✓")
@@ -76,9 +76,9 @@ def test_a_declaration_that_cannot_import_is_named():
     """A declaration is a PROMISE. When the declared interpreter cannot provide the module the
     resolver must NAME it — quietly falling through to some other interpreter hides a wrong
     declaration exactly as the old PATH-pick hid a missing dependency."""
-    r = _run("--print", ABSENT_MODULE, env={"CORTEX_PYTHON": "/nonexistent/python3"})
+    r = _run("--print", ABSENT_MODULE, env={"FLEET_PYTHON": "/nonexistent/python3"})
     assert r.returncode == 3, (r.returncode, r.stdout, r.stderr)
-    assert "Declared CORTEX_PYTHON: /nonexistent/python3" in r.stderr, r.stderr
+    assert "Declared FLEET_PYTHON: /nonexistent/python3" in r.stderr, r.stderr
     assert ABSENT_MODULE in r.stderr, r.stderr
 
 

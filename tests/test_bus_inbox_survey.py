@@ -21,7 +21,7 @@ def run_survey(tmp_path, fixture):
     env = dict(os.environ)
     env["BUS_SURVEY_FIXTURE"] = str(fx)
     env["BUS_SURVEY_PEEK_LIMIT"] = "500"
-    env.pop("CORTEX_BUS_TOKEN", None)
+    env.pop("FLEET_BUS_TOKEN", None)
     return subprocess.run(
         ["bash", str(SCRIPT)], capture_output=True, text=True, env=env, timeout=30)
 

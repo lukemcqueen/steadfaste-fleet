@@ -2,7 +2,7 @@
 
 WHY: the tasks MCP server is ONE shared child per host, spawned by the gateway
 daemon, whose cwd is HOME (measured 2026-10-14: cwd=/home/<user>, no
-CORTEX_SESSION_REPO). A repo-scoped task query therefore cannot learn the
+FLEET_SESSION_REPO). A repo-scoped task query therefore cannot learn the
 SESSION's repo from its own process — the enforcer is the only component that
 observed it, and it already injects repo_path/repo_slug into governance calls.
 

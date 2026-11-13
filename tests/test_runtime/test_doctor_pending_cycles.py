@@ -9,7 +9,7 @@ the doctor blocked pushes mid-task.
 Fix: lock EXISTENCE is the active signal (end_change unlinks it on
 release); any non-terminal status (completed/cancelled excluded) counts.
 
-This test reproduces the exact scenario hermetically: a temp CORTEX_HOME
+This test reproduces the exact scenario hermetically: a temp FLEET_DEPLOY_HOME
 with a PENDING cycle whose task holds a planning-state lock. The check
 must classify it as INFO (active task), never FAIL (leak).
 """
@@ -27,13 +27,13 @@ import pytest
 
 # ── Point at hermetic homes BEFORE importing the doctor module ──
 _TMP = tempfile.mkdtemp(prefix="doctor-pending-test-")
-os.environ["HERMES_CORTEX_HOME"] = _TMP
+os.environ["FLEET_DEPLOY_HOME"] = _TMP
 os.environ["HERMES_HOME"] = os.path.join(_TMP, "hermes")
 
 # Ensure the repo's doctor module is importable
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "ops" / "scripts" / "manage"))
 
-# The doctor resolves CORTEX_HOME at module import time (config.py). If
+# The doctor resolves FLEET_DEPLOY_HOME at module import time (config.py). If
 # another collected test imported the doctor first, the cached module holds
 # the REAL home — this test's env override would silently not apply, and a
 # live session lock (e.g. an active governance cycle) would leak into the
@@ -46,7 +46,7 @@ importlib.reload(_cfg)
 from fleet_doctor import checks  # noqa: E402
 from fleet_doctor.results import Results  # noqa: E402
 
-# checks.py imports CORTEX_HOME from config — reload it too so it sees the
+# checks.py imports FLEET_DEPLOY_HOME from config — reload it too so it sees the
 # temp home.
 importlib.reload(checks)
 

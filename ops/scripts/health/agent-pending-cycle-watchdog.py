@@ -37,9 +37,9 @@ from pathlib import Path
 from state_tracker import StateTracker
 from hermes_tz import format_timestamp
 
-FLEET_HOME = Path(os.environ.get("FLEET_HOME", str(Path.home() / ".steadfaste-fleet")))
-DB_PATH = Path(os.environ.get("PENDING_DB_PATH", str(FLEET_HOME / "data" / "loop-governance.db")))
-STATE_DIR = FLEET_HOME / "state"
+FLEET_DEPLOY_HOME = Path(os.environ.get("FLEET_DEPLOY_HOME", str(Path.home() / ".steadfaste-fleet")))
+DB_PATH = Path(os.environ.get("PENDING_DB_PATH", str(FLEET_DEPLOY_HOME / "data" / "loop-governance.db")))
+STATE_DIR = FLEET_DEPLOY_HOME / "state"
 STALE_SECONDS = 86400  # 24h — same threshold as the doctor
 TERMINAL_STATES = {"completed", "cancelled"}
 

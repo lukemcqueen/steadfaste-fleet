@@ -8,7 +8,7 @@ Two defects are pinned here, both measured before the fix:
   * the sweep's staleness rule was TTL-only, while the fleet's has a liveness rescue — so this
     script alone would remove a BUSY session's lock, and that session's next write is refused.
 
-Every case runs against a throwaway CORTEX_HOME (state dir + store), so no live lock or cycle can
+Every case runs against a throwaway FLEET_DEPLOY_HOME (state dir + store), so no live lock or cycle can
 be touched. Both directions are covered for each guard: the case it must act on, and the case it
 must stay silent on.
 """
@@ -60,10 +60,10 @@ def _cortex_home(tmp: Path, with_db: bool = True) -> Path:
 
 
 def _load(home: Path):
-    """Import the script with CORTEX_HOME pointed at `home` — its paths resolve at import."""
+    """Import the script with FLEET_DEPLOY_HOME pointed at `home` — its paths resolve at import."""
     spec = importlib.util.spec_from_file_location("purge_under_test", SCRIPT)
     mod = importlib.util.module_from_spec(spec)
-    with mock.patch.dict(os.environ, {"CORTEX_HOME": str(home)}):
+    with mock.patch.dict(os.environ, {"FLEET_DEPLOY_HOME": str(home)}):
         spec.loader.exec_module(mod)
     return mod
 

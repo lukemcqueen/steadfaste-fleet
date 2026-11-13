@@ -108,7 +108,7 @@ def _engine_env() -> dict:
     env = dict(os.environ)
     env.update({"TASK_DB_NAME": SCRATCH_DB, "TASK_DB_ROLE": READER_ROLE,
                 "HERMES_PROFILE": READER_ROLE})
-    env.pop("CORTEX_SESSION_REPO", None)
+    env.pop("FLEET_SESSION_REPO", None)
     return env
 
 

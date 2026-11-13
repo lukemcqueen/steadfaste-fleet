@@ -114,7 +114,7 @@ def test_an_unloadable_handler_still_yields_a_result(tmp_path, monkeypatch):
     pending.mkdir(parents=True)
 
     corr = "test-worker-broken"
-    env = {**os.environ, "CORTEX_DEPLOY_HOME": str(deploy)}
+    env = {**os.environ, "FLEET_DEPLOY_HOME": str(deploy)}
     r = subprocess.run(
         [sys.executable, "-c", _worker_code(), str(broken), json.dumps({"body": {}}), corr],
         capture_output=True,

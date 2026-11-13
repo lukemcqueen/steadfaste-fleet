@@ -56,7 +56,7 @@ def _shipped_invocation_block() -> str:
     invocation is ever rewritten, this block (and the test) changes with it.
     """
     lines = UPDATER.read_text().splitlines()
-    marker = 'if [[ -f "${CORTEX_DEPLOY_HOME}/scripts/install-bridge-killmode.sh" ]]; then'
+    marker = 'if [[ -f "${FLEET_DEPLOY_HOME}/scripts/install-bridge-killmode.sh" ]]; then'
     start = next(i for i, line in enumerate(lines) if line.strip() == marker)
     block = lines[start:start + 4]
     assert block[3].strip() == "fi", f"unexpected block shape: {block}"
@@ -93,7 +93,7 @@ def test_update_path_surfaces_a_failing_installer(tmp_path):
     )
 
     env = {"PATH": "/usr/bin:/bin", "HOME": str(tmp_path),
-           "CORTEX_DEPLOY_HOME": str(deploy)}
+           "FLEET_DEPLOY_HOME": str(deploy)}
     failed_run = subprocess.run(
         ["bash", str(harness)], capture_output=True, text=True, env=env, timeout=60)
     assert failed_run.returncode == 0, failed_run.stdout + failed_run.stderr
@@ -114,10 +114,10 @@ def test_updater_registers_and_invokes_the_installer():
     src = UPDATER.read_text()
     assert (
         'register "ops/scripts/install/install-bridge-killmode.sh" '
-        '"${CORTEX_DEPLOY_HOME}/scripts/install-bridge-killmode.sh"' in src
+        '"${FLEET_DEPLOY_HOME}/scripts/install-bridge-killmode.sh"' in src
     ), "installer is not registered for deploy by fleet-update.sh"
     assert (
-        'bash "${CORTEX_DEPLOY_HOME}/scripts/install-bridge-killmode.sh" 2>&1 | sed' in src
+        'bash "${FLEET_DEPLOY_HOME}/scripts/install-bridge-killmode.sh" 2>&1 | sed' in src
     ), "installer is not invoked from the fleet-update.sh update path"
     assert (
         'warn "  install-bridge-killmode.sh failed (non-fatal)"' in src

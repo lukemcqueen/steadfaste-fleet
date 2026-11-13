@@ -256,9 +256,9 @@ fi
 
 # User info
 FLEET_USER="${FLEET_USER:-$USER}"
-FLEET_HOME="${FLEET_HOME:-$HOME}"
-BRAIN_DIR="${FLEET_HOME}/brain"
-FLEET_DEPLOY_HOME="${FLEET_DEPLOY_HOME:-${FLEET_HOME}/.steadfaste-fleet}"
+FLEET_USER_HOME="${FLEET_USER_HOME:-$HOME}"
+BRAIN_DIR="${FLEET_USER_HOME}/brain"
+FLEET_DEPLOY_HOME="${FLEET_DEPLOY_HOME:-${FLEET_USER_HOME}/.steadfaste-fleet}"
 
 # SCRIPT_DIR is already set at the top of the script
 
@@ -401,20 +401,20 @@ ok
 #    still detect it (offline_knowledge fallback path).
 # ─────────────────────────────────────────────────────────────
 step "Installing Bun"
-if command -v bun &>/dev/null || [[ -x "${FLEET_HOME}/.bun/bin/bun" ]]; then
+if command -v bun &>/dev/null || [[ -x "${FLEET_USER_HOME}/.bun/bin/bun" ]]; then
  skip "already installed — $(bun --version 2>/dev/null || echo 'bun found')"
 else
  curl -fsSL --retry 3 --retry-delay 5 https://bun.sh/install -o /tmp/bun-install.sh
  bash /tmp/bun-install.sh
  rm -f /tmp/bun-install.sh
  # Ensure bun is in PATH for subsequent steps
- export PATH="${FLEET_HOME}/.bun/bin:$PATH"
+ export PATH="${FLEET_USER_HOME}/.bun/bin:$PATH"
  ok
 fi
 
 # Ensure bun is in PATH
 if ! command -v bun &>/dev/null; then
- export PATH="${FLEET_HOME}/.bun/bin:$PATH"
+ export PATH="${FLEET_USER_HOME}/.bun/bin:$PATH"
 fi
 
 # ─────────────────────────────────────────────────────────────
@@ -465,8 +465,8 @@ fi
 
 # ── Ensure bun is in PATH via ~/.local/bin (legacy brain no longer installed) ──
 step "Adding bun symlink to ~/.local/bin/"
-LOCAL_BIN="${FLEET_HOME}/.local/bin"
-BUN_BIN="${FLEET_HOME}/.bun/bin"
+LOCAL_BIN="${FLEET_USER_HOME}/.local/bin"
+BUN_BIN="${FLEET_USER_HOME}/.bun/bin"
 if [[ -d "$BUN_BIN" ]]; then
  mkdir -p "$LOCAL_BIN"
  for _tool in bun; do
@@ -654,9 +654,9 @@ else
 
  # Copy the versioned plugin from the repo (source of truth).
  # legacy brain command is DEAD — decommissioned 2026-08-02; mycortex replaces it.
- if [[ -f "${FLEET_HOME}/steadfaste-fleet/plugins/mycortex-command/__init__.py" ]]; then
-  cp "${FLEET_HOME}/steadfaste-fleet/plugins/mycortex-command/__init__.py" "${PLUGIN_DIR}/__init__.py"
-  cp "${FLEET_HOME}/steadfaste-fleet/plugins/mycortex-command/plugin.yaml" "${PLUGIN_DIR}/plugin.yaml"
+ if [[ -f "${FLEET_USER_HOME}/steadfaste-fleet/plugins/mycortex-command/__init__.py" ]]; then
+  cp "${FLEET_USER_HOME}/steadfaste-fleet/plugins/mycortex-command/__init__.py" "${PLUGIN_DIR}/__init__.py"
+  cp "${FLEET_USER_HOME}/steadfaste-fleet/plugins/mycortex-command/plugin.yaml" "${PLUGIN_DIR}/plugin.yaml"
   info " Plugin copied from repo"
  else
   warn "Repo plugin not found — run fleet-update.sh to deploy mycortex-command"
@@ -1797,8 +1797,8 @@ ok
 if [[ "$FLEET_PROFILE" == "server" ]]; then
 step "Installing Langfuse (LLM observability)"
 
-LANGFUSE_DIR="${FLEET_HOME}/langfuse"
-LANGFUSE_COMPOSE="${FLEET_HOME}/langfuse/docker-compose.yml"
+LANGFUSE_DIR="${FLEET_USER_HOME}/langfuse"
+LANGFUSE_COMPOSE="${FLEET_USER_HOME}/langfuse/docker-compose.yml"
 
 if [[ -d "$LANGFUSE_DIR" ]] && docker ps --format '{{.Names}}' 2>/dev/null | grep -q "langfuse"; then
  skip "Langfuse already running"
@@ -1867,7 +1867,7 @@ fi
 step "Installing Fleet Dashboard"
 
 DASHBOARD_DEST="${FLEET_DEPLOY_HOME}/dashboard"
-DASHBOARD_PLIST="${FLEET_HOME}/Library/LaunchAgents/com.hermes.fleet-dashboard.plist"
+DASHBOARD_PLIST="${FLEET_USER_HOME}/Library/LaunchAgents/com.hermes.fleet-dashboard.plist"
 
 if [[ -f "$DASHBOARD_DEST/server.py" ]]; then
  skip "Fleet Dashboard already installed"
@@ -1897,10 +1897,10 @@ else
 
  # Install service (launchd on macOS, systemd on Linux)
  if [[ "$FLEET_OS" == "macos" ]]; then
-  DASHBOARD_PLIST="${FLEET_HOME}/Library/LaunchAgents/com.hermes.fleet-dashboard.plist"
+  DASHBOARD_PLIST="${FLEET_USER_HOME}/Library/LaunchAgents/com.hermes.fleet-dashboard.plist"
   if [[ ! -f "$DASHBOARD_PLIST" ]]; then
    # Update paths in plist for current user
-   sed "s|FLEET_HOME|${FLEET_HOME}|g" "${REPO_DASHBOARD}/com.hermes.fleet-dashboard.plist" > "$DASHBOARD_PLIST" 2>/dev/null || \
+   sed "s|FLEET_USER_HOME|${FLEET_USER_HOME}|g" "${REPO_DASHBOARD}/com.hermes.fleet-dashboard.plist" > "$DASHBOARD_PLIST" 2>/dev/null || \
    cat > "$DASHBOARD_PLIST" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -1982,13 +1982,13 @@ fi
 
 if [[ "$FLEET_OS" == "macos" ]]; then
  # Install Docker Desktop launchd agent (auto-start on login)
- DOCKER_PLIST="${FLEET_HOME}/Library/LaunchAgents/com.docker.docker.plist"
+ DOCKER_PLIST="${FLEET_USER_HOME}/Library/LaunchAgents/com.docker.docker.plist"
  if launchctl list com.docker.docker &>/dev/null 2>&1; then
   info " Docker launch agent already loaded"
  elif [[ ! -f "$DOCKER_PLIST" ]]; then
   DOCKER_TEMPLATE="${SCRIPT_DIR}/docs/templates/com.docker.docker.plist"
   if [[ -f "$DOCKER_TEMPLATE" ]]; then
-   sed "s|FLEET_HOME|${FLEET_HOME}|g" "$DOCKER_TEMPLATE" > "$DOCKER_PLIST"
+   sed "s|FLEET_USER_HOME|${FLEET_USER_HOME}|g" "$DOCKER_TEMPLATE" > "$DOCKER_PLIST"
   else
    cat > "$DOCKER_PLIST" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -2007,9 +2007,9 @@ if [[ "$FLEET_OS" == "macos" ]]; then
   <key>KeepAlive</key>
   <false/>
   <key>StandardOutPath</key>
-  <string>${FLEET_HOME}/.steadfaste-fleet/logs/docker-launch.log</string>
+  <string>${FLEET_USER_HOME}/.steadfaste-fleet/logs/docker-launch.log</string>
   <key>StandardErrorPath</key>
-  <string>${FLEET_HOME}/.steadfaste-fleet/logs/docker-launch.log</string>
+  <string>${FLEET_USER_HOME}/.steadfaste-fleet/logs/docker-launch.log</string>
 </dict>
 </plist>
 PLIST
@@ -2025,7 +2025,7 @@ PLIST
  # legacy macOS com.hermes.health-server launchd agent has no repo source
  # and is no longer installed. Do NOT re-add it — it caused duplicate-unit
  # crash loops on upgraded hosts that still had the old unit.
- HEALTH_PLIST="${FLEET_HOME}/Library/LaunchAgents/com.hermes.health-server.plist"
+ HEALTH_PLIST="${FLEET_USER_HOME}/Library/LaunchAgents/com.hermes.health-server.plist"
  if launchctl list com.hermes.health-server &>/dev/null 2>&1; then
    info " Legacy com.hermes.health-server agent still loaded — remove manually:"
    info "   launchctl bootout gui/$(id -u)/com.hermes.health-server && rm -f \"$HEALTH_PLIST\""
@@ -2197,7 +2197,7 @@ if [[ -f "${FLEET_DEPLOY_HOME}/state.db" ]]; then
 fi
 
 # Any .env files in home or brain dirs
-find "${FLEET_HOME}" -maxdepth 2 -name ".env" -o -name ".env.*" 2>/dev/null | while read -r envfile; do
+find "${FLEET_USER_HOME}" -maxdepth 2 -name ".env" -o -name ".env.*" 2>/dev/null | while read -r envfile; do
  chmod 600 "$envfile" 2>/dev/null || true
 done
 info " All .env files locked down"

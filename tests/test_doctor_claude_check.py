@@ -53,7 +53,7 @@ def fake_home(tmp_path, monkeypatch):
                     "README.md"], check=True, capture_output=True)
 
     monkeypatch.setattr(checks, "HOME", tmp_path)
-    monkeypatch.setattr(checks, "CORTEX_REPO", _REPO)
+    monkeypatch.setattr(checks, "FLEET_REPO", _REPO)
     # No Claude configured by default (fresh temp home)
     monkeypatch.setattr(checks, "run_bg", lambda cmd: "" if cmd[0] == "command" else "x")
     return tmp_path
@@ -117,12 +117,12 @@ def test_warns_when_claude_md_missing_excellence_section(fake_home):
 # § check_user_template --------------------------------------------------------
 
 def _user_paths(tmp_path, monkeypatch):
-    """Re-point checks.CORTEX_REPO + Path.home() so check_user_template reads a temp tree."""
+    """Re-point checks.FLEET_REPO + Path.home() so check_user_template reads a temp tree."""
     template = tmp_path / "steadfaste-fleet" / "docs" / "templates" / "USER.seed.md"
     template.parent.mkdir(parents=True)
     live = tmp_path / ".hermes" / "memories" / "USER.md"
     live.parent.mkdir(parents=True)
-    monkeypatch.setattr(checks, "CORTEX_REPO", tmp_path / "steadfaste-fleet")
+    monkeypatch.setattr(checks, "FLEET_REPO", tmp_path / "steadfaste-fleet")
     # check_user_template derives the live path from Path.home(), not checks.HOME
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
     return template, live
@@ -171,9 +171,9 @@ def test_user_template_live_current_passes(tmp_path, monkeypatch):
 
 
 def test_skips_hermes_cortex_repo_itself(fake_home):
-    """CORTEX_REPO is excluded from the dev-repo scan (covered by check_repo)."""
+    """FLEET_REPO is excluded from the dev-repo scan (covered by check_repo)."""
     (fake_home / ".mcp.json").write_text("{}")
-    # Simulate CORTEX_REPO inside the scan area — it must be skipped.
+    # Simulate FLEET_REPO inside the scan area — it must be skipped.
     res = _make_results()
     checks.check_dev_repo_claude(res)
     # Only the client-repo is scanned; cortex repo itself never appears

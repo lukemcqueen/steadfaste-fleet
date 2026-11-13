@@ -65,7 +65,7 @@ def _mk_repo(tmp: Path) -> Path:
     (repo / "ops" / "scripts").mkdir(parents=True)
     # The register map the check reads: probe.sh -> the deploy home's copy.
     (repo / "ops" / "scripts" / "fleet-update.sh").write_text(
-        'register "ops/scripts/probe.sh"  "${CORTEX_DEPLOY_HOME}/scripts/probe.sh"\n')
+        'register "ops/scripts/probe.sh"  "${FLEET_DEPLOY_HOME}/scripts/probe.sh"\n')
     (repo / "ops" / "scripts" / "probe.sh").write_text("#!/usr/bin/env bash\necho v1\n")
     (repo / "docs").mkdir()
     (repo / "docs" / "note.md").write_text("first\n")
@@ -75,8 +75,8 @@ def _mk_repo(tmp: Path) -> Path:
 
 
 def _setup(tmp: Path, deployed_rev: str, deploy_home: Path):
-    checks.CORTEX_REPO = tmp / "repo"
-    checks.CORTEX_HOME = deploy_home
+    checks.FLEET_REPO = tmp / "repo"
+    checks.FLEET_DEPLOY_HOME = deploy_home
     checks.AGENT_ROLE = "orchestrator"
     (deploy_home / "state").mkdir(parents=True, exist_ok=True)
     (deploy_home / "state" / "update-commit").write_text(deployed_rev + "\n")

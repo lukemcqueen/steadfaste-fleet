@@ -76,7 +76,7 @@ def run_cleanup(home: Path, deploy: Path, path_prefix: Path | None = None,
     script = f"""
 set -uo pipefail
 export HOME="{home}"
-export CORTEX_DEPLOY_HOME="{deploy}"
+export FLEET_DEPLOY_HOME="{deploy}"
 info() {{ printf 'INFO %s\\n' "$*"; }}
 warn() {{ printf 'WARN %s\\n' "$*" >&2; }}
 {function_body()}
@@ -184,7 +184,7 @@ def test_missing_yaml_loader_warns_and_leaves_the_keys(tmp_path):
     script = f"""
 set -uo pipefail
 export HOME="{home}"
-export CORTEX_DEPLOY_HOME="{deploy}"
+export FLEET_DEPLOY_HOME="{deploy}"
 info() {{ printf 'INFO %s\\n' "$*"; }}
 warn() {{ printf 'WARN %s\\n' "$*" >&2; }}
 {function_body()}
@@ -238,7 +238,7 @@ def test_keys_present_finds_an_interpreter_that_can_import_ruamel(tmp_path):
     """When there IS something to drop, the step must not settle for a useless python3.
 
     PATH is deliberately poisoned with a python3 that fails, so a pass means the function
-    looked PAST it (CORTEX_PYTHON, then the candidates) instead of using the first python3
+    looked PAST it (FLEET_PYTHON, then the candidates) instead of using the first python3
     it met. This is the other direction of the same fix, and it must NOT weaken
     test_missing_yaml_loader_warns_and_leaves_the_keys: with no capable interpreter at all,
     the warning and the surviving keys are still correct.
@@ -252,7 +252,7 @@ def test_keys_present_finds_an_interpreter_that_can_import_ruamel(tmp_path):
         pytest.skip("no interpreter on this host can import ruamel.yaml — no capability to test")
     home, deploy = make_host(tmp_path)
     proc = run_cleanup(home, deploy, path_prefix=stub_python3_without_ruamel(tmp_path),
-                       extra_env={"CORTEX_PYTHON": capable})
+                       extra_env={"FLEET_PYTHON": capable})
 
     assert proc.returncode == 0, proc.stdout + proc.stderr
     import yaml

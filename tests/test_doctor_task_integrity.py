@@ -207,7 +207,7 @@ def test_the_repo_unknown_advisory_is_not_counted_as_a_stranded_slice(
     monkeypatch.setattr(ti, "_run", lambda cmd, timeout=25, cwd=None:
                         "task_list_handed_out: repo unknown — none of: an explicit "
                         "repo argument, an injected session repo, "
-                        "CORTEX_SESSION_REPO, or a git repo at the current "
+                        "FLEET_SESSION_REPO, or a git repo at the current "
                         "directory.\n"
                         "(no unstarted hand-offs — repo unknown)\n")
     res = FakeResults()

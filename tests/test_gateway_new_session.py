@@ -65,7 +65,7 @@ def _real_backend():
     spec = AGENTS.AgentSpec.from_dict({
         "name": "pi", "kind": "command", "command": ["/bin/true"],
         "session": "per_chat", "session_args": ["--session-id", "{session_id}"],
-        "env": {"CORTEX_SESSION_HARNESS": "pi", "CORTEX_SESSION_KEY": "{session_id}"},
+        "env": {"FLEET_SESSION_HARNESS": "pi", "FLEET_SESSION_KEY": "{session_id}"},
     })
     return AGENTS.CommandBackend(spec)
 
@@ -121,7 +121,7 @@ def test_a_junk_generation_is_ignored_rather_than_crashing():
 def test_the_session_KEY_env_follows_the_generation():
     """The argv is only half the isolation.
 
-    The harness resumes a checkpoint keyed by `CORTEX_SESSION_KEY`. If that key does
+    The harness resumes a checkpoint keyed by `FLEET_SESSION_KEY`. If that key does
     NOT follow the generation, `/new` rotates the transcript while the agent silently
     resumes the same checkpoint — a new session carrying the old memory, which is the
     worst of both worlds and very hard to notice. Proven the hard way: a harness that
@@ -132,9 +132,9 @@ def test_the_session_KEY_env_follows_the_generation():
     before = backend._child_env(inbound, f"fleet-pi-{CHAT}")
     after = backend._child_env(inbound, f"fleet-pi-{CHAT}-g1")
     assert before and after, "the spec declares env, so it must be returned"
-    assert before["CORTEX_SESSION_KEY"] == f"fleet-pi-{CHAT}"
-    assert after["CORTEX_SESSION_KEY"] == f"fleet-pi-{CHAT}-g1"
-    assert before["CORTEX_SESSION_KEY"] != after["CORTEX_SESSION_KEY"]
+    assert before["FLEET_SESSION_KEY"] == f"fleet-pi-{CHAT}"
+    assert after["FLEET_SESSION_KEY"] == f"fleet-pi-{CHAT}-g1"
+    assert before["FLEET_SESSION_KEY"] != after["FLEET_SESSION_KEY"]
 
 
 # ── the /new command itself ─────────────────────────────────────────

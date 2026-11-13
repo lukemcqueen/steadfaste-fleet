@@ -172,7 +172,7 @@ def test_receipt_names_only_covered_blobs():
 def test_push_base_candidates_handle_a_master_default_and_another_remote():
     """ADV-0-2: hardcoding origin/main made a master-default repo fall back to ALL history."""
     saved = (mcp._git_capture, mcp._env_value)
-    mcp._env_value = lambda name, default="": "upstream" if name == "CORTEX_PUSH_REMOTE" else ""
+    mcp._env_value = lambda name, default="": "upstream" if name == "FLEET_PUSH_REMOTE" else ""
     mcp._git_capture = (lambda repo, *a, **k:
                         "origin/develop" if a and a[0] == "symbolic-ref" else "")
     try:
@@ -188,7 +188,7 @@ def test_layout_hints_are_configurable():
     """ADV-0-4: the layout list was correct only for this repo."""
     saved = mcp._env_value
     mcp._env_value = (lambda name, default="":
-                      "src/,lib/" if name == "CORTEX_REVIEW_LAYOUT_PREFIXES" else "")
+                      "src/,lib/" if name == "FLEET_REVIEW_LAYOUT_PREFIXES" else "")
     try:
         prefixes = mcp._layout_prefixes()
         pats = mcp._preflight_patterns()

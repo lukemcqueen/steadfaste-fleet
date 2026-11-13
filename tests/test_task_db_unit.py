@@ -32,7 +32,7 @@ TASK_MCP_PATH = REPO / "mcp-servers" / "task-mcp.py"
 
 # The repo every scoped-query test DECLARES, so its verdict cannot come from the invoker.
 # cmd_pending/cmd_list resolve the repo from: explicit arg -> injected repo_path -> repo_slug ->
-# CORTEX_SESSION_REPO -> a git repo at the cwd -> None (fleet_lib/session_repo.py:87). On None
+# FLEET_SESSION_REPO -> a git repo at the cwd -> None (fleet_lib/session_repo.py:87). On None
 # they print `[]` (operator rule 2026-10-14: an unresolvable repo returns NOTHING), so a test that
 # declares none of them reads `[]` and fails on items[0] wherever pytest is invoked from a
 # non-git cwd — measured 2026-10-16: 7 failed / 55 passed, `IndexError: list index out of range`.
@@ -379,7 +379,7 @@ def test_list_parent_bad_uuid_rejected():
 def test_pending_payload_follows_the_declared_repo_not_the_invoker(tmp_path, monkeypatch):
     """No declared repo -> no tasks; a declared repo -> the row. From any cwd."""
     monkeypatch.chdir(tmp_path)                       # tmp_path is not a git repo
-    monkeypatch.delenv("CORTEX_SESSION_REPO", raising=False)
+    monkeypatch.delenv("FLEET_SESSION_REPO", raising=False)
     fake = _row_line(id="uuid1")
     with patch.object(task_db, "psql", return_value=fake):
         out, _err, _exc = _run_stdin_capture(task_db.cmd_pending, explain=False)

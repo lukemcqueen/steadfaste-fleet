@@ -99,9 +99,9 @@ def test_both_deploy_paths_gate_the_sink():
     gets the sink or not depending on which deployer ran last."""
     sh = INSTALL_SH.read_text()
     assert "metrics-sink.conf" in sh, "install-nginx-full.sh must deploy the sink template"
-    assert "CORTEX_VM_HEALTH_URL" in sh, "the bash path needs the same auto-detect probe"
+    assert "FLEET_VM_HEALTH_URL" in sh, "the bash path needs the same auto-detect probe"
     py = APPLY.read_text()
     assert "metrics-sink.conf" in py
-    assert "CORTEX_VM_HEALTH_URL" in py
+    assert "FLEET_VM_HEALTH_URL" in py
     for text in (sh, py):
         assert "HERMES_SERVICES" in text

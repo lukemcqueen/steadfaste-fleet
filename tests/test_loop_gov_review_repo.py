@@ -426,7 +426,7 @@ def test_a_lock_tagged_with_the_session_repo_is_not_refused_by_a_commit_elsewher
             "repo_path": str(mine), "started_at": started_at, "session_id": "S1",
             "ttl_seconds": 3600}
 
-    with _EnvVar("CORTEX_SESSION_REPO", str(mine)):    # the session's identity AGREES with the tag
+    with _EnvVar("FLEET_SESSION_REPO", str(mine)):    # the session's identity AGREES with the tag
         block = mcp._adversarial_review_gate(lock, {"id": 5001})
 
     text = block.content[0].text if block is not None else ""
@@ -448,7 +448,7 @@ def test_the_mis_tag_refusal_names_the_session_repo_when_it_is_known():
             "repo_path": str(home / "steadfaste-fleet"), "started_at": started_at,
             "session_id": "S1", "ttl_seconds": 3600}
 
-    with _EnvVar("CORTEX_SESSION_REPO", str(real)):
+    with _EnvVar("FLEET_SESSION_REPO", str(real)):
         block = mcp._adversarial_review_gate(lock, {"id": 5002})
 
     assert block is not None, "a lock tagged with a repo the session is NOT in must be refused"

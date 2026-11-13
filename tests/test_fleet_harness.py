@@ -201,7 +201,7 @@ def test_verify_named_harness_reports_each_declared_artifact():
 def _registry_fixture(tmp_path: Path, *, drop: str | None = None) -> Path:
     """A registry dir with the REAL registry, a generator stub and pi's artifacts.
 
-    CORTEX_HARNESS_DIR is honoured by harness.py's registry_dir(), so the subject is
+    FLEET_HARNESS_DIR is honoured by harness.py's registry_dir(), so the subject is
     pointed at this fixture instead of the checkout — the store/registry halves still
     take their real path, which is what makes the run meaningful.
     """
@@ -227,12 +227,12 @@ def test_verify_without_a_name_does_not_pass_without_checking_artifacts(tmp_path
     it fails.
     """
     regdir = _registry_fixture(tmp_path)
-    r = run("verify", env={"CORTEX_HARNESS_DIR": str(regdir)})
+    r = run("verify", env={"FLEET_HARNESS_DIR": str(regdir)})
     assert r.returncode == 0, (r.stdout + r.stderr)[-600:]
     assert "artifact" in r.stdout.lower(), f"no artifact was judged:\n{r.stdout}"
 
     regdir2 = _registry_fixture(tmp_path / "second", drop="fleet-governance.ts")
-    r2 = run("verify", env={"CORTEX_HARNESS_DIR": str(regdir2)})
+    r2 = run("verify", env={"FLEET_HARNESS_DIR": str(regdir2)})
     assert r2.returncode != 0, f"a missing declared artifact reported PASS:\n{r2.stdout}"
     assert "fleet-governance.ts" in r2.stdout, r2.stdout
 
@@ -287,7 +287,7 @@ def test_the_cli_reports_could_not_verify_when_no_interpreter_can_import_yaml(tm
     os.symlink(shutil.which("bash") or "/bin/bash", binonly / "bash")
     (tmp_path / "home").mkdir(exist_ok=True)
     runner = _yaml_less_runner(tmp_path)
-    env = {"CORTEX_HARNESS_DIR": str(_registry_fixture(tmp_path)),
+    env = {"FLEET_HARNESS_DIR": str(_registry_fixture(tmp_path)),
            "PYTHON": "/nonexistent/python3",
            "HERMES_VENV": "/nonexistent/hermes",
            "HOME": str(tmp_path / "home"),

@@ -10,7 +10,7 @@ that could re-mint the receipt was already released. Two things are pinned here:
      and a caller holding the lock can pass it in directly - the CLEAN branch of the
      review gate has no tool-call args, so without that it could only call
      ``_read_lock(None)`` and bail, which is the same silent-failure shape as 2026-10-07.
-  2. ``CORTEX_SESSION_REPO`` is honoured for a Hermes caller (a DECLARATION, not a
+  2. ``FLEET_SESSION_REPO`` is honoured for a Hermes caller (a DECLARATION, not a
      guess), while the no-guessing property is preserved: with nothing declared and
      nothing injected the repo is still None, never the shared daemon's cwd.
 
@@ -48,7 +48,7 @@ def test_a_bail_returns_the_reason_and_names_the_remedy():
     got = m._write_review_receipt("t", None, state={})
     assert got, "a lock with no repo identity must return a reason, not None"
     assert "no repo identity" in got, got
-    assert "begin_change" in got or "CORTEX_SESSION_REPO" in got, got
+    assert "begin_change" in got or "FLEET_SESSION_REPO" in got, got
     print("  a repo-less lock returns a reportable reason naming the remedy ✓")
 
 
@@ -103,48 +103,48 @@ def test_a_resolved_lock_still_writes_a_receipt():
 
 
 def test_a_declared_session_repo_is_honoured_for_a_hermes_caller():
-    """The enforcer-injected session id marks a Hermes caller; CORTEX_SESSION_REPO is
+    """The enforcer-injected session id marks a Hermes caller; FLEET_SESSION_REPO is
     an explicit declaration and must still be honoured for it."""
     m = _load()
-    saved = os.environ.get("CORTEX_SESSION_REPO")
+    saved = os.environ.get("FLEET_SESSION_REPO")
     try:
-        os.environ["CORTEX_SESSION_REPO"] = str(_REPO)
+        os.environ["FLEET_SESSION_REPO"] = str(_REPO)
         got = m._session_repo_path(dict(_HERMES_CALLER_ARGS))
         assert got == _REPO, got
     finally:
         if saved is None:
-            os.environ.pop("CORTEX_SESSION_REPO", None)
+            os.environ.pop("FLEET_SESSION_REPO", None)
         else:
-            os.environ["CORTEX_SESSION_REPO"] = saved
-    print("  CORTEX_SESSION_REPO is honoured even for an enforcer-identified caller ✓")
+            os.environ["FLEET_SESSION_REPO"] = saved
+    print("  FLEET_SESSION_REPO is honoured even for an enforcer-identified caller ✓")
 
 
 def test_no_declaration_means_no_guess_for_a_hermes_caller():
     """The property the 2026-10-09 change protects: a Hermes session is never tagged
     with whatever checkout the shared daemon happens to sit in."""
     m = _load()
-    saved = os.environ.get("CORTEX_SESSION_REPO")
+    saved = os.environ.get("FLEET_SESSION_REPO")
     try:
-        os.environ.pop("CORTEX_SESSION_REPO", None)
+        os.environ.pop("FLEET_SESSION_REPO", None)
         got = m._session_repo_path(dict(_HERMES_CALLER_ARGS))
         assert got is None, f"must not guess a repo for a Hermes caller, got {got}"
     finally:
         if saved is not None:
-            os.environ["CORTEX_SESSION_REPO"] = saved
+            os.environ["FLEET_SESSION_REPO"] = saved
     print("  no declaration + no injection still resolves to None (no guessing) ✓")
 
 
 def test_a_bogus_declaration_is_rejected():
     m = _load()
-    saved = os.environ.get("CORTEX_SESSION_REPO")
+    saved = os.environ.get("FLEET_SESSION_REPO")
     try:
-        os.environ["CORTEX_SESSION_REPO"] = "/nonexistent/not-a-repo"
+        os.environ["FLEET_SESSION_REPO"] = "/nonexistent/not-a-repo"
         assert m._session_repo_path(dict(_HERMES_CALLER_ARGS)) is None
     finally:
         if saved is None:
-            os.environ.pop("CORTEX_SESSION_REPO", None)
+            os.environ.pop("FLEET_SESSION_REPO", None)
         else:
-            os.environ["CORTEX_SESSION_REPO"] = saved
+            os.environ["FLEET_SESSION_REPO"] = saved
     print("  a declared path that is not a git repo is rejected, not trusted ✓")
 
 

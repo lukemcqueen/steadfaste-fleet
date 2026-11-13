@@ -14,7 +14,7 @@ This module makes the deferral legitimate but RECORDED, and nothing more. No che
 no gate reads this store, and the doctor's exit codes are unchanged. What changes is that an
 undisposed warning is now VISIBLE as undisposed, and disposing of one is a single command.
 
-Store: ``<FLEET_HOME>/state/doctor-dispositions.json``
+Store: ``<FLEET_DEPLOY_HOME>/state/doctor-dispositions.json``
 
     {check_name: {"disposition": "deferred"|"deliberate"|"fixed",
                   "owner": "<agent or operator>", "reason": "<why>",
@@ -34,9 +34,9 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 
-from .config import FLEET_HOME
+from .config import FLEET_DEPLOY_HOME
 
-STORE_PATH = FLEET_HOME / "state" / "doctor-dispositions.json"
+STORE_PATH = FLEET_DEPLOY_HOME / "state" / "doctor-dispositions.json"
 
 # How long a decision stands before it has to be renewed. A malformed override must not stop the
 # doctor from starting: fall back to the default and say so.

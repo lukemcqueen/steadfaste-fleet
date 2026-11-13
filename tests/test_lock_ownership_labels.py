@@ -63,7 +63,7 @@ def _write_lock(state_dir: Path, session_id: str, **over) -> Path:
 def test_injected_id_is_unique(monkeypatch):
     m = _mcp()
     monkeypatch.delenv("PI_SESSION_ID", raising=False)
-    monkeypatch.delenv("CORTEX_SESSION_KEY", raising=False)
+    monkeypatch.delenv("FLEET_SESSION_KEY", raising=False)
     src, sid, shared = m._identity_source({"session_id": "sess_injected_abc"})
     assert src == "injected"
     assert sid == "sess_injected_abc"
@@ -82,7 +82,7 @@ def test_env_id_is_unique(monkeypatch):
 def test_per_repo_fallback_is_shared(monkeypatch):
     m = _mcp()
     monkeypatch.delenv("PI_SESSION_ID", raising=False)
-    monkeypatch.delenv("CORTEX_SESSION_KEY", raising=False)
+    monkeypatch.delenv("FLEET_SESSION_KEY", raising=False)
     # no injected id, no env -> per-repo fallback, SHARED
     src, sid, shared = m._identity_source({})
     assert src == "per-repo"
@@ -132,7 +132,7 @@ def test_check_lock_labels_a_shared_id_lock_as_not_mine(tmp_path, monkeypatch):
     m = _mcp()
     monkeypatch.setattr(m, "GOVERNANCE_STATE_DIR", tmp_path)
     monkeypatch.delenv("PI_SESSION_ID", raising=False)
-    monkeypatch.delenv("CORTEX_SESSION_KEY", raising=False)
+    monkeypatch.delenv("FLEET_SESSION_KEY", raising=False)
     # Make the caller resolve the SHARED per-repo id (the per-repo fallback's
     # process-scoped value), so `_read_lock` finds the same id's lock on disk —
     # the exact Titus collision: two sessions in one repo, one shared id.

@@ -33,7 +33,7 @@ for h in mcp.log.handlers:
         h.flush()
     except Exception:
         pass
-logfile = Path(os.environ["CORTEX_DEPLOY_HOME"]) / "logs" / "loop-governance.log"
+logfile = Path(os.environ["FLEET_DEPLOY_HOME"]) / "logs" / "loop-governance.log"
 text = logfile.read_text() if logfile.is_file() else ""
 print("IMPORT_OK")
 print("FILE_EXISTS", logfile.is_file())
@@ -44,7 +44,7 @@ print("MARKER_IN_FILE", "GATE-LOG-MARKER-9f3a" in text)
 def _run(deploy_home: str) -> subprocess.CompletedProcess:
     import os
     env = dict(os.environ)
-    env["CORTEX_DEPLOY_HOME"] = deploy_home
+    env["FLEET_DEPLOY_HOME"] = deploy_home
     return subprocess.run([sys.executable, "-c", SNIPPET.format(repo=str(REPO))],
                           capture_output=True, text=True, timeout=120, env=env)
 

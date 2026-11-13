@@ -49,8 +49,8 @@ def test_deployed_verifier_toon_resolution_passes_when_working():
         toon_src = REPO_ROOT / "ops" / "scripts" / "lib" / "toon_parse.py"
         (lib / "toon_parse.py").write_text(toon_src.read_text())
 
-        old_home = checks.CORTEX_HOME
-        checks.CORTEX_HOME = home
+        old_home = checks.FLEET_DEPLOY_HOME
+        checks.FLEET_DEPLOY_HOME = home
         try:
             res = results.Results()
             checks.check_deployed_gate_smoke(res)
@@ -58,7 +58,7 @@ def test_deployed_verifier_toon_resolution_passes_when_working():
             assert entry is not None, "check did not run"
             assert entry["status"] != "FAIL", f"working deployed gate flagged: {entry}"
         finally:
-            checks.CORTEX_HOME = old_home
+            checks.FLEET_DEPLOY_HOME = old_home
 
 
 def test_deployed_verifier_toon_resolution_fails_when_broken():
@@ -77,8 +77,8 @@ def test_deployed_verifier_toon_resolution_fails_when_broken():
         (scripts / "adversarial-verify.py").write_text(verifier_src.read_text())
         # NO lib/ dir — the broken-deploy scenario
 
-        old_home = checks.CORTEX_HOME
-        checks.CORTEX_HOME = home
+        old_home = checks.FLEET_DEPLOY_HOME
+        checks.FLEET_DEPLOY_HOME = home
         try:
             res = results.Results()
             checks.check_deployed_gate_smoke(res)
@@ -88,4 +88,4 @@ def test_deployed_verifier_toon_resolution_fails_when_broken():
                 f"broken deployed gate not flagged: {entry}"
             )
         finally:
-            checks.CORTEX_HOME = old_home
+            checks.FLEET_DEPLOY_HOME = old_home

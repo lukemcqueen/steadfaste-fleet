@@ -16,10 +16,10 @@
 set -eu
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MIGRATE_PY="${REPO_DIR}/ops/services/mycortex/migrate.py"
-TEST_DB="${MYCORTEX_TEST_DB:-mycortex_test}"
+TEST_DB="${MYFLEET_TEST_DB:-mycortex_test}"
 
 if [[ "$TEST_DB" == "mycortex" ]]; then
-  echo "❌ REFUSING to run against the mycortex DB — hermeticity guard. Set MYCORTEX_TEST_DB." >&2
+  echo "❌ REFUSING to run against the mycortex DB — hermeticity guard. Set MYFLEET_TEST_DB." >&2
   exit 1
 fi
 

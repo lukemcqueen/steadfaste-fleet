@@ -17,7 +17,7 @@ properly". Two root causes, both covered here:
      test_claude_governance_installer.sh.
 
   C. (2026-10-27) get_session_id() gained resolution step 0e: a caller's own
-     environment (CORTEX_SESSION_KEY, then PI_SESSION_ID) is used before the
+     environment (FLEET_SESSION_KEY, then PI_SESSION_ID) is used before the
      per-repo fallback, because one MCP child serves one session. That path is
      covered by tests/test_harness_session_id_env.py; THIS file measures the
      no-env fallback, so it removes those variables for the run.
@@ -39,13 +39,13 @@ _spec.loader.exec_module(mcp)
 _FAIL = []
 
 # Ambient-environment guard. Resolution step 0e reads a session id from the
-# caller's own environment (CORTEX_SESSION_KEY, then PI_SESSION_ID), so a runner
+# caller's own environment (FLEET_SESSION_KEY, then PI_SESSION_ID), so a runner
 # that happens to have one set makes these tests measure the RUNNER instead of
-# the fallback rule they name — measured 2026-10-27: with CORTEX_SESSION_KEY set,
+# the fallback rule they name — measured 2026-10-27: with FLEET_SESSION_KEY set,
 # the per-repo file is never written and three checks fail. Save and remove them
 # for the duration of the run, restore in main()'s finally. The env-provided path
 # is covered on purpose by tests/test_harness_session_id_env.py.
-_ENV_SESSION_KEYS = ("CORTEX_SESSION_KEY", "PI_SESSION_ID")
+_ENV_SESSION_KEYS = ("FLEET_SESSION_KEY", "PI_SESSION_ID")
 _SAVED_ENV = {k: os.environ.pop(k, None) for k in _ENV_SESSION_KEYS}
 
 
@@ -137,7 +137,7 @@ def test_two_processes_get_disjoint_ids():
 
 def test_same_repo_concurrent_sessions_serialize():
     """Two concurrent non-Hermes sessions in ONE repo that supply NO session id
-    (neither CORTEX_SESSION_KEY nor PI_SESSION_ID) share the per-repo project id
+    (neither FLEET_SESSION_KEY nor PI_SESSION_ID) share the per-repo project id
     — and the SECOND begin_change is REFUSED while the first's cycle is PENDING
     (serialization via the close-out gate, not silent lock theft).
 

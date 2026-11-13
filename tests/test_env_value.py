@@ -27,7 +27,7 @@ def _check(label, cond, detail=""):
 
 def _call(env_file: str, name: str, herm: str | None = None):
     env = dict(os.environ)
-    env["CORTEX_ENV_FILE"] = env_file
+    env["FLEET_ENV_FILE"] = env_file
     env["HOME"] = herm if herm is not None else env.get("HOME", "/root")
     return subprocess.run(["bash", str(SCRIPT), name], capture_output=True, text=True,
                           timeout=30, env=env)

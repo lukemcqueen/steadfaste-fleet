@@ -255,8 +255,8 @@ def test_owner_root_resolves_from_one_place():
     per-host literal, and exactly one definition of each default."""
     src = TOOL.read_text()
     assert "/home/" not in src, "no absolute home path in the tool"
-    assert "CORTEX_HOME" in src, "the cortex root default reads the env var"
-    assert src.count("default_cortex =") == 1
+    assert "FLEET_DEPLOY_HOME" in src, "the deploy-home default reads the env var"
+    assert src.count("default_skills_root =") == 1
     assert src.count("default_borrower =") == 1
     # No check may re-derive a root locally: only the two defaults + argparse wiring.
     assert src.count("Path.home()") == 2, "root defaults are defined once each"

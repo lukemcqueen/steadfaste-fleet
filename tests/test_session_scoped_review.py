@@ -8,7 +8,7 @@ narrows it with `git log --author=<identity>` — but one host has ONE git ident
 commits satisfy the filter and a peer's diff enters the material, the Diff stat and the tier.
 
 The fix has two halves that must ship together (a consumer without a producer is inert):
-  A1  a `Cortex-Session: <session_id>` trailer, appended by the `prepare-commit-msg` hook from the
+  A1  a `FLEET-Session: <session_id>` trailer, appended by the `prepare-commit-msg` hook from the
       LIVE governance lock (never from an env var the agent can export);
   A2  exclusion of commits whose trailer names a DIFFERENT session — fail-closed: no trailer,
       ambiguous trailer, missing own session id, or a git error ⇒ the commit STAYS in scope.
@@ -85,7 +85,7 @@ def _commit(repo: Path, path: str, body: str, trailer: str | None = None,
     f.parent.mkdir(parents=True, exist_ok=True)
     f.write_text(content)
     _git(repo, "add", path)
-    msg = body + (f"\n\nCortex-Session: {trailer}" if trailer else "")
+    msg = body + (f"\n\nFLEET-Session: {trailer}" if trailer else "")
     _git(repo, "commit", "-q", "-m", msg)
     return _git(repo, "rev-parse", "HEAD").strip()
 
@@ -105,9 +105,9 @@ def test_commit_session_is_empty_for_no_trailer(tmp_path):
 
 
 def test_commit_session_is_empty_when_a_body_mentions_the_word(tmp_path):
-    """A prose mention is not a trailer — only a `Cortex-Session:` LINE is."""
+    """A prose mention is not a trailer — only a `FLEET-Session:` LINE is."""
     repo = _init_repo(tmp_path)
-    sha = _commit(repo, "a.txt", "docs: explain the Cortex-Session trailer")
+    sha = _commit(repo, "a.txt", "docs: explain the FLEET-Session trailer")
     assert mcp._commit_session(repo, sha) == ""
 
 
@@ -118,7 +118,7 @@ def test_commit_session_refuses_two_conflicting_trailers(tmp_path):
     f.write_text("x\n")
     _git(repo, "add", "a.txt")
     _git(repo, "commit", "-q", "-m",
-         f"feat: a\n\nCortex-Session: {OTHER_SESSION}\nCortex-Session: {MY_SESSION}")
+         f"feat: a\n\nFLEET-Session: {OTHER_SESSION}\nFLEET-Session: {MY_SESSION}")
     sha = _git(repo, "rev-parse", "HEAD").strip()
     assert mcp._commit_session(repo, sha) == ""
 
@@ -157,7 +157,7 @@ def test_exclusion_fails_closed_on_a_conflicting_trailer(tmp_path):
     f.write_text("x\n")
     _git(repo, "add", "sneaky.txt")
     _git(repo, "commit", "-q", "-m",
-         f"feat: sneaky\n\nCortex-Session: {OTHER_SESSION}\nCortex-Session: {MY_SESSION}")
+         f"feat: sneaky\n\nFLEET-Session: {OTHER_SESSION}\nFLEET-Session: {MY_SESSION}")
     assert mcp._excluded_session_commits(repo, base, MY_SESSION) == []
 
 
@@ -197,7 +197,7 @@ def test_peer_commit_leaves_my_own_range_in_a_real_repo(tmp_path):
     # …but nothing is HIDDEN: the excluded commit is disclosed by NAME (never by diff).
     prov = mcp._peer_session_block(repo, [peer])
     assert "build_v4_2_systematic.py" in prov or peer[:8] in prov
-    assert "Cortex-Session" in prov
+    assert "FLEET-Session" in prov
 
 
 # ── 5. the hook (A1) ───────────────────────────────────────────
@@ -216,7 +216,7 @@ def _run_hook(repo: Path, tmp_path: Path, message: str, lock_session: str | None
     msg = tmp_path / "COMMIT_EDITMSG"
     msg.write_text(message)
     env = {"PATH": "/usr/bin:/bin", "HOME": str(tmp_path / "home"),
-           "CORTEX_DEPLOY_HOME": str(deploy_home)}
+           "FLEET_DEPLOY_HOME": str(deploy_home)}
     return subprocess.run(["bash", str(HOOK), str(msg), source], cwd=str(repo),
                           capture_output=True, text=True, env=env)
 
@@ -226,8 +226,8 @@ def test_hook_appends_the_trailer_from_the_live_lock(tmp_path):
     r = _run_hook(repo, tmp_path, "feat: something", MY_SESSION)
     assert r.returncode == 0, r.stderr
     body = (tmp_path / "COMMIT_EDITMSG").read_text()
-    assert body.count("Cortex-Session:") == 1
-    assert f"Cortex-Session: {MY_SESSION}" in body
+    assert body.count("FLEET-Session:") == 1
+    assert f"FLEET-Session: {MY_SESSION}" in body
 
 
 def test_hook_is_inert_without_a_lock(tmp_path):
@@ -240,12 +240,12 @@ def test_hook_is_inert_without_a_lock(tmp_path):
 def test_hook_replaces_a_forged_trailer(tmp_path):
     """A hand-written trailer must not survive a governed commit."""
     repo = _init_repo(tmp_path)
-    forged = f"feat: something\n\nCortex-Session: {OTHER_SESSION}\n"
+    forged = f"feat: something\n\nFLEET-Session: {OTHER_SESSION}\n"
     r = _run_hook(repo, tmp_path, forged, MY_SESSION)
     assert r.returncode == 0, r.stderr
     body = (tmp_path / "COMMIT_EDITMSG").read_text()
-    assert body.count("Cortex-Session:") == 1
-    assert f"Cortex-Session: {MY_SESSION}" in body
+    assert body.count("FLEET-Session:") == 1
+    assert f"FLEET-Session: {MY_SESSION}" in body
     assert OTHER_SESSION not in body
 
 
@@ -255,7 +255,7 @@ def test_hook_is_idempotent_on_a_re_run(tmp_path):
     first = (tmp_path / "COMMIT_EDITMSG").read_text()
     _run_hook(repo, tmp_path, first, MY_SESSION)
     second = (tmp_path / "COMMIT_EDITMSG").read_text()
-    assert second.count("Cortex-Session:") == 1
+    assert second.count("FLEET-Session:") == 1
     assert second.strip() == first.strip()
 
 
@@ -268,7 +268,7 @@ def test_hook_never_blocks_a_commit(tmp_path):
     r = subprocess.run(["bash", str(HOOK), str(tmp_path / "missing-file"), "message"],
                        cwd=str(repo), capture_output=True, text=True,
                        env={"PATH": "/usr/bin:/bin", "HOME": str(tmp_path / "home"),
-                            "CORTEX_DEPLOY_HOME": str(deploy_home)})
+                            "FLEET_DEPLOY_HOME": str(deploy_home)})
     assert r.returncode == 0, r.stderr
 
 
@@ -293,7 +293,7 @@ def test_hook_writes_nothing_when_two_locks_share_this_repo(tmp_path):
     r = subprocess.run(["bash", str(HOOK), str(msg), "message"], cwd=str(repo),
                        capture_output=True, text=True,
                        env={"PATH": "/usr/bin:/bin", "HOME": str(tmp_path / "home"),
-                            "CORTEX_DEPLOY_HOME": str(deploy_home)})
+                            "FLEET_DEPLOY_HOME": str(deploy_home)})
     assert r.returncode == 0, r.stderr
     assert msg.read_text() == "feat: something", "an ambiguous repo must not be stamped at all"
 
@@ -319,10 +319,10 @@ def test_hook_ignores_a_lock_for_a_different_repo(tmp_path):
     r = subprocess.run(["bash", str(HOOK), str(msg), "message"], cwd=str(repo),
                        capture_output=True, text=True,
                        env={"PATH": "/usr/bin:/bin", "HOME": str(tmp_path / "home"),
-                            "CORTEX_DEPLOY_HOME": str(deploy_home)})
+                            "FLEET_DEPLOY_HOME": str(deploy_home)})
     assert r.returncode == 0, r.stderr
     body = msg.read_text()
-    assert f"Cortex-Session: {MY_SESSION}" in body
+    assert f"FLEET-Session: {MY_SESSION}" in body
     assert OTHER_SESSION not in body
 
 
@@ -342,7 +342,7 @@ def _run_hook_env(repo: Path, deploy_home: Path, message: str = "feat: something
     r = subprocess.run(["bash", str(HOOK), str(msg), "message"], cwd=str(repo),
                        capture_output=True, text=True,
                        env={"PATH": "/usr/bin:/bin", "HOME": str(repo.parent / "home"),
-                            "CORTEX_DEPLOY_HOME": str(deploy_home)})
+                            "FLEET_DEPLOY_HOME": str(deploy_home)})
     assert r.returncode == 0, r.stderr
     return msg.read_text()
 
@@ -360,8 +360,8 @@ def test_hook_attributes_to_the_freshly_active_session(tmp_path):
     _write_lock(state, "mine", repo, MY_SESSION)              # fresh: just touched
     _write_lock(state, "peer", repo, OTHER_SESSION, age_s=600)  # idle for 10 minutes
     body = _run_hook_env(repo, tmp_path / "deploy")
-    assert body.count("Cortex-Session:") == 1
-    assert f"Cortex-Session: {MY_SESSION}" in body
+    assert body.count("FLEET-Session:") == 1
+    assert f"FLEET-Session: {MY_SESSION}" in body
     assert OTHER_SESSION not in body
 
 
@@ -386,7 +386,7 @@ def test_hook_falls_back_to_a_single_stale_candidate(tmp_path):
     state.mkdir(parents=True, exist_ok=True)
     _write_lock(state, "only", repo, MY_SESSION, age_s=3600)
     body = _run_hook_env(repo, tmp_path / "deploy")
-    assert f"Cortex-Session: {MY_SESSION}" in body
+    assert f"FLEET-Session: {MY_SESSION}" in body
 
 
 def test_hook_ignores_a_stale_peer_when_two_lock_the_repo(tmp_path):

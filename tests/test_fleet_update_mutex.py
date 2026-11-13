@@ -8,7 +8,7 @@ processes in parallel on moses). The lock must:
 
   * REFUSE a second concurrent update to the SAME repo (same lock file).
   * ALLOW simultaneous updates to DIFFERENT repos on the same server (different
-    $CORTEX_DEPLOY_HOME -> different lock file).
+    $FLEET_DEPLOY_HOME -> different lock file).
   * self-release on process exit (even a crash), so no stale-lock deadlock.
 
 Uses Python fcntl.flock (portable to macOS + Linux) — not the Linux-only
@@ -111,7 +111,7 @@ def test_releases_automatically_after_process_exit():
 
 
 def test_different_lock_files_do_not_block_each_other():
-    """Two DIFFERENT repos (different $CORTEX_DEPLOY_HOME -> different lock
+    """Two DIFFERENT repos (different $FLEET_DEPLOY_HOME -> different lock
     files) on one server must deploy independently — one must not block the
     other."""
     d1 = Path(tempfile.mkdtemp(prefix="mutex-d1-"))

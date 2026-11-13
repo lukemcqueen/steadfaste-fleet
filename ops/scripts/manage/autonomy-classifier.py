@@ -49,9 +49,9 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-FLEET_HOME = Path(os.environ.get("FLEET_HOME", str(Path.home() / ".steadfaste-fleet")))
-DEFAULT_DB = FLEET_HOME / "data" / "loop-governance.db"
-LEDGER = FLEET_HOME / "state" / "autonomy-shadow-ledger.jsonl"
+FLEET_DEPLOY_HOME = Path(os.environ.get("FLEET_DEPLOY_HOME", str(Path.home() / ".steadfaste-fleet")))
+DEFAULT_DB = FLEET_DEPLOY_HOME / "data" / "loop-governance.db"
+LEDGER = FLEET_DEPLOY_HOME / "state" / "autonomy-shadow-ledger.jsonl"
 
 # ---------------------------------------------------------------------------
 # Capability table — deterministic, deny-by-default.

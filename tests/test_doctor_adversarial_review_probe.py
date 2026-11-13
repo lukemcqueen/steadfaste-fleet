@@ -62,8 +62,8 @@ def test_import_refusal_is_warn_not_crash():
     with tempfile.TemporaryDirectory() as td:
         home = Path(td)
         _write_mcp_stub(home, MCP_GUARD_STUB)
-        old_home = checks.CORTEX_HOME
-        checks.CORTEX_HOME = home
+        old_home = checks.FLEET_DEPLOY_HOME
+        checks.FLEET_DEPLOY_HOME = home
         try:
             res = results.Results()
             checks.check_adversarial_review(res)  # must NOT raise SystemExit
@@ -73,7 +73,7 @@ def test_import_refusal_is_warn_not_crash():
                 f"expected WARN for interpreter-without-mcp, got: {entry}"
             )
         finally:
-            checks.CORTEX_HOME = old_home
+            checks.FLEET_DEPLOY_HOME = old_home
 
 
 def test_missing_helpers_still_fails():
@@ -83,8 +83,8 @@ def test_missing_helpers_still_fails():
     with tempfile.TemporaryDirectory() as td:
         home = Path(td)
         _write_mcp_stub(home, "IMPORTED = True\n")  # imports fine, no helpers
-        old_home = checks.CORTEX_HOME
-        checks.CORTEX_HOME = home
+        old_home = checks.FLEET_DEPLOY_HOME
+        checks.FLEET_DEPLOY_HOME = home
         try:
             res = results.Results()
             checks.check_adversarial_review(res)
@@ -93,7 +93,7 @@ def test_missing_helpers_still_fails():
             assert entry["status"] == "FAIL", f"expected FAIL for missing helpers, got: {entry}"
             assert "_adversarial_review_gate" in entry.get("detail", "")
         finally:
-            checks.CORTEX_HOME = old_home
+            checks.FLEET_DEPLOY_HOME = old_home
 
 
 def test_import_error_still_fails():
@@ -102,8 +102,8 @@ def test_import_error_still_fails():
     with tempfile.TemporaryDirectory() as td:
         home = Path(td)
         _write_mcp_stub(home, "raise SyntaxError('broken server')\n")
-        old_home = checks.CORTEX_HOME
-        checks.CORTEX_HOME = home
+        old_home = checks.FLEET_DEPLOY_HOME
+        checks.FLEET_DEPLOY_HOME = home
         try:
             res = results.Results()
             checks.check_adversarial_review(res)
@@ -111,4 +111,4 @@ def test_import_error_still_fails():
             assert entry is not None, "check produced no 'Adversarial review gate' result"
             assert entry["status"] == "FAIL", f"expected FAIL for import error, got: {entry}"
         finally:
-            checks.CORTEX_HOME = old_home
+            checks.FLEET_DEPLOY_HOME = old_home

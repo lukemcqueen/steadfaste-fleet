@@ -15,7 +15,7 @@ from pathlib import Path
 from .config import (
   HOME,
   FLEET_REPO,
-  FLEET_HOME,
+  FLEET_DEPLOY_HOME,
   HERMES_HOME,
   CONFIG_FILE,
   INSTALL_CRONS,
@@ -104,7 +104,7 @@ def apply_fixes(res):
     if f"MCP server ({name})" in fix_map and fix_map[f"MCP server ({name})"] == "FAIL":
       if CONFIG_FILE.exists() and FLEET_REPO.exists():
         mcp_path = MCP_SERVERS_DIR / server_script
-        venv_python = FLEET_HOME / "venv" / "bin" / "python3"
+        venv_python = FLEET_DEPLOY_HOME / "venv" / "bin" / "python3"
         if mcp_path.exists() and venv_python.exists():
           # The loop-gov binary is role-distinct: its two registrations must
           # carry `--role <name>` in args (the doctor's role of record), or the
@@ -144,7 +144,7 @@ print('ADDED')
     if name in ORCH_ONLY_MCP_SERVERS and AGENT_ROLE != "orchestrator":
       continue
     if f"MCP Python ({name})" in fix_map and fix_map[f"MCP Python ({name})"] == "WARN":
-      venv_python = FLEET_HOME / "venv" / "bin" / "python3"
+      venv_python = FLEET_DEPLOY_HOME / "venv" / "bin" / "python3"
       if venv_python.exists():
         if _run_fix(f"Updating MCP {name} to use venv Python",
               ["hermes", "mcp", "update", name, "--command", str(venv_python)]):
@@ -210,7 +210,7 @@ print('ADDED')
   # Fix: pre-commit hook not installed
   if "Pre-commit hook" in fix_map and "FAIL" in fix_map.get("Pre-commit hook", ""):
     hook_src = FLEET_REPO / "src" / "scripts" / "pre-commit-score"
-    hook_dest = FLEET_HOME / "hooks" / "pre-commit"
+    hook_dest = FLEET_DEPLOY_HOME / "hooks" / "pre-commit"
     if hook_src.exists():
       if _run_fix("Installing pre-commit hook to shared hooks dir",
             ["cp", str(hook_src), str(hook_dest)]):
@@ -224,7 +224,7 @@ print('ADDED')
 
   # Fix: global hooksPath not set correctly
   if "Global hooksPath" in fix_map and fix_map.get("Global hooksPath") in ("FAIL", "WARN"):
-    expected_hooks_path = str(FLEET_HOME / "hooks")
+    expected_hooks_path = str(FLEET_DEPLOY_HOME / "hooks")
     if _run_fix("Setting global hooksPath",
           ["git", "config", "--global", "core.hooksPath", expected_hooks_path]):
       fixed += 1
@@ -234,7 +234,7 @@ print('ADDED')
   # Fix: pre-push hook not installed
   if "Pre-push hook" in fix_map and "not installed" in fix_map.get("Pre-push hook", ""):
     push_src = FLEET_REPO / "src" / "scripts" / "pre-push-pull"
-    push_dest = FLEET_HOME / "hooks" / "pre-push"
+    push_dest = FLEET_DEPLOY_HOME / "hooks" / "pre-push"
     if push_src.exists():
       if _run_fix("Installing pre-push hook",
             ["cp", str(push_src), str(push_dest)]):
@@ -247,7 +247,7 @@ print('ADDED')
         failed += 1
 
   # Fix: stale governance locks
-  state_dir = FLEET_HOME / "state"
+  state_dir = FLEET_DEPLOY_HOME / "state"
   if state_dir.exists():
     for lf in state_dir.glob(".governance-*.json"):
       try:
@@ -308,9 +308,9 @@ print('ADDED')
     ("Plugin immutability", "Immutable: __init__.py",
      HERMES_HOME / "plugins" / "governance-enforcer" / "__init__.py"),
     ("Pre-commit immutability", "Immutable: pre-commit",
-     FLEET_HOME / "hooks" / "pre-commit"),
+     FLEET_DEPLOY_HOME / "hooks" / "pre-commit"),
     ("Pre-push immutability", "Immutable: pre-push",
-     FLEET_HOME / "hooks" / "pre-push"),
+     FLEET_DEPLOY_HOME / "hooks" / "pre-push"),
   ]
   for label, key, path in immutability_paths:
     if key in fix_map and "WARN" in str(fix_map.get(key, "")):

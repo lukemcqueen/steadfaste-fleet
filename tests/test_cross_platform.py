@@ -46,10 +46,10 @@ MACOS_GUARDS_PY = [
     r"# Use vm_stat.*accurate",  # vm_stat in guarded try/except block
 ]
 
-# Shell scripts use CORTEX_OS or direct comparison
+# Shell scripts use FLEET_OS or direct comparison
 MACOS_GUARDS_SH = [
-    r"CORTEX_OS.*macos",
-    r'"\$CORTEX_OS" == "macos"',
+    r"FLEET_OS.*macos",
+    r'"\$FLEET_OS" == "macos"',
     r"\bmacos\b",
     r'#\s*macOS',
     r"Darwin|darwin",
@@ -156,5 +156,5 @@ def test_shell_scripts_no_unguarded_macos_commands():
         pytest.fail(
             "Found macOS-only commands without platform guards:\n"
             + "\n".join(all_violations)
-            + "\n\nAdd `if [[ \"$CORTEX_OS\" == \"macos\" ]];` or similar guard."
+            + "\n\nAdd `if [[ \"$FLEET_OS\" == \"macos\" ]];` or similar guard."
         )

@@ -67,7 +67,7 @@ def test_the_installer_is_syntactically_valid():
 def test_the_manifest_check_accepts_the_retirement():
     """Runnable proof that dropping the manifest entry keeps the check green.
 
-    The check resolves `jobs.json` from $HERMES_HOME (and the repo from $CORTEX_REPO),
+    The check resolves `jobs.json` from $HERMES_HOME (and the repo from $FLEET_REPO),
     so this run is PINNED to this host's real values: a leaky HOME/HERMES_HOME in the
     ambient test environment made it read a jobs.json that does not exist, report every
     in-scope cron MISSING, and fail this test — twice in full-suite runs while it was
@@ -77,7 +77,7 @@ def test_the_manifest_check_accepts_the_retirement():
     env = dict(os.environ)
     env["HOME"] = str(Path.home())
     env["HERMES_HOME"] = str(Path.home() / ".hermes")
-    env.pop("CORTEX_REPO", None)
+    env.pop("FLEET_REPO", None)
     r = subprocess.run(
         [sys.executable, str(_REPO / "ops" / "scripts" / "manage" / "cron_manifest.py"), "--check"],
         capture_output=True, text=True, cwd=str(_REPO), env=env)

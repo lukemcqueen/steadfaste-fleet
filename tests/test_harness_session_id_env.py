@@ -11,7 +11,7 @@ one lock file.
 The fix is to read a session id the CALLER'S OWN environment already provides,
 because one MCP child serves one session. The names honoured here are surveyed,
 not invented:
-  CORTEX_SESSION_KEY - the fleet's documented per-session key
+  FLEET_SESSION_KEY - the fleet's documented per-session key
                        (docs/runbooks/context-integration.md; pinned per chat by
                        ops/scripts/fleet_gateway/agents.py)
   PI_SESSION_ID      - Pi's own "Current session ID" (its packaged
@@ -28,7 +28,7 @@ from pathlib import Path
 
 MCP_PATH = Path(__file__).resolve().parents[1] / "mcp-servers" / "loop-gov-mcp.py"
 
-_ENV_KEYS = ("CORTEX_SESSION_KEY", "PI_SESSION_ID",
+_ENV_KEYS = ("FLEET_SESSION_KEY", "PI_SESSION_ID",
              "CLAUDE_CODE_SESSION_ID", "CODEX_SESSION_ID")
 
 
@@ -66,11 +66,11 @@ def _per_repo_files(state_dir):
 def test_two_different_session_keys_get_disjoint_ids():
     """THE DEFECT: two sessions, one repo -> two ids, so two lock files."""
     with tempfile.TemporaryDirectory() as td:
-        saved = _with_env({"CORTEX_SESSION_KEY": "fleet-pi-chat-aaa"})
+        saved = _with_env({"FLEET_SESSION_KEY": "fleet-pi-chat-aaa"})
         try:
             mod_a = _fresh_module(td)
             a = mod_a.get_session_id(None)
-            os.environ["CORTEX_SESSION_KEY"] = "fleet-pi-chat-bbb"  # the OTHER session
+            os.environ["FLEET_SESSION_KEY"] = "fleet-pi-chat-bbb"  # the OTHER session
             mod_b = _fresh_module(td)
             b = mod_b.get_session_id(None)
         finally:
@@ -131,7 +131,7 @@ def test_claude_code_wins_over_codex_when_both_set():
 
 def test_cortex_session_key_wins_over_pi_session_id():
     with tempfile.TemporaryDirectory() as td:
-        saved = _with_env({"CORTEX_SESSION_KEY": "fleet-pi-chat-bbb",
+        saved = _with_env({"FLEET_SESSION_KEY": "fleet-pi-chat-bbb",
                            "PI_SESSION_ID": "01a17c0b-82ee-72f1"})
         try:
             sid = _fresh_module(td).get_session_id(None)
@@ -144,7 +144,7 @@ def test_cortex_session_key_wins_over_pi_session_id():
 def test_per_call_injected_id_still_wins():
     """Hermes is unchanged: the enforcer's per-call id is returned verbatim."""
     with tempfile.TemporaryDirectory() as td:
-        saved = _with_env({"CORTEX_SESSION_KEY": "fleet-pi-chat-ccc",
+        saved = _with_env({"FLEET_SESSION_KEY": "fleet-pi-chat-ccc",
                            "PI_SESSION_ID": "01a17c0b-82ee-72f1"})
         try:
             sid = _fresh_module(td).get_session_id({"session_id": "sess_hermes_xyz"})
@@ -155,7 +155,7 @@ def test_per_call_injected_id_still_wins():
 
 def test_empty_or_whitespace_env_is_ignored():
     with tempfile.TemporaryDirectory() as td:
-        saved = _with_env({"CORTEX_SESSION_KEY": "   ", "PI_SESSION_ID": ""})
+        saved = _with_env({"FLEET_SESSION_KEY": "   ", "PI_SESSION_ID": ""})
         try:
             mod = _fresh_module(td)
             mod._derive_slug = lambda *a, **k: "probe-repo"
@@ -171,7 +171,7 @@ def test_unsafe_characters_are_sanitised_into_one_path_component():
     """A hostile or merely awkward key must not become a path or break the name."""
     hostile = "../../etc/passwd a\\b\nc\td"
     with tempfile.TemporaryDirectory() as td:
-        saved = _with_env({"CORTEX_SESSION_KEY": hostile})
+        saved = _with_env({"FLEET_SESSION_KEY": hostile})
         try:
             mod = _fresh_module(td)
             sid = mod.get_session_id(None)

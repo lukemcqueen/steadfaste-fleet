@@ -15,11 +15,11 @@ set -eu
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MIGRATE_PY="${REPO_DIR}/ops/services/mycortex-mem/migrate.py"
-TEST_DB="${MYCORTEX_MEM_TEST_DB:-mycortex_mem_test}"
-CONTAINER="${MYCORTEX_MEM_TEST_CONTAINER:-mycortex-postgres}"
+TEST_DB="${MYFLEET_MEM_TEST_DB:-mycortex_mem_test}"
+CONTAINER="${MYFLEET_MEM_TEST_CONTAINER:-mycortex-postgres}"
 
 if [[ "$TEST_DB" == "mycortex" ]]; then
-  echo "❌ REFUSING to run against the mycortex DB — hermeticity guard. Set MYCORTEX_MEM_TEST_DB." >&2
+  echo "❌ REFUSING to run against the mycortex DB — hermeticity guard. Set MYFLEET_MEM_TEST_DB." >&2
   exit 1
 fi
 
@@ -146,13 +146,13 @@ fi
 
 echo ""
 echo "═══ AC10/AC11/AC12: the gate's question, answered from a cold start ═══"
-STORE_OUT=$(MYCORTEX_MEM_TEST_DB="$TEST_DB" python3 - "$REPO_DIR" <<'PYEOF'
+STORE_OUT=$(MYFLEET_MEM_TEST_DB="$TEST_DB" python3 - "$REPO_DIR" <<'PYEOF'
 import os, sys
 repo = sys.argv[1]
 sys.path.insert(0, os.path.join(repo, "ops", "services", "mycortex-mem"))
 from store import Store, PgConnection
 
-st = Store(PgConnection(db_name=os.environ["MYCORTEX_MEM_TEST_DB"]))
+st = Store(PgConnection(db_name=os.environ["MYFLEET_MEM_TEST_DB"]))
 S = st.sessions
 # A session key that has NEVER had a session row — the harness-first-write case.
 S.record_tool_event("pi", "skill_view", {"name": "reflexion-check"}, repo="cold", branch="start")

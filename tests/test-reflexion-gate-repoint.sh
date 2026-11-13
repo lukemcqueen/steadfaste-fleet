@@ -65,7 +65,7 @@ run_case() {
   {
     echo 'set -uo pipefail'
     echo "SANCTIONED_PIPELINE=$sanctioned"
-    echo "IS_CORTEX_REPO=$cortex"
+    echo "IS_FLEET_REPO=$cortex"
     echo "REPO_ROOT=$root"
     echo "HOME=$WORK/home"     # never find a real deployed verifier by accident
     cat "$BLOCK"

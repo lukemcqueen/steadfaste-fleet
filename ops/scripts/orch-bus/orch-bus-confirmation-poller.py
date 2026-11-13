@@ -20,8 +20,8 @@ from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.error import URLError
 
-FLEET_HOME = Path(os.environ.get("FLEET_DEPLOY_HOME", Path.home() / ".steadfaste-fleet"))
-TRACKER_DB = FLEET_HOME / "data" / "message-tracker.json"
+FLEET_DEPLOY_HOME = Path(os.environ.get("FLEET_DEPLOY_HOME", Path.home() / ".steadfaste-fleet"))
+TRACKER_DB = FLEET_DEPLOY_HOME / "data" / "message-tracker.json"
 BUS_URL = os.environ.get("FLEET_BUS_URL", "http://127.0.0.1:8903")
 BUS_FALLBACK_URL = os.environ.get(
     "FLEET_BUS_FALLBACK_URL",

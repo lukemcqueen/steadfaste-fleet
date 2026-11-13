@@ -116,7 +116,7 @@ def _host(home: Path, *, foreign_script_missing: bool = False) -> Path:
 def _run(home: Path, dep: Path) -> subprocess.CompletedProcess:
     return subprocess.run(["bash", str(AUDIT)], capture_output=True, text=True,
                           env={**os.environ, "HOME": str(home),
-                               "CORTEX_DEPLOY_HOME": str(dep), "PATH": _path_without_pi()})
+                               "FLEET_DEPLOY_HOME": str(dep), "PATH": _path_without_pi()})
 
 
 def test_a_foreign_server_is_reported_not_judged() -> None:

@@ -31,7 +31,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 # The discrimination seam: point it at a pre-change module and this suite MUST
 # fail (the baseline carries no per-blob surface at all).
-SERVER = Path(os.environ.get("CORTEX_LOOP_GOV_SERVER", REPO / "mcp-servers" / "loop-gov-mcp.py"))
+SERVER = Path(os.environ.get("FLEET_LOOP_GOV_SERVER", REPO / "mcp-servers" / "loop-gov-mcp.py"))
 
 
 def _load_server(tmp: Path):
@@ -185,7 +185,7 @@ def test_the_pre_change_revision_has_no_per_blob_surface(tmp_path):
     """Discrimination: the fix is a new surface, and the baseline must lack it."""
     if SERVER == REPO / "mcp-servers" / "loop-gov-mcp.py":
         print("SKIP: this is the discrimination case — run it with "
-              "CORTEX_LOOP_GOV_SERVER=<pre-change copy>")
+              "FLEET_LOOP_GOV_SERVER=<pre-change copy>")
         return
     src = SERVER.read_text()
     for symbol in ("_review_uncovered_blobs", "_blobs_with_clean_verdict",

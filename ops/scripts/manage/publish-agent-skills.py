@@ -179,9 +179,9 @@ def publish_copy(defaults: Path, published: Path, dry_run: bool) -> int:
 
 
 def main() -> int:
-    cortex_home = Path(os.environ.get("FLEET_HOME", Path.home() / ".steadfaste-fleet"))
+    deploy_home = Path(os.environ.get("FLEET_DEPLOY_HOME", Path.home() / ".steadfaste-fleet"))
     ap = argparse.ArgumentParser(description=(__doc__ or "publish agent skills").split("\n")[0])
-    ap.add_argument("--from", dest="defaults", default=str(cortex_home / "skills"),
+    ap.add_argument("--from", dest="defaults", default=str(deploy_home / "skills"),
                     help="the fleet-owned DEFAULTS tree (owner of the content)")
     ap.add_argument("--to", dest="published", default=str(Path.home() / ".agents" / "skills"),
                     help="the agent-visible PUBLISHED location")

@@ -28,7 +28,7 @@ watchdogs):
 
 Usage:
   python3 agent-deploy-drift-audit.py
-  FLEET_REPO=... FLEET_HOME=... python3 agent-deploy-drift-audit.py
+  FLEET_REPO=... FLEET_DEPLOY_HOME=... python3 agent-deploy-drift-audit.py
 
 Exit codes: 0 = clean/silent, 1 = drift alert.
 """
@@ -54,7 +54,7 @@ from state_tracker import StateTracker  # noqa: E402
 from hermes_tz import format_timestamp  # noqa: E402
 
 FLEET_REPO = Path(os.environ.get("FLEET_REPO", str(Path.home() / "steadfaste-fleet")))
-FLEET_HOME = Path(os.environ.get("FLEET_HOME", str(Path.home() / ".steadfaste-fleet")))
+FLEET_DEPLOY_HOME = Path(os.environ.get("FLEET_DEPLOY_HOME", str(Path.home() / ".steadfaste-fleet")))
 
 # Local-only no_agent cron scripts — deployed per-host, intentionally absent
 # from register() mappings. Mirrors check_stale_deploys() + fleet-update.sh
@@ -133,7 +133,7 @@ def _parse_registrations(cortex_update: Path) -> list[tuple[str, str, Path, str]
         content = cortex_update.read_text()
     except OSError:
         return out
-    deploy_home_str = str(FLEET_HOME)
+    deploy_home_str = str(FLEET_DEPLOY_HOME)
     home_str = str(Path.home())
     for line in content.splitlines():
         line = line.strip()
@@ -196,7 +196,7 @@ def main() -> int:
         findings.append(("FAIL", f"content drift: {dest} differs from repo source {src_rel} (run fleet-update.sh)"))
 
     # Orphan scan of the deployed scripts dir (mirrors check_stale_deploys).
-    scripts_dir = FLEET_HOME / "scripts"
+    scripts_dir = FLEET_DEPLOY_HOME / "scripts"
     if scripts_dir.is_dir():
         for f in sorted(scripts_dir.rglob("*")):
             if not (f.is_file() and f.suffix in (".py", ".sh") and "__pycache__" not in str(f)):
@@ -204,7 +204,7 @@ def main() -> int:
             if f in destinations or f.name in PRESERVE or f.name.startswith("local-"):
                 continue
             size = f.stat().st_size
-            findings.append(("WARN", f"stale deploy (orphan): {f.relative_to(FLEET_HOME)} — {size:,} bytes, not in any register() mapping"))
+            findings.append(("WARN", f"stale deploy (orphan): {f.relative_to(FLEET_DEPLOY_HOME)} — {size:,} bytes, not in any register() mapping"))
 
     if not findings:
         return 0  # clean — silent

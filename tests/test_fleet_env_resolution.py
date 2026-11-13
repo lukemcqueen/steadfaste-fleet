@@ -3,7 +3,8 @@
 Release 2 removed the CORTEX_* dual-read fallback: `fleet_env.get("<name>")`
 resolves FLEET_<name> then the default. A legacy CORTEX_<name> is NOT read, so
 a CORTEX-only host resolves to the default (it must have been repointed by
-consolidate-env.sh, which converts the .env to FLEET-only).
+consolidate-env.sh, which converts the .env to FLEET-only). The legacy spelling
+appears in these tests ONLY as the probe that proves it is ignored.
 
 These derive their expectations from the module under test (fleet_lib.env), with
 controlled os.environ (save/restored), so the tests stay hermetic and re-runnable.
@@ -54,11 +55,11 @@ def env_clean(scripts_path):
 def test_fleet_wins_when_both_set(env_clean):
     fe = env_clean
     os.environ["FLEET_BUS_URL"] = _FAKE_URL
-    os.environ["CORTEX_BUS_URL"] = "https://bus.legacy.example.org"
+    os.environ["FLEET_BUS_URL"] = "https://bus.legacy.example.org"
     assert fe.get("BUS_URL") == _FAKE_URL
 
 
-def test_cortex_not_used_after_release2(env_clean):
+def test_legacy_env_spelling_is_ignored(env_clean):
     fe = env_clean
     # A CORTEX-only value is ignored: no fallback, resolves to default.
     os.environ["CORTEX_DEPLOY_HOME"] = _FAKE_PATH

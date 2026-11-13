@@ -54,25 +54,25 @@ def _checks():
 
 
 def _host(tmp_path):
-    """Point HOME and CORTEX_HOME at fixtures so check_fleet_env is hermetic.
+    """Point HOME and FLEET_DEPLOY_HOME at fixtures so check_fleet_env is hermetic.
 
     The check derives paths from these two module constants exactly as the real
-    host does: canon = HOME/"steadfaste-fleet"/.env, deploy = CORTEX_HOME/.env.
+    host does: canon = HOME/"steadfaste-fleet"/.env, deploy = FLEET_DEPLOY_HOME/.env.
     """
     c = _checks()
     home = tmp_path / "home"
     deploy = home / ".steadfaste-fleet"          # ~/.steadfaste-fleet (deploy dir)
-    cortex = home / "steadfaste-fleet"           # ~/steadfaste-fleet (canonical)
-    deploy.mkdir(parents=True); cortex.mkdir(parents=True)
+    canon_dir = home / "steadfaste-fleet"           # ~/steadfaste-fleet (canonical)
+    deploy.mkdir(parents=True); canon_dir.mkdir(parents=True)
     c.HOME = home
-    c.CORTEX_HOME = deploy
-    return c, home, cortex, deploy
+    c.FLEET_DEPLOY_HOME = deploy
+    return c, home, canon_dir, deploy
 
 
 def test_sanctioned_symlink_is_a_pass(tmp_path):
-    c, home, cortex, deploy = _host(tmp_path)
-    canon = cortex / ".env"
-    canon.write_text("CORTEX_BUS_URL=http://localhost\n")
+    c, home, canon_dir, deploy = _host(tmp_path)
+    canon = canon_dir / ".env"
+    canon.write_text("FLEET_BUS_URL=http://localhost\n")
     canon.chmod(0o600)
     (deploy / ".env").symlink_to(canon)
     res = _Result()
@@ -84,9 +84,9 @@ def test_sanctioned_symlink_is_a_pass(tmp_path):
 
 def test_real_file_at_deploy_dot_env_is_a_fail(tmp_path):
     """The stray trap the check exists to catch: a REAL file, not a symlink."""
-    c, home, cortex, deploy = _host(tmp_path)
-    canon = cortex / ".env"
-    canon.write_text("CORTEX_BUS_URL=http://localhost\n")
+    c, home, canon_dir, deploy = _host(tmp_path)
+    canon = canon_dir / ".env"
+    canon.write_text("FLEET_BUS_URL=http://localhost\n")
     canon.chmod(0o600)
     (deploy / ".env").write_text("SOME_OTHER_ENV=1\n")        # real file, not ours
     res = _Result()
@@ -98,9 +98,9 @@ def test_real_file_at_deploy_dot_env_is_a_fail(tmp_path):
 
 
 def test_missing_sanctioned_symlink_is_a_fail(tmp_path):
-    c, home, cortex, deploy = _host(tmp_path)
-    canon = cortex / ".env"
-    canon.write_text("CORTEX_BUS_URL=http://localhost\n")
+    c, home, canon_dir, deploy = _host(tmp_path)
+    canon = canon_dir / ".env"
+    canon.write_text("FLEET_BUS_URL=http://localhost\n")
     canon.chmod(0o600)
     # No .env in the deploy dir at all.
     res = _Result()
@@ -110,10 +110,10 @@ def test_missing_sanctioned_symlink_is_a_fail(tmp_path):
     print("  missing deploy-dir .env symlink => FAIL (run consolidate-env.sh) ✓")
 
 
-def test_leftover_retired_cortex_bus_conf_is_flagged(tmp_path):
-    c, home, cortex, deploy = _host(tmp_path)
-    canon = cortex / ".env"
-    canon.write_text("CORTEX_BUS_URL=http://localhost\n")
+def test_leftover_retired_fleet_bus_conf_is_flagged(tmp_path):
+    c, home, canon_dir, deploy = _host(tmp_path)
+    canon = canon_dir / ".env"
+    canon.write_text("FLEET_BUS_URL=http://localhost\n")
     canon.chmod(0o600)
     (deploy / ".env").symlink_to(canon)
     (deploy / "fleet-bus.conf").symlink_to(canon)   # retired name left behind
@@ -124,18 +124,18 @@ def test_leftover_retired_cortex_bus_conf_is_flagged(tmp_path):
     print("  leftover retired fleet-bus.conf symlink => FAIL ✓")
 
 
-def test_no_cortex_env_is_a_skip(tmp_path):
-    c, home, cortex, deploy = _host(tmp_path)
+def test_no_fleet_env_is_a_skip(tmp_path):
+    c, home, canon_dir, deploy = _host(tmp_path)
     res = _Result()
     c.check_fleet_env(res)
     assert res.status() == "SKIP", res.rows
-    print("  no cortex env on the host => SKIP ✓")
+    print("  no fleet env on the host => SKIP ✓")
 
 
 def test_stray_mispointed_symlink_is_a_fail(tmp_path):
-    c, home, cortex, deploy = _host(tmp_path)
-    canon = cortex / ".env"
-    canon.write_text("CORTEX_BUS_URL=http://localhost\n")
+    c, home, canon_dir, deploy = _host(tmp_path)
+    canon = canon_dir / ".env"
+    canon.write_text("FLEET_BUS_URL=http://localhost\n")
     canon.chmod(0o600)
     other = home / "elsewhere.env"
     other.write_text("x=1\n")

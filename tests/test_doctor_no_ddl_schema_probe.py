@@ -7,7 +7,7 @@ defect, measured rather than argued:
   * `fleet_doctor/checks.py` ran `task-db.py --apply-schema` as a HEALTH CHECK
     — on every `agent-message-handler` tick (~5 minutes);
   * `task-db.py`'s `cmd_apply_schema()` resolved `migrate.py` from a candidate
-    list whose FIRST entry was `Path(os.environ.get("CORTEX_REPO", ""))/…`, i.e.
+    list whose FIRST entry was `Path(os.environ.get("FLEET_REPO", ""))/…`, i.e.
     the REPO WORKING TREE when that variable was set, and a *relative* path
     (resolved against the caller's cwd) when it was not. The deployed copy was
     LAST.
@@ -87,8 +87,8 @@ def test_doctor_warns_when_the_deployed_migrations_are_ahead():
 
 def test_candidates_prefer_the_deployed_tree(tmp_path):
     deploy, repo = tmp_path / "deploy", tmp_path / "repo"
-    with patch.dict(os.environ, {"CORTEX_DEPLOY_HOME": str(deploy),
-                                 "CORTEX_REPO": str(repo)}, clear=False):
+    with patch.dict(os.environ, {"FLEET_DEPLOY_HOME": str(deploy),
+                                 "FLEET_REPO": str(repo)}, clear=False):
         cands = task_db._migrate_candidates()
     assert cands[0] == deploy / "services/tasks/migrate.py", (
         f"the DEPLOYED runner must be resolved first, got {cands[0]}")
@@ -97,11 +97,11 @@ def test_candidates_prefer_the_deployed_tree(tmp_path):
 
 
 def test_candidates_are_never_cwd_relative(tmp_path):
-    """The second defect in the same function: an unset CORTEX_REPO used to
+    """The second defect in the same function: an unset FLEET_REPO used to
     produce the RELATIVE path 'ops/services/tasks/migrate.py', so the DDL
     authority depended on the caller's working directory."""
     env = {k: v for k, v in os.environ.items()
-           if k not in ("CORTEX_REPO", "CORTEX_DEPLOY_HOME")}
+           if k not in ("FLEET_REPO", "FLEET_DEPLOY_HOME")}
     with patch.dict(os.environ, env, clear=True):
         cands = task_db._migrate_candidates()
     assert all(c.is_absolute() for c in cands), (
@@ -127,8 +127,8 @@ def test_cmd_apply_schema_runs_the_deployed_runner(tmp_path):
         stdout = "schema now at version 16\n"
         stderr = ""
 
-    with patch.dict(os.environ, {"CORTEX_DEPLOY_HOME": str(deploy),
-                                 "CORTEX_REPO": str(repo)}, clear=False), \
+    with patch.dict(os.environ, {"FLEET_DEPLOY_HOME": str(deploy),
+                                 "FLEET_REPO": str(repo)}, clear=False), \
          patch.object(task_db.subprocess, "run",
                       side_effect=lambda argv, **kw: (seen.append(argv), _Done())[1]):
         task_db.cmd_apply_schema()
@@ -152,12 +152,12 @@ def test_deployed_schema_version_reads_the_deployed_dir(tmp_path):
     for name in ("v001__tasks.sql", "v009__task-model-v3.sql",
                  "v016__task-upsert-plan.sql", "README.md"):
         (schema / name).write_text("--\n")
-    with patch.dict(os.environ, {"CORTEX_DEPLOY_HOME": str(deploy)}, clear=False):
+    with patch.dict(os.environ, {"FLEET_DEPLOY_HOME": str(deploy)}, clear=False):
         assert task_db.deployed_schema_version() == 16
 
 
 def test_deployed_schema_version_is_none_when_absent(tmp_path):
     """No deployed schema dir -> NO claim (never a fabricated 0)."""
-    with patch.dict(os.environ, {"CORTEX_DEPLOY_HOME": str(tmp_path / "nope")},
+    with patch.dict(os.environ, {"FLEET_DEPLOY_HOME": str(tmp_path / "nope")},
                     clear=False):
         assert task_db.deployed_schema_version() is None

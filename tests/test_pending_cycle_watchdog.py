@@ -66,7 +66,7 @@ def _run(db: str, state_file: str) -> tuple[int, str]:
     env["PENDING_DB_PATH"] = db
     env["PYTHONPATH"] = str(SCRIPTS_DIR)
     # Point the StateTracker at an isolated state dir so runs are independent
-    env["CORTEX_HOME"] = os.path.dirname(state_file)
+    env["FLEET_DEPLOY_HOME"] = os.path.dirname(state_file)
     # StateTracker resolves ~ via $HOME (Path.home()) — isolate it too, or
     # the test writes the REAL ~/.steadfaste-fleet/state/<name>.state and
     # dedup scenarios share fingerprints with live runs (2026-08-22).
@@ -118,7 +118,7 @@ def main() -> int:
     os.makedirs(Path(state_dir) / "state", exist_ok=True)
     lock = Path(state_dir) / "state" / ".governance-lock-test.json"
     lock.write_text('{"task_id": "current-task", "status": "executing"}')
-    env = dict(os.environ, PENDING_DB_PATH=db, CORTEX_HOME=state_dir,
+    env = dict(os.environ, PENDING_DB_PATH=db, FLEET_DEPLOY_HOME=state_dir,
                PYTHONPATH=str(SCRIPTS_DIR))
     proc = subprocess.run(
         [sys.executable, str(WATCHDOG)],

@@ -1,15 +1,22 @@
 #!/usr/bin/env bash
 # Regression test for consolidate-env.sh (the single-env source of truth).
 #
-# The 2026-10-17 rename made ~/.steadfaste-fleet/.env the sanctioned back-compat
-# symlink to the canonical ~/steadfaste-fleet/.env and retired fleet-bus.conf.
+# Two contracts are under test:
+#   1. the 2026-10-17 rename — ~/.steadfaste-fleet/.env is the sanctioned
+#      back-compat symlink to the canonical ~/steadfaste-fleet/.env, and
+#      fleet-bus.conf is retired;
+#   2. release 2 (2026-11-13) — the canonical env is FLEET_-ONLY. The script
+#      CONVERTS a legacy FLEET_X line to FLEET_X (it no longer mirrors both
+#      spellings), and --check FAILs while any retired spelling survives.
+#
 # This test drives the REAL script against an ISOLATED temp HOME so it proves
 # the script's actual behaviour — never the live host's env, which is real and
 # must not be disturbed.
 #
-# RED proof: the migration/convergence assertions below FAIL if
-# consolidate-env.sh stops converging a legacy fleet-bus.conf into the .env
-# symlink, or if it would overwrite a real-file deploy-dir .env.
+# RED proof: the assertions below FAIL if consolidate-env.sh stops converging a
+# legacy fleet-bus.conf into the .env symlink, stops converting CORTEX_ to
+# FLEET_, passes --check over a surviving retired name, or would overwrite a
+# real-file deploy-dir .env.
 #
 # Run: bash tests/test-consolidate-env.sh
 set -u
@@ -26,19 +33,20 @@ make_host() { # <top> — isolate HOME + the two env dirs under it
   mkdir -p "$HOME/steadfaste-fleet" "$HOME/.steadfaste-fleet"
 }
 
-# ── Case 1: legacy fleet-bus.conf converges to the .env symlink ──────────
-plan "legacy fleet-bus.conf migrates to the sanctioned .env symlink"
+# ── Case 1: legacy fleet-bus.conf converges + converts to FLEET_-only ────
+plan "legacy fleet-bus.conf migrates to the sanctioned .env symlink, converted to FLEET_*"
 TOP="$(mktemp -d)"
 make_host "$TOP"
-printf 'CORTEX_BUS_URL=http://localhost\nCORTEX_BUS_TOKEN=abc\n' > "$HOME/.steadfaste-fleet/fleet-bus.conf"
+printf 'FLEET_BUS_URL=http://localhost\nFLEET_BUS_TOKEN=abc\n' > "$HOME/.steadfaste-fleet/fleet-bus.conf"
 bash "$SCRIPT" >/dev/null 2>&1
 if [[ -L "$HOME/.steadfaste-fleet/.env" ]] \
    && [[ "$(readlink "$HOME/.steadfaste-fleet/.env")" == "$HOME/steadfaste-fleet/.env" ]] \
    && [[ ! -e "$HOME/.steadfaste-fleet/fleet-bus.conf" ]] \
-   && [[ "$(grep -c '^CORTEX_BUS_URL=' "$HOME/steadfaste-fleet/.env")" -eq 1 ]]; then
-  ok   "legacy conf seeded into canonical env + .env symlink created + fleet-bus.conf retired"
+   && [[ "$(grep -c '^FLEET_BUS_URL=' "$HOME/steadfaste-fleet/.env")" -eq 1 ]] \
+   && [[ "$(grep -c '^CORTEX_' "$HOME/steadfaste-fleet/.env" || true)" -eq 0 ]]; then
+  ok   "legacy conf seeded as FLEET_* + .env symlink created + fleet-bus.conf retired"
 else
-  bad  "legacy migration did not converge"
+  bad  "legacy migration did not converge to a FLEET_-only canonical env"
 fi
 
 # ── Case 2: idempotent on a second run ──────────────────────────────────
@@ -55,7 +63,7 @@ fi
 plan "a REAL file at the deploy-dir .env is refused, not overwritten"
 TOP2="$(mktemp -d)"
 make_host "$TOP2"
-printf 'CORTEX_BUS_URL=http://localhost\n' > "$HOME/steadfaste-fleet/.env"
+printf 'FLEET_BUS_URL=http://localhost\n' > "$HOME/steadfaste-fleet/.env"
 printf 'SOME_OTHER_ENV=1\n' > "$HOME/.steadfaste-fleet/.env"   # unowned real file
 if bash "$SCRIPT" >/dev/null 2>&1; then
   bad  "refused to... no, it exited 0 — script overwrote/replaced the real file"
@@ -67,33 +75,32 @@ else
   fi
 fi
 
-# ── Case 4: --check is a dry check, asserted both ways ───────────────────
-# Complete: every legacy var is already in the canonical env → exit 0.
-plan "--check exits 0 when every legacy var is represented in the canonical env"
+# ── Case 4: --check is a dry check, asserted both ways (release 2) ───────
+# Converged: the canonical env is FLEET_-only → exit 0, and nothing is written.
+plan "--check exits 0 when the canonical env is FLEET_-only"
 TOP3="$(mktemp -d)"
 make_host "$TOP3"
-printf 'CORTEX_BUS_URL=http://localhost\n' > "$HOME/steadfaste-fleet/.env"
-printf 'CORTEX_BUS_URL=http://localhost\n' > "$HOME/.steadfaste-fleet/fleet-bus.conf"
+printf 'FLEET_BUS_URL=http://localhost\n' > "$HOME/steadfaste-fleet/.env"
 if bash "$SCRIPT" --check >/dev/null 2>&1; then
-  ok   "--check exited 0 (all vars represented)"
+  ok   "--check exited 0 (canonical env is FLEET_-only)"
   [[ ! -L "$HOME/.steadfaste-fleet/.env" ]] \
     && ok   "--check left no symlink behind (dry)" \
     || bad  "--check created a symlink (not dry)"
 else
-  bad  "--check exited non-zero although every var is represented (rc=$?)"
+  bad  "--check exited non-zero although the canonical env is FLEET_-only (rc=$?)"
 fi
 
-# Missing: a legacy var is NOT in the canonical env → exit 1 + names it.
-plan "--check exits 1 and names the missing var"
-printf 'CORTEX_BUS_TOKEN=abc\n' >> "$HOME/.steadfaste-fleet/fleet-bus.conf"
+# Not converged: a retired spelling survives in the canonical env → exit 1 + names it.
+plan "--check exits 1 and names a surviving retired CORTEX_ name"
+printf 'FLEET_BUS_TOKEN=abc\n' >> "$HOME/steadfaste-fleet/.env"
 CHECK_OUT="${TMPDIR:-/tmp}/check-missing.out"
 if bash "$SCRIPT" --check > "$CHECK_OUT" 2>&1; then
-  bad  "--check exited 0 although CORTEX_BUS_TOKEN is missing from the canonical env"
+  bad  "--check exited 0 although FLEET_BUS_TOKEN still survives in the canonical env"
 else
-  if grep -q "CORTEX_BUS_TOKEN" "$CHECK_OUT"; then
-    ok   "--check exited non-zero and named CORTEX_BUS_TOKEN"
+  if grep -q "FLEET_BUS_TOKEN" "$CHECK_OUT"; then
+    ok   "--check exited non-zero and named FLEET_BUS_TOKEN"
   else
-    bad  "--check exited non-zero but did not name the missing var"
+    bad  "--check exited non-zero but did not name the surviving retired name"
   fi
 fi
 

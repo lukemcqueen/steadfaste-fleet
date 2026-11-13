@@ -34,7 +34,7 @@ from .config import (
   IS_MAC,
   IS_LINUX,
   FLEET_REPO,
-  FLEET_HOME,
+  FLEET_DEPLOY_HOME,
   HERMES_HOME,
   JOBS_FILE,
   FLEET_ENV,
@@ -106,7 +106,7 @@ def _deploy_map() -> dict:
       continue
     if s.startswith("register_orch ") and AGENT_ROLE != "orchestrator":
       continue
-    dest = (m.group(2).replace("${FLEET_DEPLOY_HOME}", str(FLEET_HOME))
+    dest = (m.group(2).replace("${FLEET_DEPLOY_HOME}", str(FLEET_DEPLOY_HOME))
                       .replace("${HOME}", str(Path.home())))
     out[m.group(1)] = Path(dest)
   return out
@@ -177,7 +177,7 @@ def check_repo(res: "Results") -> None:
   # Fail-closed is UNCHANGED: a deploy-map file whose deployed copy differs (or is
   # missing) still FAILs, and the failing files are NAMED. A revision that cannot
   # be resolved is reported as could-not-verify, never as a pass.
-  update_commit_file = FLEET_HOME / "state" / "update-commit"
+  update_commit_file = FLEET_DEPLOY_HOME / "state" / "update-commit"
   if update_commit_file.exists():
     deployed_commit = update_commit_file.read_text().strip()
     head_commit = run_bg(["git", "-C", str(FLEET_REPO), "rev-parse", "HEAD"])
@@ -259,14 +259,14 @@ def check_deployed_gate_smoke(res: "Results") -> None:
   try:
     import json as _json
     import subprocess as _sp
-    verifier = FLEET_HOME / "scripts" / "adversarial-verify.py"
+    verifier = FLEET_DEPLOY_HOME / "scripts" / "adversarial-verify.py"
     if not verifier.exists():
       res.add("Deployed gate smoke", "INFO",
               "adversarial-verify.py not deployed — nothing to smoke-test")
       return
     # Run the deployed verifier against a malformed-TOON fixture; if the
     # lib path is broken, the TOON check silently no-ops → 0 findings.
-    tmp_fixture = FLEET_HOME / "state" / ".gate-smoke-toon.py"
+    tmp_fixture = FLEET_DEPLOY_HOME / "state" / ".gate-smoke-toon.py"
     tmp_fixture.parent.mkdir(parents=True, exist_ok=True)
     tmp_fixture.write_text(
         "tasks[2]{id,title}:\n  T-1,a\n  T-2,b\n", encoding="utf-8")
@@ -317,7 +317,7 @@ def check_adversarial_review(res: "Results") -> None:
         close refuses with "reviewer unavailable" — fail loudly, correctly, but
         the operator must be able to see and fix it).
   """
-  template = FLEET_HOME / "templates" / "adversarial-reviewer-prompt.md"
+  template = FLEET_DEPLOY_HOME / "templates" / "adversarial-reviewer-prompt.md"
   repo_template = FLEET_REPO / "docs" / "templates" / "adversarial-reviewer-prompt.md"
 
   # (a) Template present and carries the reviewer marker.
@@ -344,7 +344,7 @@ def check_adversarial_review(res: "Results") -> None:
   # → WARN with the interpreter remedy; real import errors stay FAIL.
   try:
     import importlib.util as _ilu
-    mcp = FLEET_HOME / "tools" / "loop-governance" / "loop-gov-mcp.py"
+    mcp = FLEET_DEPLOY_HOME / "tools" / "loop-governance" / "loop-gov-mcp.py"
     if not mcp.exists():
       mcp = FLEET_REPO / "mcp-servers" / "loop-gov-mcp.py"
     spec = _ilu.spec_from_file_location("loop_gov_doctor_probe", mcp)
@@ -603,7 +603,7 @@ def _score_cycle_consumers(search_roots=None):
   consumer.
   """
   if search_roots is None:
-    search_roots = [FLEET_HOME / "scripts", FLEET_REPO / "ops", FLEET_REPO / "core"]
+    search_roots = [FLEET_DEPLOY_HOME / "scripts", FLEET_REPO / "ops", FLEET_REPO / "core"]
   found = []
   for root in search_roots:
     root = Path(root)
@@ -758,7 +758,7 @@ def check_dev_repo_agents(res: "Results") -> None:
     if "<!-- Hermes fleet efficiency block" not in content:
       res.add(f"AGENTS.md efficiency ({repo.name})", "WARN",
           "dev repo AGENTS.md missing fleet session-efficiency block",
-          f"Run: python3 {FLEET_HOME}/scripts/apply-repo-efficiency.py {repo} --commit")
+          f"Run: python3 {FLEET_DEPLOY_HOME}/scripts/apply-repo-efficiency.py {repo} --commit")
 
 
   unverified = []
@@ -890,7 +890,7 @@ def check_restart_pending(res):
   (Extracted from the removed check_soul_sync — SOUL.md is Hermes-owned
   and the fleet no longer manages it; this signal is unrelated and stays.)
   """
-  marker = FLEET_HOME / "state" / "restart-pending"
+  marker = FLEET_DEPLOY_HOME / "state" / "restart-pending"
   try:
     if marker.exists() and "updated:" in marker.read_text(encoding="utf-8", errors="replace"):
       res.add("Restart pending", "WARN",
@@ -937,7 +937,7 @@ def check_user_template(res):
 
 def check_skills(res):
   """2. Skills manifest: skills.yaml exists, valid YAML, has required always skills."""
-  skills_yaml = FLEET_HOME / "skills.yaml"
+  skills_yaml = FLEET_DEPLOY_HOME / "skills.yaml"
   template_yaml = FLEET_REPO / "skills.yaml"
 
   if not skills_yaml.exists():
@@ -1580,7 +1580,7 @@ def check_scripts(res):
     return
 
   jobs = data.get("jobs", []) if isinstance(data, dict) else data
-  script_dirs = [HERMES_HOME / "scripts", FLEET_HOME / "scripts", HOME / ".local" / "bin"]
+  script_dirs = [HERMES_HOME / "scripts", FLEET_DEPLOY_HOME / "scripts", HOME / ".local" / "bin"]
   repo_scripts = FLEET_REPO / "ops" / "scripts"
   import hashlib as _hl
   missing = []
@@ -1672,7 +1672,7 @@ def check_cron_runtime_scripts(res):
   ~/.steadfaste-fleet/scripts, OR both resolve to the same directory.
   """
   runtime = HERMES_HOME / "scripts"
-  deploy = FLEET_HOME / "scripts"
+  deploy = FLEET_DEPLOY_HOME / "scripts"
 
   try:
     runtime_resolved = runtime.resolve()
@@ -1984,7 +1984,7 @@ def _check_bus_e2e(res):
 
   # ── 5. Handler script check ──
   # Verify the handler script exists at the expected path (will be what processes EXEC)
-  handler_path = FLEET_HOME / "scripts" / "agent-message-handler.py"
+  handler_path = FLEET_DEPLOY_HOME / "scripts" / "agent-message-handler.py"
   if handler_path.is_file():
     handler_size = os.path.getsize(handler_path)
     res.add("Bus handler", "PASS",
@@ -2003,7 +2003,7 @@ def _known_agent_names() -> list:
   """
   names = []
   try:
-    registry_path = FLEET_HOME / "state" / "agent-registry.json"
+    registry_path = FLEET_DEPLOY_HOME / "state" / "agent-registry.json"
     if registry_path.is_file():
       reg = json.loads(registry_path.read_text())
       # Shape: {"version":…, "agents": {name: {name, role, host, …}}}
@@ -2032,7 +2032,7 @@ def _env_file_value(key: str) -> str:
   The deploy dir (~/.steadfaste-fleet) holds no .env — it is a deployed path.
   """
   for path in (FLEET_ENV_FILE,
-               FLEET_HOME / "steadfaste-fleet.env"):
+               FLEET_DEPLOY_HOME / "steadfaste-fleet.env"):
     try:
       if not path.is_file():
         continue
@@ -2673,7 +2673,7 @@ def check_nginx(res):
 
   placeholders = [
     "__HTPASSWD_FILE__", "__NGINX_CONFIG_DIR__", "__NGINX_LOG_DIR__",
-    "__FLEET_HOME__", "__SSL_CERT__", "__SSL_CERT_KEY__",
+    "__FLEET_USER_HOME__", "__SSL_CERT__", "__SSL_CERT_KEY__",
   ]
   found_placeholders = [p for p in placeholders if p in text]
   if found_placeholders:
@@ -2828,8 +2828,8 @@ def _check_enforcer_immutability(res, plugin_dir, hooks_dir):
     hooks_dir / "post-commit",
     hooks_dir / "post-push",
     hooks_dir / "post-merge",
-    FLEET_HOME / "tools/loop-governance/loop-gov-mcp.py",
-    FLEET_HOME / "scripts/hermes-plugin-lock",
+    FLEET_DEPLOY_HOME / "tools/loop-governance/loop-gov-mcp.py",
+    FLEET_DEPLOY_HOME / "scripts/hermes-plugin-lock",
   ]
   # P1-A hardening (2026-07-31): the hooks DIRECTORY itself must be immutable
   # (symlink-swap guard — hooks/pre-commit is a symlink; without dir +i an
@@ -2987,8 +2987,8 @@ def _check_fix_blocked_ips_root_copy(res):
 def check_governance(res):
   """7. Governance system: plugin, pre-commit hook, MCP servers, lock files, score-cycle."""
   config_text = read_file(CONFIG_FILE)
-  state_dir = FLEET_HOME / "state"
-  hooks_dir = FLEET_HOME / "hooks"
+  state_dir = FLEET_DEPLOY_HOME / "state"
+  hooks_dir = FLEET_DEPLOY_HOME / "hooks"
   global_hooks_path = run_bg(["git", "config", "--global", "core.hooksPath"], timeout=5)
 
   # ── Governance plugin ──
@@ -3304,7 +3304,7 @@ def check_governance(res):
   # whether it landed. `--check` is read-only: it reports the registration, it adds none.
   pi_dir = HOME / ".pi" / "agent"
   if (pi_dir / "bin" / "pi").exists() or pi_dir.is_dir():
-    pi_check = FLEET_HOME / "scripts" / "install-pi-integration.sh"
+    pi_check = FLEET_DEPLOY_HOME / "scripts" / "install-pi-integration.sh"
     if not pi_check.exists():
       res.add("Pi integration", "WARN",
               f"Pi is installed but {pi_check} was not deployed — the adapter cannot be wired",
@@ -3355,7 +3355,7 @@ def check_governance(res):
       _ok = False
     res.add("Fleet python", "PASS" if _ok else "WARN",
             f"{declared_py} {'imports yaml + mcp' if _ok else 'cannot import yaml/mcp'}",
-            "" if _ok else f"Repair: {FLEET_HOME}/scripts/fix-fleet-venv.py")
+            "" if _ok else f"Repair: {FLEET_DEPLOY_HOME}/scripts/fix-fleet-venv.py")
 
   # ── Pre-commit hook ──
   expected_hook_path = hooks_dir / "pre-commit"
@@ -3408,7 +3408,7 @@ def check_governance(res):
 
   # ── Post-commit hook ──
   expected_post_commit = hooks_dir / "post-commit"
-  expected_post_commit_src = FLEET_HOME / "scripts" / "post-commit-audit"
+  expected_post_commit_src = FLEET_DEPLOY_HOME / "scripts" / "post-commit-audit"
   if not expected_post_commit.exists():
     res.add("Post-commit hook", "FAIL", "not installed",
         "Install: ln -sf ~/.steadfaste-fleet/scripts/post-commit-audit ~/.steadfaste-fleet/hooks/post-commit")
@@ -3440,7 +3440,7 @@ def check_governance(res):
   score_paths = [
     HOME / ".local" / "bin" / "score-cycle",
     Path("/usr/local/bin/score-cycle"),
-    FLEET_HOME / "scripts" / "score-cycle",
+    FLEET_DEPLOY_HOME / "scripts" / "score-cycle",
   ]
   found_score = None
   for p in score_paths:
@@ -3617,10 +3617,10 @@ def check_governance(res):
   # ── Git hooks verification ──
   # When core.hooksPath is set globally, git ignores .git/hooks/ entirely.
   # Any files or symlinks there are misleading dead weight — flag for removal.
-  # Only the deployed hooks at FLEET_HOME/hooks/ are active.
+  # Only the deployed hooks at FLEET_DEPLOY_HOME/hooks/ are active.
   hooks_via_global = bool(global_hooks_path.rstrip("/") == expected_hooks_path)
   repo_hooks_dir = FLEET_REPO / ".git" / "hooks"
-  deployed_hooks_dir = FLEET_HOME / "hooks"
+  deployed_hooks_dir = FLEET_DEPLOY_HOME / "hooks"
   for hook_name in ("pre-commit", "pre-push", "post-commit", "post-merge", "post-push"):
     deployed_hook = deployed_hooks_dir / hook_name
     git_hook = repo_hooks_dir / hook_name
@@ -3746,7 +3746,7 @@ def check_governance(res):
   # moved on without scoring it (observed 2026-08-05: 3 pinned-hooks-dogfood
   # cycles sat PENDING while later tasks ran). The current task's cycle
   # (active lock exists) is expected mid-session and reported as INFO.
-  _loop_db = FLEET_HOME / "data" / "loop-governance.db"
+  _loop_db = FLEET_DEPLOY_HOME / "data" / "loop-governance.db"
   _pending_count = 0
   if _loop_db.exists():
     try:
@@ -3759,7 +3759,7 @@ def check_governance(res):
       # Only terminal-state locks (completed/cancelled) are treated as
       # inactive, matching the task state machine.
       _active_tasks = set()
-      _state_dir = FLEET_HOME / "state"
+      _state_dir = FLEET_DEPLOY_HOME / "state"
       _terminal_states = {"completed", "cancelled"}
       _lock_errors = 0
       if _state_dir.is_dir():
@@ -3871,7 +3871,7 @@ def check_hook_drift(res):
     """
     import hashlib as _hl
 
-    HOOKS_DIR = FLEET_HOME / "hooks"
+    HOOKS_DIR = FLEET_DEPLOY_HOME / "hooks"
     REPO_HOOKS = FLEET_REPO / "ops" / "scripts"
     if not HOOKS_DIR.is_dir():
         res.add("Hook content drift", "SKIP", "hooks directory not found")
@@ -4180,7 +4180,7 @@ def check_pinned_hooks_fresh(res):
                 continue
             if "Git " not in head or "hook" not in head:
                 continue  # foreign hook — preserved by design
-            deployed_src = FLEET_HOME / "scripts" / repo_name
+            deployed_src = FLEET_DEPLOY_HOME / "scripts" / repo_name
             if not deployed_src.exists():
                 continue
             file_md5 = _content_md5(hook_file)
@@ -4483,7 +4483,7 @@ def check_deploy_checksums(res):
   import hashlib as _hl
 
   repo_dir = FLEET_REPO
-  deploy_home = FLEET_HOME
+  deploy_home = FLEET_DEPLOY_HOME
   if not repo_dir.is_dir():
     return
 
@@ -5040,7 +5040,7 @@ def check_task_db(res):
     complete+archive it. Catches the F-04 class — a CLI that prints valid
     JSON while writes silently no-op (the old todo-db.py rc=0 bug).
     """
-    task_script = FLEET_HOME / "scripts" / "task-db.py"
+    task_script = FLEET_DEPLOY_HOME / "scripts" / "task-db.py"
     if not task_script.is_file():
         res.add("Task DB script", "FAIL",
             f"Not found at {task_script}",
@@ -5117,7 +5117,7 @@ def check_task_lifecycle_v2(res):
     loudly so a host silently degraded to v1 semantics is never mistaken for
     a healthy v2 deployment.
     """
-    task_script = FLEET_HOME / "scripts" / "task-db.py"
+    task_script = FLEET_DEPLOY_HOME / "scripts" / "task-db.py"
     if not task_script.is_file():
         return  # check_task_db already FAILs on the missing script
 
@@ -5596,7 +5596,7 @@ def _restraint_resolves(restraint) -> tuple:
         return (False, f"doctor check {name!r} not defined in checks.py")
 
     if kind == "hook":
-        for base in (FLEET_REPO / "ops" / "scripts", FLEET_HOME / "hooks", HERMES_HOME / "hooks"):
+        for base in (FLEET_REPO / "ops" / "scripts", FLEET_DEPLOY_HOME / "hooks", HERMES_HOME / "hooks"):
             if (base / name).exists():
                 return (True, f"hook {name!r}")
         return (False, f"hook {name!r} not found")
@@ -5810,8 +5810,8 @@ def check_fleet_env(res: "Results") -> None:
     fleet-bus.conf that is not the sanctioned symlink.
     """
     canon = HOME / "steadfaste-fleet" / ".env"
-    deploy_env = FLEET_HOME / ".env"
-    legacy = FLEET_HOME / "fleet-bus.conf"
+    deploy_env = FLEET_DEPLOY_HOME / ".env"
+    legacy = FLEET_DEPLOY_HOME / "fleet-bus.conf"
 
     if not canon.exists() and not legacy.exists() and not deploy_env.exists():
         res.add("fleet env", "SKIP", "no fleet env on this host (not installed)")
@@ -5853,7 +5853,7 @@ def check_fleet_env(res: "Results") -> None:
     # a hit here means the conversion did not run, or something re-created the line.
     _legacy_env_re = re.compile(r"^(CORTEX_[A-Z0-9_]+)=")
     for _env_label, _env_path in (("~/steadfaste-fleet/.env", canon),
-                                  ("~/.steadfaste-fleet/agent.env", FLEET_HOME / "agent.env")):
+                                  ("~/.steadfaste-fleet/agent.env", FLEET_DEPLOY_HOME / "agent.env")):
         if not _env_path.is_file():
             continue
         try:
@@ -6011,7 +6011,7 @@ def check_orphan_cycle_resolution(res) -> None:
      legitimately holds a new lock and the old close stays true; session identity
      is what makes the test decisive rather than noisy.
   """
-  db = FLEET_HOME / "data" / "loop-governance.db"
+  db = FLEET_DEPLOY_HOME / "data" / "loop-governance.db"
   if not db.exists():
     res.add("Orphan-cycle resolution", "INFO",
             f"no governance DB at {db} — nothing to corroborate")
@@ -6044,7 +6044,7 @@ def check_orphan_cycle_resolution(res) -> None:
   # possibly mid-write → skip it, never guess at its contents.
   _terminal = {"completed", "cancelled"}
   live: dict[str, set[str]] = {}
-  for lf in sorted((FLEET_HOME / "state").glob(".governance-*.json")):
+  for lf in sorted((FLEET_DEPLOY_HOME / "state").glob(".governance-*.json")):
     try:
       d = json.loads(lf.read_text())
     except (OSError, ValueError):
@@ -6181,7 +6181,7 @@ def _harness_cli():
   """
   # deployed: <deploy>/scripts/fleet is the launcher FILE; repo: the launcher is
   # ops/scripts/fleet/bin/fleet (ops/scripts/fleet itself is the package directory).
-  return next((c for c in (FLEET_HOME / "scripts" / "fleet",
+  return next((c for c in (FLEET_DEPLOY_HOME / "scripts" / "fleet",
                            FLEET_REPO / "ops" / "scripts" / "fleet" / "bin" / "fleet")
                if c.is_file()), None)
 

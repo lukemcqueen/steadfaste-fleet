@@ -12,7 +12,7 @@ from pathlib import Path
 SEED_PROJECT = (
     Path(__file__).resolve().parents[1] / "ops" / "scripts" / "install" / "seed-project.sh"
 )
-CORTEX_UPDATE = (
+FLEET_UPDATE = (
     Path(__file__).resolve().parents[1] / "ops" / "scripts" / "fleet-update.sh"
 )
 
@@ -80,7 +80,7 @@ class TestSeedProject:
 
     def test_syntax_cortex_update(self):
         """fleet-update.sh also parses cleanly (MAP registration)."""
-        rc, _, stderr = _run("bash", "-n", str(CORTEX_UPDATE))
+        rc, _, stderr = _run("bash", "-n", str(FLEET_UPDATE))
         assert rc == 0, f"bash -n failed:\n{stderr}"
 
     # ── Argument validation ──────────────────────────────────

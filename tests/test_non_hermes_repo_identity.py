@@ -24,7 +24,7 @@ an operator could release the lock.
 
 Part A — TAGGING: for a caller with no injected repo, the session's own repo
          (the MCP child's working directory = the harness's project, or the
-         documented CORTEX_SESSION_REPO identity) wins over the host-canonical
+         documented FLEET_SESSION_REPO identity) wins over the host-canonical
          default.
 Part B — NO WEDGE: the whole begin_change -> commit -> score -> end_change path
          releases the lock in that scenario.
@@ -148,7 +148,7 @@ def test_begin_change_writes_the_session_repo_into_the_lock():
 
 
 def test_session_repo_env_identity_is_honoured():
-    """The documented per-harness session identity (CORTEX_SESSION_REPO) names
+    """The documented per-harness session identity (FLEET_SESSION_REPO) names
     the repo when the child's cwd is not the project (a gateway-spawned pi).
 
     Both accepted forms are exercised — an absolute path, and a repo NAME
@@ -157,29 +157,29 @@ def test_session_repo_env_identity_is_honoured():
     """
     home, proj, _state = _sandbox()
     _mkrepo(home / "named-proj", with_commit=False)
-    prev = os.environ.get("CORTEX_SESSION_REPO")
+    prev = os.environ.get("FLEET_SESSION_REPO")
 
     def _slug_with(value, cwd):
-        os.environ["CORTEX_SESSION_REPO"] = value
+        os.environ["FLEET_SESSION_REPO"] = value
         with _Cwd(cwd):
             return mcp._derive_slug(None)
 
     try:
         with _Cwd(Path.home()):     # NOT a repo: cwd gives no answer
             got = _slug_with(str(proj), Path.home())          # absolute path form
-            check("CORTEX_SESSION_REPO absolute path is honoured", got == "proj",
+            check("FLEET_SESSION_REPO absolute path is honoured", got == "proj",
                   f"got {got!r}")
             got = _slug_with("named-proj", Path.home())       # HOME/<name> form
-            check("CORTEX_SESSION_REPO name form is honoured", got == "named-proj",
+            check("FLEET_SESSION_REPO name form is honoured", got == "named-proj",
                   f"got {got!r}")
             got = _slug_with("does-not-exist", home)          # not a repo → fall back
-            check("a bogus CORTEX_SESSION_REPO falls back to the canonical default",
+            check("a bogus FLEET_SESSION_REPO falls back to the canonical default",
                   got == "steadfaste-fleet", f"got {got!r}")
     finally:
         if prev is None:
-            os.environ.pop("CORTEX_SESSION_REPO", None)
+            os.environ.pop("FLEET_SESSION_REPO", None)
         else:
-            os.environ["CORTEX_SESSION_REPO"] = prev
+            os.environ["FLEET_SESSION_REPO"] = prev
 
 
 # ── Part B: the reported symptom — the lock must be released ─────────────────

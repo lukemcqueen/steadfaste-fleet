@@ -3,7 +3,7 @@
 
     python3 tests/test_repo_local_cortex_dir_check.py     # exit 0 = pass
 
-Drives the real check with a temp CORTEX_REPO, so it asserts the check's logic
+Drives the real check with a temp FLEET_REPO, so it asserts the check's logic
 without touching the live repo.
 """
 import importlib.util
@@ -43,9 +43,9 @@ def status_of(res, name):
 def main():
     mod = load_checks()
     tmp = Path(tempfile.mkdtemp(prefix="repo-local-check-"))
-    real = mod.CORTEX_REPO
+    real = mod.FLEET_REPO
     try:
-        mod.CORTEX_REPO = tmp
+        mod.FLEET_REPO = tmp
 
         res = Res(); mod.check_repo_local_cortex_dir(res)
         s, d = status_of(res, "Repo-local .steadfaste-fleet")
@@ -67,7 +67,7 @@ def main():
         print(f"{'PASS' if ok else 'FAIL'}  lock marker named -> {s}: {d}")
         if not ok: failures.append("marker-case")
     finally:
-        mod.CORTEX_REPO = real
+        mod.FLEET_REPO = real
         shutil.rmtree(tmp, ignore_errors=True)
 
     print()

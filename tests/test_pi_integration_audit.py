@@ -46,7 +46,7 @@ def _check(name: str, cond: bool, detail: str = "") -> None:
 def _host(home: Path, *, mcp_json: bool = True, agent_name: str = "testagent",
           drop_link: str | None = None, pi: bool = True,
           omit_server: str | None = None) -> Path:
-    """Build a synthetic host. CORTEX_DEPLOY_HOME == home/.steadfaste-fleet."""
+    """Build a synthetic host. FLEET_DEPLOY_HOME == home/.steadfaste-fleet."""
     dep = home / ".steadfaste-fleet"
     agent = home / ".pi" / "agent"
     (agent / "install" / "releases" / "1.0.0").mkdir(parents=True)
@@ -140,7 +140,7 @@ def _path_without_pi() -> str:
 def _run(home: Path, dep: Path) -> subprocess.CompletedProcess:
     return subprocess.run(["bash", str(AUDIT)], capture_output=True, text=True,
                           env={**os.environ, "HOME": str(home),
-                               "CORTEX_DEPLOY_HOME": str(dep), "PATH": _path_without_pi()})
+                               "FLEET_DEPLOY_HOME": str(dep), "PATH": _path_without_pi()})
 
 
 def test_the_cases_are_immune_to_a_pi_on_the_inherited_path() -> None:

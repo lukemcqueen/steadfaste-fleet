@@ -25,7 +25,7 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-CORTEX_UPDATE = REPO / "ops" / "scripts" / "fleet-update.sh"
+FLEET_UPDATE = REPO / "ops" / "scripts" / "fleet-update.sh"
 
 # Faithful stand-ins for the helpers sync_skills() calls. copy_file's real body
 # adds the SOURCE header for .sh/.py; this stub only has to prove the TRAVERSAL
@@ -64,7 +64,7 @@ def _extract(path, signature):
 
 
 def _block():
-    return STUBS + _extract(CORTEX_UPDATE, "sync_skills() {")
+    return STUBS + _extract(FLEET_UPDATE, "sync_skills() {")
 
 
 def _fixture(tmp):
@@ -94,7 +94,7 @@ def _run(tmp, repo):
     script = tmp / "_block.sh"
     # The extracted text DEFINES sync_skills(); it must also be INVOKED, or the
     # probe measures an empty deploy tree and reports it as the defect.
-    script.write_text("REPO_DIR=%s\nCORTEX_DEPLOY_HOME=%s\n%s\nsync_skills\n"
+    script.write_text("REPO_DIR=%s\nFLEET_DEPLOY_HOME=%s\n%s\nsync_skills\n"
                       % (repo, tmp / "deploy", _block()), encoding="utf-8")
     env = {**os.environ, "HOME": str(tmp / "home")}
     return subprocess.run(["bash", str(script)], cwd=str(tmp),

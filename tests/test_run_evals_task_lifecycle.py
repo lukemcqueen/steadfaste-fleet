@@ -75,7 +75,7 @@ def test_unsessioned_list_fails_closed_without_db():
     # rows on stdout. Repo resolution happens before any DB connection, so this
     # never touches live DB state — hermetic by construction.
     env = dict(os.environ)
-    env.pop("CORTEX_SESSION_REPO", None)
+    env.pop("FLEET_SESSION_REPO", None)
     r = subprocess.run(
         ["python3", str(REPO / "ops" / "scripts" / "manage" / "task-db.py"),
          "list", "--tag", "regression-gate"],

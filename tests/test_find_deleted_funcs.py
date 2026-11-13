@@ -82,5 +82,5 @@ def test_probe_runs_against_known_regression_commit():
 def test_repo_default_is_portable():
     """Hardcoded /home/<user> literal was removed; env or cwd supplies the repo."""
     src = PROBE.read_text()
-    assert "HERMES_CORTEX_REPO" in src
+    assert "HERMES_FLEET_REPO" in src
     assert '"/home/' not in src and "'/home/" not in src

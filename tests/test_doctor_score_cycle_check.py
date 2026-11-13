@@ -87,7 +87,7 @@ def test_the_default_roots_are_the_fleet_trees():
     full-suite run)."""
     import inspect
     src = inspect.getsource(checks._score_cycle_consumers)
-    for needle in ('CORTEX_HOME / "scripts"', 'CORTEX_REPO / "ops"', 'CORTEX_REPO / "core"'):
+    for needle in ('FLEET_DEPLOY_HOME / "scripts"', 'FLEET_REPO / "ops"', 'FLEET_REPO / "core"'):
         assert needle in src, f"default roots must include {needle}"
     print("  the default roots are the deployed scripts dir + the repo's ops/core trees ✓")
 

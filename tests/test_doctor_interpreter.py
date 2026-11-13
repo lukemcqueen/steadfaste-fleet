@@ -120,7 +120,7 @@ def test_candidates_prefer_the_declaration_and_skip_the_current_interpreter(doct
     fleet = tmp_path / "fleet-python"
     fleet.write_text("#!/bin/sh\n")
 
-    monkeypatch.setenv("CORTEX_PYTHON", str(declared))
+    monkeypatch.setenv("FLEET_PYTHON", str(declared))
     monkeypatch.setattr(doctor.os.path, "expanduser", lambda p: str(tmp_path))
     monkeypatch.setattr(doctor, "os", doctor.os)  # keep os patched consistently
     # fleet venv path is <home>/.steadfaste-fleet/venv/bin/python3
@@ -129,7 +129,7 @@ def test_candidates_prefer_the_declaration_and_skip_the_current_interpreter(doct
     (venv_bin / "python3").write_text("#!/bin/sh\n")
 
     cands = doctor.candidate_interpreters()
-    assert cands[0] == str(declared), "CORTEX_PYTHON is the host's declaration and wins"
+    assert cands[0] == str(declared), "FLEET_PYTHON is the host's declaration and wins"
     assert cands[1] == str(venv_bin / "python3")
     assert len(cands) == 2
 
@@ -138,7 +138,7 @@ def test_candidates_exclude_an_interpreter_that_is_the_current_one(doctor, monke
     """Re-execing into the same interpreter would be a no-op dressed as a fix."""
     me = tmp_path / "python3"
     me.write_text("#!/bin/sh\n")
-    monkeypatch.setenv("CORTEX_PYTHON", str(me))
+    monkeypatch.setenv("FLEET_PYTHON", str(me))
     monkeypatch.setattr(doctor.sys, "executable", str(me))
     # Redirect ~ too, so the fleet-venv fallback resolves inside the fixture
     # instead of picking up this host's real venv.

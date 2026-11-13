@@ -67,7 +67,7 @@ def test_backend_accepts_real_secret():
 # ── daemon wiring layer ────────────────────────────────────────────────────
 def test_build_backends_fails_closed_without_secret(monkeypatch):
     monkeypatch.delenv("GATEWAY_SECRET", raising=False)
-    monkeypatch.delenv("CORTEX_BUS_TOKEN", raising=False)
+    monkeypatch.delenv("FLEET_BUS_TOKEN", raising=False)
     with pytest.raises(SystemExit):
         DAEMON._build_backends({"backends": ["esther"]})
 

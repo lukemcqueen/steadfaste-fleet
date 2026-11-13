@@ -86,7 +86,7 @@ def test_dispatch_reports_bad_arguments_as_a_message_not_a_crash(tools):
 
 
 def test_identity_precedence_args_beat_env(tools, monkeypatch):
-    monkeypatch.setenv("CORTEX_SESSION_HARNESS", "from-env")
+    monkeypatch.setenv("FLEET_SESSION_HARNESS", "from-env")
     assert tools.resolve_identity({"harness": "from-arg"})[0] == "from-arg"
     # session_key short-circuits to an exact session, never a guess
     assert tools.resolve_identity({"session_key": "k:r:b"}) == ("k:r:b", "", "")
@@ -124,7 +124,7 @@ def test_cli_reaches_the_store_and_exits_zero():
     """Real store, real call — the point is that a HARNESS can rely on exit 0."""
     r = run_cli("mem_context", "{}",
                 env={"PATH": "/usr/bin:/bin", "HOME": str(Path.home()),
-                     "CORTEX_SESSION_HARNESS": "pytest"})
+                     "FLEET_SESSION_HARNESS": "pytest"})
     assert r.returncode == 0, r.stderr
     payload = json.loads(r.stdout)
     assert "card" in payload and "session_key" in payload
@@ -191,7 +191,7 @@ def test_pi_extension_uses_the_REAL_event_api():
     # guard, not through a stderr marker. Routine markers now reach the cortex
     # LOG (note()), so the assertion is about WHICH write call carries them —
     # a bare substring check would flag the legitimate log trace.
-    assert not re.search(r"fail\([^)]*CORTEX_CHECKPOINT_EMPTY", code, re.S), \
+    assert not re.search(r"fail\([^)]*FLEET_CHECKPOINT_EMPTY", code, re.S), \
         "empty-turn noise is written to stderr — stay silent unless genuinely broken"
 
 
@@ -199,8 +199,8 @@ def test_pi_extension_stderr_is_failure_only():
     """Diagnostics that are not failures must NOT write to stderr: they surface
     directly above the Pi TUI input prompt and drown out the real signal.
 
-    Keep exactly the failure writes — a CLI crash (CORTEX_FAIL) and a tool-event
-    write that fell over (CORTEX_TOOL_EVENT … FAILED). Everything else returns
+    Keep exactly the failure writes — a CLI crash (FLEET_FAIL) and a tool-event
+    write that fell over (FLEET_TOOL_EVENT … FAILED). Everything else returns
     silently, and a resume marker is not a failure.
     """
     src = PI_EXT.read_text()
@@ -209,17 +209,17 @@ def test_pi_extension_stderr_is_failure_only():
     # Reads the code's write calls — status quotes are prose, not the call.
     writes = [ln.strip() for ln in code.splitlines()
               if "process.stderr.write(" in ln]
-    assert "CORTEX_FAIL" in src, "a real CLI error must still be reported"
-    for marker in ("CORTEX_RESUME", "CORTEX_CHECKPOINT_EMPTY"):
+    assert "FLEET_FAIL" in src, "a real CLI error must still be reported"
+    for marker in ("FLEET_RESUME", "FLEET_CHECKPOINT_EMPTY"):
         # `note()` sends routine markers to the cortex LOG (and to stderr only under
-        # CORTEX_CONTEXT_DEBUG=1); `fail()` is the stderr path. Asserting the marker
+        # FLEET_CONTEXT_DEBUG=1); `fail()` is the stderr path. Asserting the marker
         # is absent from the FILE would flag the log trace itself — assert instead
         # that it is never routed through the failure write, and that it still exists
         # as a log trace (deleting the diagnostics is not the fix either).
         assert not re.search(rf"fail\([^)]*{marker}", code, re.S), \
             f"{marker} is not a failure — it must not go to stderr"
         assert re.search(rf"note\([^)]*{marker}", code, re.S), \
-            f"{marker} must still reach the cortex log via note()"
+            f"{marker} must still reach the fleet log via note()"
     assert "recorded" not in writes, "the success path must not announce itself"
 
 
@@ -275,26 +275,26 @@ def test_pi_extension_EXECUTES():
 def _run_pi_guard(node: str, workdir: Path, extra_env: dict | None = None):
     """Run the pi extension guard from `workdir`; return (rc, stdout, stderr)."""
     env = dict(os.environ)
-    env.setdefault("CORTEX_STUB_FAIL", "0")
+    env.setdefault("FLEET_STUB_FAIL", "0")
     env.update(extra_env or {})
     return subprocess.run([node, str(workdir / "verify-extension.mjs")],
                           capture_output=True, text=True, timeout=180, cwd=str(workdir), env=env)
 
 
 def _routine_stderr_lines(stderr: str) -> list[str]:
-    """Return ONLY routine `CORTEX_` lines, excluding genuine failures.
+    """Return ONLY routine `FLEET_` lines, excluding genuine failures.
 
-    The extension writes two kinds of `CORTEX_` line to stderr: `note()` output
-    (routine — must NOT reach the prompt area unless CORTEX_CONTEXT_DEBUG=1) and
+    The extension writes two kinds of `FLEET_` line to stderr: `note()` output
+    (routine — must NOT reach the prompt area unless FLEET_CONTEXT_DEBUG=1) and
     `fail()` output (a genuine failure that SHOULD be on the prompt area). The
     verify guard deliberately exercises the failure paths, so a healthy run still
     carries the failure markers; counting them here would flag a routine-leak check
     for lines that are supposed to be there. Keep only the routine ones.
     """
-    _FAILURE_MARKERS = ("CORTEX_FAIL", "CORTEX_GOV_SESSION", "NOT RECORDED", "FAILED")
+    _FAILURE_MARKERS = ("FLEET_FAIL", "FLEET_GOV_SESSION", "NOT RECORDED", "FAILED")
     return [
         line for line in stderr.splitlines()
-        if line.startswith("CORTEX_")
+        if line.startswith("FLEET_")
         and not any(m in line for m in _FAILURE_MARKERS)
     ]
 
@@ -331,12 +331,12 @@ def test_pi_extension_keeps_routine_output_off_the_prompt_area(tmp_path):
     `process.stderr.write` inside the guard cannot see a write that bypasses it):
 
       1. a child's stderr never reaches it (execFile pipes the child's stdio);
-      2. NOTHING routine is written there on the success path — no CORTEX_RESUME /
-         CORTEX_CHECKPOINT_EMPTY scribbling over what the user is typing;
+      2. NOTHING routine is written there on the success path — no FLEET_RESUME /
+         FLEET_CHECKPOINT_EMPTY scribbling over what the user is typing;
       3. genuine failures are still LOUD — a silent memory failure reads as "the agent
          had no memory", a different and wrong conclusion.
 
-    The routine trace stays reachable via CORTEX_CONTEXT_DEBUG=1 (asserted), so this
+    The routine trace stays reachable via FLEET_CONTEXT_DEBUG=1 (asserted), so this
     gates diagnostics, it does not delete them.
     """
     node = shutil.which("node")
@@ -350,13 +350,13 @@ def test_pi_extension_keeps_routine_output_off_the_prompt_area(tmp_path):
     assert not _routine_stderr_lines(healthy.stderr), (
         "routine output reached the Pi prompt area:\n" + healthy.stderr)
 
-    debug = _run_pi_guard(node, HARNESS_DIR / "pi", {"CORTEX_CONTEXT_DEBUG": "1"})
+    debug = _run_pi_guard(node, HARNESS_DIR / "pi", {"FLEET_CONTEXT_DEBUG": "1"})
     assert _routine_stderr_lines(debug.stderr), (
-        "CORTEX_CONTEXT_DEBUG=1 no longer surfaces the routine trace — the diagnostics "
+        "FLEET_CONTEXT_DEBUG=1 no longer surfaces the routine trace — the diagnostics "
         "were deleted rather than gated")
 
-    failing = _run_pi_guard(node, HARNESS_DIR / "pi", {"CORTEX_STUB_FAIL": "1"})
-    assert "CORTEX_FAIL" in failing.stderr, (
+    failing = _run_pi_guard(node, HARNESS_DIR / "pi", {"FLEET_STUB_FAIL": "1"})
+    assert "FLEET_FAIL" in failing.stderr, (
         "a failing CLI no longer reports itself — a silent failure is indistinguishable "
         "from an agent with no memory")
 
@@ -368,11 +368,11 @@ def test_pi_extension_keeps_routine_output_off_the_prompt_area(tmp_path):
         "stderr leaked nothing to the parent's stderr, so the check is vacuous")
 
 
-def test_pi_extension_traces_routine_output_to_a_bounded_cortex_log(tmp_path):
+def test_pi_extension_traces_routine_output_to_a_bounded_fleet_log(tmp_path):
     """Routine diagnostics belong in the cortex tree's log dir, not the prompt area.
 
     Mirrors `mcp-servers/loop-gov-mcp.py`: a bounded file under `~/.steadfaste-fleet/logs/`
-    (here overridden by CORTEX_CONTEXT_LOG), stderr kept for failures, and a logging
+    (here overridden by FLEET_CONTEXT_LOG), stderr kept for failures, and a logging
     failure that can never break the hook.
     """
     node = shutil.which("node")
@@ -380,11 +380,11 @@ def test_pi_extension_traces_routine_output_to_a_bounded_cortex_log(tmp_path):
         pytest.skip("node not available — cannot execute the extension")
     log = tmp_path / "pi-context.log"
 
-    ok = _run_pi_guard(node, HARNESS_DIR / "pi", {"CORTEX_CONTEXT_LOG": str(log)})
+    ok = _run_pi_guard(node, HARNESS_DIR / "pi", {"FLEET_CONTEXT_LOG": str(log)})
     assert ok.returncode == 0, f"{ok.stdout}\n{ok.stderr}"
     assert log.exists(), "the routine trace wrote no log file"
     body = log.read_text()
-    assert "CORTEX_RESUME" in body, body
+    assert "FLEET_RESUME" in body, body
     assert not _routine_stderr_lines(ok.stderr), (
         "the trace is still on the prompt area:\n" + ok.stderr)
 
@@ -392,13 +392,13 @@ def test_pi_extension_traces_routine_output_to_a_bounded_cortex_log(tmp_path):
     # live file never grows past a single line.
     tiny = tmp_path / "tiny.log"
     rolled = _run_pi_guard(node, HARNESS_DIR / "pi",
-                           {"CORTEX_CONTEXT_LOG": str(tiny), "CORTEX_CONTEXT_LOG_MAX_BYTES": "1"})
+                           {"FLEET_CONTEXT_LOG": str(tiny), "FLEET_CONTEXT_LOG_MAX_BYTES": "1"})
     assert rolled.returncode == 0, f"{rolled.stdout}\n{rolled.stderr}"
     assert (tmp_path / "tiny.log.1").exists(), "the log is unbounded — no rotation happened"
     assert tiny.stat().st_size < 512, "the live log exceeded its cap"
 
     # Non-fatal: an unusable sink must not break the hook.
-    unusable = _run_pi_guard(node, HARNESS_DIR / "pi", {"CORTEX_CONTEXT_LOG": str(tmp_path)})
+    unusable = _run_pi_guard(node, HARNESS_DIR / "pi", {"FLEET_CONTEXT_LOG": str(tmp_path)})
     assert unusable.returncode == 0, (
         "an unusable log sink broke the extension:\n" + unusable.stdout + unusable.stderr)
 
@@ -450,7 +450,7 @@ def test_macos_parity_for_the_context_layers():
         "the sg fallback is the only path where the user is not in the docker group"
 
     ext = PI_EXT.read_text()
-    assert "CORTEX_CONTEXT_PYTHON" in ext, \
+    assert "FLEET_CONTEXT_PYTHON" in ext, \
         "the interpreter must be overridable for macOS PATH differences"
 
     cli_src = CLI_PY.read_text()

@@ -96,7 +96,7 @@ def _registry_view(regdir: Path) -> str:
     r = subprocess.run(["bash", str(_REPO / "ops" / "scripts" / "fleet" / "bin" / "fleet"),
                         "harness", "list", "--json"],
                        capture_output=True, text=True, timeout=120,
-                       env={**os.environ, "CORTEX_HARNESS_DIR": str(regdir)})
+                       env={**os.environ, "FLEET_HARNESS_DIR": str(regdir)})
     assert r.returncode == 0, (
         f"the CLI could not read the fixture registry: rc={r.returncode}\n{r.stderr[-400:]}")
     return r.stdout
@@ -254,12 +254,12 @@ def test_the_real_doctor_reports_one_line_per_declared_harness(tmp_path):
     doctor run nobody reads.
     """
     import yaml
-    # CORTEX_HOME points at a fixture so this measures the CHECK and the CLI it drives,
+    # FLEET_DEPLOY_HOME points at a fixture so this measures the CHECK and the CLI it drives,
     # not whether the tree has been deployed yet: the check prefers the deployed CLI, which
     # only supports the machine-readable view once this change is deployed, and a suite that
     # is red before every deploy is a suite people learn to ignore. The deployed wiring is
     # verified live by the cycle's own deploy, not asserted here.
-    report = _doctor_json({"HERMES_CORTEX_HOME": str(tmp_path / "cortex-home")})
+    report = _doctor_json({"FLEET_DEPLOY_HOME": str(tmp_path / "cortex-home")})
     reg = yaml.safe_load((_REPO / "ops" / "install" / "harnesses" / "registry.yaml").read_text())
     declared = [h["name"] for h in reg["harnesses"]]
     lines = {c["name"]: c for c in report["checks"] if c["name"].startswith("Harness (")}
