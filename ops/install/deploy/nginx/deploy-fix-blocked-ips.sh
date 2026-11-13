@@ -37,9 +37,9 @@ IS_MACOS=0
 # Resolve repo root robustly: 4-up from ops/install/deploy/nginx/ (this
 # file's canonical location), fallback to git toplevel.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CORTEX_REPO="$(cd "$SCRIPT_DIR/../../../.." && pwd 2>/dev/null || true)"
-[ -n "$CORTEX_REPO" ] || CORTEX_REPO="$(cd "$SCRIPT_DIR" && git rev-parse --show-toplevel 2>/dev/null || true)"
-SRC="${CORTEX_REPO}/ops/install/deploy/nginx/fix-blocked-ips.py"
+FLEET_REPO="$(cd "$SCRIPT_DIR/../../../.." && pwd 2>/dev/null || true)"
+[ -n "$FLEET_REPO" ] || FLEET_REPO="$(cd "$SCRIPT_DIR" && git rev-parse --show-toplevel 2>/dev/null || true)"
+SRC="${FLEET_REPO}/ops/install/deploy/nginx/fix-blocked-ips.py"
 if [ "$IS_MACOS" -eq 1 ]; then
   DEST="/usr/local/bin/fix-blocked-ips.py"
   DEST_GROUP="wheel"
@@ -111,7 +111,7 @@ if [ -f "$SUDOERS_FILE" ] && grep -qF "$ENTRY_PATTERN" "$SUDOERS_FILE" 2>/dev/nu
 else
   echo "  ✗ Sudoers entry for ${ENTRY_PATTERN} NOT found in ${SUDOERS_FILE}"
   echo "    This script does not modify sudoers — run the owner:"
-  echo "    sudo bash ${CORTEX_REPO}/ops/install/deploy/nginx/deploy-sudoers.sh"
+  echo "    sudo bash ${FLEET_REPO}/ops/install/deploy/nginx/deploy-sudoers.sh"
   exit 1
 fi
 

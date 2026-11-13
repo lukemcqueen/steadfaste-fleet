@@ -155,12 +155,12 @@ def repo_dir(repo_arg: str | None = None) -> str:
          explicitly — REQUIRED when running via sudo, because sudo's
          env_reset sets HOME=/root and blocks env overrides, so the
          $HOME fallback below silently misses on Linux).
-      2. CORTEX_REPO env var (direct invocation).
+      2. FLEET_REPO env var (direct invocation).
       3. Walk up from script location until we find .git (works when
          running from the repo working tree at any depth).
       4. $HOME/steadfaste-fleet (direct run as the owning user).
     """
-    for candidate in (repo_arg, os.environ.get("CORTEX_REPO")):
+    for candidate in (repo_arg, os.environ.get("FLEET_REPO")):
         if candidate and os.path.isdir(os.path.join(candidate, ".git")):
             return candidate
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -346,7 +346,7 @@ def main():
         print(f"  🔧 nginx: {orphan_msg}")
 
     # --repo <path>: explicit repo root (deploy wrapper passes it through
-    # sudo, where env_reset strips HOME/CORTEX_REPO and blocks overrides).
+    # sudo, where env_reset strips HOME/FLEET_REPO and blocks overrides).
     repo_arg = None
     if "--repo" in sys.argv:
         try:
