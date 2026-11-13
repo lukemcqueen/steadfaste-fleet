@@ -360,8 +360,8 @@ def check_ollama() -> int:
 # (~2s+ per run); health pollers hit the endpoint every few minutes, so a short
 # TTL keeps each /health request fast without masking real state for long.
 # (Same pattern as the retired health-server.py mycortex cache.)
-_MYCORTEX_CACHE = {"t": 0.0, "result": 0}
-_MYCORTEX_TTL = 60
+_MYFLEET_CACHE = {"t": 0.0, "result": 0}
+_MYFLEET_TTL = 60
 
 
 def check_mycortex() -> int:
@@ -370,8 +370,8 @@ def check_mycortex() -> int:
     if not os.path.exists(cli):
         return 0  # not installed on this system
     now = time.time()
-    if now - _MYCORTEX_CACHE["t"] < _MYCORTEX_TTL:
-        return _MYCORTEX_CACHE["result"]
+    if now - _MYFLEET_CACHE["t"] < _MYFLEET_TTL:
+        return _MYFLEET_CACHE["result"]
     try:
         r = subprocess.run(
             [cli, "doctor", "--json"],
@@ -389,8 +389,8 @@ def check_mycortex() -> int:
                 result = 1  # rc=0 means doctor passed
     except Exception:
         result = -1
-    _MYCORTEX_CACHE["t"] = now
-    _MYCORTEX_CACHE["result"] = result
+    _MYFLEET_CACHE["t"] = now
+    _MYFLEET_CACHE["result"] = result
     return result
 
 

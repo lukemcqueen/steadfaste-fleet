@@ -29,7 +29,7 @@ services:
       - mycortex-postgres-data:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: mycortex
-      POSTGRES_PASSWORD: ${MYCORTEX_PG_PASSWORD:?Set MYCORTEX_PG_PASSWORD in .env}
+      POSTGRES_PASSWORD: ${MYFLEET_PG_PASSWORD:?Set MYFLEET_PG_PASSWORD in .env}
       POSTGRES_DB: mycortex
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U mycortex -d mycortex"]

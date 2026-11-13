@@ -70,13 +70,13 @@ def _canonical_mem_env_paths() -> list[Path]:
 
 
 def resolve_mem_password(env_paths=None) -> str:
-    from_env = os.environ.get("MYCORTEX_MEM_PASSWORD", "")
+    from_env = os.environ.get("MYFLEET_MEM_PASSWORD", "")
     if from_env:
         return from_env
     for candidate in env_paths if env_paths is not None else _canonical_mem_env_paths():
         try:
             for line in candidate.read_text().splitlines():
-                if line.startswith("MYCORTEX_MEM_PASSWORD="):
+                if line.startswith("MYFLEET_MEM_PASSWORD="):
                     return line.split("=", 1)[1].strip().strip('"').strip("'")
         except OSError:
             continue

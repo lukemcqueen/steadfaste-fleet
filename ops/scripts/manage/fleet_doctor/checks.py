@@ -3887,7 +3887,7 @@ def check_hook_drift(res):
         # post-merge is standalone — not checked here
     }
     # A missing hook here is a ROLLOUT gap, not a broken host: without it no commit is stamped
-    # with a Cortex-Session trailer, so the close review stays whole-window (today's behaviour)
+    # with a FLEET-Session trailer, so the close review stays whole-window (today's behaviour)
     # instead of scoping itself. WARN — a FAIL would block every push on a host whose only sin is
     # not having run the deploy yet (Rule 19).
     OPTIONAL_HOOKS = {"prepare-commit-msg"}
@@ -5848,9 +5848,27 @@ def check_fleet_env(res: "Results") -> None:
         except OSError:
             problems.append("retired fleet-bus.conf symlink is broken")
 
+    # Release 2 (2026-11-13) made FLEET_* the ONLY spelling. A surviving CORTEX_ line in
+    # either env file is a half-migrated host: the deploy converts .env on every update, so
+    # a hit here means the conversion did not run, or something re-created the line.
+    _legacy_env_re = re.compile(r"^(CORTEX_[A-Z0-9_]+)=")
+    for _env_label, _env_path in (("~/steadfaste-fleet/.env", canon),
+                                  ("~/.steadfaste-fleet/agent.env", FLEET_HOME / "agent.env")):
+        if not _env_path.is_file():
+            continue
+        try:
+            _lines = _env_path.read_text(errors="replace").splitlines()
+        except OSError:
+            problems.append(f"{_env_label} could not be read")
+            continue
+        _legacy = sorted({m.group(1) for m in map(_legacy_env_re.match, _lines) if m})
+        if _legacy:
+            problems.append(f"{_env_label} carries retired env name(s): {', '.join(_legacy)}")
+
     if problems:
         res.add("fleet env", "FAIL", "; ".join(problems),
-                "run fleet-update.sh (it runs consolidate-env.sh), or "
+                "FLEET_* is the only spelling since release 2 — run fleet-update.sh "
+                "(it converts .env and strips agent.env), or "
                 "bash ~/.steadfaste-fleet/scripts/consolidate-env.sh")
     else:
         res.add("fleet env", "PASS",

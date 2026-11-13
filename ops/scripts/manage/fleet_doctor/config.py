@@ -23,7 +23,7 @@ HOME = Path.home()
 IS_MAC = sys.platform == "darwin"
 IS_LINUX = sys.platform == "linux"
 HERMES_HOME = Path(os.environ.get("HERMES_HOME", HOME / ".hermes"))
-FLEET_HOME = Path(os.environ.get("FLEET_DEPLOY_HOME") or os.environ.get("HERMES_CORTEX_HOME") or HOME / ".steadfaste-fleet")
+FLEET_HOME = Path(os.environ.get("FLEET_DEPLOY_HOME") or HOME / ".steadfaste-fleet")
 JOBS_FILE = HERMES_HOME / "cron" / "jobs.json"
 FLEET_ENV = HOME / "steadfaste-fleet" / ".env"
 LEGACY_MODELS_ENV = HERMES_HOME / "models.env"

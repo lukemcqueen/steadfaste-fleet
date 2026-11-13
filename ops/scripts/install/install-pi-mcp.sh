@@ -445,7 +445,7 @@ GOVERNANCE = {
         bus_mcp,
         "Agent bus: inbox read/send and task dispatch."),
     # The memory/session TOOLS. Same server as Claude Code/Codex — Pi is not
-    # special here. NOTE: no CORTEX_SESSION_* in `env` on purpose — Pi merges
+    # special here. NOTE: no FLEET_SESSION_* in `env` on purpose — Pi merges
     # this block over its own environment, so a session key the GATEWAY pinned
     # on the pi process (per chat) still reaches this server.
     "fleet-context": server(

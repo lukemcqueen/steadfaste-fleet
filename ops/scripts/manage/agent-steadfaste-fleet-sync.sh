@@ -26,12 +26,12 @@ for _cmd in timeout gtimeout; do
   if command -v "$_cmd" >/dev/null 2>&1; then TIMEOUT_CMD="$_cmd"; break; fi
 done
 if [ -z "$TIMEOUT_CMD" ]; then
-  echo "[$(ts) cortex-sync] FATAL: neither 'timeout' nor 'gtimeout' found — install coreutils (brew install coreutils on macOS)"
+  echo "[$(ts) fleet-sync] FATAL: neither 'timeout' nor 'gtimeout' found — install coreutils (brew install coreutils on macOS)"
   exit 1
 fi
 
 if [ ! -d "$FLEET_REPO" ]; then
-    echo "[$(ts) cortex-sync] Repo not found at $FLEET_REPO"
+    echo "[$(ts) fleet-sync] Repo not found at $FLEET_REPO"
     exit 1
 fi
 
@@ -47,7 +47,7 @@ cd "$FLEET_REPO"
 source "$FLEET_REPO/ops/scripts/lib/git-stalled-rebase.sh"
 
 # Use the same strategy as the working monitor script - assert repo exists and log what's happening
-log()  { echo "[$(ts) cortex-sync] $*"; }
+log()  { echo "[$(ts) fleet-sync] $*"; }
 stash_pop() {
     if $STASHED; then
         # `... | while ...; done || true` used to swallow a FAILED `git stash pop` — a conflict
@@ -57,7 +57,7 @@ stash_pop() {
         # NOT returned: every caller is already on a failure path that ends in its own `exit 1`,
         # and `set -e` would turn a non-zero return into an abort that skips their message.
         local rc=0
-        git stash pop 2>&1 | while IFS= read -r line; do echo "[$(ts) cortex-sync] $line"; done || rc=$?
+        git stash pop 2>&1 | while IFS= read -r line; do echo "[$(ts) fleet-sync] $line"; done || rc=$?
         if [ "$rc" -ne 0 ]; then
             log "WARNING: 'git stash pop' FAILED (rc=$rc) — the stashed changes are probably STILL in 'git stash list'"
         fi
@@ -68,7 +68,7 @@ stash_pop() {
 STASHED=false
 if ! git diff --quiet || ! git diff --cached --quiet; then
     log "Stashing local changes before sync"
-    git stash push -m "auto-stash before cortex-sync $(date -u +%Y%m%dT%H%M%SZ)" 2>&1 | while IFS= read -r line; do log "$line"; done || true
+    git stash push -m "auto-stash before fleet-sync $(date -u +%Y%m%dT%H%M%SZ)" 2>&1 | while IFS= read -r line; do log "$line"; done || true
     STASHED=true
 fi
 
@@ -76,12 +76,12 @@ FETCH_OUTPUT=$("$TIMEOUT_CMD" 12 git fetch origin 2>&1) || {
     FETCH_EXIT=$?
     CTS=$(ts)
     if [ "$FETCH_EXIT" -eq 124 ]; then
-        echo "[$CTS cortex-sync] git fetch timed out after 12s, will retry next cycle"
+        echo "[$CTS fleet-sync] git fetch timed out after 12s, will retry next cycle"
         stash_pop
         exit 1
     fi
-    echo "[$CTS cortex-sync] git fetch failed (exit $FETCH_EXIT)"
-    echo "[$CTS cortex-sync] $FETCH_OUTPUT"
+    echo "[$CTS fleet-sync] git fetch failed (exit $FETCH_EXIT)"
+    echo "[$CTS fleet-sync] $FETCH_OUTPUT"
     stash_pop
     exit 1
 }
@@ -133,12 +133,12 @@ PULL_OUTPUT=$(GIT_EDITOR=true SKIP_POST_MERGE=1 "$TIMEOUT_CMD" 20 git pull --reb
         exit 1
     fi
     if [ "$PULL_EXIT" -eq 124 ]; then
-        echo "[$CTS cortex-sync] git pull --rebase timed out after 20s, will retry next cycle"
+        echo "[$CTS fleet-sync] git pull --rebase timed out after 20s, will retry next cycle"
         stash_pop
         exit 1
     fi
-    echo "[$CTS cortex-sync] git rebase pull failed (exit $PULL_EXIT)"
-    echo "[$CTS cortex-sync] $PULL_OUTPUT"
+    echo "[$CTS fleet-sync] git rebase pull failed (exit $PULL_EXIT)"
+    echo "[$CTS fleet-sync] $PULL_OUTPUT"
     stash_pop
     exit 1
 }
@@ -155,8 +155,8 @@ stash_pop
 DEPLOY_OUTPUT=$("$TIMEOUT_CMD" 600 bash "$FLEET_REPO/ops/scripts/fleet-update.sh" 2>&1) || {
     DEPLOY_EXIT=$?
     CTS=$(ts)
-    echo "[$CTS cortex-sync] fleet-update.sh failed (exit $DEPLOY_EXIT)"
-    echo "[$CTS cortex-sync] $(echo "$DEPLOY_OUTPUT" | tail -20)"
+    echo "[$CTS fleet-sync] fleet-update.sh failed (exit $DEPLOY_EXIT)"
+    echo "[$CTS fleet-sync] $(echo "$DEPLOY_OUTPUT" | tail -20)"
     exit 1
 }
 
@@ -170,4 +170,4 @@ if [ -f "$SKILLS_TEMPLATE" ]; then
     fi
 fi
 
-echo "[$(ts) cortex-sync] steadfaste-fleet updated, tools re-synced."
+echo "[$(ts) fleet-sync] steadfaste-fleet updated, tools re-synced."

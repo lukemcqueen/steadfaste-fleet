@@ -437,7 +437,7 @@ The MCP server's `get_session_id()` resolves in this order (current code):
 ```python
 def get_session_id(args=None):
     # Priority 0:  args["session_id"] — injected by the enforcer per call
-    # Priority 0e: the caller's own env (CORTEX_SESSION_* / AGENT_NAME ...)
+    # Priority 0e: the caller's own env (FLEET_SESSION_* / AGENT_NAME ...)
     # Priority 1:  per-repo process id, persisted at state/.session-<slug>.id
     #              (new UUID only if persistence fails)
 ```
@@ -470,7 +470,7 @@ next write tool fires
 ```
 
 If no session ID is in the args (legacy caller, direct MCP invocation), the MCP
-reads the caller's own environment (`CORTEX_SESSION_*`), then falls back to its
+reads the caller's own environment (`FLEET_SESSION_*`), then falls back to its
 per-repo process id (persisted at `state/.session-<slug>.id`), generating a new
 UUID only if persistence fails. It no longer reads any marker file or the removed
 `~/.hermes/session.id` cache. Phase 2 (repo_slug scan) covers any remaining mismatch
@@ -880,7 +880,7 @@ Hermes session starts
     2. ~/.steadfaste-fleet/state/.hermes-session-{pid}.id   (PID fallback)
   → MCP get_session_id(args) reads:
     0. args['session_id']         ← PRIMARY (injected per call, never racy)
-    0e. caller env (CORTEX_SESSION_*) ← per-harness discriminator
+    0e. caller env (FLEET_SESSION_*) ← per-harness discriminator
     1. per-repo process id        ← persisted at state/.session-<slug>.id
        (new UUID only if persistence fails)
 ```

@@ -117,11 +117,11 @@ class _GuardLogger:
 
 
 def _exec_psql(sql: str) -> None:
-    port = os.environ.get("MYCORTEX_MEM_PORT", "15432")
+    port = os.environ.get("MYFLEET_MEM_PORT", "15432")
     role = "mycortex_mem_writer"
     is_macos = os.uname().sysname == "Darwin"
     if is_macos:
-        pw = os.environ.get("MYCORTEX_MEM_PASSWORD", "")
+        pw = os.environ.get("MYFLEET_MEM_PASSWORD", "")
         import tempfile
         f = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".pgpass")
         f.write(f"localhost:{port}:mycortex:{role}:{pw}\n")

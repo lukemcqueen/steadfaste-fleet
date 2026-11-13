@@ -12,7 +12,7 @@
  *   and write files with no lock at all.
  *
  *   The commit-time hook is not a substitute. Its lock check exists, but it is
- *   scoped to the steadfaste-fleet repo only (`IS_CORTEX_REPO`), deliberately, so a
+ *   scoped to the steadfaste-fleet repo only (`IS_FLEET_REPO`), deliberately, so a
  *   pi session working in a PROJECT repo had no lock gate at write OR commit time.
  *
  * THIS FILE ADDS NO GOVERNANCE SEMANTICS. It is an adapter.

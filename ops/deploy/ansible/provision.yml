@@ -43,8 +43,8 @@
 
     # Paths
     hermes_home: "/home/{{ ansible_user }}/.hermes"
-    cortex_repo: "/home/{{ ansible_user }}/steadfaste-fleet"
-    cortex_deploy: "/home/{{ ansible_user }}/.steadfaste-fleet"
+    fleet_repo: "/home/{{ ansible_user }}/steadfaste-fleet"
+    fleet_deploy: "/home/{{ ansible_user }}/.steadfaste-fleet"
     langfuse_dir: "/home/{{ ansible_user }}/langfuse"
 
     # Port map
@@ -52,7 +52,7 @@
       - { port: 13001, name: dashboard }
       - { port: 13002, name: langfuse }
       - { port: 13004, name: inbox-api }
-      - { port: 13005, name: cortex-ui }
+      - { port: 13005, name: fleet-ui }
       - { port: 13007, name: health }
 
   pre_tasks:
@@ -242,15 +242,15 @@
         - name: Clone steadfaste-fleet repo
           git:
             repo: https://github.com/lukemcqueen/steadfaste-fleet.git
-            dest: "{{ cortex_repo }}"
+            dest: "{{ fleet_repo }}"
             depth: 1
             force: true
           become: false
 
         - name: Create .env from template if absent
           copy:
-            src: "{{ cortex_repo }}/.env.example"
-            dest: "{{ cortex_repo }}/.env"
+            src: "{{ fleet_repo }}/.env.example"
+            dest: "{{ fleet_repo }}/.env"
             owner: "{{ ansible_user }}"
             group: "{{ ansible_user }}"
             mode: 0600
@@ -259,7 +259,7 @@
 
         - name: Set agent identity in .env
           lineinfile:
-            path: "{{ cortex_repo }}/.env"
+            path: "{{ fleet_repo }}/.env"
             regexp: "^#? ?{{ item.var }}="
             line: "{{ item.var }}={{ item.value }}"
             create: true
@@ -284,13 +284,13 @@
 
         - name: Copy docker-compose
           copy:
-            src: "{{ cortex_repo }}/ops/install/deploy/docker-compose.langfuse.yml"
+            src: "{{ fleet_repo }}/ops/install/deploy/docker-compose.langfuse.yml"
             dest: "{{ langfuse_dir }}/docker-compose.yml"
             remote_src: true
 
         - name: Copy .env template
           copy:
-            src: "{{ cortex_repo }}/ops/install/deploy/.env.example"
+            src: "{{ fleet_repo }}/ops/install/deploy/.env.example"
             dest: "{{ langfuse_dir }}/.env"
             owner: "{{ ansible_user }}"
             group: "{{ ansible_user }}"
@@ -347,7 +347,7 @@
     - name: Verify — run fleet-doctor
       tags: [verify, all]
       become: false
-      command: "python3 {{ cortex_repo }}/ops/scripts/manage/fleet-doctor.py --quiet"
+      command: "python3 {{ fleet_repo }}/ops/scripts/manage/fleet-doctor.py --quiet"
       register: doctor_result
       changed_when: false
       failed_when: doctor_result.rc >= 2

@@ -156,7 +156,7 @@ def main() -> int:
     slug = hcrc.repo_slug()
     if slug == "steadfaste-fleet":
         # self-contained HC-repo exemption, matching the pre-commit hook's
-        # IS_CORTEX_REPO scope: steadfaste-fleet is covered by its own close-time
+        # IS_FLEET_REPO scope: steadfaste-fleet is covered by its own close-time
         # adversarial review (A2/A4 on staged scripts), so this gate targets
         # project repos only. Return early regardless of caller.
         print("PASS — steadfaste-fleet repo (covered by its own close review)")

@@ -37,7 +37,7 @@ per bot, so there is no 409 conflict.
   /usr/bin/python3 -m pip install psycopg[binary]
   ```
 - Postgres running locally (mycortex on `127.0.0.1:15432`) — the advisory lock
-  lives there, and the gateway needs `CORTEX_BUS_PG_*` creds to reach it
+  lives there, and the gateway needs `FLEET_BUS_PG_*` creds to reach it
 
 ---
 
@@ -59,11 +59,11 @@ GATEWAY_SECRET=$(openssl rand -hex 32)
 TELEGRAM_API_BASE=https://api.telegram.org
 
 # Postgres for advisory locks (same instance as mycortex)
-CORTEX_BUS_PG_HOST=127.0.0.1
-CORTEX_BUS_PG_PORT=15432
-CORTEX_BUS_PG_DB=mycortex
-CORTEX_BUS_PG_USER=mycortex
-CORTEX_BUS_PG_PASS=<same as MYCORTEX_PG_PASSWORD>
+FLEET_BUS_PG_HOST=127.0.0.1
+FLEET_BUS_PG_PORT=15432
+FLEET_BUS_PG_DB=mycortex
+FLEET_BUS_PG_USER=mycortex
+FLEET_BUS_PG_PASS=<same as MYFLEET_PG_PASSWORD>
 ```
 
 The daemon reads `PI_TELEGRAM_BOT_TOKEN` because `gateway.yaml` names it in
@@ -90,8 +90,8 @@ The daemon reads `PI_TELEGRAM_BOT_TOKEN` because `gateway.yaml` names it in
       "session": "per_chat",
       "session_args": ["--session-id", "{session_id}"],
       "env": {
-        "CORTEX_SESSION_HARNESS": "pi",
-        "CORTEX_SESSION_KEY": "{session_id}"
+        "FLEET_SESSION_HARNESS": "pi",
+        "FLEET_SESSION_KEY": "{session_id}"
       },
       "commands": {
         "compact": {

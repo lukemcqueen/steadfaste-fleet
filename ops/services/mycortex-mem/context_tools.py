@@ -97,7 +97,7 @@ def json_result(payload) -> str:
 
 
 UNAVAILABLE = ("memory unavailable — the cortex store is not reachable from this host. "
-               "This is not an error: continue without memory. Check MYCORTEX_MEM_PASSWORD "
+               "This is not an error: continue without memory. Check MYFLEET_MEM_PASSWORD "
                "and that the mycortex-postgres container (or local psql on macOS) is up.")
 
 

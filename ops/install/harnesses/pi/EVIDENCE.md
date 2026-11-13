@@ -64,7 +64,7 @@ fleet-context: connected, 12 tools (direct, global)
 
 ## 5. Pinned per-chat session keys (captured, not a guard)
 
-The gateway declares `env: {CORTEX_SESSION_KEY: {session_id}}` on the command
+The gateway declares `env: {FLEET_SESSION_KEY: {session_id}}` on the command
 backend, so each chat gets its OWN key instead of the shared fallback. Ids are
 redacted — a chat id is a personal identifier and this is a public repo. The
 re-runnable guard for the seam is

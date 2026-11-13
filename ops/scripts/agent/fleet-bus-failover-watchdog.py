@@ -231,10 +231,8 @@ def swap_bus_config(active: bool) -> bool:
 
     Returns True on success. Creates the file if missing.
     """
-    # FLEET_BUS_URL / FLEET_BUS_FALLBACK_URL are ENV VAR NAMES — the
-    # cortex->fleet plan defers CORTEX_ env-name tokens to P4 by design
-    # (renaming them here would strand every deployed .env and the bus
-    # client that reads them). The file/command rename (fleet-*) landed in
+    # FLEET_BUS_URL / FLEET_BUS_FALLBACK_URL are ENV VAR NAMES — FLEET_* is the
+    # only spelling since release 2 (2026-11-13); the file/command rename (fleet-*) landed in
     # P3 steps 2-3; the env var names follow in P4.
     # Read from the .env (CONF_FILE) with env-var override, so this process
     # reads what it writes: the watchdog may run under cron/systemd without

@@ -60,7 +60,7 @@ pi   # tools come from ~/.pi/agent/mcp.json (install-pi-mcp.sh)
 1. pi mcp list shows fleet-context with the memory/session tools.
 2. In a Pi session call mem_context — the peer card must come back.
 3. Let a turn end with a decision, then: fleet-context session_restore "{}" | grep <marker>
-4. Start a second session; the checkpoint must appear unasked (`CORTEX_RESUME` in `~/.steadfaste-fleet/logs/pi-context.log`).
+4. Start a second session; the checkpoint must appear unasked (`FLEET_RESUME` in `~/.steadfaste-fleet/logs/pi-context.log`).
 5. node ops/install/harnesses/pi/verify-governance-extension.mjs exits 0 — it EXECUTES the write gate and asserts both directions.
 6. In a Pi session, with no lock: writing a file is refused with GOVERNANCE LOCK REQUIRED; after begin_change it succeeds.
 
@@ -69,19 +69,19 @@ pi   # tools come from ~/.pi/agent/mcp.json (install-pi-mcp.sh)
 One session = one identity. Precedence is identical in every layer (args → env → git), which is what lets a checkpoint written here be restored by another harness.
 
 ```bash
-export CORTEX_SESSION_HARNESS=<value>
-export CORTEX_SESSION_REPO=<value>
-export CORTEX_SESSION_BRANCH=<value>
+export FLEET_SESSION_HARNESS=<value>
+export FLEET_SESSION_REPO=<value>
+export FLEET_SESSION_BRANCH=<value>
 ```
 
 Overrides (usually unnecessary, needed on macOS):
 
 ```bash
-export CORTEX_CONTEXT_CLI=<path>   # see the failure modes in the runbook
-export CORTEX_CONTEXT_PYTHON=<path>   # see the failure modes in the runbook
-export CORTEX_CONTEXT_LOG=<value>   # default: ~/.steadfaste-fleet/logs/pi-context.log
-export CORTEX_CONTEXT_LOG_MAX_BYTES=<value>   # default: 1 MiB; rotates to <log>.1
-export CORTEX_CONTEXT_DEBUG=<value>   # 1 = echo routine markers to stderr while diagnosing
+export FLEET_CONTEXT_CLI=<path>   # see the failure modes in the runbook
+export FLEET_CONTEXT_PYTHON=<path>   # see the failure modes in the runbook
+export FLEET_CONTEXT_LOG=<value>   # default: ~/.steadfaste-fleet/logs/pi-context.log
+export FLEET_CONTEXT_LOG_MAX_BYTES=<value>   # default: 1 MiB; rotates to <log>.1
+export FLEET_CONTEXT_DEBUG=<value>   # 1 = echo routine markers to stderr while diagnosing
 ```
 
 ## Shared pieces (identical for every harness — never fork them)

@@ -323,7 +323,7 @@ except Exception as e:
   fix-mycortex)
     # legacy brain DECOMMISSIONED 2026-08-02 — mycortex replaces it (same Postgres).
     # This mode checks the mycortex CLI doctor + container connectivity.
-    echo "MYCORTEX_DIAGNOSTIC:"
+    echo "MYFLEET_DIAGNOSTIC:"
     
     # Check mycortex CLI
     if ! command -v "${HOME}/.steadfaste-fleet/scripts/mycortex" >/dev/null 2>&1; then

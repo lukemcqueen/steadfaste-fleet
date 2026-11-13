@@ -2,7 +2,7 @@
 """generate-harnesses.py — derive per-harness docs + covered status from the registry.
 
 WHY THIS EXISTS: the fleet may need ~100 coding-agent harnesses wired to the
-cortex context store. At that scale the failure mode is not missing docs — it is
+fleet context store. At that scale the failure mode is not missing docs — it is
 **100 docs that disagree with each other and with reality**. So nothing per-harness
 is hand-written: `ops/install/harnesses/registry.yaml` is the single source, and
 this generator derives each harness's README from it.
@@ -149,7 +149,7 @@ def derived_run_line(h: dict) -> str | None:
 def render_readme(reg: dict, h: dict) -> str:
     defaults = reg.get("defaults", {})
     name, layer = h["name"], h["layer"]
-    out = [BANNER, "", f"# {name} — cortex context integration", ""]
+    out = [BANNER, "", f"# {name} — fleet context integration", ""]
     out += [f"**Layer:** `{layer}`  ·  **Status:** `{h.get('status', 'planned')}`  ·  "
             f"**Surface:** `{h.get('surface', 'n/a')}`", ""]
     out += [LAYER_NOTES[layer], ""]

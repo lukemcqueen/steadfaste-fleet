@@ -59,7 +59,7 @@ if not AGENT_NAME:
 os.environ["AGENT_NAME"] = AGENT_NAME
 # Ensure lib.fleet_bus is importable
 from hermes_paths import ensure_scripts_path
-from fleet_lib.env import get as fleet_env_get  # CORTEX_* -> FLEET_* dual-read
+from fleet_lib.env import get as fleet_env_get  # FLEET_* only since release 2
 ensure_scripts_path()
 
 # State file to track processed correlation_ids for idempotency

@@ -54,7 +54,7 @@ if [ -f "$AUTH_FILE" ]; then
   # shellcheck disable=SC1090
   source "$AUTH_FILE" 2>/dev/null || true
 fi
-# Support multiple auth var names (CORTEX_ preferred, old MOSES_ fallback)
+# Support multiple auth var names (FLEET_ preferred, legacy MOSES_ fallback)
 AUTH="${INBOX_AUTH:-${FLEET_INBOX_AUTH:-${MOSES_INBOX_AUTH:-}}}"
 
 # ── Poll queue depth via bus API ────────────────────────────

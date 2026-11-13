@@ -36,7 +36,7 @@ Usage:
 import os
 import sys
 
-_HERMES_CORTEX_ENV = os.path.expanduser("~/steadfaste-fleet/.env")
+_HERMES_FLEET_ENV = os.path.expanduser("~/steadfaste-fleet/.env")
 _LEGACY_MODELS_ENV = os.path.expanduser("~/.hermes/models.env")
 _CACHE = None
 
@@ -74,7 +74,7 @@ def load_models_env() -> dict[str, str]:
         return _CACHE
 
     # Try the new unified file first, then the legacy file
-    result = _load_env_file(_HERMES_CORTEX_ENV)
+    result = _load_env_file(_HERMES_FLEET_ENV)
     if not result:
         result = _load_env_file(_LEGACY_MODELS_ENV)
 

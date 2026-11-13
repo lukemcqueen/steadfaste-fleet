@@ -62,7 +62,7 @@ fi
 PYTHON="${PYTHON:-$(command -v python3)}"
 AGENT_DIR="${PI_AGENT_DIR:-${HOME}/.pi/agent}"
 SETTINGS="${PI_SETTINGS_FILE:-${AGENT_DIR}/settings.json}"
-CURATED_DIR="${PI_CORTEX_SKILLS_DIR:-${AGENT_DIR}/cortex-skills}"
+CURATED_DIR="${PI_FLEET_SKILLS_DIR:-${AGENT_DIR}/cortex-skills}"
 # The RETIRED per-skill farm dir. Kept only so a host that has one can be migrated;
 # nothing is registered here any more.
 # The agent-visible skills tree, published by ops/scripts/manage/publish-agent-skills.py.

@@ -69,7 +69,7 @@ export FLEET_AGENT_TYPE
 # non-orch hosts must have it provisioned once (each machine's
 # /home/<user> is a separate physical box, so the file is per-machine
 # even though the home path string is shared).
-AGENT_ENV_FILE="${FLEET_DEPLOY_HOME:-${HERMES_CORTEX_HOME:-${HOME}/.steadfaste-fleet}}/agent.env"
+AGENT_ENV_FILE="${FLEET_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/agent.env"
 
 ensure_agent_identity() {
   # Priority: 1) AGENT_NAME env var, 2) agent.env file, 3) hostname (orch only).

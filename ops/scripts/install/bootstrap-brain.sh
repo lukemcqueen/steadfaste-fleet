@@ -21,7 +21,7 @@ set -euo pipefail
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BOLD='\033[1m'; RESET='\033[0m'
 BRAIN_DIR="${HOME}/brain"
-MYCORTEX_CLI="${HOME}/.steadfaste-fleet/scripts/mycortex"
+MYFLEET_CLI="${HOME}/.steadfaste-fleet/scripts/mycortex"
 BUN_PATH="${HOME}/.bun/bin"
 CHECK_ONLY=false
 REINDEX=false
@@ -65,7 +65,7 @@ get_page_count() {
   local count
 
   # Try parsing from mycortex sources list --json (authoritative)
-  count=$("$MYCORTEX_CLI" sources list --json 2>/dev/null | \
+  count=$("$MYFLEET_CLI" sources list --json 2>/dev/null | \
     python3 -c "import json,sys; \
 d=json.load(sys.stdin); \
 print(next((str(s['pages']) for s in d if s['name']=='${name}'), ''))" 2>/dev/null)
@@ -90,7 +90,7 @@ print(next((str(s['pages']) for s in d if s['name']=='${name}'), ''))" 2>/dev/nu
 # mycortex sources list --json output — parse by name field.
 is_source_registered() {
   local name="$1"
-  "$MYCORTEX_CLI" sources list 2>/dev/null | grep -q "\"name\": \"${name}\""
+  "$MYFLEET_CLI" sources list 2>/dev/null | grep -q "\"name\": \"${name}\""
 }
 
 # ── Step 1: Detect brain directories ──────────────────────
@@ -173,7 +173,7 @@ GITEOF
       NOT_REGISTERED=$((NOT_REGISTERED + 1))
     else
       echo -n "  Registering as mycortex source... "
-      if "$MYCORTEX_CLI" sources add "$source" "$source_dir" 2>/dev/null; then
+      if "$MYFLEET_CLI" sources add "$source" "$source_dir" 2>/dev/null; then
         echo -e "${GREEN}done${RESET}"
         FIXED_MYCORTEX=$((FIXED_MYCORTEX + 1))
       else
@@ -199,15 +199,15 @@ GITEOF
     if [[ "$REINDEX" == "true" ]]; then
       echo -n "  Reindexing (full sync)... "
       # Force re-sync by passing --all or explicit source
-      if "$MYCORTEX_CLI" sync --source "$source" --force 2>/dev/null || \
-         "$MYCORTEX_CLI" sync --source "$source" 2>/dev/null; then
+      if "$MYFLEET_CLI" sync --source "$source" --force 2>/dev/null || \
+         "$MYFLEET_CLI" sync --source "$source" 2>/dev/null; then
         echo -e "${GREEN}done${RESET}"
       else
         echo -e "${YELLOW}sync done (check output)${RESET}"
       fi
     else
       echo -n "  Syncing to mycortex... "
-      if "$MYCORTEX_CLI" sync --source "$source" 2>/dev/null; then
+      if "$MYFLEET_CLI" sync --source "$source" 2>/dev/null; then
         echo -e "${GREEN}done${RESET}"
       else
         echo -e "${YELLOW}sync done (check output)${RESET}"

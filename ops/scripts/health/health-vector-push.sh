@@ -74,7 +74,7 @@ V_NGINX=1         # [4]
 V_OLLAMA=1        # [5]
 V_MYCORTEX=1      # [6]
 V_DISK_OK=1       # [7]
-V_MYCORTEX_SRC=1  # [8]
+V_MYFLEET_SRC=1  # [8]
 
 # [0] resources — CPU load < 4x cores
 if command -v sysctl &>/dev/null; then
@@ -146,9 +146,9 @@ if [[ -d "$BRAIN_HOME" ]]; then
             HAS_SOURCE=1; break
         fi
     done
-    [[ "$HAS_SOURCE" -eq 0 ]] && V_MYCORTEX_SRC=-1
+    [[ "$HAS_SOURCE" -eq 0 ]] && V_MYFLEET_SRC=-1
 else
-    V_MYCORTEX_SRC=-1
+    V_MYFLEET_SRC=-1
 fi
 
 # ── Build PGMQ payload ──
@@ -156,7 +156,7 @@ NOW_TS=$(date +%s)
 HNAME='t'
 PAYLOAD=$(python3 -c "
 import json
-body = json.dumps({'v': [$V_RESOURCES,$V_SERVICES,$V_NO_ERR_CRONS,$V_NO_STALE,$V_NGINX,$V_OLLAMA,$V_MYCORTEX,$V_DISK_OK,$V_MYCORTEX_SRC], 'h': '$HNAME', 't': $NOW_TS})
+body = json.dumps({'v': [$V_RESOURCES,$V_SERVICES,$V_NO_ERR_CRONS,$V_NO_STALE,$V_NGINX,$V_OLLAMA,$V_MYCORTEX,$V_DISK_OK,$V_MYFLEET_SRC], 'h': '$HNAME', 't': $NOW_TS})
 msg = {'queue': 'inbox_health_check', 'message': {'from': '$AGENT_NAME', 'subject': 'HEALTH', 'body': body}}
 print(json.dumps(msg))
 " 2>>"$ERROR_LOG" || { echo "[$(date '+%Y-%m-%d %H:%M:%S')] python3 payload build failed - using fallback payload" >> "$ERROR_LOG"; echo '{"queue":"inbox_health_check","message":{"from":"'$AGENT_NAME'","subject":"HEALTH","body":"{}"}}'; })

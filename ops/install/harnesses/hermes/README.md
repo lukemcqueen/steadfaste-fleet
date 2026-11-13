@@ -34,16 +34,16 @@ hermes mcp add fleet-context \
 One session = one identity. Precedence is identical in every layer (args → env → git), which is what lets a checkpoint written here be restored by another harness.
 
 ```bash
-export CORTEX_SESSION_HARNESS=<value>
-export CORTEX_SESSION_REPO=<value>
-export CORTEX_SESSION_BRANCH=<value>
+export FLEET_SESSION_HARNESS=<value>
+export FLEET_SESSION_REPO=<value>
+export FLEET_SESSION_BRANCH=<value>
 ```
 
 Overrides (usually unnecessary, needed on macOS):
 
 ```bash
-export CORTEX_CONTEXT_CLI=<path>   # see the failure modes in the runbook
-export CORTEX_CONTEXT_PYTHON=<path>   # see the failure modes in the runbook
+export FLEET_CONTEXT_CLI=<path>   # see the failure modes in the runbook
+export FLEET_CONTEXT_PYTHON=<path>   # see the failure modes in the runbook
 ```
 
 ## Shared pieces (identical for every harness — never fork them)

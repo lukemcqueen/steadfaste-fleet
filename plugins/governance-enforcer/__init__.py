@@ -2386,7 +2386,7 @@ _PUBLIC_HOST_RE = re.compile(
     r"job-boards\.greenhouse\.io|jobs\.lever\.co|jobs\.ashbyhq\.com|"
     r"wanted\.co\.kr)"
 )
-_HERMES_CORTEX_REPO = Path.home() / "steadfaste-fleet"
+_HERMES_FLEET_REPO = Path.home() / "steadfaste-fleet"
 _HERMES_SKILLS_DIR = Path.home() / ".hermes" / "skills"
 
 
@@ -2407,7 +2407,7 @@ def _is_shared_surface_path(path: str) -> bool:
     if not path:
         return False
     p = str(Path(path).expanduser().resolve())
-    repo = str(_HERMES_CORTEX_REPO.resolve())
+    repo = str(_HERMES_FLEET_REPO.resolve())
     skills = str(_HERMES_SKILLS_DIR.resolve())
     return (
         p == repo

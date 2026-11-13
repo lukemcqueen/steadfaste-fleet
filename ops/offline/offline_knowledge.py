@@ -94,7 +94,7 @@ def _find_mycortex_cli():
         return candidate
     return candidate  # return best guess — caller fails gracefully
 
-MYCORTEX_CLI = _find_mycortex_cli()
+MYFLEET_CLI = _find_mycortex_cli()
 
 
 # ── Kiwix Helpers ───────────────────────────────────────────
@@ -295,11 +295,11 @@ def web_cache_search(query: str):
 
 def mycortex_search(query: str, source: str = None):
     """Search mycortex knowledge base (legacy brain decommissioned 2026-08-02)."""
-    if not MYCORTEX_CLI.exists():
+    if not MYFLEET_CLI.exists():
         return {"error": "mycortex not installed", "results": []}
 
     try:
-        cmd = [str(MYCORTEX_CLI), "search", query, "--limit", "3", "--json"]
+        cmd = [str(MYFLEET_CLI), "search", query, "--limit", "3", "--json"]
         if source:
             cmd.extend(["--source", source])
 
@@ -432,7 +432,7 @@ def system_stats():
     }
     
     # mycortex
-    mycortex_found = MYCORTEX_CLI.exists()
+    mycortex_found = MYFLEET_CLI.exists()
     stats["mycortex"] = {
         "status": "ready" if mycortex_found else "not installed",
     }

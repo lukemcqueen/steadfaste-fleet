@@ -38,7 +38,7 @@ get_val() { # <file> <key> → value (empty if absent)
 # Release 2 converts the .env to FLEET-only: every CORTEX_X line becomes
 # FLEET_X (dropping the legacy spelling), so a host's .env is FLEET_* and every
 # reader — already migrated to FLEET_* — resolves. FLEET_* is canonical: a
-# hand-set FLEET_X that DIFFERS from its CORTEX_X is a data conflict and aborts
+# hand-set FLEET_X that DIFFERS from its CORTEX_X sibling is a data conflict and aborts
 # (never guess). Idempotent and deterministic: once no CORTEX_ lines remain a
 # re-run rewrites the .env byte-identically. FLEET-only vars are preserved.
 materialize_dual_spellings() {   # convert <env-file> CORTEX_* -> FLEET_*

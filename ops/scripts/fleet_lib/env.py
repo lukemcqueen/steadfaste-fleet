@@ -1,23 +1,22 @@
-"""Canonical FLEET_* env resolution (release 2 - CORTEX_* fallback removed).
+"""Canonical FLEET_* env resolution (release 2 — CORTEX_* spelling retired).
 
-Canonical env var names are FLEET_*. Release 2 dropped the legacy CORTEX_*
-spelling: reading through `fleet_env.get()` resolves FLEET_<name> then the
-default. The external Hermes handshake still injects CORTEX_SESSION_*, so the
-session readers resolve FLEET_SESSION_* first and fall back to the
-CORTEX_SESSION_* the harness sets (an explicit, documented legacy fallback).
+Canonical env var names are FLEET_*. Reading through `fleet_env.get()`
+resolves FLEET_<name> then the default. There is NO legacy fallback: the
+CORTEX_* spelling is fully retired, and any reader that still needs a
+legacy name is a regression to fix.
 
 Migration history: the CORTEX_* -> FLEET_* migration (plan P4) used a dual-read
 fallback (FLEET first, then CORTEX with a loud deprecation warning) via this
 module. The fallback layer was removed in release 2 once every consumer read
-FLEET_* and hosts' .env carried
-FLEET_* (consolidate-env.sh converts the .env to FLEET-only).
+FLEET_* and hosts' .env carried FLEET_* (consolidate-env.sh converts the .env
+to FLEET-only).
 """
 
 import os
 
 
 def get(name: str, default=None):
-    """Resolve FLEET_<name>, else default. No legacy CORTEX_ fallback."""
+    """Resolve FLEET_<name>, else default. No legacy fallback."""
     return os.environ.get("FLEET_" + name, default)
 
 

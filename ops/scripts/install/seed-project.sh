@@ -35,7 +35,7 @@ TEMPLATES_DIR="${REPO_DIR}/docs/templates"
 AGENTS_TEMPLATE="${TEMPLATES_DIR}/AGENTS.seed.md"
 MANIFEST_TEMPLATE="${REPO_DIR}/skills.yaml"   # cortex owns the manifest at the repo root
 FLEET_COMMIT="$(cd "$REPO_DIR" && git rev-parse --short HEAD 2>/dev/null || echo 'unknown')"
-HERMES_CORTEX_SKILLS="${HOME}/.hermes/skills"  # resolved via symlink
+HERMES_FLEET_SKILLS="${HOME}/.hermes/skills"  # resolved via symlink
 
 # ── Help ─────────────────────────────────────────────────────
 show_help() {
@@ -559,7 +559,7 @@ deploy_skills() {
       local skill_trimmed="$(echo "$skill" | tr -d ' ')"
       # Search for the skill in ~/.hermes/skills/
       local skill_path
-      skill_path=$(find -L "$HERMES_CORTEX_SKILLS" -maxdepth 3 -type d -name "$skill_trimmed" 2>/dev/null | head -1)
+      skill_path=$(find -L "$HERMES_FLEET_SKILLS" -maxdepth 3 -type d -name "$skill_trimmed" 2>/dev/null | head -1)
       local dest="${project_skills}/${skill_trimmed}/SKILL.md"
       if [[ -n "$skill_path" ]]; then
         if [[ -f "$dest" ]]; then
@@ -580,7 +580,7 @@ deploy_skills() {
     local skill_trimmed="$(echo "$skill" | tr -d ' ')"
     [[ -z "$skill_trimmed" ]] && continue
     local skill_path
-    skill_path=$(find -L "$HERMES_CORTEX_SKILLS" -maxdepth 3 -type d -name "$skill_trimmed" 2>/dev/null | head -1)
+    skill_path=$(find -L "$HERMES_FLEET_SKILLS" -maxdepth 3 -type d -name "$skill_trimmed" 2>/dev/null | head -1)
     local dest="${project_skills}/${skill_trimmed}"
     if [[ -n "$skill_path" ]] && [[ -f "${skill_path}/SKILL.md" ]]; then
       if [[ ! -d "$dest" ]]; then

@@ -16,7 +16,7 @@ Contracts:
   * **Exit 0 whenever the tool ran** — including "memory unavailable". A harness
     hook or tool call must not fail the harness because memory was unreachable.
     Exit 1 only for a usage error (unknown tool, malformed JSON).
-  * Identity comes from CORTEX_SESSION_* env when set, else from git — the same
+  * Identity comes from FLEET_SESSION_* env when set, else from git — the same
     precedence the MCP server and the harness trigger use, so a checkpoint
     written here is restorable there.
 

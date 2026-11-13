@@ -55,7 +55,7 @@ def _find_manifest(explicit):
     """Locate deploy-manifest.tsv. Env first, then the canonical deploy home."""
     if explicit:
         return Path(explicit)
-    for env_name in ("FLEET_DEPLOY_HOME", "HERMES_CORTEX_HOME"):
+    for env_name in ("FLEET_DEPLOY_HOME", "FLEET_DEPLOY_HOME"):
         base = os.environ.get(env_name)
         if base and (Path(base) / _MANIFEST_NAME).is_file():
             return Path(base) / _MANIFEST_NAME
@@ -90,7 +90,7 @@ def main() -> int:
     manifest = _find_manifest(args.manifest)
     if manifest is None or not manifest.is_file():
         print(f"COULD NOT RESOLVE: no {_MANIFEST_NAME} found (looked at FLEET_DEPLOY_HOME, "
-              f"HERMES_CORTEX_HOME, ~/.steadfaste-fleet/{_MANIFEST_NAME}"
+              f"FLEET_DEPLOY_HOME, ~/.steadfaste-fleet/{_MANIFEST_NAME}"
               + (f", {args.manifest}" if args.manifest else "") + "). Nothing was checked.")
         return 2
 

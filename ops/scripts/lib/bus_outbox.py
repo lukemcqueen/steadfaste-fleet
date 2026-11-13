@@ -55,7 +55,7 @@ from pathlib import Path
 _scripts_dir = Path(__file__).resolve().parents[1]
 if str(_scripts_dir) not in sys.path:
     sys.path.insert(0, str(_scripts_dir))
-from fleet_lib.env import get as fleet_env_get  # CORTEX_* -> FLEET_* dual-read
+from fleet_lib.env import get as fleet_env_get  # FLEET_* only since release 2
 
 try:  # adversarial-ignore: error-swallow — dual-mode import fallback (lib. vs bare)
     from lib.fleet_bus import bus_peek, bus_send, bus_find_duplicate  # noqa: E402

@@ -17,7 +17,7 @@ PROJECT_PATH="${2:-${DEV_DIR:-${HOME}/Developer/AI}/${PROJECT_NAME}}"
 BRAIN_BASE="${HOME}/brain"
 HERMES_HOME="${HERMES_HOME:-${HOME}/.hermes}"
 PROFILES_DIR="${HERMES_HOME}/profiles"
-MYCORTEX_CLI="${HOME}/.steadfaste-fleet/scripts/mycortex"
+MYFLEET_CLI="${HOME}/.steadfaste-fleet/scripts/mycortex"
 
 # Resolve absolute path for PROJECT_PATH — refuse rather than leave it empty
 # (an empty PROJECT_PATH would make mkdir -p operate on ./ and proceed broken).
@@ -77,10 +77,10 @@ GITEOF
 fi
 
 # 4. Register as mycortex source (isolated, non-federated)
-if [[ -x "$MYCORTEX_CLI" ]]; then
-  if "$MYCORTEX_CLI" sources list 2>/dev/null | grep -q "\"name\": \"${PROJECT_NAME}\""; then
+if [[ -x "$MYFLEET_CLI" ]]; then
+  if "$MYFLEET_CLI" sources list 2>/dev/null | grep -q "\"name\": \"${PROJECT_NAME}\""; then
     echo "  ⏭ mycortex source '${PROJECT_NAME}' already registered"
-  elif "$MYCORTEX_CLI" sources add "${PROJECT_NAME}" "${BRAIN_DIR}" 2>/dev/null; then
+  elif "$MYFLEET_CLI" sources add "${PROJECT_NAME}" "${BRAIN_DIR}" 2>/dev/null; then
     echo "  ✅ mycortex source: ${PROJECT_NAME} (isolated)"
   else
     echo "  ⚠ Could not add mycortex source (mycortex may need re-init)" >&2

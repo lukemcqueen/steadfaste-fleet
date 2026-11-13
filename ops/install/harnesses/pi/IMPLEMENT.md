@@ -63,9 +63,9 @@ pi -e extensions/fleet-context.ts \
 Session identity (usually derived from git; pin it when it is not):
 
 ```bash
-export CORTEX_SESSION_HARNESS=pi
-export CORTEX_SESSION_REPO=<repo>
-export CORTEX_SESSION_BRANCH=<branch>
+export FLEET_SESSION_HARNESS=pi
+export FLEET_SESSION_REPO=<repo>
+export FLEET_SESSION_BRANCH=<branch>
 ```
 
 **Precedence is `args → env → git`, identical in every layer** — which is why a
@@ -77,7 +77,7 @@ checkpoint written here can be restored by Hermes, and vice versa.
 Silicon, `/usr/local/bin` on Intel; a GUI-launched Pi sees a narrower PATH):
 
 ```bash
-export CORTEX_CONTEXT_PYTHON=/opt/homebrew/bin/python3
+export FLEET_CONTEXT_PYTHON=/opt/homebrew/bin/python3
 ```
 
 The store has a darwin path (direct `psql` + 0600 `PGPASSFILE`) — it never shells
@@ -94,7 +94,7 @@ fleet-context mem_context '{}'      # JSON with "card": [...]
 ```
 
 `memory unavailable — … not an error` means the store is unreachable: fix that
-first (`MYCORTEX_MEM_PASSWORD` in `~/steadfaste-fleet/.env`; is Postgres up?). Do not
+first (`MYFLEET_MEM_PASSWORD` in `~/steadfaste-fleet/.env`; is Postgres up?). Do not
 debug the harness while the store is down.
 
 **b. Read path, from inside Pi:** call `mem_context`; your peer card must return.
@@ -110,8 +110,8 @@ debug the harness while the store is down.
    fleet log (`~/.steadfaste-fleet/logs/pi-context.log`), not the visible stream — see §4.
 
 **d. Session-start injection:** start a SECOND session. The checkpoint must appear
-without being asked, and `CORTEX_RESUME <key> facts=N` is appended to
-`~/.steadfaste-fleet/logs/pi-context.log` (set `CORTEX_CONTEXT_DEBUG=1` to also see it on
+without being asked, and `FLEET_RESUME <key> facts=N` is appended to
+`~/.steadfaste-fleet/logs/pi-context.log` (set `FLEET_CONTEXT_DEBUG=1` to also see it on
 stderr).
 
 **e. Fail-open:** stop the store, call a tool, confirm Pi continues with
@@ -122,24 +122,24 @@ stderr).
 ## 4. Read the log — it is the difference between "no memory" and "broken"
 
 Routine markers go to `~/.steadfaste-fleet/logs/pi-context.log` (rotates to
-`pi-context.log.1` at `CORTEX_CONTEXT_LOG_MAX_BYTES`, default 1 MiB). **Only failures
+`pi-context.log.1` at `FLEET_CONTEXT_LOG_MAX_BYTES`, default 1 MiB). **Only failures
 are printed on stderr** — in Pi stderr *is* the prompt area, so a routine line there
-scribbles over what the user is typing. `CORTEX_CONTEXT_DEBUG=1` echoes the routine
+scribbles over what the user is typing. `FLEET_CONTEXT_DEBUG=1` echoes the routine
 markers to stderr too, for when you are diagnosing live.
 
 | Marker | Where | Meaning |
 |---|---|---|
-| `CORTEX_RESUME <key> facts=N` | log | hook fired. **`facts=0` means the checkpoint was EMPTY** — content was not captured, not "nothing happened". |
-| `CORTEX_RESUME none` | log | no checkpoint found for this identity — check `CORTEX_SESSION_*` before assuming the store is empty. |
-| `CORTEX_CHECKPOINT_EMPTY turn=… keys=…` | log | the turn carried nothing recognisable. The `keys=` list is the event's real shape. |
-| `CORTEX_TOOL_EVENT <name> recorded` | log | the tool call was attributed to the session. |
-| `CORTEX_FAIL <tool>: …` | **stderr** | the CLI failed to run — usually a python path or CLI path problem. |
-| `CORTEX_TOOL_EVENT <name> FAILED` | **stderr** | attribution failed for that call. |
+| `FLEET_RESUME <key> facts=N` | log | hook fired. **`facts=0` means the checkpoint was EMPTY** — content was not captured, not "nothing happened". |
+| `FLEET_RESUME none` | log | no checkpoint found for this identity — check `FLEET_SESSION_*` before assuming the store is empty. |
+| `FLEET_CHECKPOINT_EMPTY turn=… keys=…` | log | the turn carried nothing recognisable. The `keys=` list is the event's real shape. |
+| `FLEET_TOOL_EVENT <name> recorded` | log | the tool call was attributed to the session. |
+| `FLEET_FAIL <tool>: …` | **stderr** | the CLI failed to run — usually a python path or CLI path problem. |
+| `FLEET_TOOL_EVENT <name> FAILED` | **stderr** | attribution failed for that call. |
 
 **Every other state stays silent.** Diagnosing whether a checkpoint landed is done
 by *reading it back* (`session_restore`), never by watching stderr; a clean resume
 or turn writes nothing, because success is not a finding and noise here sits
-directly above the TUI input prompt. Only `CORTEX_FAIL` (and `CORTEX_TOOL_EVENT …
+directly above the TUI input prompt. Only `FLEET_FAIL` (and `FLEET_TOOL_EVENT …
 FAILED`) are written — and only when something is actually broken.
 
 ---
@@ -321,6 +321,6 @@ Tell the orchestrator, in this order:
 2. `fleet-context mem_context '{}'` output (or the failure message).
 3. The checkpoint you proved, quoted from `session_restore` — not a claim that
    it works.
-4. Any `CORTEX_*` stderr line that is not what you expected.
+4. Any unexpected `FLEET_*` stderr line (an env-var leak or a leftover from an older deploy).
 
 A wiring you have not exercised is not a wiring. Quote the tool output.

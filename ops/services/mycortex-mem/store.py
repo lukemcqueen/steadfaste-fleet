@@ -46,7 +46,7 @@ _MAX_SESSION_KEY = 200
 
 
 def _canonical_mem_env_paths() -> list[Path]:
-    """Canonical cortex config files that may carry MYCORTEX_MEM_PASSWORD.
+    """Canonical cortex config files that may carry MYFLEET_MEM_PASSWORD.
 
     `~/steadfaste-fleet/.env` is the repo/dev secrets file (gitignored); the deployed
     form is `~/.steadfaste-fleet/.env`. Resolution order mirrors how every harness
@@ -57,10 +57,10 @@ def _canonical_mem_env_paths() -> list[Path]:
 
 
 def resolve_mem_password(env_paths: Optional[list[Path]] = None) -> str:
-    """MYCORTEX_MEM_PASSWORD — harness-set override first, then the cortex .env.
+    """MYFLEET_MEM_PASSWORD — harness-set override first, then the cortex .env.
 
     Order:
-      1. ``os.environ["MYCORTEX_MEM_PASSWORD"]`` if non-empty — a harness (Hermes CLI,
+      1. ``os.environ["MYFLEET_MEM_PASSWORD"]`` if non-empty — a harness (Hermes CLI,
          Pi, any future one) sets this to override the shared config.
       2. The canonical cortex ``.env`` files (pass ``env_paths`` to pin the location,
          e.g. from a test; defaults to ``_canonical_mem_env_paths()``).
@@ -73,13 +73,13 @@ def resolve_mem_password(env_paths: Optional[list[Path]] = None) -> str:
     service-specific environment injection. Hermes-specific env wiring is intentionally
     NOT used — the store resolves its own config from the cortex home.
     """
-    from_env = os.environ.get("MYCORTEX_MEM_PASSWORD", "")
+    from_env = os.environ.get("MYFLEET_MEM_PASSWORD", "")
     if from_env:
         return from_env
     for candidate in env_paths if env_paths is not None else _canonical_mem_env_paths():
         try:
             for line in candidate.read_text().splitlines():
-                if line.startswith("MYCORTEX_MEM_PASSWORD="):
+                if line.startswith("MYFLEET_MEM_PASSWORD="):
                     return line.split("=", 1)[1].strip().strip('"').strip("'")
         except OSError:
             continue

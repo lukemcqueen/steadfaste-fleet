@@ -79,10 +79,10 @@ def is_valid_transition(from_state: str, to_state: str) -> bool:
 #   3. <script_dir>/scripts         — repo-layout fallback (mcp-servers/../scripts)
 _HERMES_HOME = Path.home() / ".hermes"
 _HERMES_SCRIPTS = _HERMES_HOME / "scripts"
-_CORTEX_DEPLOY_SCRIPTS = Path.home() / ".steadfaste-fleet" / "scripts"
+_FLEET_DEPLOY_SCRIPTS = Path.home() / ".steadfaste-fleet" / "scripts"
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _REPO_SCRIPTS = _SCRIPT_DIR.parent / "scripts"
-for _candidate in (_HERMES_SCRIPTS, _CORTEX_DEPLOY_SCRIPTS, _REPO_SCRIPTS):
+for _candidate in (_HERMES_SCRIPTS, _FLEET_DEPLOY_SCRIPTS, _REPO_SCRIPTS):
     if _candidate.exists():
         sys.path.insert(0, str(_candidate))
 
@@ -585,8 +585,8 @@ def _injected_session_id(args: dict | None) -> str:
 # One MCP child serves ONE session, which is why an env value is a correct
 # discriminator — the same premise the process-scoped fallback below relies on.
 # 2026-11-13: FLEET-only. The gateway (gateway-esther0001.yaml) was repointed to
-# FLEET_SESSION_* and the Hermes runtime injects no CORTEX_* into agent env
-# (verified) — no legacy CORTEX_SESSION_KEY fallback is kept.
+# FLEET_SESSION_* and the Hermes runtime injects no legacy session spelling into
+# agent env (verified) — no fallback is kept.
 _ENV_SESSION_ID_SOURCES = (
     ("FLEET_SESSION_KEY", "session_key"),
     ("PI_SESSION_ID", "pi_session_id"),
@@ -674,7 +674,7 @@ def _session_repo_env_path() -> Optional[Path]:
     that is not a real git repo is rejected, so a bogus one cannot point a review
     at an arbitrary directory.
     """
-    # 2026-11-13: FLEET-only (gateway repointed; no CORTEX_SESSION_REPO fallback).
+    # 2026-11-13: FLEET-only (gateway repointed; no FLEET_SESSION_REPO fallback).
     raw = (os.environ.get("FLEET_SESSION_REPO") or "").strip()
     if not raw:
         return None
@@ -4958,7 +4958,7 @@ def _authored_commits(repo: Path, base: str, author: str) -> list:
 #: Commit trailer that names the SESSION that made a commit. Written by the
 #: `prepare-commit-msg` hook from the live governance lock (never from an env var), and the only
 #: discriminator between two sessions of one agent on one host — they share a git identity.
-FLEET_SESSION_TRAILER = "Cortex-Session"
+FLEET_SESSION_TRAILER = "FLEET-Session"
 
 #: How many of an excluded commit's file names the disclosure lists before summarising the rest.
 #: Bounded because a peer's commit can touch hundreds of files, and the block is DISCLOSURE —
@@ -4967,7 +4967,7 @@ PEER_SESSION_FILES_SHOWN = 20
 
 
 def _commit_session(repo: Path, sha: str) -> str:
-    """The commit's ``Cortex-Session:`` trailer, or "" when absent or AMBIGUOUS.
+    """The commit's ``FLEET-Session:`` trailer, or "" when absent or AMBIGUOUS.
 
     The trailer is written by the `prepare-commit-msg` hook from the LIVE governance lock — not
     from any env var an agent can export — so it is the one discriminator that separates two
@@ -5037,12 +5037,12 @@ def _peer_session_block(repo: Path, shas: list) -> str:
     if not shas:
         return ""
     lines = ["\n[OTHER SESSIONS' COMMITS in this window — DISCLOSED, NOT REVIEWED. They carry a "
-             "Cortex-Session trailer naming a different session, so they are outside the audited "
+             "FLEET-Session trailer naming a different session, so they are outside the audited "
              "change; their diffs are omitted by design.]\n"]
     for sha in shas:
         subject = _git_capture(repo, "log", "-1", "--format=%h %s", sha).strip()
         session = _commit_session(repo, sha)
-        lines.append(f"  {subject}   [Cortex-Session: {session}]\n")
+        lines.append(f"  {subject}   [FLEET-Session: {session}]\n")
         # The FILE NAMES, so a reader can see what was excluded — never the diff.
         names = [p for p in _git_capture(repo, "show", "--name-only", "--format=",
                                          sha).splitlines() if p.strip()]

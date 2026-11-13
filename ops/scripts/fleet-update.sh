@@ -183,7 +183,7 @@ if [[ -f "${HOME}/.hermes/.env" ]]; then
 fi
 
 # Release 2: FLEET_DEPLOY_HOME is the sole spelling; the CORTEX_* compat mirror
-# and the CORTEX_DEPLOY_HOME alias were removed (hosts' .env is FLEET-only via
+# and the FLEET_DEPLOY_HOME alias were removed (hosts' .env is FLEET-only via
 # consolidate-env.sh).
 FLEET_DEPLOY_HOME="${FLEET_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}"
 export FLEET_DEPLOY_HOME
@@ -1986,7 +1986,7 @@ JSON
 
   # last-update.txt — human-readable (stdout-friendly format)
   {
-    echo "━━━ Cortex Update — ${timestamp} ━━━"
+    echo "━━━ Fleet Update — ${timestamp} ━━━"
     echo "Host: ${hostname}"
     echo "Repo: ${new_ref:0:8} (was ${old_ref:0:8})"
     echo "Files: ${COPIED:-0} updated, ${REMOVED:-0} removed"
@@ -3007,7 +3007,7 @@ install_precommit_hook() {
         # close stays whole-window) or a WRITABLE enforcement dir; both must be visible.
         if ! ${_prepmsg_lp} "$_prepmsg_helper" unlock --fleet-update; then
           warn "  prepare-commit-msg hook NOT deployed: '${_prepmsg_lp} ${_prepmsg_helper} unlock --fleet-update' failed —"
-          warn "    commits in this repo will carry NO Cortex-Session trailer (closes stay whole-window)"
+          warn "    commits in this repo will carry NO FLEET-Session trailer (closes stay whole-window)"
         else
           rm -f "$prepmsg_dest" 2>/dev/null || true
           ln -sf "$prepmsg_src" "$prepmsg_dest" 2>/dev/null || true
@@ -3017,7 +3017,7 @@ install_precommit_hook() {
             info "Symlinked shared prepare-commit-msg hook → ${prepmsg_src/$HOME/\\~}"
           else
             warn "  prepare-commit-msg hook NOT deployed: no symlink at ${prepmsg_dest} after unlock —"
-            warn "    commits in this repo will carry NO Cortex-Session trailer (closes stay whole-window)"
+            warn "    commits in this repo will carry NO FLEET-Session trailer (closes stay whole-window)"
           fi
           # Relock and report failure: a left-open hooks dir weakens EVERY cortex hook on the host.
           if ! ${_prepmsg_lp} "$_prepmsg_helper" lock; then
@@ -3117,7 +3117,17 @@ main() {
   # legitimately point elsewhere (a different venv, a Homebrew python on macOS).
   _agent_env="${HOME}/.steadfaste-fleet/agent.env"
   _declared_default="${HOME}/.steadfaste-fleet/venv/bin/python3"
-  if [[ -f "$_agent_env" ]] && grep -q '^FLEET_PYTHON=' "$_agent_env" 2>/dev/null; then
+  # The env namespace migrated CORTEX_* -> FLEET_* (release 2, 2026-11-13). An agent.env
+  # written before that still holds the retired spelling and NOTHING else prunes it, so a
+  # legacy line survives every deploy and the host reads as half-migrated. Strip them here
+  # (idempotent) so the file converges to FLEET_-only on the next update.
+  if [[ -f "$_agent_env" ]] && grep -q '^CORTEX_' "$_agent_env"; then
+    _legacy_n="$(grep -c '^CORTEX_' "$_agent_env")"
+    _kept="$(grep -v '^CORTEX_' "$_agent_env" || true)"
+    printf '%s\n' "$_kept" > "$_agent_env"
+    warn "agent.env: removed ${_legacy_n} retired CORTEX_* line(s) — FLEET_* is the only spelling"
+  fi
+  if [[ -f "$_agent_env" ]] && grep -q '^FLEET_PYTHON=' "$_agent_env"; then
     info "Fleet interpreter: $(grep -E '^FLEET_PYTHON=' "$_agent_env" | head -1 | cut -d= -f2-) (declared in agent.env)"
   elif [[ -f "$_agent_env" ]]; then
     printf 'FLEET_PYTHON=%s\n' "$_declared_default" >> "$_agent_env"
@@ -3127,7 +3137,7 @@ main() {
   fi
 
   echo ""
-  echo -e "${BOLD}━━━ Cortex Update ━━━${RESET}"
+  echo -e "${BOLD}━━━ Fleet Update ━━━${RESET}"
   echo ""
 
   # Verify we're in the repo

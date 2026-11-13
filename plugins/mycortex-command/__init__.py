@@ -26,13 +26,13 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-_MYCORTEX_CLI = Path.home() / ".steadfaste-fleet" / "scripts" / "mycortex"
+_MYFLEET_CLI = Path.home() / ".steadfaste-fleet" / "scripts" / "mycortex"
 _SEARCH_TIMEOUT = 30
 _DEFAULT_LIMIT = 8
 
 
 def _cli_path() -> str:
-    return str(_MYCORTEX_CLI) if _MYCORTEX_CLI.exists() else "mycortex"
+    return str(_MYFLEET_CLI) if _MYFLEET_CLI.exists() else "mycortex"
 
 
 def _get_sources() -> dict[str, str]:

@@ -23,7 +23,7 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BOLD='\033[1m'; RESET='\033[0m'
 BRAIN_DIR="${HOME}/brain"
 DEV_DIR="${DEV_DIR:-${HOME}/Developer/AI}"
-MYCORTEX_CLI="${HOME}/.steadfaste-fleet/scripts/mycortex"
+MYFLEET_CLI="${HOME}/.steadfaste-fleet/scripts/mycortex"
 BUN_PATH="${HOME}/.bun/bin"
 ACTION=""
 FILTER_PROJECT=""
@@ -64,7 +64,7 @@ count_brain_pages() {
 # Check if a mycortex source is registered (leading spaces in sources list)
 is_source_registered() {
   local name="$1"
-  "$MYCORTEX_CLI" sources list 2>/dev/null | grep -q "\"name\": \"${name}\""
+  "$MYFLEET_CLI" sources list 2>/dev/null | grep -q "\"name\": \"${name}\""
 }
 
 # Seed a brain directory from a project repo
@@ -159,11 +159,11 @@ seed_brain() {
 
   # Register mycortex source
   if ! is_source_registered "$name"; then
-    "$MYCORTEX_CLI" sources add "$name" "$brain_dir" 2>/dev/null && echo "  mycortex source registered"
+    "$MYFLEET_CLI" sources add "$name" "$brain_dir" 2>/dev/null && echo "  mycortex source registered"
   fi
 
   # Sync
-  "$MYCORTEX_CLI" sync --source "$name" 2>/dev/null && echo "  Synced to mycortex"
+  "$MYFLEET_CLI" sync --source "$name" 2>/dev/null && echo "  Synced to mycortex"
   # Report pages
   local final_pages
   final_pages=$(count_brain_pages "$brain_dir")

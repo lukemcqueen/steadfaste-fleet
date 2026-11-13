@@ -13,7 +13,7 @@ fail2ban filters.
 | **nginx** | Required. The deploy scripts install configs and reload nginx. |
 | **fail2ban** | Required for automated bans. The pipeline integrates with fail2ban filters. |
 | **sudoers entry** | Passwordless sudo for `/usr/local/sbin/install-nginx-full.sh` + nginx commands. Not needed for the Python script if the user has root access via other means. |
-| **Env file** | `~/steadfaste-fleet/.env` (gitignored) — set your `CORTEX_*` vars. The deploy scripts auto-source this. See `.env.example` for all options. |
+| **Env file** | `~/steadfaste-fleet/.env` (gitignored) — set your `FLEET_*` vars. The deploy scripts auto-source this. See `.env.example` for all options. |
 
 **Agents without nginx/fail2ban** should skip this pipeline entirely.
 The scanner silently exits when nginx logs aren't found, but there's
@@ -29,7 +29,7 @@ no benefit to running it on a host without nginx.
 | `nginx-badbots.conf` | **Input:** fail2ban filter for archive scanners + `/storage/` crawling |
 | `install-nginx-full.sh` | **Full deploy** bash script — nginx configs + SSL + blocked IPs + fail2ban. Used for fresh installs and full deploys. Daily pipeline uses `deploy-blocked-ips.sh` for incremental updates. |
 | `hermes-services-apply.py` | **Primary** Python deploy script — auto-discovers SSL, supports `--dry-run`, handles port prefixes and `allow-ips-manual.conf` |
-| `~/steadfaste-fleet/.env.example` | **Env template** — copy to `.env`, set `CORTEX_SSL_*` vars. Gitignored, auto-sourced by deploy scripts. |
+| `~/steadfaste-fleet/.env.example` | **Env template** — copy to `.env`, set `FLEET_SSL_*` vars. Gitignored, auto-sourced by deploy scripts. |
 | `allow-ips-manual.conf` | **Per-machine** (not in git): manual allow list at `/etc/nginx/allow-ips-manual.conf` — IPs listed here override blocked_ips.conf |
 | `README.md` | This file |
 
@@ -62,7 +62,7 @@ sudo visudo -cf /etc/sudoers.d/hermes-security
 ```
 
 No `env_keep` needed — all deploy scripts auto-source `~/steadfaste-fleet/.env`
-internally. Set your `CORTEX_*` vars in the env file once, and every deploy picks
+internally. Set your `FLEET_*` vars in the env file once, and every deploy picks
 them up automatically.
 
 ### 4. Ensure input files exist
@@ -97,7 +97,7 @@ python3 ops/install/deploy/nginx/hermes-services-apply.py --dry-run
 python3 ops/install/deploy/nginx/hermes-services-apply.py
 
 # Or with explicit port prefix
-CORTEX_NGINX_PORT_PREFIX=12 python3 ops/install/deploy/nginx/hermes-services-apply.py
+FLEET_NGINX_PORT_PREFIX=12 python3 ops/install/deploy/nginx/hermes-services-apply.py
 ```
 
 What it does:
@@ -157,8 +157,8 @@ sudo nginx -t && echo "✓ Config valid"
 The config template (`hermes-services.conf`) uses `__SSL_CERT__` and `__SSL_CERT_KEY__`
 placeholders. All deploy scripts auto-discover certificates in this priority:
 
-1. `CORTEX_SSL_CERT_PATH` / `CORTEX_SSL_CERT_KEY_PATH` env vars (explicit paths)
-2. `CORTEX_SSL_DOMAIN` → `/etc/letsencrypt/live/<domain>/`
+1. `FLEET_SSL_CERT_PATH` / `FLEET_SSL_CERT_KEY_PATH` env vars (explicit paths)
+2. `FLEET_SSL_DOMAIN` → `/etc/letsencrypt/live/<domain>/`
 3. Scan all directories under `/etc/letsencrypt/live/`
 4. `$HOME/certs/fullchain.pem` + `privkey.pem`
 
@@ -174,9 +174,9 @@ cp ~/steadfaste-fleet/.env.example ~/steadfaste-fleet/.env
 vim ~/steadfaste-fleet/.env
 
 # 2. Edit with your cert paths or domain
-#  CORTEX_SSL_CERT_PATH=/etc/letsencrypt/live/example.com/fullchain.pem
-#  CORTEX_SSL_CERT_KEY_PATH=/etc/letsencrypt/live/example.com/privkey.pem
-#  CORTEX_SSL_DOMAIN=example.com
+#  FLEET_SSL_CERT_PATH=/etc/letsencrypt/live/example.com/fullchain.pem
+#  FLEET_SSL_CERT_KEY_PATH=/etc/letsencrypt/live/example.com/privkey.pem
+#  FLEET_SSL_DOMAIN=example.com
 
 # 3. Deploy (auto-sources the env file internally)
 python3 ~/steadfaste-fleet/ops/install/deploy/nginx/hermes-services-apply.py --dry-run
@@ -185,7 +185,7 @@ python3 ~/steadfaste-fleet/ops/install/deploy/nginx/hermes-services-apply.py
 
 ### Env var reference
 
-See `docs/env-vars.md` for the full reference of all `CORTEX_*` variables.
+See `docs/env-vars.md` for the full reference of all `FLEET_*` variables.
 
 ---
 

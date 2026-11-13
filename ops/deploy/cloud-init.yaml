@@ -61,7 +61,7 @@ write_files:
 
       [Hermes-Dashboard]
       title=Steadfaste Fleet Dashboard
-      description=Cortex dashboard UI (13001)
+      description=Fleet dashboard UI (13001)
       ports=13001/tcp
 
       [Hermes-Langfuse]

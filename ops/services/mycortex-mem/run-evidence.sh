@@ -2,7 +2,7 @@
 # run-evidence.sh — regenerate EVIDENCE.md, the committed proof that psql can never
 # prompt from the mycortex-mem store.
 #
-# The bug: without `-w`, psql prompts on /dev/tty when MYCORTEX_MEM_PASSWORD is empty or
+# The bug: without `-w`, psql prompts on /dev/tty when MYFLEET_MEM_PASSWORD is empty or
 # the PGPASSFILE is wrong. The prompt never reaches stdout/stderr, so the caller HANGS
 # (or times out) instead of failing — and in a TUI harness the prompt is written into
 # the prompt area.
@@ -23,7 +23,7 @@ if [ -z "$REPO" ] || [ ! -d "$REPO" ]; then
   REPO="$(cd "$HERE/../../.." && pwd)"
 fi
 OUT="$HERE/EVIDENCE.md"
-PY="${MYCORTEX_EVIDENCE_PYTHON:-python3}"
+PY="${MYFLEET_EVIDENCE_PYTHON:-python3}"
 GUARD_TESTS="$REPO/tests/test_mycortex_mem_psql_no_password.py"
 PLUGIN="$REPO/plugins/mycortex-mem/__init__.py"
 STORE="$HERE/store.py"
@@ -44,7 +44,7 @@ assert patched != source, "the -w anchors moved — update this RED case"
 assert '"-w"' not in patched and '"-w ' not in patched, "the flag survived the mutation"
 pathlib.Path(sys.argv[2]).write_text(patched)
 PY
-red_out="$(MYCORTEX_MEM_STORE_PATH="$TMP/store-no-w.py" "$PY" -m pytest \
+red_out="$(MYFLEET_MEM_STORE_PATH="$TMP/store-no-w.py" "$PY" -m pytest \
   "$GUARD_TESTS::test_store_fails_fast_and_never_prompts_without_a_password" -q 2>&1)"; red_rc=$?
 
 verdict() { [ "$1" -eq 0 ] && echo "PASS (exit 0)" || echo "FAIL (exit $1)"; }

@@ -12,7 +12,7 @@
 #   * NEVER blocks a commit — every path ends `exit 0`. This hook runs in EVERY repo on the host
 #     (global core.hooksPath), including repos with no cortex tree and no lock.
 #   * No lock for THIS repo, no python3, no writable message file ⇒ do nothing.
-#   * ANY pre-existing `Cortex-Session:` line is REMOVED and exactly one authoritative trailer is
+#   * ANY pre-existing `FLEET-Session:` line is REMOVED and exactly one authoritative trailer is
 #     appended, so a hand-written trailer cannot survive a governed commit.
 #   * Idempotent: re-running (amend, retry) produces a byte-identical message.
 #
@@ -105,11 +105,11 @@ except OSError:
     sys.exit(0)
 body = "\n".join(
     line for line in text.splitlines()
-    if not re.match(r"^\s*Cortex-Session\s*:", line, re.IGNORECASE)
+    if not re.match(r"^\s*FLEET-Session\s*:", line, re.IGNORECASE)
 ).rstrip()
 try:
     with open(path, "w", encoding="utf-8") as fh:
-        fh.write(f"{body}\n\nCortex-Session: {session}\n")
+        fh.write(f"{body}\n\nFLEET-Session: {session}\n")
 except OSError:
     pass
 PY

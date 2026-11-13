@@ -8,7 +8,7 @@ Deployed hooks are **absolute symlinks** created at:
 - `~/.steadfaste-fleet/hooks/post-commit` → `~/.steadfaste-fleet/scripts/post-commit-audit`
 - `~/.steadfaste-fleet/hooks/post-push` → `~/.steadfaste-fleet/scripts/post-push-audit`
 - `~/.steadfaste-fleet/hooks/prepare-commit-msg` → `~/.steadfaste-fleet/scripts/prepare-commit-msg-session`
-  (stamps each governed commit with a `Cortex-Session:` trailer from the live lock, so a close
+  (stamps each governed commit with a `FLEET-Session:` trailer from the live lock, so a close
   review can scope itself to its own session; never blocks a commit)
 - `~/.steadfaste-fleet/hooks/post-merge` → standalone file (registered in fleet-update.sh)
 
