@@ -4,18 +4,49 @@ The material contract is in `adversarial-gate-material.md`. This file is the oth
 half: WHO performs the review, how it is dispatched, and how to tell which engine
 actually ran.
 
-## One fleet-wide configuration (canonical, 2026-10-07)
+## One fleet-wide configuration (canonical, 2026-10-07; updated 2026-11-13 — DRY)
 
 All agents configure the reviewer the SAME way — a single chat-completions
 transport, not a per-host mix:
 
 - **`ADVERSARIAL_REVIEW_BACKEND=llm`** on every host.
-- **`ADVERSARIAL_REVIEWER_MODEL=deepseek/deepseek-v4-pro-0813`** — the sole reviewer
-  model (distinct from the worker's model). Do not reuse a host's worker model
-  for reviews; a model reviewing its own output is not a review.
+- **Reviewer model = ONE source, `fleet_lib/models.py`** (DRY, 2026-11-13, cycle
+  8265). The canonical model is `deepseek/deepseek-v4-pro-0813`, declared once as
+  `REVIEWER_MODEL_DEFAULT` in `ops/scripts/fleet_lib/models.py`; every surface
+  resolves it through `get_reviewer_model()`:
+  - `mcp-servers/loop-gov-mcp.py` (close gate) — imports `REVIEWER_MODEL_DEFAULT`
+    from `fleet_lib.models` (fail-closed: a missing fleet_lib refuses rather than
+    silently re-picking a judge);
+  - `ops/scripts/orch-bus/adversarial-review.py` (plan reviewer) — all 3 model
+    sites call `get_reviewer_model()`;
+  - `mcp-servers/deepseek-review-mcp.py` — `DEFAULT_MODEL` resolves through it
+    (dev-tool: keeps a literal fallback);
+  - `ops/scripts/manage/reviewer-agent-pi.sh` — reads `ADVERSARIAL_REVIEWER_MODEL`
+    first, falls back to the canonical id (no `openrouter/` prefix — pi adds its
+    own routing prefix).
+  Do not reuse a host's worker model for reviews; a model reviewing its own
+  output is not a review.
 - Endpoint and credential as below (`ADVERSARIAL_REVIEW_BASE_URL` default
   OpenRouter; `ADVERSARIAL_REVIEW_API_KEY_ENV` names a credential when strict
   binding is wanted).
+
+### Changing the reviewer model (fleet-wide)
+
+Due to DRY, changing the reviewer is now a **ONE-LINE edit** to
+`REVIEWER_MODEL_DEFAULT = "…"` in `ops/scripts/fleet_lib/models.py`, then a
+normal fleet update. `fleet-update.sh` already deploys `ops/scripts/fleet_lib/models.py`
+→ `~/.steadfaste-fleet/scripts/fleet_lib/models.py`, so the new value lands on
+every host, and the doctor's "Adversarial reviewer model config" check reads the
+same single source. A host may override per-host with the `ADVERSARIAL_REVIEWER_MODEL`
+env var, which `get_reviewer_model()` honors first.
+
+**Verification on a fleet update:** after deploying, run
+`AGENT_NAME=<host> python3 ~/.steadfaste-fleet/scripts/review-volume-metrics.py --json-summary`
+(uses fleet_lib resolution) and the doctor (the "Adversarial reviewer model
+config" line should PASS, stating the canonical id). If you ever see a
+"cannot read REVIEWER_MODEL_DEFAULT" WARN, `ops/scripts/fleet_lib/models.py` is
+missing/stale on that host — restore it (deploy), don't hand-edit a per-surface
+copy.
 
 The `agent` transport (a coding agent on stdin — `ADVERSARIAL_REVIEW_AGENT_CMD`)
 still exists as the documented **fallback only**: use it when a host must review on
