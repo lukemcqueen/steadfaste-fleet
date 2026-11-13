@@ -341,7 +341,7 @@ metric signal. Explain the metric connection to the user.
 3. Gentle neck circles — 5 each direction
 4. Shoulder shrugs — 10 reps (squeeze up, release)
 
-### Motor Fleet Activation
+### Motor Cortex Activation
 **Duration**: 2 minutes
 **Trigger**: Very high stillness, prolonged static sitting
 **Instructions**:
