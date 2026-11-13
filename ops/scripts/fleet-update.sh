@@ -1631,7 +1631,7 @@ is_skill_stub() {
 }
 
 # Copies SKILL.md files and references/ from repo skills/ directories
-# to ${FLEET_DEPLOY_HOME}/skills — the tree CORTEX OWNS. Cycle 13491 inverted the
+# to ${FLEET_DEPLOY_HOME}/skills — the tree the deploy owns. Cycle 13491 inverted the
 # direction: the Hermes path (~/.hermes/skills) is a POINTER to this tree, not the
 # canonical store, so the deploy writes the real tree and every harness reads it
 # through a link (see ops/scripts/manage/migrate-skills-ownership.py). Uses the delta

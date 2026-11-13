@@ -93,7 +93,7 @@ CALLER'S OWN ENVIRONMENT**, because one MCP child process serves one session —
 the same premise the module already relies on for its process-scoped fallback.
 
 Precedence, each value stripped and ignored when empty:
-  1. `CORTEX_SESSION_KEY`   — the fleet's documented per-session key
+  1. `FLEET_SESSION_KEY`   — the fleet's documented per-session key
   2. `PI_SESSION_ID`        — Pi's own documented "Current session ID"
 
 The derived id is namespaced so it can never be mistaken for a Hermes session id
@@ -116,14 +116,14 @@ reason that file exists.
 
 ## 4. THE ENV NAMES ARE SURVEYED, NOT INVENTED
 
-- `CORTEX_SESSION_KEY` — already the fleet's per-session identity. Documented in
+- `FLEET_SESSION_KEY` — already the fleet's per-session identity. Documented in
   `docs/runbooks/context-integration.md` ("One session = one identity.
-  Precedence is args -> CORTEX_SESSION_* env -> git"), consumed by
+  Precedence is args -> FLEET_SESSION_* env -> git"), consumed by
   `ops/services/mycortex-mem/context_tools.py` and
   `ops/scripts/session-autocheckpoint.py`, and pinned per chat by the
   fleet-gateway `command` backend for Pi:
   `ops/scripts/fleet_gateway/agents.py` ("Declaring
-  env: {\"CORTEX_SESSION_KEY\": \"{session_id}\"} makes each chat its own"),
+  env: {\"FLEET_SESSION_KEY\": \"{session_id}\"} makes each chat its own"),
   `ops/scripts/gateway-pi.example.yaml`.
 - `PI_SESSION_ID` — Pi's own variable, documented in the installed package at
   `~/.pi/agent/install/releases/1.4.0/node_modules/@earendil-works/pi-coding-agent/docs/environment-variables.md`:
@@ -173,11 +173,11 @@ No new configuration name is introduced.
 New file `tests/test_harness_session_id_env.py`, driving the module's own
 `get_session_id` with the environment controlled per subprocess:
 
-1. two DIFFERENT `CORTEX_SESSION_KEY` values in ONE repo -> DISJOINT ids, and two
+1. two DIFFERENT `FLEET_SESSION_KEY` values in ONE repo -> DISJOINT ids, and two
    lock files coexist (the defect's headline case).
 2. `PI_SESSION_ID` alone -> used; id is stable across two processes with the same
    value (survives an MCP-child restart).
-3. `CORTEX_SESSION_KEY` wins when both are set.
+3. `FLEET_SESSION_KEY` wins when both are set.
 4. a per-call injected `session_id` still wins over both env values.
 5. an env value of "" / whitespace -> ignored, falls through to the per-repo id.
 6. sanitisation: a value containing `/`, `\`, whitespace, a newline and a `..`
