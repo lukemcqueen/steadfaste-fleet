@@ -586,6 +586,7 @@ def _injected_session_id(args: dict | None) -> str:
 # discriminator — the same premise the process-scoped fallback below relies on.
 _ENV_SESSION_ID_SOURCES = (
     ("FLEET_SESSION_KEY", "session_key"),
+    ("CORTEX_SESSION_KEY", "session_key"),   # Hermes handshake legacy; FLEET checked first
     ("PI_SESSION_ID", "pi_session_id"),
     ("CLAUDE_CODE_SESSION_ID", "claude_session"),
     ("CODEX_SESSION_ID", "codex_session"),
@@ -671,7 +672,7 @@ def _session_repo_env_path() -> Optional[Path]:
     that is not a real git repo is rejected, so a bogus one cannot point a review
     at an arbitrary directory.
     """
-    raw = (os.environ.get("FLEET_SESSION_REPO") or "").strip()
+    raw = (os.environ.get("FLEET_SESSION_REPO") or os.environ.get("CORTEX_SESSION_REPO") or "").strip()
     if not raw:
         return None
     candidates = ([Path(raw).expanduser()] if raw.startswith(("/", "~"))
