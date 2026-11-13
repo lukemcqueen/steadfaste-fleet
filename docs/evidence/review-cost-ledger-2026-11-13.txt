@@ -1,0 +1,42 @@
+Review-cost ledger — measured review_calls tokens, 2026-11-13
+generated-by: bus EXEC dispatch of review-volume-metrics.py --json-summary to esther + titus (this session), plus local moses query
+method: each host reads its OWN loop-governance.db review_calls table (per-call tokens recorded from the provider's own usage at BOTH call sites since 2026-11-10)
+
+COMMANDS (re-run to reproduce):
+  fleet exec esther review-volume-metrics.py --json-summary
+  fleet exec titus  review-volume-metrics.py --json-summary
+  (moses local: python3 ops/scripts/manage/review-volume-metrics.py --json-summary)
+
+==============================================================================
+ESTHER  (db ~/.steadfaste-fleet/data/loop-governance.db on the esther host)
+==============================================================================
+review_calls present: True
+  source=close n=970 prompt=5,765,696 completion=341,902 reasoning=785,016
+  source=plan  n=51  prompt=336,772  completion=780,387 reasoning=747,191
+  per_day (window): oldest=2026-11-10 n=53 prompt=301,940 completion=733,410
+                    newest=2026-11-13 n=384 prompt=2,319,902 completion=132,542
+
+==============================================================================
+TITUS  (db ~/.steadfaste-fleet/data/loop-governance.db on the titus host)
+==============================================================================
+review_calls present: True
+  source=close n=144 prompt=881,441 completion=50,198  reasoning=0
+  source=plan  n=131 prompt=559,373 completion=789,196 reasoning=721,661
+  per_day (window): oldest=2026-11-10 n=106 prompt=547,372 completion=272,953
+                    newest=2026-11-13 n=47  prompt=287,474 completion=136,963
+
+==============================================================================
+MOSES (local, for contrast — 2% of fleet volume)
+==============================================================================
+  source=close n=3 prompt=14,865 completion=716 reasoning=0
+
+==============================================================================
+COST at live 2026-11-13 catalogue rates (deepseek-v4-pro-0813: in $0.11/M, out $4.44/M)
+==============================================================================
+  esther: close $2.158 + plan $3.502 = $5.660
+  titus:  close $0.321 + plan $3.566 = $3.887
+  TOTAL (esther+titus, 4-day ledger window 11-10..11-13): $9.55
+  plan surface = 74% of the bill
+  per close review ~$0.002; per plan review ~$0.03-0.07 (6-15K output tokens)
+
+note: ledger materialized 11-10; earlier weeks on the same surfaces are unmeasured.

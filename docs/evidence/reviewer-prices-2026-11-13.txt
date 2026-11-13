@@ -1,0 +1,17 @@
+Reviewer-model prices — OpenRouter catalogue, fetched 2026-11-13 (this session)
+COMMAND (re-run to reproduce):
+  curl -s https://openrouter.ai/api/v1/models | python3 -c "import sys,json; d=json.load(sys.stdin)['data']; ids={...}; [print(m['id'],'in='+m['pricing'].get('prompt',''),'out='+m['pricing'].get('completion',''),'ctx='+str(m.get('context_length'))) for m in d if m['id'] in ids]"
+
+Fetched values (per token; per-M = value x 1,000,000):
+  deepseek/deepseek-v4-pro-0813   in=$0.000000111 (= $0.11/M)   out=$0.00000444 (= $4.44/M)   ctx=1048576
+  deepseek/deepseek-v4-pro        in=$0.0000009   (= $0.90/M)   out=$0.0000015  (= $1.50/M)   ctx=1048576
+
+Comparison candidates (from models.dev catalogue via jev-router-models.json, captured 2026-10-28):
+  xiaomi/mimo-v2.6-pro            in=$0.435/M    out=$0.87/M     ctx=1050000
+  z-ai/glm-5.3                    in=$0.0699/M   out=$1.40/M     ctx=1048576
+  deepseek/deepseek-v3.2          (older pro generation, ~3-4x cheaper than pinned 0813)
+
+reading: the PINNED 0813 has the most expensive OUTPUT of the pro family ($4.44/M vs $1.50/M
+unpinned) — deliberate pin (Luke directive, reviewer-pin-0813-2026-11-04.txt) to stop silent
+resolution to a newer/expensive alias. For an output-heavy surface (plan review), output
+price dominates; bounding output tokens or choosing a cheaper-output model is the lever.
