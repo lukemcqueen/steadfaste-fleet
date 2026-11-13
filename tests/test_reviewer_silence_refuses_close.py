@@ -48,14 +48,14 @@ def test_a_silent_reviewer_reply_is_not_usable():
 
 
 def test_extract_verdict_still_fails_closed_on_a_null_reply():
-    """Why the guard has to live UPSTREAM: the parse maps silence to FINDINGS with no
-    findings, which the severity policy then reads as 'nothing blocking'."""
+    """Why the guard has to live UPSTREAM: the parse maps silence to UNJUDGED, which
+    is never a verdict — no caller may treat the blob as read (the older FINDINGS
+    mapping let an empty findings list read as 'nothing blocking')."""
     m = _load()
     verdict, findings = m._extract_verdict(None)
-    assert verdict == "FINDINGS" and findings == "[]", (verdict, findings)
-    blocking, annot = m._blocking_findings(findings)
-    assert not blocking, "an empty findings list has no blockers — hence the upstream guard"
-    print("  silence parses to FINDINGS with no blockers, so it must never reach the policy OK")
+    assert verdict == "UNJUDGED" and findings == "[]", (verdict, findings)
+    assert verdict != "CLEAN", "silence must never parse to a pass"
+    print("  silence parses to UNJUDGED — never a verdict, so it cannot reach the policy OK")
 
 
 def test_the_gate_checks_usability_before_anything_slices_the_reply():
@@ -155,12 +155,14 @@ def test_the_gate_refuses_a_null_reply_at_runtime():
         m._call_reviewer = lambda *a, **k: None
         m._mark_close_refused = lambda *a, **k: marked.update({"called": True})
         res = m._adversarial_review_gate(lock, cycle)
-        assert res is not None, (
-            "a null reviewer reply must BLOCK the close — returning None here is the gate "
-            "PASSING on silence, which is the bypass this fix exists to close")
-        text = "".join(getattr(part, "text", "") for part in res.content)
-        assert "UNAVAILABLE" in text.upper() or "NO usable text" in text, text
+        # A whole-range reviewer outage REFUSES via the lock marker and falls back to
+        # REQUIRED per-blob coverage (2026-10-18): the close is refused either way
+        # because the blobs stay uncovered, so `res` may be None while the refusal is
+        # recorded. What must never happen is silence with NO marker.
         assert marked, "the refusal must be recorded on the lock"
+        if res is not None:
+            text = "".join(getattr(p, "text", "") for p in res.content)
+            assert "UNAVAILABLE" in text.upper() or "NO usable text" in text, text
     finally:
         m._call_reviewer, m._mark_close_refused = real_call, real_mark
     print("  the gate refuses a null reviewer reply at runtime, and marks the lock OK")

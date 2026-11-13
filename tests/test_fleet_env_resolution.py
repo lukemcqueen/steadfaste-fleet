@@ -55,7 +55,7 @@ def env_clean(scripts_path):
 def test_fleet_wins_when_both_set(env_clean):
     fe = env_clean
     os.environ["FLEET_BUS_URL"] = _FAKE_URL
-    os.environ["FLEET_BUS_URL"] = "https://bus.legacy.example.org"
+    os.environ["CORTEX_BUS_URL"] = "https://bus.legacy.example.org"
     assert fe.get("BUS_URL") == _FAKE_URL
 
 

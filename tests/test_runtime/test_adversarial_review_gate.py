@@ -63,10 +63,10 @@ def test_extract_findings_verdict():
     assert json.loads(findings)[0]["finding_id"] == "ADV-1"
 
 
-def test_extract_unparseable_is_findings_not_clean():
+def test_extract_unparseable_is_unjudged_not_clean():
     # Fail-closed: a reply that is not valid JSON can never be trusted as CLEAN.
     verdict, findings = mod._extract_verdict("i refuse to answer in json")
-    assert verdict == "FINDINGS"
+    assert verdict == "UNJUDGED"
     assert json.loads(findings) == []
 
 
@@ -157,7 +157,7 @@ def test_a_none_reply_refuses_instead_of_crashing():
     nothing may be treated as CLEAN. Refuse, loudly.
     """
     verdict, findings_json = mod._extract_verdict(None)
-    assert verdict == "FINDINGS", (
+    assert verdict == "UNJUDGED", (
         f"a None reply must never be CLEAN (got {verdict!r}) — silence is not approval")
     assert findings_json == "[]"
 
@@ -166,7 +166,7 @@ def test_empty_and_whitespace_replies_also_refuse():
     """Empty string is the same class as None: no verdict was rendered."""
     for bad in ("", "   \n\t "):
         verdict, findings_json = mod._extract_verdict(bad)
-        assert verdict == "FINDINGS", f"{bad!r} must refuse, not pass"
+        assert verdict == "UNJUDGED", f"{bad!r} must refuse, not pass"
         assert findings_json == "[]"
 
 
@@ -175,7 +175,7 @@ def test_a_non_string_reply_refuses():
     the close either."""
     for bad in (0, [], {}, False):
         verdict, _ = mod._extract_verdict(bad)
-        assert verdict == "FINDINGS", f"{bad!r} must refuse, not pass"
+        assert verdict == "UNJUDGED", f"{bad!r} must refuse, not pass"
 
 
 def test_a_well_formed_reply_still_parses():
@@ -187,9 +187,9 @@ def test_a_well_formed_reply_still_parses():
 
 
 def test_unparseable_prose_still_refuses():
-    """Pre-existing contract: prose with no JSON is FINDINGS, not CLEAN."""
+    """Pre-existing contract: prose with no JSON is never CLEAN."""
     v, f = mod._extract_verdict("I could not complete the review.")
-    assert v == "FINDINGS" and f == "[]"
+    assert v == "UNJUDGED" and f == "[]"
 
 
 # ── gate: simple skip, no reviewer call ─────────────────────────────────────

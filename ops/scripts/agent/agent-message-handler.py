@@ -710,6 +710,17 @@ for _p in (handler_path.parent, handler_path.parent.parent):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
+# The fallback path resolves the pending-results dir through fleet_lib (in the
+# handler's parent dir, now on sys.path) — without this import the broken-handler
+# except branch dies with NameError instead of writing a result. The child must
+# produce a result even when fleet_lib is not importable (detached process,
+# no PYTHONPATH): degrade to a plain env read rather than crash.
+try:
+    from fleet_lib.env import get as fleet_env_get
+except ImportError:
+    def fleet_env_get(name, default=None):
+        return os.environ.get("FLEET_" + name, default)
+
 try:
     # The load lives INSIDE the try: a handler that cannot be imported is as
     # reportable as a failed deploy, and silence here is indistinguishable from
