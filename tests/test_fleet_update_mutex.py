@@ -14,6 +14,7 @@ processes in parallel on moses). The lock must:
 Uses Python fcntl.flock (portable to macOS + Linux) — not the Linux-only
 `flock` command, because the fleet runs on macOS (Titus).
 """
+import re
 import subprocess
 import sys
 import tempfile
@@ -22,6 +23,49 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 MUTEX = REPO / "ops" / "scripts" / "lib" / "fleet-update-mutex.py"
+_UPDATE = REPO / "ops" / "scripts" / "fleet-update.sh"
+_UPDATE_SRC = _UPDATE.read_text()
+
+# The mutex resolution block in fleet-update.sh must prefer the CO-LOCATED
+# repo helper (version-matched to the script) over the DEPLOYED copy. A stale
+# CORTEX-era deployed helper sets CORTEX_UPDATE_INNER (not FLEET_UPDATE_INNER),
+# so preferred-first it re-invokes the script with the wrong inner var, the child
+# re-enters the mutex, and the script self-refuses its own deploy ("mutex held")
+# forever (Titus 2026-11-14). Repo-first makes the helper revision always match
+# the script revision, so the inner-var names can never disagree.
+_REPO_CAND = '        "${REPO_DIR}/ops/scripts/lib/fleet-update-mutex.py" \\'
+_DEPLOY_CAND = '        "${FLEET_DEPLOY_HOME}/scripts/lib/fleet-update-mutex.py"; do'
+
+
+def test_resolution_prefers_repo_helper_over_deployed():
+    """The mutex resolution loop lists the repo helper BEFORE the deployed copy,
+    so a stale deployed helper can never shadow the version-matched one. This is
+    the regression for the self-refusing deploy deadlock (Titus 2026-11-14)."""
+    assert "fleet-update-mutex.py" in _UPDATE_SRC, "mutex helper referenced"
+    repo_i = _UPDATE_SRC.index(_REPO_CAND)
+    deploy_i = _UPDATE_SRC.index(_DEPLOY_CAND)
+    assert repo_i < deploy_i, (
+        "the repo helper must be preferred over the deployed copy; a stale "
+        "deployed CORTEX-era helper otherwise self-refuses the deploy")
+
+
+def test_mutex_guard_does_not_depend_on_legacy_inner_var():
+    """The guard must key ONLY off FLEET_UPDATE_INNER in its `if` condition —
+    never the legacy CORTEX_UPDATE_INNER name, because an ambient export of the
+    legacy var would let the OUTER process skip the mutex entirely
+    (concurrent-deploy hole). Verified structurally: the guard line names
+    FLEET_UPDATE_INNER and does NOT name CORTEX_UPDATE_INNER."""
+    _GUARD_RE = re.compile(
+        r'if \[\[ -z "\$\{FLEET_UPDATE_INNER:-\}" \]\] '
+        r'&& ! \$STATUS_ONLY && ! \$DRY_RUN; then')
+    m = _GUARD_RE.search(_UPDATE_SRC)
+    assert m is not None, (
+        "the mutex guard line (FLEET_UPDATE_INNER + STATUS_ONLY + DRY_RUN) "
+        "not found in fleet-update.sh")
+    assert "CORTEX_UPDATE_INNER" not in m.group(0), (
+        "the mutex guard condition must not consult the legacy "
+        "CORTEX_UPDATE_INNER var — it is an ambient-export injection surface "
+        "on the outer run")
 
 
 def _child(tmp: Path) -> Path:

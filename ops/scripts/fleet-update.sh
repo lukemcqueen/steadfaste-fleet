@@ -3060,13 +3060,21 @@ main() {
   # --dry-run / --status never mutate enforcement files, so they are exempt —
   # an operator inspecting state mid-deploy must not be blocked.
   if [[ -z "${FLEET_UPDATE_INNER:-}" ]] && ! $STATUS_ONLY && ! $DRY_RUN; then
-    # Resolve the mutex helper from either the deployed lib dir or the repo
-    # source (dogfood invokes the repo copy directly), so the lock engages from
-    # the first run — not only after the helper has been deployed.
+    # Resolve the mutex helper. PREFER the CO-LOCATED repo copy over the
+    # deployed one: the sanctioned invocation is `bash ops/scripts/fleet-update.sh`
+    # from the repo checkout, so ${REPO_DIR}/ops/scripts/lib/… is by construction
+    # the SAME revision as the script being run and its inner-var name always
+    # matches. A stale CORTEX-era deployed helper (sets CORTEX_UPDATE_INNER, not
+    # FLEET_UPDATE_INNER) kept shadowing the fresh repo copy, so it re-invoked
+    # the script with the wrong var, the child re-entered the mutex, and the
+    # script self-refused its own deploy ("mutex held") forever — Titus
+    # 2026-11-14. The deployed copy stays as the fallback for a bare
+    # deployed-tree invocation, so a repo checkout missing the helper never
+    # loses the guard.
     local _mutex_py=""
     for _cand in \
-        "${FLEET_DEPLOY_HOME}/scripts/lib/fleet-update-mutex.py" \
-        "${REPO_DIR}/ops/scripts/lib/fleet-update-mutex.py"; do
+        "${REPO_DIR}/ops/scripts/lib/fleet-update-mutex.py" \
+        "${FLEET_DEPLOY_HOME}/scripts/lib/fleet-update-mutex.py"; do
       if [[ -f "$_cand" ]]; then _mutex_py="$_cand"; break; fi
     done
     if [[ -n "$_mutex_py" ]] && [[ -x "${FLEET_DEPLOY_HOME}/venv/bin/python3" ]]; then
