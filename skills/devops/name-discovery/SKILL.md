@@ -60,9 +60,9 @@ When the primary name fails, generate alternatives anchored to the **concept spa
 2. Generate 5-10 candidates from these angles:
    - **Root language** — Latin/Greek roots of the concept (nexum, cantus, sensus, ballast)
    - **Metaphor** — analogous real-world objects (lighthouse, keystone, anchor, compass)
-   - **Composite** — blend two concept words (fleet+text = cortext, source+sorcerer = sorcer)
+   - **Composite** — blend two concept words (fleet+text = fleetext, source+sorcerer = sorcer)
    - **Musical** — if the concept has rhythmic/timing elements (motif, cadence, etude, fugue)
-   - **Shortened** — truncate/extend the original (fleet → cortx, orchestrator → orchex)
+   - **Shortened** — truncate/extend the original (fleet → flt, orchestrator → orchex)
 3. Run Phase 1 on each candidate
 4. Present top candidates ranked by availability + conceptual fit
 
