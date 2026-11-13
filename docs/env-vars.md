@@ -8,6 +8,10 @@ dual-export bridge have all been removed. `fleet_env.get("X")` resolves `FLEET_X
 then the default — nothing else. A host still carrying the retired spelling is
 converted in place on its next deploy by `consolidate-env.sh`, which also FAILs
 `--check` if any `CORTEX_` line survives in `.env`.
+Covered by `tests/test_fleet_env_resolution.py::test_legacy_env_spelling_is_ignored`
+(a `CORTEX_<name>` is NOT read; `FLEET_` wins when both are set) and by
+`tests/test-consolidate-env.sh` (Case 1 converts a surviving `CORTEX_` spelling to
+`FLEET_*`; Case 4 asserts `--check` exits 1 and names a surviving retired name).
 The env family is `FLEET_*` only since release 2. The Hermes harness injects
 `FLEET_SESSION_*` (session identity) and `FLEET_DEPLOY_HOME` directly — already
 FLEET-spelled. There is no legacy spelling and no fallback; a surviving
@@ -95,6 +99,7 @@ names are the contract — never invent a new name without checking here first
 | `ADVERSARIAL_REVIEW_LIGHT_MODEL` | _llm backend._ Model for the **light-but-complex** review tier (2026-10-06). The tier changes the **transport, not the model**: a change that crosses the complexity gate but is NOT an always-review surface and stays under the heavy bar (≥10 files or ≥200 added+removed lines) is reviewed over a fast chat-completions call instead of spawning a coding agent — and it uses `ADVERSARIAL_REVIEWER_MODEL` (the canonical `deepseek/deepseek-v4-pro-0813`) like every other review. Set this ONLY to review the light tier with a different model on purpose; before 2026-10-08 it defaulted to `deepseek/deepseek-v4-flash-0731`, which nothing had chosen. Heavy changes (enforcement/governance files, or above the heavy bar) keep the deep backend. **Enforcement is unchanged** — every complex change still needs an independent CLEAN verdict before the lock releases. See `docs/runbooks/review-triage-jev.md` |
 | `ADVERSARIAL_REVIEW_BASE_URL` | _llm backend._ Chat-completions base URL (default OpenRouter). Point it at a local/self-hosted endpoint to review without a remote provider |
 | `ADVERSARIAL_REVIEW_API_KEY_ENV` | _llm backend._ NAME of the credential variable to read. When set it is honoured **strictly** — no silent fallback to another credential. Never the value |
+| `OPENROUTER_API_KEY` | _llm backend._ The reviewer's credential (OpenRouter) — used when `ADVERSARIAL_REVIEW_API_KEY_ENV` is unset (the default). Resolved by the close gate from the repo `.env` first, then the deploy root, then `~/.hermes/.env`. **Name only — the value lives in the gitignored env file; it is never documented here.** A revoked value here silently takes the reviewer down (HTTP 401). |
 | `ADVERSARIAL_REVIEW_AGENT_CMD` | _agent backend._ The coding-agent CLI invocation for reviews; the prompt is passed on **stdin**. Must put the agent in its read-only mode — a reviewer that can write can fix its own objections |
 | `ADVERSARIAL_REVIEW_AGENT_NAME` | _agent backend._ The agent's identity, used to refuse **self-review** when it matches the change's git author |
 | `ADVERSARIAL_REVIEW_AGENT_TIMEOUT` | _agent backend._ Seconds to wait for the reviewing agent (default 900). **Clamped to `REVIEWER_TIMEOUT_CEILING` (240s), like every reviewer budget** — a budget at or above the MCP client's 300s call window is an unobservable hang, not a longer wait. To wait longer, raise the client's own ceiling (`mcp_servers.<name>.timeout`) instead. See `docs/runbooks/review-triage-jev.md` |
