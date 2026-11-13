@@ -194,9 +194,45 @@ def _call_model(prompt: str, db_path: str | None = None) -> str:
             "Error: OPENROUTER_API_KEY not set (env or ~/.hermes/.env) — "
             "cannot run the review"
         )
+    # BOUNDED BUDGET (2026-11-13, cycle 8258): the plan review is OUTPUT-heavy
+    # (measured 6-15K completion tokens, 74% of the fleet review bill), so the
+    # call must carry an explicit output cap AND a reasoning effort, or the
+    # model runs its default (effectively max/high) and burns the whole budget.
+    # Distinct env names from the close-gate reviewer (REVIEWER_REASONING_EFFORT
+    # defaults to 'none' there — right for a JSON verdict, wrong for long
+    # findings prose, so sharing the name would gut plan reviews on the
+    # close-gate default). Invalid values fall back LOUDLY — a 400 at review
+    # time reads exactly like a reviewer outage; only a below-floor cap refuses.
+    _PLAN_MAX_TOKENS = 24000          # measured plan output 6-15K + headroom
+    _PLAN_MAX_TOKENS_FLOOR = 16000    # below this the review output truncates
+    _PLAN_EFFORT_DEFAULT = "low"      # enough thinking for real findings, bounded
+    _PLAN_EFFORTS = ("none", "low", "medium", "high")
+    max_tokens_raw = os.environ.get("REVIEWER_PLAN_MAX_TOKENS", "")
+    try:
+        max_tokens = int(max_tokens_raw) if max_tokens_raw.strip() else _PLAN_MAX_TOKENS
+    except ValueError:
+        raise SystemExit(
+            f"Error: REVIEWER_PLAN_MAX_TOKENS={max_tokens_raw!r} is not an "
+            f"integer — refusing to review with an ambiguous cap"
+        )
+    if max_tokens < _PLAN_MAX_TOKENS_FLOOR:
+        raise SystemExit(
+            f"Error: REVIEWER_PLAN_MAX_TOKENS={max_tokens} is below the "
+            f"{_PLAN_MAX_TOKENS_FLOOR} floor — the review output would be "
+            "truncated (measured 6-15K tokens); refusing the ambiguous cap"
+        )
+    effort_raw = os.environ.get("REVIEWER_PLAN_REASONING_EFFORT", "")
+    effort = effort_raw.strip().lower() or _PLAN_EFFORT_DEFAULT
+    if effort not in _PLAN_EFFORTS:
+        print(f"[adversarial-review] invalid REVIEWER_PLAN_REASONING_EFFORT="
+              f"{effort_raw!r} — falling back to '{_PLAN_EFFORT_DEFAULT}'",
+              file=sys.stderr)
+        effort = _PLAN_EFFORT_DEFAULT
     body = json.dumps({
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": max_tokens,
+        "reasoning": {"effort": effort},
     }).encode()
     req = urllib.request.Request(
         "https://openrouter.ai/api/v1/chat/completions",
