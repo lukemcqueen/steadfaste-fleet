@@ -20,6 +20,13 @@ from .immutability import immutable_remediation, is_file_immutable
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+# Ensure ops/scripts (parent-of-parent) is importable so fleet_lib resolves
+# regardless of CWD or import context (mirrors fleet-doctor.py's bootstrap).
+_scripts_dir = Path(__file__).resolve().parents[2]
+if str(_scripts_dir) not in sys.path:
+    sys.path.insert(0, str(_scripts_dir))
+from fleet_lib.env import get as fleet_env_get
+
 log = logging.getLogger(__name__)
 
 from .config import (
@@ -2173,11 +2180,11 @@ def evaluate_metrics_arrival(vm_base: str, *, metric: str = "node_uptime_seconds
 def check_metrics_arrival(res):
   """4d. Sink-side arrival: did every pushing agent actually arrive lately?"""
   try:
-    metric = os.environ.get("CORTEX_VM_FRESHNESS_METRIC", "node_uptime_seconds")
-    stale_min = int(os.environ.get("CORTEX_METRICS_STALE_MINUTES", "30"))
+    metric = fleet_env_get("VM_FRESHNESS_METRIC", "node_uptime_seconds")
+    stale_min = int(fleet_env_get("METRICS_STALE_MINUTES", "30"))
     roster = _known_agent_names()
 
-    explicit = os.environ.get("CORTEX_VM_QUERY_URL", "").strip()
+    explicit = fleet_env_get("VM_QUERY_URL", "").strip()
     bases = [_split_sink_url(explicit)] if explicit else _push_sink_candidates()
 
     tried = []
@@ -3181,12 +3188,12 @@ def check_governance(res):
       if _v:
         return _v, "process env"
       _cands = []
-      _explicit = (os.environ.get("CORTEX_ENV_FILE") or "").strip()
+      _explicit = (fleet_env_get("ENV_FILE") or "").strip()
       if _explicit:
         _cands.append(Path(_explicit))
-      _repo = (os.environ.get("CORTEX_REPO") or "").strip()
+      _repo = (fleet_env_get("REPO") or "").strip()
       _cands.append((Path(_repo) if _repo else Path.home() / "steadfaste-fleet") / ".env")
-      _cands.append(Path(os.environ.get("CORTEX_DEPLOY_HOME",
+      _cands.append(Path(fleet_env_get("DEPLOY_HOME",
                                         str(Path.home() / ".steadfaste-fleet"))) / ".env")
       _cands.append(Path.home() / ".hermes" / ".env")
       for _p in _cands:
@@ -3320,7 +3327,7 @@ def check_governance(res):
   # the point of declaring it is that a WRONG one is visible in one place instead of seven (every
   # caller that used to re-derive a path). It is probed WITHOUT an inherited PYTHONPATH, because a
   # caller's environment must not decide whether the declared interpreter looks healthy.
-  declared_py = os.environ.get("CORTEX_PYTHON", "")
+  declared_py = fleet_env_get("PYTHON", "")
   _agent_env_file = HOME / ".steadfaste-fleet" / "agent.env"
   if not declared_py and _agent_env_file.is_file():
     for _line in _agent_env_file.read_text(errors="replace").splitlines():
@@ -3888,7 +3895,7 @@ def check_hook_drift(res):
     # discovered later by reading git logs, which is exactly what it cost on 2026-10-19.
     try:
         import glob as _glob
-        _state_dir = (Path(os.environ.get("CORTEX_DEPLOY_HOME")
+        _state_dir = (Path(fleet_env_get("DEPLOY_HOME")
                            or (Path.home() / ".steadfaste-fleet"))) / "state"
         _by_repo: dict[str, list[str]] = {}
         for _lp in _glob.glob(str(_state_dir / ".governance-*.json")):

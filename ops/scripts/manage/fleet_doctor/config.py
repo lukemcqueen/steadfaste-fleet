@@ -10,6 +10,14 @@ import re
 import sys
 from pathlib import Path
 
+# Ensure ops/scripts (parent-of-parent) is importable so fleet_lib resolves
+# regardless of CWD or how this package was imported (mirrors fleet-doctor.py's
+# bootstrap; required by the doctor's hermetic tests that import fleet_doctor).
+_scripts_dir = Path(__file__).resolve().parents[2]
+if str(_scripts_dir) not in sys.path:
+    sys.path.insert(0, str(_scripts_dir))
+from fleet_lib.env import get as fleet_env_get
+
 # ── Base paths ──────────────────────────────────────────────────
 HOME = Path.home()
 IS_MAC = sys.platform == "darwin"
@@ -22,7 +30,7 @@ LEGACY_MODELS_ENV = HERMES_HOME / "models.env"
 CONFIG_FILE = HERMES_HOME / "config.yaml"
 
 # ── fleet repo discovery ───────────────────────────────────────
-CORTEX_REPO = Path(os.environ.get("CORTEX_REPO", ""))
+CORTEX_REPO = Path(fleet_env_get("REPO") or "")
 if not CORTEX_REPO.is_dir() or not (CORTEX_REPO / "AGENTS.md").exists():
     for candidate in [HOME / "steadfaste-fleet", HOME / "src" / "steadfaste-fleet"]:
         if candidate.is_dir() and (candidate / "AGENTS.md").exists():
@@ -68,7 +76,7 @@ else:
 # ── External base URL resolution ────────────────────────────────
 def resolve_external_base() -> str:
     """Determine the external base URL for service health checks."""
-    base = os.environ.get("CORTEX_DOCTOR_BASE", "")
+    base = fleet_env_get("DOCTOR_BASE") or ""
     if base:
         return base.rstrip("/")
 
