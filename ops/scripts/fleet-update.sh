@@ -3473,6 +3473,7 @@ main() {
     if [[ -n "$_venv_missing" ]]; then
       if [[ "$_venv_just_created" -eq 1 ]]; then
         info "fresh fleet venv (just created) awaiting the declared requirements — will be filled by ${_venv_fixer/$HOME/~} on a host that ships it"
+        _DEFERRED_FAILURES+=("fleet venv created but unfilled (awaiting declared set)")
       else
         error "fleet venv cannot import:${_venv_missing}  (${_fleet_venv/$HOME/~})"
         info  "  Repair: uv pip install --python ${_fleet_venv/$HOME/~} 'pyyaml' 'mcp' 'psycopg[binary]'"

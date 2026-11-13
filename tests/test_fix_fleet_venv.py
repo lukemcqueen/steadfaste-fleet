@@ -157,7 +157,8 @@ def test_the_json_report_has_the_fields_a_hook_needs(tmp_path):
     assert data["venv_ok"] is True
     assert set(data["missing"]) == {"mcp>=2.0", "PyYAML>=6.0", "fastapi>=0.100",
                                     "uvicorn>=0.23", "psycopg[binary]>=3.1", "pytest>=7.0",
-                                    "requests>=2.31", "certifi>=2023.5.7"}
+                                    "requests>=2.31", "certifi>=2023.5.7",
+                                    "reportlab>=4.0", "pillow>=10.0"}
     assert any(a.endswith("fix-fleet-venv.py") for a in data["fix_argv"]), \
         f"the report must name the command that fixes it: {data['fix_argv']}"
     assert str(py.parent.parent) in data["fix_argv"], "the report must name the venv it measured"
