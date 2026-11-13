@@ -24,6 +24,11 @@ DEPLOY_SYNC_LINE = "Deploy sync — deployed commit matches HEAD"
 DOGFOOD_PASS_LINE = "DOGFOOD PASSED — deployed state verified clean."
 
 # Every warning source the doctor reported in the committed transcript.
+# NB: `cortex-deployment-sync` is the skill's HISTORICAL name as recorded in the
+# frozen 2026-10-10 evidence — the skill was later renamed to
+# fleet-deployment-sync, but the evidence predates the rename, and
+# test_summary_disposes_of_every_warning_source asserts against that summary, so
+# the old spelling is required here.
 WARNING_SOURCES = (
     "Repo clean",
     "AGENTS.md efficiency",
