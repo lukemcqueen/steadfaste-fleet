@@ -159,3 +159,50 @@ down — so a fresh rotation can appear to "not work" while the component keeps 
   leaked credential, treat EVERY consumer as a suspect and verify each with an authorized
   call — the reviewer refusing is just one symptom of a stale value shared by several
   components, and fixing only the reviewer leaves the others failing silently.
+
+### Diagnose the transport BEFORE touching the tree
+
+A close reporting no work (`reviewed this pass: 0`, or `no blob was SENT this pass … re-reviewing
+identical bytes cannot produce a different verdict`) reads like a blob/verdict problem, and agents
+respond by editing files or querying the verdict store. When it REPEATS across passes, check the
+transport first — the gate log names the fault:
+
+    grep -n 'HTTPError\|401\|reviewer failed' ~/.steadfaste-fleet/logs/loop-governance.log
+
+`reviewer failed on <path> (HTTPError: HTTP Error 401 …)` means every call died at auth: zero blobs
+were judged, so no content change can help and the "identical bytes" line is a red herring.
+
+**Probe the gate's OWN call — seconds, decisive, and the only probe that reproduces the gate.**
+Import the deployed module and call the function the close itself uses; this exercises credential +
+backend + model + base URL at once, and it tells you the reviewer is fixed BEFORE spending a whole
+close pass on a large range:
+
+    python3 - <<'PY'
+    import importlib.util
+    p = "<deploy>/tools/loop-governance/loop-gov-mcp.py"
+    spec = importlib.util.spec_from_file_location("lg", p)
+    m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+    print(m._reviewer_backend(), m._reviewer_model(), len(m._reviewer_api_key()))
+    print(m._call_reviewer_llm("Reply with exactly: PROBE_OK", timeout=90))
+    PY
+
+`PROBE_OK` back means the reviewer works; a raised `HTTPError` tells you the transport is the fault.
+Importing the server module is safe (it is what the CLI adapter does) and prints a few MCP/SDK DEBUG
+lines to stdout. Prefer this over a bare endpoint probe: a catalog-style endpoint may answer 200 for
+a revoked key, while this call needs exactly the authorization the gate does.
+
+**Find WHICH file's value wins — by hash, never by printing the key.** The resolver reads the
+PROCESS env, then the fleet repo env, then the deploy root, then the Hermes env, and stops at the
+FIRST hit — so a dead value in a HIGH-priority file shadows a good one below it. Enumerate every
+carrier and hash each:
+
+    grep -rl --exclude-dir=.git -- '^OPENROUTER_API_KEY=' ~/steadfaste-fleet ~/.steadfaste-fleet ~/.hermes \
+      | while read f; do printf '%s  %s\n' "$(grep -m1 -- '^OPENROUTER_API_KEY=' "$f" | md5sum | cut -d' ' -f1)" "$f"; done
+
+Two different hashes across sources IS the shadowing bug — probe each to learn which one works.
+
+**Fix the SHADOWING file, not the fallback.** Correcting a lower-priority copy changes nothing
+while the higher-priority value still wins: edit the file the resolver actually reads (back it up
+first; assert exactly ONE line matched; keep the value in the form the file already uses). This is
+a config VALUE the resolver re-reads on every call, so no daemon restart is needed — then re-probe
+the gate's own call above before spending a close pass.
