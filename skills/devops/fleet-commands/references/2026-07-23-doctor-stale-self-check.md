@@ -11,7 +11,7 @@ Added `_check_self_stale(res)` to `fleet_doctor/checks.py`:
 ```python
 def _check_self_stale(res):
     deployed = Path(__file__).resolve()
-    repo_source = CORTEX_REPO / "ops/scripts/manage/fleet_doctor/checks.py"
+    repo_source = FLEET_REPO / "ops/scripts/manage/fleet_doctor/checks.py"
     if repo_source.is_file() and repo_source.stat().st_mtime > deployed.stat().st_mtime:
         res.add("Doctor version", "WARN",
                 "Running older version — repo source is newer",
@@ -41,8 +41,8 @@ The `_check_bus_e2e` function was also expanded this session to 5 sub-checks:
 
 | Check | What it tests |
 |-------|--------------|
-| Bus config (URL) | CORTEX_BUS_URL is set |
-| Bus config (fallback) | CORTEX_BUS_FALLBACK_URL is set |
+| Bus config (URL) | FLEET_BUS_URL is set |
+| Bus config (fallback) | FLEET_BUS_FALLBACK_URL is set |
 | Bus health | health endpoint responds ok |
 | Bus self (send→read→archive) | Full cycle on own inbox |
 | Bus stuck msgs | PGMQ API: stuck processing messages in own inbox |

@@ -140,7 +140,7 @@ For JSON configs or structured data that need programmatic generation (not manua
 
 | File | Location | Purpose |
 |------|----------|---------|
-| **Template** | `src/name.template.json` (repo) | Placeholder values like `{{CORTEX_DOMAIN}}` |
+| **Template** | `src/name.template.json` (repo) | Placeholder values like `{{FLEET_DOMAIN}}` |
 | **Setup script** | `ops/scripts/setup-name.sh` (repo) | Reads env vars or prompts, substitutes placeholders, writes real file outside repo |
 | **Real config** | `~/.hermes/state/name.json` (outside repo) | Actual URLs/credentials, never committed |
 | **Consumer code** | Python/sh scripts | Reads private path first, falls back to template if not found |
@@ -172,14 +172,14 @@ Consumer code pattern:
 - Self-explanatory values that don't need validation
 
 **Proven in Steadfaste Fleet:**
-- `models.env` — env vars with `CORTEX_DOMAIN` override
-- `hermes-inbox.conf` — created by setup with `CORTEX_INBOX_*` vars
+- `models.env` — env vars with `FLEET_DOMAIN` override
+- `hermes-inbox.conf` — created by setup with `FLEET_INBOX_*` vars
 - `agent-registry.json` — multi-agent registry created by `setup-agent-registry.sh`
 
 **Non-interactive deployment:**
 ```bash
 # Set env vars, then run the script — no prompts
-CORTEX_DOMAIN=myhost.com CORTEX_HEALTH_PORT=13007 \
+FLEET_DOMAIN=myhost.com FLEET_HEALTH_PORT=13007 \
   ESTHER_DOMAIN=otherhost.com ESTHER_HEALTH_PORT=13007 \
   bash ops/scripts/setup-agent-registry.sh
 ```

@@ -364,7 +364,7 @@ silently via `|| true`, and the mode never propagated.
 
 ```bash
 declare -A MODE_OVERRIDES=(
-  ["${CORTEX_DEPLOY_HOME}/hooks/post-merge"]="700"
+  ["${FLEET_DEPLOY_HOME}/hooks/post-merge"]="700"
 )
 
 # ...inside check_each_mapped_file(), after the copy loop:
@@ -559,7 +559,7 @@ END {
 
 ## Resolving the Repo Root from a Nested Script — Count the Depth
 
-`CORTEX_REPO="$(cd "$(dirname "$0")/../.." && pwd)"` only works when the
+`FLEET_REPO="$(cd "$(dirname "$0")/../.." && pwd)"` only works when the
 script sits exactly 2 levels below the repo root. A script in
 `ops/install/deploy/nginx/` is 4 levels deep — `../..` resolves to
 `.../ops/install`, and every path built on it doubles a segment:
@@ -579,9 +579,9 @@ path-walk-up bug, grep the whole tree for the same pattern:
 
 ```bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CORTEX_REPO="$(cd "$SCRIPT_DIR" && git rev-parse --show-toplevel 2>/dev/null || true)"
-if [ -z "$CORTEX_REPO" ] || [ ! -d "$CORTEX_REPO" ]; then
-  CORTEX_REPO="$(cd "$SCRIPT_DIR/../../../.." && pwd 2>/dev/null || echo "$HOME/steadfaste-fleet")"
+FLEET_REPO="$(cd "$SCRIPT_DIR" && git rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -z "$FLEET_REPO" ] || [ ! -d "$FLEET_REPO" ]; then
+  FLEET_REPO="$(cd "$SCRIPT_DIR/../../../.." && pwd 2>/dev/null || echo "$HOME/steadfaste-fleet")"
 fi
 ```
 
@@ -986,7 +986,7 @@ exit 3
 - **Declare ONE interpreter; never let each caller re-derive a path.** A rule copied into seven
   scripts is seven chances to write it differently, and the copies WILL disagree — one check calls
   a venv healthy while another warns about it, and a validator blames a file. Provision a per-host
-  declaration (`CORTEX_PYTHON` in `~/.steadfaste-fleet/agent.env`; the deploy writes the default) and
+  declaration (`FLEET_PYTHON` in `~/.steadfaste-fleet/agent.env`; the deploy writes the default) and
   have the arbiter read it before its built-in order, after `PYTHON=`. Two rules make a declaration
   safe: **never overwrite an operator's value** (a host may legitimately point elsewhere — a
   Homebrew python on macOS, a different venv; prove it by deploying twice and asserting the file
@@ -1018,7 +1018,7 @@ def reexec_if_degraded():
         return
     if all(_can_import_here(m) for m in DECLARED):
         return
-    for cand in candidates():                # CORTEX_PYTHON first, then the fleet venv
+    for cand in candidates():                # FLEET_PYTHON first, then the fleet venv
         if _child_imports_all(cand):
             os.environ[FLAG] = "1"           # set BEFORE execv — the env is inherited
             os.execv(cand, [cand, os.path.abspath(__file__)] + sys.argv[1:])

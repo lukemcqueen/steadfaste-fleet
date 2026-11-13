@@ -1161,7 +1161,7 @@ as `.txt` mean the ignored `.log` was the wrong filename, not a missing ignore r
     this session's work"*, there is no injector to repair it, and every `end_change` retry
     re-runs the whole review; in practice the OPERATOR deletes
     `~/.steadfaste-fleet/state/.governance-<session>.json` by hand. The rule: resolve the repo from
-    the CALLER's own evidence — an explicit env hint (`CORTEX_SESSION_REPO`) first, else the MCP
+    the CALLER's own evidence — an explicit env hint (`FLEET_SESSION_REPO`) first, else the MCP
     child's cwd — and keep the Hermes path excluded from that fallback so an injected identity
     still wins. Test the matrix both ways: a project-repo caller resolves its OWN tree, and a
     Hermes caller is never re-tagged from the shared daemon's cwd.

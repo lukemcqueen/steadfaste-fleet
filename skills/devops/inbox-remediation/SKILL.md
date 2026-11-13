@@ -87,7 +87,7 @@ python3 ~/.hermes/scripts/orch-weekly-auto-fix.py --verbose
 ```bash
 mkdir -p ~/.hermes/state/remediate/done
 mv <marker_file_path> ~/.hermes/state/remediate/done/
-cd ${CORTEX_REPO:-$HOME/steadfaste-fleet}-private && git add -A && git commit -m "remediation: ..." && git push
+cd ${FLEET_REPO:-$HOME/steadfaste-fleet}-private && git add -A && git commit -m "remediation: ..." && git push
 ```
 
 ## Step 5: Report compact summary

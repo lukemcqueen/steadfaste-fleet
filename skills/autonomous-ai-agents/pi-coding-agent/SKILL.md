@@ -75,7 +75,7 @@ nothing else — verified with a plain prompt and with a prompt that used the ba
   the launcher; the `pi` symlink in a user bin dir is not on a service PATH. Wrappers pass
   an ARGV LIST rather than a shell line, so nothing expands `~`/`$HOME` — a relative or
   guessed path becomes a silent per-message no-op. Pin the session identity too (e.g. a
-  `CORTEX_SESSION_KEY`): a harness started outside a git repo cannot derive repo/branch and
+  `FLEET_SESSION_KEY`): a harness started outside a git repo cannot derive repo/branch and
   every chat otherwise collapses onto ONE session.
 
 ## Driving pi from another process — control calls go over RPC, never a prompt
@@ -325,7 +325,7 @@ are never read by Pi. Three surfaces reach EVERY Pi session, cheapest-effective 
    it to a compact checklist (~7 lines; the pre-ship checklist is the exemplar:
    right-first-time, survey-before-build, test-edge-cases, evidence-before-done,
    doctor-clean, plan-review-first, escalate-review-first). Inject in BOTH branches —
-   fresh AND resume-with-no-snapshot: the verifier sets `CORTEX_STUB_EMPTY_RESTORE=1`
+   fresh AND resume-with-no-snapshot: the verifier sets `FLEET_STUB_EMPTY_RESTORE=1`
    to force the no-snapshot branch and asserts the checklist appears in each output,
    or a restore silently misses the rule.
 2. **AGENTS.md / CLAUDE.md** — zero persistent token cost; the place for durable prose.
@@ -377,7 +377,7 @@ harness: the git hook already carries one copy and two copies drift.
   override. A gate that reads "could not check" as "carry on" fails open exactly when
   the host is broken.
 - **Resolve the governed repo from the CALL's own arguments first**, then
-  `CORTEX_SESSION_REPO`, then the process cwd. A `tool_call` hook is handed the tool input
+  `FLEET_SESSION_REPO`, then the process cwd. A `tool_call` hook is handed the tool input
   and no session cwd, so path-args-only resolution leaves every path-less command
   (`git commit -m …`, a bare compound) with no repo — and a session launched outside the
   checkout can never name the tree its call touches, including the `cd <repo> && git
@@ -426,13 +426,13 @@ harness: the git hook already carries one copy and two copies drift.
 
 - **A Pi session's governance lock is tagged from the SESSION's repo, never from the
   host's `~/steadfaste-fleet` (2026-10-09, titus).** Pi injects no repo identity, so
-  `_derive_slug()` resolves it as `CORTEX_SESSION_REPO`, else the MCP child's working
+  `_derive_slug()` resolves it as `FLEET_SESSION_REPO`, else the MCP child's working
   directory — the project you launched Pi in. Before that fix a Pi session working in a
   project repo was locked as `steadfaste-fleet`, and the close gate refused forever with
   "the lock's repo cannot contain this session's work": the lock stays HELD on a refusal,
   and its prescribed remedy (an enforcer injection) does not exist on Pi, so only the
   operator could delete `~/.steadfaste-fleet/state/.governance-sess_*.json`. Launch Pi from
-  the project (`cd repo && pi`), or pin `CORTEX_SESSION_REPO` in the MCP `env` block when
+  the project (`cd repo && pi`), or pin `FLEET_SESSION_REPO` in the MCP `env` block when
   the cwd is not the project. It needs a DEPLOY, not a pull: the harness runs the
   deployed copy (`~/.steadfaste-fleet/tools/loop-governance/loop-gov-mcp.py`). Verify with
   `python3 tests/run_non_hermes_lock_release_repro.py` (pre-fix / working-tree / DEPLOYED
@@ -480,7 +480,7 @@ backend. `pi` itself needs no new adapter — it is DECLARED, not coded:
   so use the ABSOLUTE pi launcher path (`/home/<user>/.local/bin/pi` etc.) — a
   relative or `~`-containing path is a per-message silent no-op. Use
   `output: raw` (pi's stdout is exactly the answer), `session: per_chat` with
-  `CORTEX_SESSION_KEY={session_id}`, and a `timeout_s` that covers a real coding
+  `FLEET_SESSION_KEY={session_id}`, and a `timeout_s` that covers a real coding
   turn (300s+), not a chat reply. Slash commands (`/compact,` `/model` …) are the
   GATEWAY's to handle via pi RPC (`fleet_gateway/pi_control.py`), never forwarded
   as prompts.
@@ -736,7 +736,7 @@ Rules:
 - **`python3` may not be on pi's PATH on macOS** — Homebrew is `/opt/homebrew/bin`
   (Apple Silicon) or `/usr/local/bin` (Intel), and a GUI-launched pi sees a narrower
   PATH than your shell. Make the interpreter overridable (e.g.
-  `CORTEX_CONTEXT_PYTHON`) instead of hardcoding `python3`.
+  `FLEET_CONTEXT_PYTHON`) instead of hardcoding `python3`.
 - **An MCP entry's interpreter needs its TLS dependencies, not just the module you probed.**
   `python-with-module.sh --print mcp` proves `mcp` imports and says nothing about the CA bundle the
   server's HTTP client needs, so an entry can resolve clean and still start DEAD on TLS. The

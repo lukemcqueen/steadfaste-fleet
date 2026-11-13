@@ -38,15 +38,15 @@ StandardOutput=append:%h/.hermes/health-server/server.log
 
 2. **`%h` in the repo version** — The repo stores the `%h` version so it's portable. When deploying locally, some agents may `sed`-substitute `%h` to the absolute path, or rely on systemd's runtime resolution. Both approaches work — prefer keeping `%h` in the repo file and letting systemd resolve it.
 
-3. **macOS launchd equivalent** — macOS launchd uses `~` or `$HOME` in plist program arguments. However, `launchctl` does NOT resolve `~` in XML plists unless the string is inside `<string>~/path</string>` (tilde expansion by the shell). The more reliable approach is using `$HOME` or `${CORTEX_HOME}` and resolving at install time via `sed`:
+3. **macOS launchd equivalent** — macOS launchd uses `~` or `$HOME` in plist program arguments. However, `launchctl` does NOT resolve `~` in XML plists unless the string is inside `<string>~/path</string>` (tilde expansion by the shell). The more reliable approach is using `$HOME` or `${FLEET_HOME}` and resolving at install time via `sed`:
 
    ```xml
-   <string>${CORTEX_HOME}/.hermes/scripts/health-server.py</string>
+   <string>${FLEET_HOME}/.hermes/scripts/health-server.py</string>
    ```
 
    With install-time substitution:
    ```bash
-   sed "s|\${CORTEX_HOME}|$HOME|g" template.plist > ~/Library/LaunchAgents/com.hermes.service.plist
+   sed "s|\${FLEET_HOME}|$HOME|g" template.plist > ~/Library/LaunchAgents/com.hermes.service.plist
    ```
 
 ## Example: `com.hermes.health-server.service`

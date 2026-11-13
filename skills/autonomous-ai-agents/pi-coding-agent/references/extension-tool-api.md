@@ -67,7 +67,7 @@ fault above. Execute instead:
 3. Assert, per tool: `typeof t.execute === "function"`, no `t.run`,
    `parameters.type === "object"` with `properties` + `required`, and every
    `required` key declared in `properties`.
-4. CALL `await t.execute("call-1", { … })` with `CORTEX_CONTEXT_CLI` pointed at a
+4. CALL `await t.execute("call-1", { … })` with `FLEET_CONTEXT_CLI` pointed at a
    throwaway stub (never the real store) and assert the returned
    `{ content: [{ type: "text", text }], details }` and that the argument reached
    the CLI.

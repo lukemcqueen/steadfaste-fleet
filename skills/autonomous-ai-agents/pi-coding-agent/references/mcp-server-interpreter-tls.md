@@ -12,7 +12,7 @@ bash ~/steadfaste-fleet/ops/scripts/lib/python-with-module.sh --print mcp
 # exit 3 = NO interpreter on this host can import it
 ```
 
-The resolver walks `PYTHON` → the declared fleet interpreter (`CORTEX_PYTHON`, else `CORTEX_PYTHON=`
+The resolver walks `PYTHON` → the declared fleet interpreter (`FLEET_PYTHON`, else `FLEET_PYTHON=`
 from `~/.steadfaste-fleet/agent.env`) → `HERMES_VENV` → the fleet venv → the Hermes venv → PATH, and
 picks the first candidate that actually IMPORTS the module. Use it instead of re-deriving a path:
 seven scripts once each needed their own clean-env probe for the same question.

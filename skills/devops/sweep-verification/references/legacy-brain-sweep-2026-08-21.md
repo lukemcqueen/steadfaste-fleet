@@ -50,7 +50,7 @@ rules in the SKILL.md.
 
 ## Flagged (CREDENTIAL)
 
-- `.env` line: `CORTEX_BUS_PG_PASS=gbrain_pg_pass` — the Postgres password's
+- `.env` line: `FLEET_BUS_PG_PASS=gbrain_pg_pass` — the Postgres password's
   NAME is a gbrain remnant. Live credential: rotating means primary DB + all
   6 hosts' .env in sync. Flag, never touch mid-task.
 

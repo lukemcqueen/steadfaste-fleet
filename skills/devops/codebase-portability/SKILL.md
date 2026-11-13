@@ -65,7 +65,7 @@ Sort into tiers before fixing:
 |------|------|----------|--------|
 | **1 — Critical** | Executable scripts with absolute paths | `~/...`, `/usr/local/bin/docker` | Fix immediately — blocks other users |
 | **2 — Portability** | OS-specific paths in scripts | macOS-only nginx paths | Add OS-aware dispatch |
-| **3 — Docs/Skills** | Instructional `~/repo/` paths | `cd ~/steadfaste-fleet` in SKILL.md | Use `$CORTEX_REPO` fallback pattern |
+| **3 — Docs/Skills** | Instructional `~/repo/` paths | `cd ~/steadfaste-fleet` in SKILL.md | Use `$FLEET_REPO` fallback pattern |
 | **4 — Stale** | Docs describing only one OS | macOS-only setup instructions | Add Linux notes or platform table |
 
 ## Fix Patterns
@@ -83,7 +83,7 @@ REPO_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"  # walk up to repo root
 For scripts deeper in the tree, adjust the `..` count. Verify:
 
 ```bash
-grep -n 'CORTEX_REPO\|SCRIPT_DIR\|SRC' path/to/script.sh
+grep -n 'FLEET_REPO\|SCRIPT_DIR\|SRC' path/to/script.sh
 ```
 
 ### Pattern B: OS-aware path dispatch (Shell)
@@ -175,15 +175,15 @@ for the tool's known OS-specific install locations.
 Replace bare `~/repo-name` with env-var fallback pattern:
 
 ```markdown
-cd "${CORTEX_REPO:-$HOME/steadfaste-fleet}"
+cd "${FLEET_REPO:-$HOME/steadfaste-fleet}"
 ```
 
-This works unset (defaults to `~/steadfaste-fleet`) or with `CORTEX_REPO` override.
+This works unset (defaults to `~/steadfaste-fleet`) or with `FLEET_REPO` override.
 
 For private repos with no env var convention:
 
 ```markdown
-cd "${CORTEX_REPO:-$HOME/steadfaste-fleet}-private"
+cd "${FLEET_REPO:-$HOME/steadfaste-fleet}-private"
 ```
 
 ### Pattern E: macOS-only config paths
@@ -210,8 +210,8 @@ because pathlib splits them across string literals.
 **Example stale pattern:**
 
 ```python
-MCP_SERVERS_DIR = CORTEX_REPO / "src" / "mcp-servers"     # old
-CORTEX_SCRIPTS = CORTEX_REPO / "src" / "scripts"           # old
+MCP_SERVERS_DIR = FLEET_REPO / "src" / "mcp-servers"     # old
+FLEET_SCRIPTS = FLEET_REPO / "src" / "scripts"           # old
 ```
 
 **Scan — use terminal grep, not search_files tool:**
@@ -246,10 +246,10 @@ the patch must match the whole `"old_part" / "next_part"` chain:
 
 ```python
 # Before — two pathlib parts
-CORTEX_SCRIPTS = CORTEX_REPO / "src" / "scripts"
+FLEET_SCRIPTS = FLEET_REPO / "src" / "scripts"
 
 # After — two parts, new names
-CORTEX_SCRIPTS = CORTEX_REPO / "ops" / "scripts"
+FLEET_SCRIPTS = FLEET_REPO / "ops" / "scripts"
 ```
 
 **Don't forget strings in docstrings, comments, and `add_issue` calls:**
@@ -562,7 +562,7 @@ After each fix, confirm with targeted grep that the old pattern is gone:
 
 ```bash
 grep -c '/home/luke' path/to/script.sh          # should be 0
-grep -c 'CORTEX_REPO\|SCRIPT_DIR' path/to/script.sh  # should be >0
+grep -c 'FLEET_REPO\|SCRIPT_DIR' path/to/script.sh  # should be >0
 grep -c '_docker_bin' path/to/python.py          # should be >0
 ```
 

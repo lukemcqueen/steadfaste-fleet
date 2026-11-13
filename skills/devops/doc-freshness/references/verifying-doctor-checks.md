@@ -12,8 +12,8 @@ edit to test RED also trips the deployed doctor mid-test).
    "attempted relative import with no known parent package". Put the doctor
    package's dir on `sys.path` and `import fleet_doctor.checks`.
 2. **Repoint the module's GLOBALS, not the files.** Checks read `HOME` /
-   `CORTEX_REPO` at call time. Build a temp tree, plant the harness files
-   there, then assign `chkmod.HOME = tmp` and `chkmod.CORTEX_REPO =
+   `FLEET_REPO` at call time. Build a temp tree, plant the harness files
+   there, then assign `chkmod.HOME = tmp` and `chkmod.FLEET_REPO =
    tmp / "repo"`. No live path touched.
 3. **Fake the Results object.** A check only calls
    `res.add(label, severity, detail, fix=None)`; a class whose `add` appends

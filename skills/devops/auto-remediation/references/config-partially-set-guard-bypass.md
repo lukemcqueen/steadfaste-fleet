@@ -26,10 +26,10 @@ if [[ -z "$INBOX_URL" ]]; then
 fi
 ```
 
-**The problem:** `CORTEX_INBOX_URL` IS set in one of the `.env` files the
+**The problem:** `FLEET_INBOX_URL` IS set in one of the `.env` files the
 script sources (e.g. `~/steadfaste-fleet/.env` has the URL). The guard only
 checks for the URL being empty. When the URL resolves, the guard releases
-into a code path that tries to POST to the URL — but `CORTEX_INBOX_AUTH` is
+into a code path that tries to POST to the URL — but `FLEET_INBOX_AUTH` is
 NOT set, so every API call fails and the script hits the `else` branch,
 printing to stderr but exiting 0.
 
@@ -37,9 +37,9 @@ printing to stderr but exiting 0.
 
 | Pattern | Exit code | Output | Guard fires? |
 |---------|-----------|--------|-------------|
-| CORTEX_INBOX_URL not set (empty) | 0 (graceful) | Silent | ✅ Yes — exits early |
-| CORTEX_INBOX_URL set, auth missing | 0 | ERROR: stderr noise | ❌ No — guard bypassed |
-| CORTEX_INBOX_URL + auth both absent | 0 (from guard) | Silent | ✅ (if sourced) |
+| FLEET_INBOX_URL not set (empty) | 0 (graceful) | Silent | ✅ Yes — exits early |
+| FLEET_INBOX_URL set, auth missing | 0 | ERROR: stderr noise | ❌ No — guard bypassed |
+| FLEET_INBOX_URL + auth both absent | 0 (from guard) | Silent | ✅ (if sourced) |
 
 The third row is tricky: the guard only works if the script's `.env` source
 also lacks the URL. If a different `.env` file higher in the search order
@@ -52,7 +52,7 @@ has the URL, the guard is bypassed.
 grep -n 'source\|\.env\|\.conf' path/to/script.sh
 
 # 2. Check each source for INBOX_URL and INBOX_AUTH
-grep -E 'CORTEX_INBOX_URL|INBOX_URL|CORTEX_INBOX_AUTH|INBOX_AUTH' \
+grep -E 'FLEET_INBOX_URL|INBOX_URL|FLEET_INBOX_AUTH|INBOX_AUTH' \
   ~/steadfaste-fleet/.env ~/.hermes/hermes-inbox.conf ~/.hermes/.env ~/.steadfaste-fleet/.env
 
 # 3. Trace the resolution chain

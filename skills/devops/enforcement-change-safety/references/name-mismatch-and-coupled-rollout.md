@@ -24,7 +24,7 @@ in the naming contract the fleet reads, and the reader's reality — not the cod
 A single shared binary registered under two names (review-only tools vs lock-lifecycle tools)
 must be role-gated to be safe. The mechanism that keeps it zero-regression and testable:
 
-- Role env read at CALL time, not module load — `os.environ.get("CORTEX_MCP_ROLE", "")` inside
+- Role env read at CALL time, not module load — `os.environ.get("FLEET_MCP_ROLE", "")` inside
 the predicate, so ONE import is testable across roles.
 - `list_tools` is a thin wrapper that filters the full list by the predicate (the giant
 tool-literal stays a private `_list_all_tools`; do not refactor it).

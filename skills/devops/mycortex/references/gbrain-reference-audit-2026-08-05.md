@@ -27,7 +27,7 @@ remains.
   tombstoned tables). Total 183 MB.
 - **Bus server** = `fleet-bus.service` (systemd user, uvicorn
   fleet_bus.server:app :8903) connects as `gbrain`/`gbrain` via
-  `CORTEX_BUS_PG_*` from `~/steadfaste-fleet/.env` (PORT=15432, DB=gbrain,
+  `FLEET_BUS_PG_*` from `~/steadfaste-fleet/.env` (PORT=15432, DB=gbrain,
   USER=gbrain). The ONLY live `gbrain|gbrain` backend is the bus.
 
 ## FUNCTIONAL gbrain references (fix during decouple)
@@ -37,8 +37,8 @@ remains.
 | `ops/scripts/manage/mycortex` (CLI) | `DB_DEFAULT = "gbrain"`; Linux psql via `docker exec gbrain-postgres psql -U <role> -d <db>`; macOS fallback reads `~/.gbrain/config.json` |
 | `ops/services/mycortex/migrate.py` | `DEFAULT_DB = "gbrain"`, `docker exec gbrain-postgres`, url default `postgresql://gbrain:@127.0.0.1:15432/...` |
 | `core/fleet_bus/queue.py` | bus PG defaults: `db="gbrain"`, `user` fallback `POSTGRES_USER` or `gbrain` |
-| `~/steadfaste-fleet/.env` | `CORTEX_BUS_PG_DB=gbrain`, `CORTEX_BUS_PG_USER=gbrain`, `CORTEX_BUS_PG_PASS=gbrain_pg_pass` |
-| `.env.example` | `CORTEX_BUS_PG_*` (only comment refs gbrain embedding model) |
+| `~/steadfaste-fleet/.env` | `FLEET_BUS_PG_DB=gbrain`, `FLEET_BUS_PG_USER=gbrain`, `FLEET_BUS_PG_PASS=gbrain_pg_pass` |
+| `.env.example` | `FLEET_BUS_PG_*` (only comment refs gbrain embedding model) |
 | `ops/scripts/hc/hc.py` | `docker exec gbrain-postgres psql -U gbrain -d gbrain` |
 | `ops/scripts/orch-bus/orch-bus-recover-timeouts.sh`, `ops/scripts/hc/recover-bus-timeouts.sh` | same exec pattern |
 | `ops/scripts/manage/todo-db.py` | `GBRAIN_CONFIG=~/.gbrain/config.json`, url default `postgresql://gbrain:@127.0.0.1:15432/gbrain`, docker exec |
@@ -47,7 +47,7 @@ remains.
 | `ops/scripts/agent/agent-diagnostic.py` | docker exec gbrain-postgres |
 | `ops/scripts/agent/commands.py` | `available_services: ["fleet-bus", "gbrain", ...]`, service list `gbrain-sync` |
 | `ops/scripts/bus/workflow-inspector.py` | defaults `PG_DB="gbrain"`, `PG_USER="gbrain"` |
-| `ops/scripts/orch-bus/orch-bus-test.py` | docstring `CORTEX_BUS_PG_USER=gbrain` |
+| `ops/scripts/orch-bus/orch-bus-test.py` | docstring `FLEET_BUS_PG_USER=gbrain` |
 | `ops/scripts/health/health-vector-push.sh` | `pgrep -f gbrain` gates `SVC_OK` (metric [1]) + `V_GBRAIN` (metric [6]) |
 | `ops/scripts/health/health-vector.py` | metric name `gbrain_sources_ok` (dir-existence check — rename only) |
 | `ops/scripts/health/heartbeat.py` | `check_gbrain_sources()` (internally calls mycortex doctor — rename only); gbrain-autopilot service half-state check (decommission-aware) |

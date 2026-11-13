@@ -96,7 +96,7 @@ code fences. The agent-fixer has stripped trailing ``` fences from skills
 that loads the skill. The HARD GUARD above prevents fixing; this step detects.
 
 ```bash
-cd "${CORTEX_REPO:-$HOME/steadfaste-fleet}"
+cd "${FLEET_REPO:-$HOME/steadfaste-fleet}"
 for f in $(find skills -name 'SKILL.md'); do
   n=$(grep -c '^```' "$f")
   if [ $((n % 2)) -ne 0 ]; then echo "UNBALANCED: $f ($n fences)"; fi
@@ -119,15 +119,15 @@ For each errored job, diagnose the failure:
 
 | Failure type | Auto-fix action |
 |---|---|
-| Script not found / missing path | Run `bash cron-auto-remediate.sh fix-missing` (copies from `$CORTEX_REPO/ops/scripts/` into `~/.steadfaste-fleet/scripts/`), then verify with `python3 ~/steadfaste-fleet/ops/scripts/manage/fleet-doctor.py --quiet` |
-| Git error (detached HEAD, merge conflict) | `cd "${CORTEX_REPO:-$HOME/steadfaste-fleet}" && git checkout main && git pull --ff-only` |
+| Script not found / missing path | Run `bash cron-auto-remediate.sh fix-missing` (copies from `$FLEET_REPO/ops/scripts/` into `~/.steadfaste-fleet/scripts/`), then verify with `python3 ~/steadfaste-fleet/ops/scripts/manage/fleet-doctor.py --quiet` |
+| Git error (detached HEAD, merge conflict) | `cd "${FLEET_REPO:-$HOME/steadfaste-fleet}" && git checkout main && git pull --ff-only` |
 | Permission denied | `chmod +x ~/.steadfaste-fleet/scripts/<script>` (or run `bash cron-auto-remediate.sh fix-perms` for all scripts at once) |
 | Python import error | Re-activate venv; reinstall deps; check Python version |
 | Disk full / no space | `brew cleanup`, `docker system prune -f`, purge log files >7d old |
 | Docker service down | Run the service recovery script manually: `python3 ~/.steadfaste-fleet/scripts/agent-service-recovery.py` (silently exits 0 if all services healthy) |
 || mycortex sync error | Run `bash cron-auto-remediate.sh fix-mycortex` (checks the mycortex CLI doctor + Postgres container). NOTE: the legacy launchd autopilot (`com.legacy-brain.autopilot`) is DECOMMISSIONED — do not kickstart it |
 || Ollama not running | Linux: `sudo systemctl start ollama` (or `systemctl --user start ollama` if no system unit). macOS: `launchctl kickstart gui/$(id -u)/com.ollama.serve`. Verify with `curl -s http://127.0.0.1:11434/api/tags` → HTTP 200 |
-|| Agent Bus unreachable / empty responses on :8903 | **Detect:** `systemctl --user is-active fleet-bus.service` (Linux) or `launchctl list com.hermes.fleet-bus` (macOS, also try `com.hermes.fleet-bus-fallback`) + `curl -s http://127.0.0.1:8903/health` → HTTP 200. The `agent-remediation-sensor.py` checks this every 5min on all platforms — trust its output. **Fix:** `systemctl --user restart fleet-bus.service` (Linux) or `launchctl kickstart gui/$(id -u)/com.hermes.fleet-bus` (macOS) then re-verify. Check `CORTEX_BUS_URL` via `echo $CORTEX_BUS_URL` or `grep 'CORTEX_BUS_URL' ~/steadfaste-fleet/.env`. |
+|| Agent Bus unreachable / empty responses on :8903 | **Detect:** `systemctl --user is-active fleet-bus.service` (Linux) or `launchctl list com.hermes.fleet-bus` (macOS, also try `com.hermes.fleet-bus-fallback`) + `curl -s http://127.0.0.1:8903/health` → HTTP 200. The `agent-remediation-sensor.py` checks this every 5min on all platforms — trust its output. **Fix:** `systemctl --user restart fleet-bus.service` (Linux) or `launchctl kickstart gui/$(id -u)/com.hermes.fleet-bus` (macOS) then re-verify. Check `FLEET_BUS_URL` via `echo $FLEET_BUS_URL` or `grep 'FLEET_BUS_URL' ~/steadfaste-fleet/.env`. |
 || nginx config invalid | `sudo nginx -t` to validate; revert the most recent config change (check `git -C /etc/nginx diff` if tracked, or your last edit) then `sudo nginx -s reload` |
 | Memory pressure | Linux: find top consumers with `ps aux --sort=-%mem | head -5`, free caches with `sync && echo 3 | sudo tee /proc/sys/vm/drop_caches`. macOS: run `purge` to free the memory cache |
 | Network timeout | Retry the job once; check internet with `ping -c1 1.1.1.1` (IP — tests routing even if DNS is down), then `ping -c1 google.com` (tests DNS) |

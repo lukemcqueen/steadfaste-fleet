@@ -394,7 +394,7 @@ to them must be doubly scoped or it will block innocent work in project repos:
 1. **Repo scope**: only fire in the steadfaste-fleet repo itself.
    ```bash
    _REPO_TOP=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
-   [[ "$_REPO_TOP" == "$CORTEX_REPO_TOP" ]]   # CORTEX_REPO_TOP=${HOME}/steadfaste-fleet
+   [[ "$_REPO_TOP" == "$FLEET_REPO_TOP" ]]   # FLEET_REPO_TOP=${HOME}/steadfaste-fleet
    ```
    Non-fleet repos (client-repo-a, client-repo-b, client-web-app, pinned repos,
    ...) must NEVER run the steadfaste-fleet doctor — a failing fleet state must
@@ -1422,7 +1422,7 @@ blocks correct work and the operator's own diagnosis gets sent down the wrong pa
   cannot refuse on the ABSENCE of commits in the tagged repo while inferring presence from
   unattributed activity elsewhere — that asymmetry is what makes the refusal unfalsifiable.
 - **Check the premise the refusal assumes before refusing.** When the lock's repo IS the
-  session's repo (enforcer-injected path or an explicit `CORTEX_SESSION_REPO`), the tag is
+  session's repo (enforcer-injected path or an explicit `FLEET_SESSION_REPO`), the tag is
   right and there is nothing to refuse: pass, and log loudly so the case stays visible.
 - **Narrow by REMOVING refusals only.** The fix's own test must show the guard still refuses a
   genuinely mis-tagged session — a narrowing that also stops catching the real case has

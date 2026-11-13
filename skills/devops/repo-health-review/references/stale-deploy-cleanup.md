@@ -18,7 +18,7 @@ python3 ~/steadfaste-fleet/ops/scripts/manage/fleet-doctor.py 2>&1 | grep -E "St
 
 The doctor's `check_stale_deploys()` function:
 1. Parses every `register()` call from fleet-update.sh
-2. Resolves `${CORTEX_DEPLOY_HOME}` and `${HOME}` in destination paths
+2. Resolves `${FLEET_DEPLOY_HOME}` and `${HOME}` in destination paths
 3. Scans `~/.steadfaste-fleet/scripts/` for `.py` and `.sh` files not in any mapping
 4. Reports each orphan as a WARN with file path and size
 
@@ -57,8 +57,8 @@ Some deploy targets are NOT auto-scanned:
 For these, check and remove manually:
 ```bash
 # Check what's in the deploy dir vs what's registered
-grep "CORTEX_DEPLOY_HOME.*dashboard" ~/steadfaste-fleet/ops/scripts/fleet-update.sh
-grep "CORTEX_DEPLOY_HOME.*bus" ~/steadfaste-fleet/ops/scripts/fleet-update.sh
+grep "FLEET_DEPLOY_HOME.*dashboard" ~/steadfaste-fleet/ops/scripts/fleet-update.sh
+grep "FLEET_DEPLOY_HOME.*bus" ~/steadfaste-fleet/ops/scripts/fleet-update.sh
 ls ~/.steadfaste-fleet/dashboard/
 ls ~/.steadfaste-fleet/bus/
 ```

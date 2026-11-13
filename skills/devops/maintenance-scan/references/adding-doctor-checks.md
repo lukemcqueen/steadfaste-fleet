@@ -23,7 +23,7 @@ Publish probed paths as a module-level list (e.g. `STALE_X_PATHS = [Path.home() 
 ## 4. Register in BOTH places — forgetting either breaks the deployed doctor
 
 - `fleet_doctor/cli.py`: import the check and append it to `all_checks` (the normal pass, not only `--quick`).
-- `ops/scripts/fleet-update.sh`: add `register "ops/scripts/manage/fleet_doctor/<name>.py" "${CORTEX_DEPLOY_HOME}/scripts/fleet_doctor/<name>.py"` — every `fleet_doctor` file deploys INDIVIDUALLY. The pre-commit docs-audit flags an unregistered new `fleet_doctor` file.
+- `ops/scripts/fleet-update.sh`: add `register "ops/scripts/manage/fleet_doctor/<name>.py" "${FLEET_DEPLOY_HOME}/scripts/fleet_doctor/<name>.py"` — every `fleet_doctor` file deploys INDIVIDUALLY. The pre-commit docs-audit flags an unregistered new `fleet_doctor` file.
 
 ## 5. Test it (TDD)
 

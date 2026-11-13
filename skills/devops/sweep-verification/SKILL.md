@@ -57,7 +57,7 @@ Every hit is one of three buckets; treat them differently:
 |---|---|---|
 | **LIVE** | deployed scripts, cron, config, SOUL profiles, registry/health-vector keys, stale deployed files, dead state files | **Fix/remove now** |
 | **HISTORICAL** | brain lessons, dated skill event records, logs, session dumps, backups (dumps, deploy-backups, scripts-unique-backup-*), loop audit trail, bus archives, curator metadata | **Keep — deleting destroys the fleet's record** (the file itself may even say "it IS the record") |
-| **CREDENTIAL** | `.env` values whose NAME contains the token (e.g. `CORTEX_BUS_PG_PASS=<legacy>_pg_pass`) | **Flag only — never touch a live credential mid-task**; rotation is a deliberate multi-host change |
+| **CREDENTIAL** | `.env` values whose NAME contains the token (e.g. `FLEET_BUS_PG_PASS=<legacy>_pg_pass`) | **Flag only — never touch a live credential mid-task**; rotation is a deliberate multi-host change |
 
 The audit's own files classify stale refs as "historical doc/log/skill text →
 leave as-is (it IS the record)". Deleting history to reach zero violates the

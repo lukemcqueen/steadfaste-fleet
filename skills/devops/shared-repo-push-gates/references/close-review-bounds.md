@@ -33,7 +33,7 @@ tried — a message naming the knob you already turned sends the next reader to 
 
 A file edit that appears to do nothing is usually being beaten by something earlier in the chain,
 not ignored. Resolution order is **the PROCESS ENVIRONMENT first**, then the env files (an
-explicit `CORTEX_ENV_FILE`, then the repo `.env`, then the deploy root, then the Hermes-owned
+explicit `FLEET_ENV_FILE`, then the repo `.env`, then the deploy root, then the Hermes-owned
 one). So check the running process's own environment before concluding a file edit failed — a
 value exported into a long-lived daemon outranks the file you just edited, while keys that daemon
 does NOT carry still resolve from the file. That asymmetry is why one knob can appear to take

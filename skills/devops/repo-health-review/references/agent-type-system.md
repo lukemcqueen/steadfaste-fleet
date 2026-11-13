@@ -36,7 +36,7 @@ Behaviour when agent type doesn't match:
 
 | Component | File | Behaviour |
 |-----------|------|-----------|
-| os-config.sh | `ops/scripts/install/os-config.sh` | Defines `CORTEX_AGENT_TYPE` and `check_agent_type()` |
+| os-config.sh | `ops/scripts/install/os-config.sh` | Defines `FLEET_AGENT_TYPE` and `check_agent_type()` |
 | fleet-update.sh | `ops/scripts/fleet-update.sh` | Installs orch-* crons only if AGENT_TYPE=orchestrator |
 | fleet-doctor | `fleet_doctor/config.py` | `AGENT_ROLE` constant, skips Dashboard/Langfuse/Bus on non-orch |
 | install-orch-crons.sh | `ops/scripts/install/install-orch-crons.sh` | Self-audits: refuses on non-orch, gives uninstall advice |

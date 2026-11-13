@@ -43,7 +43,7 @@ pattern only matches Python package names. The initial grep only looked
 `report-agent-health.py` (no_agent watchdog deployed fleet-wide) read
 `CONFIG_FILE = ~/.hermes/fleet-bus.conf` — a path retired when bus config was
 standardized at `~/steadfaste-fleet/.env` (commit `d2fd304d`). Result:
-exit 1 with `ERROR: CORTEX_BUS_FALLBACK_URL (or CORTEX_INBOX_URL) not set`,
+exit 1 with `ERROR: FLEET_BUS_FALLBACK_URL (or FLEET_INBOX_URL) not set`,
 even though the canonical conf existed with the right values. When touching any
 bus script, grep for the retired path first:
 

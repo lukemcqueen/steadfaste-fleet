@@ -50,7 +50,7 @@ protocol applies to any public/docs-driven repo.
    leakage lines = clean.
 5. **Scrub real personal names from example command-lines**, even
    harmless-looking ones. A config example like
-   `export CORTEX_SOURCES="me,family,shared,default"` leaks real people's
+   `export FLEET_SOURCES="me,family,shared,default"` leaks real people's
    names into a public OSS repo → replace with neutral placeholders
    (`me,family,shared,default`). "No PII please" from the user usually points
    at exactly this — check config/source-list examples and any real home

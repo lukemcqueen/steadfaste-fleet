@@ -55,8 +55,8 @@ with exact single spaces.
 Added to `ops/scripts/fleet-update.sh` after the v002 line:
 
 ```bash
-register "ops/services/tasks/schema/v003__cancel-column-null.sql" "${CORTEX_DEPLOY_HOME}/services/tasks/schema/v003__cancel-column-null.sql"
-register "ops/services/tasks/schema/v004__cancel-update-column.sql" "${CORTEX_DEPLOY_HOME}/services/tasks/schema/v004__cancel-update-column.sql"
+register "ops/services/tasks/schema/v003__cancel-column-null.sql" "${FLEET_DEPLOY_HOME}/services/tasks/schema/v003__cancel-column-null.sql"
+register "ops/services/tasks/schema/v004__cancel-update-column.sql" "${FLEET_DEPLOY_HOME}/services/tasks/schema/v004__cancel-update-column.sql"
 ```
 
 Also fixed stale "v001+v002" comments in `tests/test-tasks-schema.sh` (header

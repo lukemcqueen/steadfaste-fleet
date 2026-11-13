@@ -309,7 +309,7 @@ git diff --cached --name-only                                     # only YOUR fi
 12. **A non-Hermes coding agent's governance id collapses to ONE per repo unless the
     harness exports a per-session env value — and detecting the sharing is not fixing it.**
     `get_session_id()` resolves: per-call injection (Hermes enforcer) → env
-    `CORTEX_SESSION_KEY` then `PI_SESSION_ID` → per-repo persisted `state/.session-<slug>.id`.
+    `FLEET_SESSION_KEY` then `PI_SESSION_ID` → per-repo persisted `state/.session-<slug>.id`.
     That fallback is ONE id per repo BY CONSTRUCTION (a restart-stability trade for bare
     harnesses), so every env-less Pi/Claude/Codex session in the repo resolves the SAME id and
     the SAME lock file: a new session "picks up" the existing session's lock, and a close can
@@ -321,7 +321,7 @@ git diff --cached --name-only                                     # only YOUR fi
       absent from ANOTHER, so measure the seam for the exact consumer, never trust a documented
       merge (cross-agent-design rule 6).** Two variants each dead-end the resolver's env read:
       an MCP `env` block that REPLACES the child env (a harness passing `config.env` straight to
-      Node `spawn(env=…)` strips every inherited var, `CORTEX_SESSION_KEY` included), and the
+      Node `spawn(env=…)` strips every inherited var, `FLEET_SESSION_KEY` included), and the
       subtler one on Pi — Pi's stdio transport MERGES (`{...process.env, ...config.env}`), so the
       block is fine, but Pi exports `PI_SESSION_ID` only into bash-tool commands and never onto
       its own `process.env`, so the governor's MCP child inherits nothing regardless. Verify
@@ -344,7 +344,7 @@ git diff --cached --name-only                                     # only YOUR fi
       into visible blocking; it does NOT give sessions separate locks.** The fix lives at the
       propagation seam — not in more resolver hardening. A static MCP `env` block CANNOT carry
       a per-session value, so for Pi the working fix is the harness's lifecycle hook setting
-      `CORTEX_SESSION_KEY` from its own session manager (`ctx.sessionManager.getSessionId()` in
+      `FLEET_SESSION_KEY` from its own session manager (`ctx.sessionManager.getSessionId()` in
       `before_agent_start`, run BEFORE the MCP child spawns; only-if-unset so a gateway pin
       wins) — proof at `ops/install/harnesses/pi/extensions/fleet-context.ts`. The
       fleet-gateway `command` backend already pins it per chat when a session runs through the

@@ -1,7 +1,7 @@
 # What the gate counts as a WRITE, and what to do when no repo resolves
 
 Two behaviours that read as "the gate is broken" but are the gate working. Both measured on a
-macOS host on 2026-10-18 (a session reported "blocking all bash calls because CORTEX_SESSION_REPO
+macOS host on 2026-10-18 (a session reported "blocking all bash calls because FLEET_SESSION_REPO
 isn't set and we're not in a git repo").
 
 ## 1. `cd` is NOT a read primitive — a cd-chain is a BLOCKED write
@@ -22,8 +22,8 @@ One read primitive with an absolute path is equally fine. Never build a cd-chain
 The gate resolves the governed repo from path-like tool arguments, then from the repo the SESSION
 already resolved (recorded by `_note_session_repo` from an earlier call's own arguments).
 
-**It never reads `CORTEX_SESSION_REPO`.** That variable plays no part in resolution, so "export
-CORTEX_SESSION_REPO" is not the fix for a locked-out session, whatever the error suggests.
+**It never reads `FLEET_SESSION_REPO`.** That variable plays no part in resolution, so "export
+FLEET_SESSION_REPO" is not the fix for a locked-out session, whatever the error suggests.
 
 When neither source yields a repo the refusal is its own message, not the generic lock rule: it says
 governance is repo-scoped so no lock could authorise the call, names the escapes that work

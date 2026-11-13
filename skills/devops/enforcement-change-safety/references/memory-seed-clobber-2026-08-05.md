@@ -11,7 +11,7 @@ manual restore. First reported by Joseph (non-orchestrator) with evidence.
 1. **The register comment lied.** `ops/scripts/fleet-update.sh` (~line 512):
    ```bash
    # Templates → ~/.hermes/memories/ (guarded — only if dest missing)
-   register "docs/templates/MEMORY.seed.md" "${CORTEX_DEPLOY_HOME}/memories/MEMORY.md"
+   register "docs/templates/MEMORY.seed.md" "${FLEET_DEPLOY_HOME}/memories/MEMORY.md"
    ```
    The comment claims dest-missing-only. The actual `needs_update()` (~line 595)
    overwrites whenever hashes differ: `[[ "$src_hash" != "$dest_hash" ]] && return 0`.
@@ -42,8 +42,8 @@ LIVE memory (data loss). Joseph's host is the live case. **Always determine
 which path a host loads before diagnosing "memory wiped".**
 
 Note: `memory-architecture` skill's install-step-9 table claimed seeds go to
-`~/.hermes/memories/` — WRONG, they go to `${CORTEX_DEPLOY_HOME}/memories`
-(install.sh line 1585: `HERMES_MEMORIES="${CORTEX_DEPLOY_HOME}/memories"`).
+`~/.hermes/memories/` — WRONG, they go to `${FLEET_DEPLOY_HOME}/memories`
+(install.sh line 1585: `HERMES_MEMORIES="${FLEET_DEPLOY_HOME}/memories"`).
 That wrong path claim is exactly why the topology is confusing.
 
 ## Fix design (agreed, orchestrator-only — esther landed it)
@@ -59,7 +59,7 @@ That wrong path claim is exactly why the topology is confusing.
    before the MAP loop: `[[ ! -f "$dest" ]] && copy_file "$full_src" "$dest"`.
    Cover seed dests in `clean_stale_deploys` (it builds dest lists from
    MAP/ORCH_MAP only — seed dests must be added or they look stale; note it only
-   scans `${CORTEX_DEPLOY_HOME}/scripts`, so memories/ is safe today, but the
+   scans `${FLEET_DEPLOY_HOME}/scripts`, so memories/ is safe today, but the
    doctor's check_stale_deploys must also recognize register_seed lines).
 
 2. **Doctor — existence-only for seeds**: `check_deploy_checksums` already

@@ -435,7 +435,7 @@ does not apply.
     reasoning model spent the whole output budget thinking. The documented knob is
     `REVIEWER_MAX_TOKENS`, read at CALL time (never at import), so raising it takes effect on
     the retry with no restart: append `REVIEWER_MAX_TOKENS=<n>` to the fleet `.env`
-    (`$HOME/steadfaste-fleet/.env`, or `$CORTEX_ENV_FILE`; the reader also checks the deploy
+    (`$HOME/steadfaste-fleet/.env`, or `$FLEET_ENV_FILE`; the reader also checks the deploy
     root and `~/.hermes/.env`). Ceiling is 128000 — a value above it is clamped and warned.
     Then call `end_change` again on the SAME session: the refused close leaves the lock FILE
     removed while the governance SESSION stays live, so `begin_change` refuses with "A
@@ -744,7 +744,7 @@ does not apply.
 When a question needs data that only EXISTS on other hosts' local state (cost, review volume, doctor output), the answer is never a guess and never a one-off message to the peer: ship a small READ-ONLY instrument through the register map, then EXEC it on every host. The cost4 crew proved the pattern with `cron-cost-metrics.py`; a sibling for governance review volume is `review-volume-metrics.py` (2026-11-10). The full sequence, with the traps each step carries:
 
 1. **Write the script mirroring `cron-cost-metrics.py`'s shape**: host-derived identity from `agent.env` (AGENT_NAME — the bus EXEC passes no `--agent`), read-only sqlite (`mode=ro`), and an unreadable store reported as an ERROR (exit 2), never as a zero. Empty tables on an older host = `absent`, not `0`.
-2. **Register it in `fleet-update.sh`** beside its sibling (`register "ops/scripts/manage/<name>.py" "${CORTEX_DEPLOY_HOME}/scripts/<name>.py"`). A new shared file is NOT deployed unless registered.
+2. **Register it in `fleet-update.sh`** beside its sibling (`register "ops/scripts/manage/<name>.py" "${FLEET_DEPLOY_HOME}/scripts/<name>.py"`). A new shared file is NOT deployed unless registered.
 3. **Deploy the repo copy** (`bash ops/scripts/fleet-update.sh`), then verify the DEPLOYED copy runs and matches the repo copy modulo the SOURCE header: `diff` shows only the 3 header lines the deploy prepends.
 4. **Write a test** — the TDD gate refuses production code without one. The file name carries DASHES (deploy convention), so a plain `import review_volume_metrics` fails: load by `importlib.util.spec_from_file_location` like `dogfood-reviewer-tiering.py` does, expose the module as a pytest fixture.
 5. **Commit, then close the governed cycle (end_change) to mint the receipt, then push** — the full push gate sequence applies like any other change.

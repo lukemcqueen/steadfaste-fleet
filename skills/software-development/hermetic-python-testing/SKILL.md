@@ -94,7 +94,7 @@ runner's default is Telegram, so every test run sent `cron:test-echo / hello
 from test` to the user's real chat (repeated complaints: "I keep seeing
 this"). Before invoking any tool/CLI in a test, grep its args/env for defaults
 that route to a real channel (messenger, webhook, mail, metrics) and pass the
-explicit safe target (`--deliver local`, `CORTEX_DEPLOY_HOME=tmp_path`).
+explicit safe target (`--deliver local`, `FLEET_DEPLOY_HOME=tmp_path`).
 Assert the live default in a dedicated test — never exercise it by accident.
 
 **Prefer a SUITE-LEVEL kill-switch over per-call flags.** Passing the safe
@@ -287,7 +287,7 @@ unit seams cannot. Two rules keep that test honest and durable:
   under the deploy home, a doctor that drives it) passes locally and goes RED on every fresh
   checkout, because the deployed copy is only current after a deploy — and the first failure a
   reader meets is the suite, not the change, which is how a suite becomes something people ignore.
-  Point the root variable at `tmp_path` (env/monkeypatch: `CORTEX_DEPLOY_HOME=<tmp>`), so the test
+  Point the root variable at `tmp_path` (env/monkeypatch: `FLEET_DEPLOY_HOME=<tmp>`), so the test
   exercises the repo's own copy and measures the CHECK and the CLI it drives. Then verify the
   DEPLOYED wiring by RUNNING it in the cycle that changes it (a real invocation against the deployed
   path, recorded in the committed evidence) — deployment state is verified live, not asserted in a
@@ -410,7 +410,7 @@ provenance block still empty.
   Repointing a reader from `SOME_HOME / ".env"` to a literal
   `Path.home() / "x" / ".env"` silently broke the test that redirects it with
   `monkeypatch.setattr(mod, "SOME_HOME", tmp)` — it read the real host path and
-  failed. Keep a module-level constant (e.g. `CORTEX_ENV_FILE`) and let tests
+  failed. Keep a module-level constant (e.g. `FLEET_ENV_FILE`) and let tests
   patch THAT; a hardcoded path has no seam.
 - **To find WHICH test pollutes `os.environ`, hook pytest — and run with `-s`.**
   A throwaway plugin (`-p <name>`, module on `PYTHONPATH`) that prints at

@@ -106,7 +106,7 @@ guarantees make a leftover unlocked state self-correcting:
    gate does not depend on a CHILD script's trap for a security property. The
    relock runs on success, on error and on signal alike; a FAILED deploy no
    longer leaves the gate tamperable. Verified by failing a deploy on purpose
-   (bad `CORTEX_DEPLOY_HOME` → rc=1) and watching all nine files come back
+   (bad `FLEET_DEPLOY_HOME` → rc=1) and watching all nine files come back
    `----i---------e-------`.
 2. **Relock after inactivity.** `agent-remediate-apply.py` (no_agent, every
    10 min) self-heals at the top of every cycle, probing

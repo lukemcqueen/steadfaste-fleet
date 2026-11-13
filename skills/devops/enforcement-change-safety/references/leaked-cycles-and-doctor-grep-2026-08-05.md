@@ -24,7 +24,7 @@ Lock file: `~/.steadfaste-fleet/state/.governance-<session_id>.json`
 Doctor logic (checks.py check_governance, PENDING cycles section):
 ```python
 _active_tasks = set()
-for _lf in (CORTEX_HOME / "state").glob(".governance-*.json"):
+for _lf in (FLEET_HOME / "state").glob(".governance-*.json"):
     _ld = json.loads(_lf.read_text())
     if _ld.get("status") == "executing" and _ld.get("task_id"):
         _active_tasks.add(_ld["task_id"])
@@ -89,7 +89,7 @@ _detect_orch() {
   esac
   return 1
 }
-if [[ "$_REPO_TOP" == "$CORTEX_REPO_TOP" ]] && _detect_orch && [[ -f "$CORTEX_DOCTOR" ]]; then
+if [[ "$_REPO_TOP" == "$FLEET_REPO_TOP" ]] && _detect_orch && [[ -f "$FLEET_DOCTOR" ]]; then
 ```
 
 Verified scope matrix (bash harness with _detect_orch stubbed to return 1):

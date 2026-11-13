@@ -47,7 +47,7 @@ live peek sees only what is still pending):
 
 ```bash
 set -a; . ~/.steadfaste-fleet/.env; set +a   # never echo the token value
-curl -s -H "Authorization: Bearer $CORTEX_BUS_TOKEN" \
+curl -s -H "Authorization: Bearer $FLEET_BUS_TOKEN" \
   "http://127.0.0.1:8903/api/pgmq/archives/inbox_orchestrator?limit=2000&since_minutes=300000" \
 | python3 -c "import json,sys,collections; d=json.load(sys.stdin); m=d if isinstance(d,list) else d.get('messages',[]); c=collections.Counter(((x.get('body') or {}).get('subject'),(x.get('body') or {}).get('from')) for x in m); [print(n,s,f) for (s,f),n in c.most_common(20)]"
 ```
@@ -75,20 +75,20 @@ python3 -m py_compile ~/.steadfaste-fleet/offline/session_mine.py
 
 ```bash
 # Bus URL
-grep -r "CORTEX_BUS_URL" ~/steadfaste-fleet/.env ~/steadfaste-fleet/.env 2>/dev/null
+grep -r "FLEET_BUS_URL" ~/steadfaste-fleet/.env ~/steadfaste-fleet/.env 2>/dev/null
 
 # Auth
-grep -r "CORTEX_BUS_AUTH\|CORTEX_BASIC_AUTH" ~/steadfaste-fleet/.env 2>/dev/null
+grep -r "FLEET_BUS_AUTH\|FLEET_BASIC_AUTH" ~/steadfaste-fleet/.env 2>/dev/null
 
 # Test
-curl -sI "$(grep CORTEX_BUS_URL ~/steadfaste-fleet/.env 2>/dev/null | head -1 | cut -d= -f2)" | head -3
+curl -sI "$(grep FLEET_BUS_URL ~/steadfaste-fleet/.env 2>/dev/null | head -1 | cut -d= -f2)" | head -3
 ```
 
 **Required:** HTTP 200 + auth creds. Missing = contact Moses.
 
 **Known 401 trap (2026-09-04):** the collector's `_build_auth_headers` prefers
-`CORTEX_BASIC_AUTH` and gives up on 401, whereas `lib/fleet_bus.py` prefers the
-Bearer `CORTEX_BUS_TOKEN` and falls back to Basic on 401/403. A stale Basic cred
+`FLEET_BASIC_AUTH` and gives up on 401, whereas `lib/fleet_bus.py` prefers the
+Bearer `FLEET_BUS_TOKEN` and falls back to Basic on 401/403. A stale Basic cred
 STILL in `.env` alongside a valid token makes the collector 401 while
 `bus_send` (moses/esther handlers) succeeds on the same host. Collector-and-lib
 must agree: prefer the token, add the Basic fallback.

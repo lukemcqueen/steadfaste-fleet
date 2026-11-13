@@ -333,7 +333,7 @@ treat that as part of the deliverable, not a follow-up.
   deployment's dirs (`~/hermes-cortex` → `~/steadfaste-fleet`, `~/.hermes-cortex`
   → `~/.steadfaste-fleet`) ships a guarded migration script + a golden-path
   verifier, but deploying the code does not execute the rename. Verify on the
-  host: `CORTEX_DEPLOY_HOME` still unset ⇒ `fleet-update.sh` still defaults to
+  host: `FLEET_DEPLOY_HOME` still unset ⇒ `fleet-update.sh` still defaults to
   the OLD `~/.hermes-cortex`; no transition symlink yet; the old dirs are real
   dirs, not symlinks. Those symptoms mean "the code landed, the rename has NOT".
   A host that still runs everything off the old paths is not a failed rename —
@@ -344,7 +344,7 @@ treat that as part of the deliverable, not a follow-up.
   <host>.sh`) deliberately does NOT apply to the rest yet. Before "finishing" a
   rename on any non-dogfood host, check the plan's rollout step: it may mandate
   esther-green first and a separate fleet dispatch, with the deploy default in
-  `fleet-update.sh` (`CORTEX_DEPLOY_HOME="${HOME}/.hermes-cortex"`) deliberately
+  `fleet-update.sh` (`FLEET_DEPLOY_HOME="${HOME}/.hermes-cortex"`) deliberately
   unchanged until every host has migrated (so the 4 agents' next deploys stay
   consistent).
 - **Confirm the repo rename landed by `git ls-remote` on BOTH the old and new
@@ -361,7 +361,7 @@ treat that as part of the deliverable, not a follow-up.
   run from inside a source dir (`cwd` guard) — run it from a stable workdir.
 - **`install-crons.sh` regenerates the bridge/bus units but NOT the Hermes-owned
   gateway + dashboard units — hand-patch those, or the golden-path "0 old tokens"
-  unit scan stays red.** After regenerating units with `CORTEX_DEPLOY_HOME`
+  unit scan stays red.** After regenerating units with `FLEET_DEPLOY_HOME`
   overridden to the new path, `grep -Rl '\.hermes-cortex' ~/.config/systemd/user`
   still returns the `fleet-gateway.service` + `hermes-cortex-dashboard.service`
   live units (plus the gateway's `default.target.wants` symlink), which the cron

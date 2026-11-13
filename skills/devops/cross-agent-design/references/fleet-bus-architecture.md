@@ -13,8 +13,8 @@
 | `:8903` | Bus backend (FastAPI, PGMQ) | Localhost — systemd `fleet-bus.service` |
 | `:8905` | Health server (Flask, vector ping) | Fleet health checks — **NOT the bus** |
 | `:15432` | mycortex Postgres (`bus.*` schema) | Only Moses/Esther — contains ALL queues |
-| `:13004` | nginx → Bus (Moses, primary) | All agents via `CORTEX_BUS_URL` |
-| `:14004` | nginx → Bus (Esther, backup) | Fallback via `CORTEX_BUS_FALLBACK_URL` |
+| `:13004` | nginx → Bus (Moses, primary) | All agents via `FLEET_BUS_URL` |
+| `:14004` | nginx → Bus (Esther, backup) | Fallback via `FLEET_BUS_FALLBACK_URL` |
 
 ## Auth — Two Paths
 
@@ -35,18 +35,18 @@ Agent → nginx (:13004) → Bus (:8903)
 Agent → Bus (:8903) directly
          │
     Bearer token
-    (CORTEX_BUS_TOKEN)
+    (FLEET_BUS_TOKEN)
 ```
 
 ### Auth Resolution Chain (fleet_bus.py)
 
 ```
-1. CORTEX_BUS_TOKEN set?   → Bearer    (direct localhost)
-2. CORTEX_BASIC_AUTH set?  → Basic     (nginx proxy)
+1. FLEET_BUS_TOKEN set?   → Bearer    (direct localhost)
+2. FLEET_BASIC_AUTH set?  → Basic     (nginx proxy)
 3. Neither?                → HTTP 401
 ```
 
-no_agent crons use Path A — `_read_config()` reads `CORTEX_BASIC_AUTH` from `.env`.
+no_agent crons use Path A — `_read_config()` reads `FLEET_BASIC_AUTH` from `.env`.
 
 ## ACL Model (`bus.permissions`)
 

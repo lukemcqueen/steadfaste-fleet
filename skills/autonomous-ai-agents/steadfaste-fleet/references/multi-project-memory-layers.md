@@ -43,10 +43,10 @@ hermes --profile <name> setup
 
 Each service needs a plist in `~/Library/LaunchAgents/`. Moses maintains
 templates in the steadfaste-fleet repo at `docs/templates/` using a
-`CORTEX_HOME` placeholder that must be replaced before install:
+`FLEET_HOME` placeholder that must be replaced before install:
 
 ```bash
-sed "s|CORTEX_HOME|${CORTEX_HOME}|g" \
+sed "s|FLEET_HOME|${FLEET_HOME}|g" \
   docs/templates/com.hermes.fleet-dashboard.plist \
   > ~/Library/LaunchAgents/com.hermes.fleet-dashboard.plist
 ```
@@ -87,8 +87,8 @@ curl -s http://localhost:11434/api/tags               # Ollama models
 python3 -m venv ~/.steadfaste-fleet/dashboard/venv
 ~/.steadfaste-fleet/dashboard/venv/bin/pip install flask
 
-# Install plist (replace CORTEX_HOME with actual path)
-sed "s|CORTEX_HOME|/Users/$(whoami)|g" \
+# Install plist (replace FLEET_HOME with actual path)
+sed "s|FLEET_HOME|/Users/$(whoami)|g" \
   docs/templates/com.hermes.fleet-dashboard.plist \
   > ~/Library/LaunchAgents/com.hermes.fleet-dashboard.plist
 

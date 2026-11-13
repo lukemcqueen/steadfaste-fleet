@@ -88,9 +88,9 @@ This prevents memory bloat — only durable, reusable, non-obvious, high-impact 
 | Hermes Gateway | `ai.hermes.gateway` | Created by Hermes Agent install |
 | Fleet Dashboard | `com.hermes.fleet-dashboard` | `docs/templates/com.hermes.fleet-dashboard.plist` |
 
-**Plist template convention:** Templates in `docs/templates/` use `CORTEX_HOME` as a placeholder. Replace before installing:
+**Plist template convention:** Templates in `docs/templates/` use `FLEET_HOME` as a placeholder. Replace before installing:
 ```bash
-sed "s|CORTEX_HOME|${CORTEX_HOME}|g" template.plist > ~/Library/LaunchAgents/name.plist
+sed "s|FLEET_HOME|${FLEET_HOME}|g" template.plist > ~/Library/LaunchAgents/name.plist
 ```
 
 ## Profile Management Commands (Legacy)

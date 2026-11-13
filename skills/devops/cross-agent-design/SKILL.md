@@ -77,11 +77,11 @@ Before ANY cross-agent design, protocol, or command: prove the identical flow wo
 ```bash
 # How does the remote agent connect?
 #   - Same Postgres (orchestrators only)? → localhost:15432, Bearer token
-#   - External URL (all workers)?         → CORTEX_BUS_URL, Basic Auth
+#   - External URL (all workers)?         → FLEET_BUS_URL, Basic Auth
 #
 # Check the receiving agent's .env
-#   CORTEX_BUS_URL=https://example.com:13004  (or :14004 for Esther)
-#   CORTEX_BASIC_AUTH=agentname:password
+#   FLEET_BUS_URL=https://example.com:13004  (or :14004 for Esther)
+#   FLEET_BASIC_AUTH=agentname:password
 #   AGENT_NAME=esther
 ```
 
@@ -141,7 +141,7 @@ When the receiving agent replies, verify the path:
 ```bash
 # The agent sends to inbox_orchestrator (or inbox_moses for point-to-point replies)
 # What URL do they use?
-#   - CORTEX_BUS_URL (through nginx, port 13004)?
+#   - FLEET_BUS_URL (through nginx, port 13004)?
 #   - Direct localhost (port 8903)?
 # What auth?
 #   - Basic Auth for nginx?
@@ -351,7 +351,7 @@ Pitfalls that cost a cycle here:
 ### ❌ "I sent a message to inbox_esther, why didn't she respond?"
 
 Check, in order:
-1. Does Esther connect to the same Postgres instance? (She uses `CORTEX_BUS_URL`)
+1. Does Esther connect to the same Postgres instance? (She uses `FLEET_BUS_URL`)
 2. Does she have a bus-processor cron? (`fleet-bus-*` jobs in her cron list)
 3. Does her ACL allow reading `inbox_esther`? (Yes — every agent reads their own)
 4. Was the message consumed by `agent-worker` without being archived? (Competing consumer)

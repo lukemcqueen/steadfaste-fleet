@@ -473,7 +473,7 @@ ORDER BY enqueued_at DESC LIMIT 3;
 **Step 3 — Send a known-good command**
 Use `UPDATE_REQUEST` (tests full read→process→respond→archive cycle) or `EXEC` with `agent-diagnostic.py` (deployed everywhere). Do NOT use `echo`, `whoami`, `df` — these are PATH commands, not scripts. Exit code -1 = "script not found".
 ```bash
-TOKEN=$(grep CORTEX_BUS_TOKEN ~/steadfaste-fleet/.env | cut -d= -f2)
+TOKEN=$(grep FLEET_BUS_TOKEN ~/steadfaste-fleet/.env | cut -d= -f2)
 CORR="test-<agent>-$(date +%s)"
 curl -s -X POST http://127.0.0.1:8903/api/pgmq/send \
   -H "Content-Type: application/json" \
@@ -513,7 +513,7 @@ Look for `EXEC_RESULT` or `UPDATE_RESULT` with matching correlation_id.
 
 **If the agent reads but never responds** (audit shows `read` but no result in inbox_moses):
 - Check if `bus.send()` from the agent to inbox_moses works (see "half-connectivity" pitfall)
-- The agent may have the wrong CORTEX_BUS_URL or auth
+- The agent may have the wrong FLEET_BUS_URL or auth
 - The handler may crash before `send_bus_result()` (check for Telegram ❌ notification from agent)
 
 **Timeline (Esther, 2026-07-23):**
@@ -615,7 +615,7 @@ After they report back, fix the identified issue (corrupt state file, handler cr
   WHERE state = 'processing' AND timeout_at < NOW();
   ```
 - **Telegram notifications from handler** — the handler now sends Telegram notifications to the home channel on pickup (📥 `[agent] Received EXEC from moses`) and completion (✅/❌ `[agent] EXEC script.py: exit=N — output preview`). Uses Telegram Bot API directly: reads `TELEGRAM_BOT_TOKEN` + `TELEGRAM_HOME_CHANNEL` from `~/.hermes/.env` (recipient never hardcoded — PII scrub 2026-08-06), with `timeout=10`. Not `hermes send` (may time out when gateway has MCP issues).
-- **`fleet send` was local-only (FIXED 2026-08-06)** — it used `docker exec` to reach Postgres directly on this machine, so on Esther's host it wrote to her own (unpolled) bus. Now fleet routes through `lib.fleet_bus` over HTTP (`CORTEX_BUS_URL` ACTIVE + fallback) — host-independent, works identically on moses and esther. Remote agents connect via the nginx proxy (port 13004) with Basic auth. The `fleet bus` dashboard remains a local-Postgres view (labeled).
+- **`fleet send` was local-only (FIXED 2026-08-06)** — it used `docker exec` to reach Postgres directly on this machine, so on Esther's host it wrote to her own (unpolled) bus. Now fleet routes through `lib.fleet_bus` over HTTP (`FLEET_BUS_URL` ACTIVE + fallback) — host-independent, works identically on moses and esther. Remote agents connect via the nginx proxy (port 13004) with Basic auth. The `fleet bus` dashboard remains a local-Postgres view (labeled).
 
 - **Fleet dispatch BLOCKS silently without `--self-tested` — the warning is a gate, not a note.** `fleet send <agent> UPDATE_REQUEST <body>` (no flag) prints *"Use --self-tested only AFTER the self-test is verified"* and sends NOTHING — the message never lands (bus stays empty). Verified 2026-08-02: 5 sends without the flag → zero messages in any inbox; re-issuing all 5 with `--self-tested` → all 5 landed `pending`. The required sequence is: (1) prove the identical flow on yourself — `fleet send moses UPDATE_REQUEST <body>`, run `python3 scripts/agent-message-handler.py --once`, verify consumed/archived in `bus.archives`; (2) THEN re-issue the fleet loop with `--self-tested`. Self-test first, flag second — the flag exists to force exactly that order.
 - **Direct API auth quirks** — the PGMQ `/api/pgmq/archive` endpoint may return "Invalid or expired token" when the Bearer token has whitespace/quote issues from shell extraction. The `fleet` tool avoids this by going through psql directly. Use `bus.archive()` via psql for reliable cleanup.
@@ -652,16 +652,16 @@ After they report back, fix the identified issue (corrupt state file, handler cr
 - **When ALL agents fail the same way, it's systemic, not config-specific** — on 2026-07-22, ALL 5 fleet agents consumed UPDATE_REQUESTs (bus_read + archive worked) but NONE sent back UPDATE_RESULTs. This is NOT five coincidental config failures. When the pattern is universal:
   1. The handler code path is common — check send_bus_result itself
   2. Bus infrastructure may be the issue — check if inbox_moses is accepting writes
-  3. An environment variable common to all agent crons (e.g. CORTEX_BUS_URL from systemd) may be overriding the config file
-  4. Test bus_send from the cron environment, not interactive shell — cron may have different $PATH, $HOME, or $CORTEX_BUS_URL
+  3. An environment variable common to all agent crons (e.g. FLEET_BUS_URL from systemd) may be overriding the config file
+  4. Test bus_send from the cron environment, not interactive shell — cron may have different $PATH, $HOME, or $FLEET_BUS_URL
 
 - **send_bus_result failure needs Telegram fallback** — when bus_send fails (returns None), send_bus_result currently only logs "Failed to send" and returns False. The orchestrator has NO way to know the agent successfully completed the work. Fix: the handler should also call notify_telegram() when send_bus_result fails, so the orchestrator knows via the fallback channel. This converts a silent failure into a visible alert, giving the orchestrator actionable information even when the bus is broken.
 
 - **Schema validation requires runtime deployment** — `fleet exec` and `orch-bus-fleet-dispatch.py` validate payloads against `handoff_schema.py` at runtime. If the script errors with `ImportError: No module named 'handoff_schema'`, the module hasn't been deployed. Run `fleet-update.sh` to deploy. The validation is best-effort — missing schemas are skipped with a log message, execution continues.
 
 - **Testing bus_send from interactive shell != handler's bus_send** — multiple agents confirmed bus_send works when run manually from the command line, but the handler's bus_send returns None when run via cron. Possible root causes:
-  1. Cron has different $CORTEX_DEPLOY_HOME pointing to a different config file
-  2. Cron has different $CORTEX_BUS_AUTH env var overriding config
+  1. Cron has different $FLEET_DEPLOY_HOME pointing to a different config file
+  2. Cron has different $FLEET_BUS_AUTH env var overriding config
   3. Cron runs with different $HOME resolving ~/steadfaste-fleet/.env differently
   4. The deployed fleet_bus.py at ~/.steadfaste-fleet/scripts/lib/fleet_bus.py differs from the repo version
   **Diagnostic:** compare env output from cron vs interactive shell, and check diff between deployed and repo fleet_bus.py.

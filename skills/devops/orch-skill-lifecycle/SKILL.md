@@ -319,7 +319,7 @@ Result: 3 skills updated, 1 upstreamed, 1 SOUL.md entry.
   `docker exec mycortex-postgres psql -U mycortex -d mycortex -c "SELECT ... FROM bus.archives WHERE jsonb_typeof(body::jsonb)='object' AND (body::jsonb #>> '{}')::jsonb->>'subject' LIKE 'Learning Report%' ..."` (user is `mycortex`, not `postgres`).
   **The HTTP archive path works too — with the token (verified):** from the orchestrator's own
   host, source its env and send the Bearer header — no psql needed:
-  `set -a; . ~/.steadfaste-fleet/.env; set +a; curl -s -H "Authorization: Bearer $CORTEX_BUS_TOKEN" "http://127.0.0.1:8903/api/pgmq/archives/inbox_orchestrator?limit=2000&since_minutes=300000"`.
+  `set -a; . ~/.steadfaste-fleet/.env; set +a; curl -s -H "Authorization: Bearer $FLEET_BUS_TOKEN" "http://127.0.0.1:8903/api/pgmq/archives/inbox_orchestrator?limit=2000&since_minutes=300000"`.
   A 401 means no token was sent (a bare `curl` always 401s); read the value in a subshell and
   never echo it. `/api/pgmq/peek/{queue}` and `/api/pgmq/depth/{queue}` are the same shape.
 - **Fleet skill content is NOT in Learning Reports (2026-08-28)** →

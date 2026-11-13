@@ -7,7 +7,7 @@ times:
 
 - The script built `[command, "--session-id", id, prompt]` directly instead of
   calling the backend's own `_argv`/`_child_env`. It therefore omitted
-  `CORTEX_SESSION_KEY` — and that env var, not the argv, was the real isolation
+  `FLEET_SESSION_KEY` — and that env var, not the argv, was the real isolation
   seam. Every session shared one checkpoint, so the new session "remembered" the
   old secret and the report read **"/new leaks memory"**. The product was fine.
 - The script then used a FIXED probe id, so its second run resumed the sessions
@@ -28,7 +28,7 @@ Rules:
   ran the check.
 - **Assert on the isolation KEY, not just the visible id.** When the artifact that
   actually scopes state is an env var / checkpoint key, test THAT follows the
-  change (`CORTEX_SESSION_KEY` before != after). A correct argv with a constant
+  change (`FLEET_SESSION_KEY` before != after). A correct argv with a constant
   key is the trap: a fresh transcript that still resumes the old checkpoint.
 - **Make every probe UNIQUE per run** (`os.urandom`), and clean it up after.
   A fixed probe id makes run 2 inherit run 1's leftovers; a committed evidence

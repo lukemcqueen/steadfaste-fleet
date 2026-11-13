@@ -79,7 +79,7 @@ instead of silently writing rows as the machine name. Same rule in
   `--board`, `--claimable` and `--handed-out` show the CALLER's repo plus
   untagged rows — another named repo's tasks are never returned. The repo comes
   from `--repo`, else the repo the enforcer injected for your session, else
-  `CORTEX_SESSION_REPO`, else the git repo at the working directory; if none of
+  `FLEET_SESSION_REPO`, else the git repo at the working directory; if none of
   those exist the query returns NOTHING (never every repo's tasks). The
   fleet-wide view is the EXPLICIT `--repo ALL` / `{"repo": "ALL"}`.
 

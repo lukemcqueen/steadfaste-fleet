@@ -58,7 +58,7 @@ Check if a specific config key exists across all env/config files:
 grep -E 'KEY_NAME' ~/.hermes/ ~/.steadfaste-fleet/ ~/steadfaste-fleet/ -r 2>/dev/null
 ```
 
-This works for `CORTEX_INBOX_URL`, `HERMES_LANGFUSE_PUBLIC_KEY`, etc.
+This works for `FLEET_INBOX_URL`, `HERMES_LANGFUSE_PUBLIC_KEY`, etc.
 
 ## When to use
 
@@ -67,4 +67,4 @@ This works for `CORTEX_INBOX_URL`, `HERMES_LANGFUSE_PUBLIC_KEY`, etc.
 
 ## Example
 
-This exact workflow was used to discover 4 errored cron jobs across 2 root causes (Langfuse keys + CORTEX_INBOX_URL) in a single auto-remediation pass.
+This exact workflow was used to discover 4 errored cron jobs across 2 root causes (Langfuse keys + FLEET_INBOX_URL) in a single auto-remediation pass.

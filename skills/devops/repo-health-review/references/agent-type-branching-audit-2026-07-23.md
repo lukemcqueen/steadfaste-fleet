@@ -13,7 +13,7 @@ Audited `install.sh`, `fleet-update.sh`, and `fleet_doctor/` for proper agent-ty
 ## Key Findings
 
 ### 1. install.sh — Capability model, not role model
-- Uses `CORTEX_PROFILE=core|laptop|server` (hardware capability), not `--agent-type orchestrator|server|dev` (role)
+- Uses `FLEET_PROFILE=core|laptop|server` (hardware capability), not `--agent-type orchestrator|server|dev` (role)
 - No `--agent-type` flag exists
 - `server` profile installs Langfuse, Dashboard, nginx but cannot distinguish orchestrator from server-agent
 - `core` profile is minimal but deploys all scripts unconditionally

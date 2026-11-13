@@ -12,7 +12,7 @@ All 6 scripts in the auto-remediation pipeline, their deployed paths, repo paths
 | `agent-apply-fixes.py` | ~11KB | `~/.hermes/scripts/` | `ops/scripts/agent/` | `*/10 * * * *` | Read remediation markers, search offline corpus, apply fixes |
 | `inbox-sensor.py` | ~6KB | `~/.hermes/scripts/` | `ops/scripts/inbox/` | `*/10 * * * *` | Monitor inbox for new messages from peer agents |
 | `inbox-flag.py` | ~4KB | `~/.hermes/scripts/` | `ops/scripts/inbox/` | `*/10 * * * *` | Flag remediation markers for agent-fixer to process |
-| `inbox-depth-watchdog.sh` | ~1KB | `~/.hermes/scripts/` | **purged** (commit `218d5de`) | `*/1 * * * *` | Check bus inbox depth, silent when empty; recreated port 8903 + CORTEX_BUS_TOKEN auth |
+| `inbox-depth-watchdog.sh` | ~1KB | `~/.hermes/scripts/` | **purged** (commit `218d5de`) | `*/1 * * * *` | Check bus inbox depth, silent when empty; recreated port 8903 + FLEET_BUS_TOKEN auth |
 
 ## Pipeline Flow
 
@@ -65,4 +65,4 @@ Current exceptions for pipeline scripts:
 
 | Script | Status |
 |--------|--------|
-| `inbox-depth-watchdog.sh` | Source purged from repo in commit `218d5de` ("purge stale agent-inbox references — bus is the only messaging system"). Cron entry still active (`*/1 * * * *`). Recreated at deployed path only with updated bus config (port 8903, CORTEX_BUS_TOKEN auth). Stale cron entry not yet cleaned up upstream. |
+| `inbox-depth-watchdog.sh` | Source purged from repo in commit `218d5de` ("purge stale agent-inbox references — bus is the only messaging system"). Cron entry still active (`*/1 * * * *`). Recreated at deployed path only with updated bus config (port 8903, FLEET_BUS_TOKEN auth). Stale cron entry not yet cleaned up upstream. |

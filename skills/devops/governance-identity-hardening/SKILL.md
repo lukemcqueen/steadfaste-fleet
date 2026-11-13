@@ -58,7 +58,7 @@ signal alone is sufficient.
 |------|------|
 | `pre-commit-score` | DOGFOOD block, orchestrator-only paths guard, ORCHESTRATOR_ONLY_PATHS block, self-test |
 | `fleet-update.sh` | ORCH_MAP merge (~725), ORCH_MAP protect (~795), orch-cron install (~1900) |
-| `os-config.sh` | `CORTEX_AGENT_TYPE` detection (shared — propagates via `check_agent_type`) |
+| `os-config.sh` | `FLEET_AGENT_TYPE` detection (shared — propagates via `check_agent_type`) |
 | doctor `config.py` | hostname fallback (already correct for orch hosts) |
 
 **Missed-gate check:** after patching the hook, grep for the same env-var

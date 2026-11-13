@@ -38,7 +38,7 @@ curl -s http://127.0.0.1:8903/health
 # Expected: {"status":"ok","backend":"pgmq","queues":NN,"timestamp":"..."}
 
 # Can we authenticate?
-TOKEN=$(grep CORTEX_BUS_TOKEN ~/steadfaste-fleet/.env | cut -d= -f2)
+TOKEN=$(grep FLEET_BUS_TOKEN ~/steadfaste-fleet/.env | cut -d= -f2)
 curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8903/health
 # Expected: same as above
 ```
@@ -108,7 +108,7 @@ fleet exec gisu -- uname -a
 
 **Level 4 — External path verification (simulate remote agent):**
 ```bash
-TOKEN=$(grep CORTEX_BUS_TOKEN ~/steadfaste-fleet/.env | cut -d= -f2)
+TOKEN=$(grep FLEET_BUS_TOKEN ~/steadfaste-fleet/.env | cut -d= -f2)
 curl -s -X POST https://example.com:13004/api/pgmq/send \
   -u "bus_user:password" \
   -H "Authorization: Bearer $TOKEN" \

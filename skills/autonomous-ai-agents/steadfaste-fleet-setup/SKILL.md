@@ -30,7 +30,7 @@ behavioral_principles:
  - Name the bus service file fleet-bus.service — the doctor checks for exactly that name.
  - Verify bus setup at three layers: (1) systemctl is-active fleet-bus.service, (2) curl :8903/health returns backend pgmq, (3) nginx upstream fleet_bus_backend matches :8903. A running process on a port is not enough.
  - After fleet-update , check ~/.hermes/scripts/ for symlinks that point outside the scripts dir. Cron's no_agent runtime rejects symlinks. Replace with real `cp` copies.
- - no_agent cron scripts don't inherit Hermes env vars. If a script needs CORTEX_BUS_TOKEN or CORTEX_BUS_URL, ensure they're set in `~/steadfaste-fleet/.env` — the ONE canonical fleet env (there is no deploy-dir `.env`; `~/.hermes/.env` is Hermes-owned and never merged).
+ - no_agent cron scripts don't inherit Hermes env vars. If a script needs FLEET_BUS_TOKEN or FLEET_BUS_URL, ensure they're set in `~/steadfaste-fleet/.env` — the ONE canonical fleet env (there is no deploy-dir `.env`; `~/.hermes/.env` is Hermes-owned and never merged).
  - After running install-orch-crons.sh, always check for stale old-name duplicate crons (bus-* vs orch-bus-*) and remove them. The installer doesn't auto-uninstall renamed crons.
  - When patching a no_agent cron script that uses `docker`, always wrap with `sg docker -c`. The cron runtime doesn't have docker group access even if the agent's shell does.
  - After fleet-update , verify deployed cron scripts in ~/.hermes/scripts/ are real file copies, not symlinks to the repo. Cron runtime rejects symlinks that resolve outside ~/.hermes/scripts/.
@@ -519,7 +519,7 @@ File "system-alert-watchdog.py", line 32, in <module>
 ModuleNotFoundError: No module named 'hermes_tz'
 ```
 
-**Pitfall — scripts called as sibling subprocesses by cron-run handlers are NOT auto-deployed.** `fleet-update.sh ` registers script paths in its internal map and deploys them to `CORTEX_DEPLOY_HOME` (`~/.steadfaste-fleet/scripts/`), but some handler scripts run from the cron path (`~/.hermes/scripts/`) and resolve sibling scripts at runtime via `Path(__file__).resolve().parent / "<sibling>.py"`. For example, `agent-message-handler.py` (every 2 min cron) calls `agent-diagnostic.py` as a subprocess using this sibling-path pattern. If `agent-diagnostic.py` only exists in `~/.steadfaste-fleet/scripts/` but not in `~/.hermes/scripts/`, the handler silently fails at runtime.
+**Pitfall — scripts called as sibling subprocesses by cron-run handlers are NOT auto-deployed.** `fleet-update.sh ` registers script paths in its internal map and deploys them to `FLEET_DEPLOY_HOME` (`~/.steadfaste-fleet/scripts/`), but some handler scripts run from the cron path (`~/.hermes/scripts/`) and resolve sibling scripts at runtime via `Path(__file__).resolve().parent / "<sibling>.py"`. For example, `agent-message-handler.py` (every 2 min cron) calls `agent-diagnostic.py` as a subprocess using this sibling-path pattern. If `agent-diagnostic.py` only exists in `~/.steadfaste-fleet/scripts/` but not in `~/.hermes/scripts/`, the handler silently fails at runtime.
 
 After `fleet-update `, check for this pattern and sync siblings:
 

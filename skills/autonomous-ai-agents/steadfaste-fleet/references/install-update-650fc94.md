@@ -10,7 +10,7 @@
 ## Step 9 — Langfuse (Docker Compose)
 
 ```bash
-LANGFUSE_DIR="${CORTEX_HOME}/langfuse"
+LANGFUSE_DIR="${FLEET_HOME}/langfuse"
 LANGFUSE_COMPOSE="${LANGFUSE_DIR}/docker-compose.yml"
 
 # Copy docker-compose.langfuse.yml from repo

@@ -37,30 +37,30 @@ under `ops/install/deploy/`. All path references in deployed cron scripts
 ### `ops/scripts/` → `ops/scripts/`
 | File | Specific old ref | Specific new ref |
 |------|-----------------|------------------|
-| `agent-ip-submission.sh` | `${CORTEX_REPO}/ops/scripts/manage/deploy-blocked-ips.sh` | `${CORTEX_REPO}/ops/scripts/manage/deploy-blocked-ips.sh` |
-| `cron-auto-remediate.sh` | `CORTEX_SCRIPTS="${CORTEX_REPO}/src/scripts"` | `CORTEX_SCRIPTS="${CORTEX_REPO}/ops/scripts"` |
+| `agent-ip-submission.sh` | `${FLEET_REPO}/ops/scripts/manage/deploy-blocked-ips.sh` | `${FLEET_REPO}/ops/scripts/manage/deploy-blocked-ips.sh` |
+| `cron-auto-remediate.sh` | `FLEET_SCRIPTS="${FLEET_REPO}/src/scripts"` | `FLEET_SCRIPTS="${FLEET_REPO}/ops/scripts"` |
 | `cron-auto-remediate.sh` | `git status --porcelain -- ops/scripts/` | `git status --porcelain -- ops/scripts/` |
 | `send-agent-learning.sh` | `REPO_SCRIPTS="${HOME}/steadfaste-fleet/src/scripts"` | `REPO_SCRIPTS="${HOME}/steadfaste-fleet/ops/scripts"` |
 | `setup-agent-inbox.sh` | `bash "${HOME}/steadfaste-fleet/ops/scripts/fleet-update.sh"` | `bash "${HOME}/steadfaste-fleet/ops/scripts/fleet-update.sh"` |
 | `install-post-commit-hook.sh` | `NOTIFY_SCRIPT="${REPO_DIR}/ops/scripts/post-commit-notify.sh"` | `NOTIFY_SCRIPT="${REPO_DIR}/ops/scripts/post-commit-notify.sh"` |
 | `pre-commit-doc-audit.sh` | `grep -c '^ops/scripts/'` | `grep -c '^ops/scripts/'` |
-| `change-validate.sh` | `CORTEX_UPDATE="${REPO_ROOT}/ops/scripts/fleet-update.sh"` | `CORTEX_UPDATE="${REPO_ROOT}/ops/scripts/fleet-update.sh"` |
+| `change-validate.sh` | `FLEET_UPDATE="${REPO_ROOT}/ops/scripts/fleet-update.sh"` | `FLEET_UPDATE="${REPO_ROOT}/ops/scripts/fleet-update.sh"` |
 | `seed-project.sh` | `${REPO_DIR}/ops/scripts/install/merge-agents-md.py` | `${REPO_DIR}/ops/scripts/install/merge-agents-md.py` |
 | `seed-project.sh` | `${REPO_DIR}/ops/scripts/pre-commit-score` | `${REPO_DIR}/ops/scripts/pre-commit-score` |
-| `nginx-security-scanner.sh` | `${CORTEX_REPO}/ops/scripts/manage/deploy-blocked-ips.sh` | `${CORTEX_REPO}/ops/scripts/manage/deploy-blocked-ips.sh` |
+| `nginx-security-scanner.sh` | `${FLEET_REPO}/ops/scripts/manage/deploy-blocked-ips.sh` | `${FLEET_REPO}/ops/scripts/manage/deploy-blocked-ips.sh` |
 | `fleet-profile.sh` | `Usage: bash ops/scripts/fleet-profile.sh` | `Usage: bash ops/scripts/fleet-profile.sh` |
 | `fleet-update.sh` | `${REPO_DIR}/ops/scripts/install/os-config.sh` | `${REPO_DIR}/ops/scripts/install/os-config.sh` |
 
 ### `deploy/nginx/` → `ops/install/deploy/nginx/`
 | File | Specific old ref | Specific new ref |
 |------|-----------------|------------------|
-| `agent-ip-submission.sh` | `${CORTEX_REPO}/deploy/nginx/blocked_ips.*` | `${CORTEX_REPO}/ops/install/deploy/nginx/blocked_ips.*` |
+| `agent-ip-submission.sh` | `${FLEET_REPO}/deploy/nginx/blocked_ips.*` | `${FLEET_REPO}/ops/install/deploy/nginx/blocked_ips.*` |
 | `agent-ip-submission.sh` | `git add deploy/nginx/blocked_ips.*` | `git add ops/install/deploy/nginx/blocked_ips.*` |
-| `deploy-blocked-ips.sh` | `${CORTEX_REPO}/deploy/nginx/fix-blocked-ips.py` | `${CORTEX_REPO}/ops/install/deploy/nginx/fix-blocked-ips.py` |
-| `nginx-threat-pipeline.sh` | `${CORTEX_REPO}/deploy/nginx/blocked_ips.*` (12 occurrences) | `${CORTEX_REPO}/ops/install/deploy/nginx/blocked_ips.*` |
-| `nginx-threat-pipeline.sh` | `mkdir -p "${CORTEX_REPO}/deploy/nginx"` | `mkdir -p "${CORTEX_REPO}/ops/install/deploy/nginx"` |
+| `deploy-blocked-ips.sh` | `${FLEET_REPO}/deploy/nginx/fix-blocked-ips.py` | `${FLEET_REPO}/ops/install/deploy/nginx/fix-blocked-ips.py` |
+| `nginx-threat-pipeline.sh` | `${FLEET_REPO}/deploy/nginx/blocked_ips.*` (12 occurrences) | `${FLEET_REPO}/ops/install/deploy/nginx/blocked_ips.*` |
+| `nginx-threat-pipeline.sh` | `mkdir -p "${FLEET_REPO}/deploy/nginx"` | `mkdir -p "${FLEET_REPO}/ops/install/deploy/nginx"` |
 | `nginx-threat-pipeline.sh` | `git add/commit deploy/nginx/blocked_ips.add` | `git add/commit ops/install/deploy/nginx/blocked_ips.add` |
-| `nginx-security-scanner.sh` | `BLOCKED_IPS="${CORTEX_REPO}/deploy/nginx/blocked_ips.add"` | `BLOCKED_IPS="${CORTEX_REPO}/ops/install/deploy/nginx/blocked_ips.add"` |
+| `nginx-security-scanner.sh` | `BLOCKED_IPS="${FLEET_REPO}/deploy/nginx/blocked_ips.add"` | `BLOCKED_IPS="${FLEET_REPO}/ops/install/deploy/nginx/blocked_ips.add"` |
 | `install-nginx.sh` | `${SCRIPT_DIR}/../deploy/nginx/hermes-zone-defs.conf` | `${SCRIPT_DIR}/../ops/install/deploy/nginx/hermes-zone-defs.conf` |
 | `install-nginx.sh` | `${SCRIPT_DIR}/../deploy/nginx/hermes-services.conf` | `${SCRIPT_DIR}/../ops/install/deploy/nginx/hermes-services.conf` |
 | `fleet-update.sh` | `local nginx_src_dir="${REPO_DIR}/deploy/nginx"` | `local nginx_src_dir="${REPO_DIR}/ops/install/deploy/nginx"` |
@@ -80,7 +80,7 @@ under `ops/install/deploy/`. All path references in deployed cron scripts
 ### `src/offline/` → `ops/offline/`
 | File | Specific old ref | Specific new ref |
 |------|-----------------|------------------|
-| `daily-lesson-mine.sh` | `"${CORTEX_REPO:-}/src/offline/session_mine.py"` | `"${CORTEX_REPO:-}/ops/offline/session_mine.py"` |
+| `daily-lesson-mine.sh` | `"${FLEET_REPO:-}/src/offline/session_mine.py"` | `"${FLEET_REPO:-}/ops/offline/session_mine.py"` |
 | `offline_code_index_cron.sh` | `~/steadfaste-fleet/ops/offline/offline_code.sh` | `~/steadfaste-fleet/ops/offline/offline_code.sh` |
 | `fleet-update.sh` | `local corpus_src="${REPO_DIR}/src/offline/code-corpus"` | `local corpus_src="${REPO_DIR}/ops/offline/code-corpus"` |
 

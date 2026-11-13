@@ -121,7 +121,7 @@ identity model — do not split them into two services or two schemas.
 
 Facts that cost time to find: the checkpoint table is **`checkpoints`**, not
 `session_checkpoints`; it keys on `session_id` with `harness`/`repo`/`branch` copied in, so
-an ad-hoc harness run with no `CORTEX_SESSION_*` env resolves to
+an ad-hoc harness run with no `FLEET_SESSION_*` env resolves to
 `unknown:<repo>:<branch>` while a supervised run keys correctly. `mycortex_mem_writer` has
 **no DELETE grant** on `checkpoints` (least privilege), so a probe cannot clean up after
 itself: identify test rows by id and leave them rather than escalating to a superuser role.
@@ -188,7 +188,7 @@ per-host, non-destructive (old container STOPPED, not removed; dump kept in
 
 **Connection fixes shipped with the migration:**
 - `core/fleet_bus/queue.py` `_load_config()` — the `.env` fallback previously
-  never read `CORTEX_BUS_PG_DB`, so the bus ignored .env DB changes and kept
+  never read `FLEET_BUS_PG_DB`, so the bus ignored .env DB changes and kept
   hitting the dead `mycortex` DB. Fixed (2026-08-05).
 - mycortex CLI / migrate.py / task-db.py / fleet.py / orch-bus / retention /
   verifier / audit-watchdog / doctor hints all target `mycortex-postgres`.

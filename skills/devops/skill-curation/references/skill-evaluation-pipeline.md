@@ -28,8 +28,8 @@ Skill contents: `skill-contents/idx_{N}.txt`
 
 ### 401 on process-skill-reports.py
 - **Symptom:** `WARN: Could not fetch inbox: HTTP Error 401: Unauthorized`
-- **Cause:** `CORTEX_INBOX_AUTH` not set in agent's `.env` (at `~/steadfaste-fleet/.env` or `~/.hermes/hermes-inbox.conf`)
-- **Fix:** Add `CORTEX_INBOX_AUTH=username:password` to `.env`. The `CORTEX_INBOX_URL` alone is insufficient.
+- **Cause:** `FLEET_INBOX_AUTH` not set in agent's `.env` (at `~/steadfaste-fleet/.env` or `~/.hermes/hermes-inbox.conf`)
+- **Fix:** Add `FLEET_INBOX_AUTH=username:password` to `.env`. The `FLEET_INBOX_URL` alone is insufficient.
 - **Who sets it:** The orchestrator (Moses) typically has auth. Leaf agents may not — they rely on the orchestrator to collect.
 
 ### Missing YAML descriptions
@@ -96,13 +96,13 @@ from urllib.request import Request, urlopen
 from pathlib import Path
 
 # Resolve token
-token = os.environ.get('CORTEX_BUS_TOKEN', '')
+token = os.environ.get('FLEET_BUS_TOKEN', '')
 if not token:
     for line in open(Path.home() / 'steadfaste-fleet' / '.env').read().splitlines():
-        if line.startswith('CORTEX_BUS_TOKEN='):
+        if line.startswith('FLEET_BUS_TOKEN='):
             token = line.split('=', 1)[1].strip().strip(\"'\")
             break
-bus = (os.environ.get('CORTEX_BUS_URL') or 'http://127.0.0.1:8903').rstrip('/')
+bus = (os.environ.get('FLEET_BUS_URL') or 'http://127.0.0.1:8903').rstrip('/')
 
 for i in range(5):
     p = json.dumps({'queue': 'inbox_moses', 'vt': 60, 'limit': 3}).encode()

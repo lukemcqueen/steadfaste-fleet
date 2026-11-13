@@ -414,7 +414,7 @@ with the rules for avoiding them.
 
 - The script built `[command, "--session-id", id, prompt]` directly instead of
   calling the backend's own `_argv`/`_child_env`. It therefore omitted
-  `CORTEX_SESSION_KEY` — and that env var, not the argv, was the real isolation
+  `FLEET_SESSION_KEY` — and that env var, not the argv, was the real isolation
   seam. Every session shared one checkpoint, so the new session "remembered" the
   old secret and the report read **"/new leaks memory"**. The product was fine.
 - The script then used a FIXED probe id, so its second run resumed the sessions

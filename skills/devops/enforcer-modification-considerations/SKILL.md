@@ -277,7 +277,7 @@ When a single Hermes installation manages multiple repos (e.g., steadfaste-fleet
 - If the agent cloned the repo as `hermes-agent` (different name), the slug won't match
 
 **Fix:**
-- Shell scripts that create manual locks: derive slug from `basename "${CORTEX_REPO:-${HOME}/steadfaste-fleet}"`
+- Shell scripts that create manual locks: derive slug from `basename "${FLEET_REPO:-${HOME}/steadfaste-fleet}"`
 - Python/MCP: use `_derive_repo_slug()` which runs `git rev-parse --show-toplevel` and takes the directory basename
 
 **Files to check:**

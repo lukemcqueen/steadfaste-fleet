@@ -4,8 +4,8 @@
 
 | Role | URL | Auth |
 |------|-----|------|
-| Local loop-governance | `http://127.0.0.1:8903` | Bearer token (`CORTEX_BUS_TOKEN`) |
-| Remote bus (primary) | `https://your-bus.example.com:13004` | Basic auth (`CORTEX_BASIC_AUTH` from fleet-bus.conf) |
+| Local loop-governance | `http://127.0.0.1:8903` | Bearer token (`FLEET_BUS_TOKEN`) |
+| Remote bus (primary) | `https://your-bus.example.com:13004` | Basic auth (`FLEET_BASIC_AUTH` from fleet-bus.conf) |
 | Remote fallback | `https://your-bus.example.com:14004` | Basic auth (same credentials) |
 
 ## Auth Config
@@ -13,15 +13,15 @@
 Stored in `~/.steadfaste-fleet/fleet-bus.conf`:
 
 ```
-CORTEX_BUS_URL=https://your-bus.example.com:13004
-CORTEX_BUS_FALLBACK_URL=https://your-bus.example.com:14004
-CORTEX_BASIC_AUTH=<agentname>:<secret>
+FLEET_BUS_URL=https://your-bus.example.com:13004
+FLEET_BUS_FALLBACK_URL=https://your-bus.example.com:14004
+FLEET_BASIC_AUTH=<agentname>:<secret>
 AGENT_NAME=<agentname>
 ```
 
 ## API Endpoints (PGMQ-backed)
 
-All relative to the chosen `CORTEX_BUS_URL`:
+All relative to the chosen `FLEET_BUS_URL`:
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
@@ -35,12 +35,12 @@ All relative to the chosen `CORTEX_BUS_URL`:
 
 ### Bearer (local, 127.0.0.1:8903)
 
-The local server requires a Bearer token. Check `CORTEX_BUS_TOKEN` env var or `fleet-bus.conf`. When neither is set, the local endpoint returns 403 with `"Missing or invalid Authorization header. Use: Authorization: Bearer ***"`.
+The local server requires a Bearer token. Check `FLEET_BUS_TOKEN` env var or `fleet-bus.conf`. When neither is set, the local endpoint returns 403 with `"Missing or invalid Authorization header. Use: Authorization: Bearer ***"`.
 
 ### Basic (remote, your-bus.example.com)
 
 ```bash
-AUTH=$(grep '^CORTEX_BASIC_AUTH=' ~/.steadfaste-fleet/fleet-bus.conf | cut -d= -f2-)
+AUTH=$(grep '^FLEET_BASIC_AUTH=' ~/.steadfaste-fleet/fleet-bus.conf | cut -d= -f2-)
 
 # List all queues
 curl -s -H "Authorization: Basic $(echo -n "$AUTH" | base64)" \

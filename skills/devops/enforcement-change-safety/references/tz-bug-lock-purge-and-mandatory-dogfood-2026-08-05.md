@@ -52,7 +52,7 @@ cycle itself when the push touches any non-doc file:
 
 ```bash
 # pre-push-pull, mandatory dogfood block
-if [[ "$_REPO_TOP" == "$CORTEX_REPO_TOP" ]] && _detect_orch && [[ -n "$CHANGED_FILES" ]]; then
+if [[ "$_REPO_TOP" == "$FLEET_REPO_TOP" ]] && _detect_orch && [[ -n "$CHANGED_FILES" ]]; then
   _DOGFOOD_RELEVANT=0
   while IFS= read -r cf; do
     case "$cf" in

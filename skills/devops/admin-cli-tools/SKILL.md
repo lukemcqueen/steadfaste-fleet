@@ -21,7 +21,7 @@ every fleet script uses. This is host-independent: `fleet` works identically on
 moses' and esther's hosts.
 
 ```
-fleet inbox joseph    ← reads the ACTIVE bus (CORTEX_BUS_URL) over HTTP (peek)
+fleet inbox joseph    ← reads the ACTIVE bus (FLEET_BUS_URL) over HTTP (peek)
 fleet watch           ← peeks ALL queues over HTTP (non-destructive)
 fleet send esther     ← POSTs to the ACTIVE bus
 fleet exec gisu       ← sends EXEC + polls inbox_moses via peek
@@ -37,7 +37,7 @@ against the host-LOCAL bus. On Moses' host local == ACTIVE bus (13004), so it
 worked. On Esther's host local == her own fallback bus (14004), which NOTHING
 polls — every `fleet send`/`fleet exec` silently vanished into the void. The fix
 (2026-08-06, hc-bus-aware) routes everything through the HTTP client with
-`CORTEX_BUS_URL` (ACTIVE) + `CORTEX_BUS_FALLBACK_URL` (fallback) + Bearer→Basic
+`FLEET_BUS_URL` (ACTIVE) + `FLEET_BUS_FALLBACK_URL` (fallback) + Bearer→Basic
 auth fallback. `fleet bus` (the deep dashboard) still reads local Postgres — it's
 labeled as such in its output.
 

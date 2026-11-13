@@ -180,18 +180,18 @@ Check agent-type coverage in docs:
 
 #### 8b-1: Capability Model vs Role Model
 
-Identify whether the system uses a **capability model** (`CORTEX_PROFILE=core|laptop|server` — how much hardware) or a **role model** (`--agent-type orchestrator|server|dev` — what services to run):
+Identify whether the system uses a **capability model** (`FLEET_PROFILE=core|laptop|server` — how much hardware) or a **role model** (`--agent-type orchestrator|server|dev` — what services to run):
 
 ```bash
 # Which model does install.sh use?
-grep -n 'CORTEX_PROFILE' ops/install/install.sh | head -5
+grep -n 'FLEET_PROFILE' ops/install/install.sh | head -5
 grep -n 'agent.type\|agent_type\|--agent-type' ops/install/install.sh | head -5
 
 # Which model does the doctor use?
 grep -n 'is_orch\|IS_ORCH\|hostname\|agent.type' ops/scripts/manage/fleet_doctor/config.py
 ```
 
-**Gap to detect:** A capability model (CORTEX_PROFILE) cannot distinguish between an orchestrator (needs bus server + dashboard + nginx) and a server-agent (needs bus client + crons, NOT dashboard/nginx). When both map to `server`, orchestrator-only services get deployed to server-agents and produce doctor false positives.
+**Gap to detect:** A capability model (FLEET_PROFILE) cannot distinguish between an orchestrator (needs bus server + dashboard + nginx) and a server-agent (needs bus client + crons, NOT dashboard/nginx). When both map to `server`, orchestrator-only services get deployed to server-agents and produce doctor false positives.
 
 #### 8b-2: register() Guard Coverage in fleet-update.sh
 
@@ -208,7 +208,7 @@ grep -B3 -A3 'deploy_nginx_configs' ops/scripts/fleet-update.sh
 grep -B3 -A3 'deploy_system_scripts' ops/scripts/fleet-update.sh
 ```
 
-**Check:** Is there an `IS_ORCHESTRATOR`, `IS_SERVER`, or `CORTEX_PROFILE` guard on these? If they run unconditionally, server-agents and dev-agents get files they don't need. The only guard is `CORTEX_SKIP_NGINX` env var — optional, not default.
+**Check:** Is there an `IS_ORCHESTRATOR`, `IS_SERVER`, or `FLEET_PROFILE` guard on these? If they run unconditionally, server-agents and dev-agents get files they don't need. The only guard is `FLEET_SKIP_NGINX` env var — optional, not default.
 
 #### 8b-3: Doctor EXTERNAL_SERVICES Hardcoding
 
@@ -284,8 +284,8 @@ After checking all 5 dimensions, produce a table showing which files branch on w
 ```markdown
 | Dimension | install.sh | fleet-update.sh | fleet_doctor/ |
 |-----------|-----------|-----------------|----------------|
-| Service install guard | CORTEX_PROFILE=server | none (unconditional deploy) | none (hardcoded EXTERNAL_SERVICES) |
-| Nginx deploy guard | CORTEX_PROFILE=server | CORTEX_SKIP_NGINX (optional) | none (always checks) |
+| Service install guard | FLEET_PROFILE=server | none (unconditional deploy) | none (hardcoded EXTERNAL_SERVICES) |
+| Nginx deploy guard | FLEET_PROFILE=server | FLEET_SKIP_NGINX (optional) | none (always checks) |
 | Orch cron guard | N/A | IS_ORCHESTRATOR + hostname | hostname only |
 | Dev-agent path | none | none | none |
 ```

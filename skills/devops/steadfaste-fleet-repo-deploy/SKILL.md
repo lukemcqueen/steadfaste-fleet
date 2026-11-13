@@ -532,7 +532,7 @@ clobber-check → commit → deploy → doctor → push → FLEET_NOTICE.
   the LIVE bus over HTTP, and a message sitting between the handler's read
   and its early archive fails the check once, then clears. Confirm with the
   live endpoint before fixing handler debt:
-  `curl -s -u "$CORTEX_BASIC_AUTH" "$CORTEX_BUS_URL/api/pgmq/queue/inbox_<agent>"`
+  `curl -s -u "$FLEET_BASIC_AUTH" "$FLEET_BUS_URL/api/pgmq/queue/inbox_<agent>"`
   (both vars in `~/steadfaste-fleet/.env`) — `depth: 0,
   processing: 0` = clean, just push again. The path is singular `queue/`;
   `/queues/<name>` 404s. Don't conclude from local psql — on the backup
@@ -540,7 +540,7 @@ clobber-check → commit → deploy → doctor → push → FLEET_NOTICE.
 - **A 401/404 from that endpoint is a PROBE error, not proof the bus is
   unverifiable.** nginx demands Basic auth and ignores a Bearer token, so a bearer
   request — or the plural `/queues/<name>` path — answers 401/404 while the queue is
-  perfectly readable with `CORTEX_BASIC_AUTH`. Retry the documented form before
+  perfectly readable with `FLEET_BASIC_AUTH`. Retry the documented form before
   reporting a dispatch as "sent, unverified", and if it still fails, name the exact
   probe that failed instead of implying the queue cannot be checked. Check the probe
   before doubting the system.

@@ -51,4 +51,4 @@ systemctl --user restart <found-service>
 ## Related
 
 - `agent-bus` skill — full queue inspection, DLQ management, and bus diagnostics
-- `references/fleet-inbox-url.md` — `CORTEX_INBOX_URL` points to nginx proxy, not the local bus port
+- `references/fleet-inbox-url.md` — `FLEET_INBOX_URL` points to nginx proxy, not the local bus port

@@ -66,7 +66,7 @@ repo (`git log --diff-filter=D`).
 
 After a consumer fix, prove the full path with real messages:
 1. Seed: `bus_send("inbox_health_check", {"from": "<agent>", "subject": "health", "body": "{...}"})`
-2. Drain: run the drainer exactly as cron does (set `CORTEX_REPO` and
+2. Drain: run the drainer exactly as cron does (set `FLEET_REPO` and
    `PYTHONPATH=ops/scripts` — direct `python3 path/to/script.py` from another
    cwd fails the `hermes_paths` import).
 3. Consume: run the report script; confirm the agent shows ✅.
@@ -113,7 +113,7 @@ Full worked example (timeline, SQL queries, hash-recompute snippet):
 - **Direct script runs mislead.** A no_agent cron gets `PYTHONPATH` from
   `build_subprocess_env()`; a bare `python3 script.py` from a random cwd will
   `ModuleNotFoundError: hermes_paths`. Reproduce the cron env
-  (`CORTEX_REPO=~/steadfaste-fleet PYTHONPATH=~/steadfaste-fleet/ops/scripts`).
+  (`FLEET_REPO=~/steadfaste-fleet PYTHONPATH=~/steadfaste-fleet/ops/scripts`).
 - **A queue drained before the consumer runs is NOT proof of a dead producer.**
   Check the drainer's persistence file before blaming the push side.
 - **Deployed copies of scripts/skills are copies.** Fix the repo source, deploy

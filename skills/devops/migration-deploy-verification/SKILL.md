@@ -15,7 +15,7 @@ the repo can carry the fix while every host keeps the old broken function.
 ```
 ops/services/<svc>/schema/vNNN__*.sql        (1) repo file committed
   → register() line in fleet-update.sh      (2) deploy map
-  → ${CORTEX_DEPLOY_HOME}/services/<svc>/schema/vNNN__*.sql   (3) deployed dir
+  → ${FLEET_DEPLOY_HOME}/services/<svc>/schema/vNNN__*.sql   (3) deployed dir
   → migrate.py (globs the DEPLOYED dir)      (4) migration runner
   → <svc>.schema_version row                 (5) live DB applied
 ```
@@ -69,7 +69,7 @@ violation). The deploy-map gap was the real remaining bug.
 
 1. Add the missing lines to `ops/scripts/fleet-update.sh`:
    ```bash
-   register "ops/services/<svc>/schema/vNNN__foo.sql" "${CORTEX_DEPLOY_HOME}/services/<svc>/schema/vNNN__foo.sql"
+   register "ops/services/<svc>/schema/vNNN__foo.sql" "${FLEET_DEPLOY_HOME}/services/<svc>/schema/vNNN__foo.sql"
    ```
 2. Deploy via the sanctioned invocation: `bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh`
 3. Confirm migrate.py on the already-migrated host reports a no-op (idempotent):

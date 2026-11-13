@@ -48,7 +48,7 @@ ls ~/steadfaste-fleet/ops/scripts/*/   # other scripts with similar interface
 4. **Verify end-to-end:**
    ```bash
    # Test the new script directly
-   AGENT_NAME=esther CORTEX_DOMAIN=example.org CORTEX_A2A_PORT=14004 \
+   AGENT_NAME=esther FLEET_DOMAIN=example.org FLEET_A2A_PORT=14004 \
      python3 ~/steadfaste-fleet/ops/services/<dir>/<script>.py --output /tmp/test-out.json
 
    # Validate output
@@ -132,7 +132,7 @@ curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:<port>/api/<endpoint>
 # Recreate script with updated config, keep watchdog pattern
 ```
 
-**Example:** `inbox-depth-watchdog.sh` was purged (commit `218d5de`: "purge stale agent-inbox references") but the bus was still running on port 8903 (old script used 8905). The monitoring function was still useful with `CORTEX_BUS_TOKEN` auth. Recreated at deployed path only.
+**Example:** `inbox-depth-watchdog.sh` was purged (commit `218d5de`: "purge stale agent-inbox references") but the bus was still running on port 8903 (old script used 8905). The monitoring function was still useful with `FLEET_BUS_TOKEN` auth. Recreated at deployed path only.
 
 **Design rule for recreated scripts:** Auth failures and network errors should be **tolerant** (silent exit 0, assume no backlog). Bus health is monitored separately. The recreated script fills a gap until the stale cron entry is cleaned up.
 

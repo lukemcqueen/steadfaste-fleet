@@ -44,9 +44,9 @@ A sudoers rule that `sudo -n -l` shows as valid can still fail at execution time
 
 ## Env-assignment through sudo: `sudo VAR=val cmd` vs command-specific NOPASSWD
 
-**Symptom (live-verified 2026-07-31):** `sudo -n CORTEX_UPDATE=1 /usr/local/sbin/helper` → `sudo: a password is required`, even though `sudo -n -l` shows `(root) NOPASSWD: /usr/local/sbin/helper` and the bare `sudo -n /usr/local/sbin/helper` runs fine.
+**Symptom (live-verified 2026-07-31):** `sudo -n FLEET_UPDATE=1 /usr/local/sbin/helper` → `sudo: a password is required`, even though `sudo -n -l` shows `(root) NOPASSWD: /usr/local/sbin/helper` and the bare `sudo -n /usr/local/sbin/helper` runs fine.
 
-**Cause:** a command-specific sudoers entry matches the bare command path. The `VAR=val` prefix makes the effective command different (`CORTEX_UPDATE=1 /usr/local/sbin/helper` ≠ `/usr/local/sbin/helper`), so no NOPASSWD rule matches and sudo falls back to password auth. `env_reset` strips the *inherited* environment but does NOT grant the right to *assign* variables on the sudo command line — that requires the `SETENV:` tag. (Plain `env_keep` is a different, broader lever.)
+**Cause:** a command-specific sudoers entry matches the bare command path. The `VAR=val` prefix makes the effective command different (`FLEET_UPDATE=1 /usr/local/sbin/helper` ≠ `/usr/local/sbin/helper`), so no NOPASSWD rule matches and sudo falls back to password auth. `env_reset` strips the *inherited* environment but does NOT grant the right to *assign* variables on the sudo command line — that requires the `SETENV:` tag. (Plain `env_keep` is a different, broader lever.)
 
 **Detect:**
 ```bash

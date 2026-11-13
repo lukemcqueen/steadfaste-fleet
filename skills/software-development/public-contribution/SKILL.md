@@ -137,7 +137,7 @@ If you added or modified a skill, update `docs/SKILLS-MANIFEST.md`:
 ### Step 6: Commit and push
 
 ```bash
-cd "${CORTEX_REPO:-$HOME/steadfaste-fleet}" && git add -A && git commit -m "feat: contribution description"
+cd "${FLEET_REPO:-$HOME/steadfaste-fleet}" && git add -A && git commit -m "feat: contribution description"
 git push
 ```
 

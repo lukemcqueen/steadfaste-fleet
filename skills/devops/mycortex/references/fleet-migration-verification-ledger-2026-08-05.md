@@ -23,9 +23,9 @@ preserving in any similar fleet migration:
   grants re-apply block is embedded in the script (not a path dependency on
   the repo schema dir) so the script is one-shot standalone on any host.
 - **Password chain**: the new `MYCORTEX_PG_PASSWORD` reuses the OLD secret
-  value (`GBRAIN_PG_PASSWORD` or `CORTEX_BUS_PG_PASS`) rather than generating
+  value (`GBRAIN_PG_PASSWORD` or `FLEET_BUS_PG_PASS`) rather than generating
   a fresh one — verified by comparing hashes, never printed. This keeps the
-  bus's `CORTEX_BUS_PG_PASS` working unchanged through the flip.
+  bus's `FLEET_BUS_PG_PASS` working unchanged through the flip.
 - **Restore errors are expected**: `pg_restore --no-owner --no-privileges`
   fails on role-dependent statements (policies reference missing roles) —
   grep them out, verify row counts, then re-apply roles/policies/grants

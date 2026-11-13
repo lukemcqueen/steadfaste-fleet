@@ -23,8 +23,8 @@ The client agent sends a JSON body via `health-vector-push.sh` to queue
 | `h` | `str` | Hostname (agent name, e.g. "titus") |
 | `t` | `int` | Unix timestamp |
 
-Config: `health-vector-push.sh` reads `CORTEX_BUS_URL` + `CORTEX_BASIC_AUTH`
-(or Bearer `CORTEX_BUS_TOKEN`) from `~/steadfaste-fleet/.env`.
+Config: `health-vector-push.sh` reads `FLEET_BUS_URL` + `FLEET_BASIC_AUTH`
+(or Bearer `FLEET_BUS_TOKEN`) from `~/steadfaste-fleet/.env`.
 
 ## Push Format — Rich Health-Report (optional)
 
@@ -77,6 +77,6 @@ queue.
 | Read | `POST /api/pgmq/read` with `{"queue": "inbox_health_check", "vt": 60}` |
 | Archive | `POST /api/pgmq/archive` with `{"queue": ..., "msg_id": ...}` |
 | Depth | `GET /api/pgmq/depth/inbox_health_check` |
-| Auth | Basic Auth with `CORTEX_BASIC_AUTH` or Bearer `CORTEX_BUS_TOKEN` from `~/steadfaste-fleet/.env` |
+| Auth | Basic Auth with `FLEET_BASIC_AUTH` or Bearer `FLEET_BUS_TOKEN` from `~/steadfaste-fleet/.env` |
 | Timeout | 5 seconds per request |
 | Retired | `GET /api/inbox`, `DELETE /api/delete/{filename}` — 404 on the PGMQ bus |

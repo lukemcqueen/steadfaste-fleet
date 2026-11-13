@@ -2,7 +2,7 @@
 
 Per-harness session-identity facts for governance lock uniqueness. The resolver
 (`loop-gov-mcp.py` `_ENV_SESSION_ID_SOURCES`) reads the caller's environment in
-this order: `CORTEX_SESSION_KEY` → `PI_SESSION_ID` → `CLAUDE_CODE_SESSION_ID` →
+this order: `FLEET_SESSION_KEY` → `PI_SESSION_ID` → `CLAUDE_CODE_SESSION_ID` →
 `CODEX_SESSION_ID`, namespaced as `sess_<source>_<value>`. The premise: one MCP
 child serves one session. When NO env value reaches the child, the resolver falls
 back to a per-REPO id (`state/.session-<slug>.id`) — shared by every session in
@@ -12,10 +12,10 @@ since the lock-ownership hardening: a session cannot CLAIM the shared id).
 | Harness | Env var | Reaches MCP child? | Adapter needed |
 |---|---|---|---|
 | Hermes | (enforcer injects `session_id` per-call) | yes | none |
-| Pi | `PI_SESSION_ID` | **NO** — injected only into bash-tool commands, never onto its own `process.env` | `fleet-context.ts` extension sets `CORTEX_SESSION_KEY` from `ctx.sessionManager.getSessionId()` at `before_agent_start` |
+| Pi | `PI_SESSION_ID` | **NO** — injected only into bash-tool commands, never onto its own `process.env` | `fleet-context.ts` extension sets `FLEET_SESSION_KEY` from `ctx.sessionManager.getSessionId()` at `before_agent_start` |
 | Claude Code | `CLAUDE_CODE_SESSION_ID` (note CODE; `CLAUDE_SESSION_ID` is NOT set) | yes, since v2.1.154 | none |
 | Codex | `CODEX_SESSION_ID` | **NO by default** — shell commands only; rmcp-client forwards only a fixed set | operator must pin it via `[mcp_servers..env]` (or an upstream change) |
-| Any CLI via gateway | `CORTEX_SESSION_KEY={session_id}` | yes | gateway `command` backend pins it per chat |
+| Any CLI via gateway | `FLEET_SESSION_KEY={session_id}` | yes | gateway `command` backend pins it per chat |
 
 ### Verify on the host, never assume
 
@@ -31,7 +31,7 @@ Check which source actually resolved (the host truth):
 ```bash
 loop-gov.py session_identity '{}'   # effective_session_id + source
 # "per-repo, shared" ⇒ the env never reached the child — fix propagation
-# "env:CORTEX_SESSION_KEY / PI_SESSION_ID / CLAUDE_CODE_SESSION_ID / CODEX_SESSION_ID" ⇒ unique
+# "env:FLEET_SESSION_KEY / PI_SESSION_ID / CLAUDE_CODE_SESSION_ID / CODEX_SESSION_ID" ⇒ unique
 ```
 
 Verify the resolver's behaviour end-to-end by driving the module with the
@@ -50,8 +50,8 @@ only-if-unset so an operator/gateway pin wins.
 ```typescript
 pi.on("before_agent_start", async (event: any, ctx: any) => {
   const sessionId = ctx?.sessionManager?.getSessionId?.();
-  if (sessionId && !process.env.CORTEX_SESSION_KEY)
-    process.env.CORTEX_SESSION_KEY = String(sessionId);
+  if (sessionId && !process.env.FLEET_SESSION_KEY)
+    process.env.FLEET_SESSION_KEY = String(sessionId);
   // ... existing restore/inject logic
 });
 ```

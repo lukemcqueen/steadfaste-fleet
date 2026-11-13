@@ -15,9 +15,9 @@ Full cycle of sending UPDATE_REQUEST to fleet agents, diagnosing stuck handlers,
 - **Root cause:** `poll_once()` dispatch has no try/except. Any unhandled exception (in `process_update_request`, `send_bus_result`, `save_state`) causes handler to crash silently. Message stays in `processing` forever.
 - **Fix (commit df3a419):** Wrap entire dispatch block in try/except. On crash: log traceback, archive message, send failure result to `inbox_moses`, notify via Telegram.
 
-### Esther — Wrong CORTEX_BUS_URL
+### Esther — Wrong FLEET_BUS_URL
 - **Symptom:** After crash guard fix, Esther sent UPDATE_RESULT successfully but Joseph/Gisu/Kustos didn't. This was later discovered to be because Esther was pointing to her *local* PGMQ instead of the shared bus, meaning she was reading from a different set of queues entirely.
-- **Fix:** Point `CORTEX_BUS_URL` to the shared bus URL, not localhost.
+- **Fix:** Point `FLEET_BUS_URL` to the shared bus URL, not localhost.
 
 ### Joseph, Gisu, Kustos — Consumed But No Result
 - **Symptom:** Messages consumed (archived at ~11:35) but no UPDATE_RESULT in `inbox_moses`.

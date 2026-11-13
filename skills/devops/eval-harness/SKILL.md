@@ -454,7 +454,7 @@ run manually when needed.
 | `~/.steadfaste-fleet/evals/reports/` | Generated reports (JSON, one per run, trend trackable) |
 
 **Golden suite v1** (F-008, orchestrator daily gate `orch-daily-regression-gate` at 03:15):
-- `bus_round_trip` — send→read(vt-hidden)→archive probe on `inbox_esther` via the ACTIVE `CORTEX_BUS_URL`
+- `bus_round_trip` — send→read(vt-hidden)→archive probe on `inbox_esther` via the ACTIVE `FLEET_BUS_URL`
 - `task_lifecycle` — task-db.py add→list→start→complete→delete probe (v005 matrix: pending→completed is illegal, so it walks in_progress first; zero residue, safety-net delete in `finally`)
 - `exec_round_trip` — `python3 -c` returns EXEC-OK
 - `doctor_clean` — `fleet-doctor.py --json` summary.fail == 0 (warns tolerated)

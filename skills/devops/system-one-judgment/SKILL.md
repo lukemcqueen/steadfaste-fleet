@@ -55,7 +55,7 @@ hot-swap provider abstraction (design doc: steadfaste
   supervisor) usually does NOT inherit the judge's key: the supervisor started
   long before the key was configured, so `os.environ` is empty there while the
   key sits in the host's env file. Resolve in order — process env, then the
-  host's own env (`CORTEX_ENV_FILE`, else `<repo>/.env`, else the deploy root),
+  host's own env (`FLEET_ENV_FILE`, else `<repo>/.env`, else the deploy root),
   then the Hermes env last — extracting ONLY the named key and re-reading per
   call. Fall back to the named env var, never to a DIFFERENT credential:
   silently judging with a key the operator did not choose is worse than

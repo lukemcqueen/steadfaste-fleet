@@ -23,10 +23,10 @@ inbox API was retired but consumers/docs were never swept.
 | Claim | Evidence |
 |-------|----------|
 | `api/inbox` retired | `grep "@app.post\|@app.get" ops/services/agent-bus/server.py` — only `/api/pgmq/*`, `/api/bus/dashboard`, `/health`, `/.well-known/agent-card.json` |
-| Push moved to PGMQ | `ops/scripts/health/health-vector-push.sh` reads `CORTEX_BUS_URL`+`CORTEX_BASIC_AUTH` from `~/steadfaste-fleet/.env`, POSTs `/api/pgmq/send` → `inbox_health_check` |
+| Push moved to PGMQ | `ops/scripts/health/health-vector-push.sh` reads `FLEET_BUS_URL`+`FLEET_BASIC_AUTH` from `~/steadfaste-fleet/.env`, POSTs `/api/pgmq/send` → `inbox_health_check` |
 | Report still on old API | `orch-health-report.py` `_fetch_inbox_vector` → `_inbox_request("api/inbox?...")` |
 | `orch-team-health.py` gone | `git log --oneline --diff-filter=D -- "**/orch-team-health.py"` → `69e3cf8e` "Remove orch-team-health cron… superseded by fleet-status-watchdog" |
-| Migration commit | `0f01556d` "refactor: migrate all scripts/docs from CORTEX_INBOX_URL/AUTH to CORTEX_BUS_FALLBACK_URL/AUTH" |
+| Migration commit | `0f01556d` "refactor: migrate all scripts/docs from FLEET_INBOX_URL/AUTH to FLEET_BUS_FALLBACK_URL/AUTH" |
 
 ## The Fix (commit 87df0c73)
 
@@ -54,7 +54,7 @@ bus_send('inbox_health_check', {'from': 'titus', 'subject': 'health',
     'body': json.dumps({'v':[1]*9,'h':'t','t':int(time.time())})})"
 
 # Run the drainer AS CRON DOES (direct python3 from another cwd fails hermes_paths import)
-CORTEX_REPO=~/steadfaste-fleet PYTHONPATH=~/steadfaste-fleet/ops/scripts \
+FLEET_REPO=~/steadfaste-fleet PYTHONPATH=~/steadfaste-fleet/ops/scripts \
   python3 ~/steadfaste-fleet/ops/scripts/orch-bus/orch-clean-health-queue.py
 
 # Confirm persistence

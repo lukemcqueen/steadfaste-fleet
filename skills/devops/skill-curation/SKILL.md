@@ -52,7 +52,7 @@ and a merged skill serves better than two overlapping ones.
    host is often a runtime venv without PyYAML; it then falls back to a TEXT scan and reports a
    WARN naming the rules it skipped (name charset, YAML parse, duplicate keys). Read that warning
    before trusting a bare `Skills loadable ✅`: it is a weaker result, not a clean one. Repair the
-   interpreter (`fix-fleet-venv.py`) and re-run, or invoke the doctor under `CORTEX_PYTHON`/
+   interpreter (`fix-fleet-venv.py`) and re-run, or invoke the doctor under `FLEET_PYTHON`/
    `~/.steadfaste-fleet/venv/bin/python3`, so the full rule set is actually applied.
    **But the durable fix lives in the CHECKER, not in the invocation.** Advice that says "invoke this
    under the right interpreter" depends on every caller remembering, and the caller that forgets is

@@ -115,7 +115,7 @@ Skip the health check while any `.running` marker exists.
 `agent-message-handler.py` UPDATE_REQUEST branch (commit `282045ec`,
 2026-08-18): `_spawn_update_worker()` / `_send_pending_update_results()` /
 `_update_worker_code()` in `ops/scripts/agent/agent-message-handler.py`,
-`state/pending-update-results/` under `CORTEX_DEPLOY_HOME`. Tested end-to-end:
+`state/pending-update-results/` under `FLEET_DEPLOY_HOME`. Tested end-to-end:
 worker → sweep → result received; worker-death (stale marker) → timeout result;
 mid-deploy health-doctor skip (killed a false 9-fail alert).
 

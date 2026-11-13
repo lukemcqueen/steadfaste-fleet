@@ -53,10 +53,10 @@ bash ops/install/install.sh
 bash ops/install/install.sh --check
 
 # macOS — Laptop profile: lean, no Docker
-CORTEX_PROFILE=laptop bash ops/install/install.sh
+FLEET_PROFILE=laptop bash ops/install/install.sh
 
 # Linux — auto-detects systemd, apt/dnf/pacman
-CORTEX_OS=linux bash ops/install/install.sh
+FLEET_OS=linux bash ops/install/install.sh
 ```
 
 **Idempotent** — safe to re-run. Skips already-installed steps.
@@ -427,7 +427,7 @@ grep "skip default" ~/.legacy-brain/sync-watch.sh # confirm --skip default is pr
 
 ### fleet-update.sh appending to agent.env — a missing trailing newline concatenates vars
 
-**PROBLEM:** `fleet-update.sh`'s env step PROVISIONs/append `CORTEX_PYTHON=...` to
+**PROBLEM:** `fleet-update.sh`'s env step PROVISIONs/append `FLEET_PYTHON=...` to
 `~/.steadfaste-fleet/agent.env` via `>>`. If the existing file does not end in a newline,
 the append lands on the SAME line as the prior var (e.g. `AGENT_NAME=mosesCORTEX_PYTHON=...`).
 `task-db.py`'s `_env_agent_name()` reads `line.split("=",1)[1]` and returns the whole
@@ -630,10 +630,10 @@ bash ~/.hermes/scripts/fleet-update.sh
 **PREVENT:** Either (a) let `fleet-update.sh` handle its own `git pull` instead of
 pulling manually, or (b) always use `` after any manual pull.
 
-### Launchd plist paths — shell/CORTEX_HOME variables NOT expanded
+### Launchd plist paths — shell/FLEET_HOME variables NOT expanded
 
 **PROBLEM:** `launchd` (via `launchctl load`) does NOT expand shell variables like
-`$HOME` or `CORTEX_HOME` in plist files. Using them in `ProgramArguments`,
+`$HOME` or `FLEET_HOME` in plist files. Using them in `ProgramArguments`,
 `WorkingDirectory`, `StandardOutPath`, or `StandardErrorPath` causes the job to
 fail with **EX_CONFIG (exit code 78)** immediately on load.
 
@@ -660,7 +660,7 @@ launchctl list com.hermes.health-server
 
 **Affected files in the fleet repo (fixes applied in commit e1ff1c7):**
 - `ops/scripts/com.hermes.health-server.plist` — paths used `$HOME`
-- `ops/services/dashboard/com.hermes.fleet-dashboard.plist` — paths used `CORTEX_HOME`
+- `ops/services/dashboard/com.hermes.fleet-dashboard.plist` — paths used `FLEET_HOME`
 
 **PREVENT:** Before creating or modifying any launchd plist, verify every path is
 a hardcoded absolute path for the target user. The `~/` tilde prefix does work

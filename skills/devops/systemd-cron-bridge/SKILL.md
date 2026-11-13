@@ -21,7 +21,7 @@ When a no_agent script cron must keep firing **even if the Hermes gateway / `cro
 
 ## `--deliver` routing (the load-bearing decision)
 
-The wrapper MUST take `--deliver <target>` and route by it. **`local` = save-only to `<CORTEX_DEPLOY_HOME>/cron-output/<job>.log`, never a send; anything else = Telegram.** Do NOT let the runner default to Telegram: many no_agent jobs (`agent-message-handler`, `agent-learning-collector`, `agent-push-metrics`, `agent-session-mine`) are internal collectors whose stdout must never reach the channel. Migrating one without `--deliver local` silently spams the home channel with internal output.
+The wrapper MUST take `--deliver <target>` and route by it. **`local` = save-only to `<FLEET_DEPLOY_HOME>/cron-output/<job>.log`, never a send; anything else = Telegram.** Do NOT let the runner default to Telegram: many no_agent jobs (`agent-message-handler`, `agent-learning-collector`, `agent-push-metrics`, `agent-session-mine`) are internal collectors whose stdout must never reach the channel. Migrating one without `--deliver local` silently spams the home channel with internal output.
 
 ## Migration = TWO steps per job, or you DOUBLE-RUN
 
@@ -162,7 +162,7 @@ Use `references/systemd-timer-oncalendar.md` — the correct syntax variants and
 
 ## Pitfalls
 
-- **A unit test that invokes a delivery wrapper MUST route hermetically** — pass `--deliver local` + a temp `CORTEX_DEPLOY_HOME` so the run saves to a temp log and can never reach the real messenger. Omitting `--deliver` on a "does it execute" test makes every `pytest` run send a real message to the user's channel (subject `cron:<name>`), a side-effect a unit test must never have.
+- **A unit test that invokes a delivery wrapper MUST route hermetically** — pass `--deliver local` + a temp `FLEET_DEPLOY_HOME` so the run saves to a temp log and can never reach the real messenger. Omitting `--deliver` on a "does it execute" test makes every `pytest` run send a real message to the user's channel (subject `cron:<name>`), a side-effect a unit test must never have.
 - **The bridge runs the REPO-path runner, not the deployed copy** — units `ExecStart` the repo `ops/scripts/...` path. When testing, invoke the same path the timers use; a stale deployed copy lacks the latest flags and errors (`unrecognized arguments`). Deploy anyway for consistency but test the live path.
 - **Run the GENERATOR from the repo path, not the deployed copy** — `fleet-bus-bridge-generate.py`
   computes its repo root inline as `Path(__file__).resolve().parent.parent.parent`, which assumes the

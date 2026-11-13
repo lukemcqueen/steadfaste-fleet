@@ -26,7 +26,7 @@ grep -rn '/usr/' .
 
 | File | Old Pattern | New Pattern |
 |------|-----------|-------------|
-| `deploy/nginx/hermes-security-apply` | `CORTEX_REPO="${HOME}/steadfaste-fleet"` + macOS-only nginx paths | `SCRIPT_DIR` derivation + `case $(uname -s)` OS dispatch |
+| `deploy/nginx/hermes-security-apply` | `FLEET_REPO="${HOME}/steadfaste-fleet"` + macOS-only nginx paths | `SCRIPT_DIR` derivation + `case $(uname -s)` OS dispatch |
 | `deploy/nginx/nginx/hermes-security-apply` | `SRC="~/steadfaste-fleet/..."` | `SCRIPT_DIR` + `$SRC` from `$SCRIPT_DIR/..` |
 | `src/dashboard/server.py` | `docker_bin = "/usr/local/bin/docker"` (×2) | `_docker_bin()` via `shutil.which("docker")` |
 
@@ -34,9 +34,9 @@ grep -rn '/usr/' .
 
 | Area | Pattern replaced | Pattern used |
 |------|----------------|-------------|
-| SKILL.md files | `~/steadfaste-fleet` | `${CORTEX_REPO:-$HOME/steadfaste-fleet}` |
-| SKILL.md files | `~/steadfaste-fleet-private` | `${CORTEX_REPO:-$HOME/steadfaste-fleet}-private` |
-| README/docs | Bare path examples | `${CORTEX_REPO:-$HOME/steadfaste-fleet}` |
+| SKILL.md files | `~/steadfaste-fleet` | `${FLEET_REPO:-$HOME/steadfaste-fleet}` |
+| SKILL.md files | `~/steadfaste-fleet-private` | `${FLEET_REPO:-$HOME/steadfaste-fleet}-private` |
+| README/docs | Bare path examples | `${FLEET_REPO:-$HOME/steadfaste-fleet}` |
 | SECURITY.md | `/usr/local/etc/nginx/.htpasswd` | `${NGINX_HTPASSWD:-...}` with OS note |
 | generate-inbox-wrappers.py help | `/usr/local/etc/nginx/.htpasswd` | `${NGINX_HTPASSWD:-...}` |
 

@@ -6,17 +6,17 @@ scripts, loop-gov-mcp.py), with an orchestrator-only manual exception.
 
 ## The draft design under review
 
-- `hermes-plugin-lock` gates `unlock`/`update` on `CORTEX_UPDATE=1` OR `AGENT_ID=moses|esther`
-  (`lock` and `status` stay open). Callers must use `sudo CORTEX_UPDATE=1 hermes-plugin-lock unlock`
+- `hermes-plugin-lock` gates `unlock`/`update` on `FLEET_UPDATE=1` OR `AGENT_ID=moses|esther`
+  (`lock` and `status` stay open). Callers must use `sudo FLEET_UPDATE=1 hermes-plugin-lock unlock`
   because sudoers has env_reset.
-- `fleet-update.sh` exports `CORTEX_UPDATE=1` and passes it explicitly through sudo.
+- `fleet-update.sh` exports `FLEET_UPDATE=1` and passes it explicitly through sudo.
 - Pre-commit DOGFOOD (auto-deploy enforcer on drift) to become a BLOCK instructing fleet-update.
 - Doctor remediation hints to be re-pointed to fleet-update.
 
 ## Findings (severity-ranked, all live-verified)
 
 1. **P0 — `sudo VAR=val cmd` fails under command-specific NOPASSWD + env_reset without SETENV:**
-   `sudo -n CORTEX_UPDATE=1 /usr/local/sbin/hermes-plugin-lock unlock` → "sudo: a password is
+   `sudo -n FLEET_UPDATE=1 /usr/local/sbin/hermes-plugin-lock unlock` → "sudo: a password is
    required" even though the bare-path rule exists. Every sudo unlock call in fleet-update.sh
    (copy_file ~L613, check_each_mapped_file ~L710/712, deploy_governance_plugin ~L1341) uses this
    form and wraps it in `2>/dev/null || true` → the sanctioned channel silently no-ops → the
@@ -70,11 +70,11 @@ scripts, loop-gov-mcp.py), with an orchestrator-only manual exception.
 
 ## QA test matrix required before shipping
 
-1. Adversarial: `env -u AGENT_ID -u CORTEX_UPDATE bash <repo-helper> unlock` → REFUSED, exit 1,
+1. Adversarial: `env -u AGENT_ID -u FLEET_UPDATE bash <repo-helper> unlock` → REFUSED, exit 1,
    `lsattr` unchanged before/after.
 2. Non-orch spoof rejected (post-fix 2): `AGENT_ID=worker` refused; orchestrator allowed only via
    the Unix-account mechanism.
-3. Sanctioned: `CORTEX_UPDATE=1 bash <repo-helper> unlock` gate passes (non-sudo run of the repo
+3. Sanctioned: `FLEET_UPDATE=1 bash <repo-helper> unlock` gate passes (non-sudo run of the repo
    copy is the CI-safe way to exercise the gate — chattr fails harmlessly as the unprivileged user).
 4. Orchestrator channel: `sudo AGENT_ID=moses hermes-plugin-lock unlock` passes (if env kept).
 5. Ungated ops: `lock` and `status` work with no env.
@@ -93,4 +93,4 @@ scripts, loop-gov-mcp.py), with an orchestrator-only manual exception.
   `__init__.py`, `pre-commit-score`, `loop-gov-mcp.py` all `chattr +i`.
 - Gate behavior live-tested with the repo copy: `AGENT_ID=worker` → REFUSED (exit 1); ambient
   `AGENT_ID=moses` → gate passed; `status`/`lock` ungated.
-- `sudo -n CORTEX_UPDATE=1 /usr/bin/env` → "sudo: a password is required" (finding 1 reproduced).
+- `sudo -n FLEET_UPDATE=1 /usr/bin/env` → "sudo: a password is required" (finding 1 reproduced).
