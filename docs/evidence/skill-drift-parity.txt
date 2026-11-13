@@ -30,8 +30,8 @@ A file under no repo-owned skill dir is a Hermes default and stays skipped.
 
 Stranded in place:
 - devops/rename-sweep/SKILL.md
-- devops/shared-repo-push-gates/SKILL.md
 - software-development/execute-right/SKILL.md
+- software-development/verify-and-ship/SKILL.md
 
 Absent from the repo (deployed under a repo-owned skill):
 - devops/rename-sweep/references/env-namespace-rename.md (never-committed)

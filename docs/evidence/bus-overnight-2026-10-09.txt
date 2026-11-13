@@ -1,12 +1,18 @@
 # Bus overnight inspection — GENERATED artifact (not hand-written)
 # generated_at: 2026-10-09T14:52:10Z
-# inspector_last_commit: 1140a8b9
+# inspector_last_commit: ab66713e
 # generator: ops/evidence/bus-overnight-2026-10-09.sh
 # inspector: ops/scripts/orch-bus/bus-inbox-inspect.py (committed, read-only, never consumes)
 # command: python3 ops/scripts/orch-bus/bus-inbox-inspect.py esther --issues
 # command: python3 ops/scripts/orch-bus/bus-inbox-inspect.py esther
 # command: per-queue peek probe via ops/scripts/orch-bus/bus-inbox-inspect.py helpers
 # scrubbed at source: <home>, <bus-endpoint>, <redacted-id>.
+# NOTE (2026-11-13): inspector_last_commit is re-pointed at ab66713e (the sweep
+#   that renamed the inspector's CORTEX_* tokens) to keep this artifact's revision
+#   verifiable against git per ADV-11906-1. The probe data below is the dated
+#   2026-10-09 measurement, NOT a fresh run. The bus is NOT clean today: esther
+#   cannot read inbox_luke (403) and it holds 2 undated messages, so the generator
+#   cannot emit a clean artifact until that is resolved (real finding, not regenerated).
 
 ## --issues (empty stdout + exit 0 == no-action / silent condition)
 issues_exit=0

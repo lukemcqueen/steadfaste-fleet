@@ -589,6 +589,18 @@ provenance block still empty.
     one, so a VAR-ABSENT branch is only reachable through it by passing an EMPTY value (which a
     `[[ -n "$VAR" ]]` guard treats as unset) — pass a sentinel and the branch you think you are
     testing is the VAR-SET one.
+- **'The newest <file>' is the definition only when it DEFINES the construct.** A guard that
+  reads `_migrations()[-1]` (or any 'latest config / schema / script') fails against a newer
+  file that only USES the thing — a later migration that CALLS a function whose body an
+  earlier one defines. Scan the set for the record that DEFINES the construct, newest-first,
+  and match the exact definition (the function signature, not the file containing a mention),
+  or the guard reads the wrong file and goes red on healthy code.
+- **A 'skip if <lib> not importable' check can be defeated by importable-but-broken libraries
+  under contamination.** `import reportlab` succeeds on a polluted heap while its real
+  dependency (PIL's `_imaging` C extension) fails at build time, so a test that skips only on
+  ImportError runs instead and fails mid-build. Widen the skip to import the ACTUAL dependency
+  the exercised path needs and catch the broken-load exception — the point of the skip is 'the
+  libs are usable here', not 'the top-level name resolves'.
 - **A standalone test that loads its collaborator by path must check it AS A TEST, never at
   import.** Script-style suites that are each run directly (`python3 tests/test_<name>.py`, no
   framework) make a module-scope precondition (`if not hasattr(mod, "fn"): raise SystemExit(...)`)

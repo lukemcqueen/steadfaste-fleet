@@ -474,6 +474,22 @@ real commit:
    regression. For a bash function, extract by brace-matching to the function's own closing brace
    (a column-0 `}`), never by assuming a marker sits inside it.
 
+   Two ways this differential goes silently vacuous, each with a one-line check:
+
+   - **Pin a revision that is actually BEFORE the fix, not merely one that looks older.** A later
+     pipeline/auto commit ("auto: block N suspect IPs" and the like) can sit AFTER the fix in history
+     and carry the FIXED code, so the pre-fix side never reproduces and the test passes without ever
+     proving the check would catch a regression. Confirm ancestry first: `git merge-base --is-ancestor
+     <pinned> <fix-commit>` must succeed, and then run the probe at the pinned rev and confirm the
+     defect actually reproduces (N-of-N, not zero) before trusting the differential.
+   - **Reproduce via the SAME invocation the test uses, not the low-level primitive.** A gate that
+     classifies by path/permission ("shared surface", "my inbox") can skip the behavior under test
+     entirely at a historical revision, because the historical module's path/config constants point at
+     old paths that no longer match — the regex matches while the gate returns not-blocked, so the
+     comparison looks clean for the wrong reason. Check that the FULL gate invocation reproduces the
+     defect at the pinned rev; when an orthogonal classification (not the change under test) is what
+     decides, force it to the exercised value so the behavior you are comparing actually runs.
+
 Worked example (2026-07-31): `pre-commit-score` ORCH_CONFIG silent failure —
 `set -euo pipefail` + `VAR=$(git show HEAD:... || cat ... 2>/dev/null)` died
 silently (exit 1, no output) in repos without `docs/orchestrator-only-paths.txt`.
