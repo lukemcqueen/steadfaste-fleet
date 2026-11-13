@@ -48,14 +48,15 @@ code; the brand lint's `RECORD_FILTER` exempts dated records, not these.
    `hermes-cortex-dashboard.service` entry some hosts still show is a stale
    not-found process from the pre-migration path, not a name to preserve.
 4. **`cortex` short-name family** — a SEPARATE naming layer from the `hc`
-   sweep, **COMPLETE (landed 2026-11-12/13)** under the broadened policy:
+   sweep, **landed 2026-11-12/13** under the broadened policy:
    `fleet-bus`, `cortex-dashboard` → `fleet-dashboard`, "Fleet Dashboard", and
    the `CORTEX_*` env-var family migrated to `FLEET_*` per
-   `docs/runbooks/cortex-to-fleet-env-sweep.md` (release 2, `62630b02`):
-   `.env` secrets, session identity and the deploy home are all FLEET-spelled;
-   there is no legacy spelling and no fallback;
-   `0deb362f`), which also deleted the transition layer. **`mycortex` remains a
-   KEEP in every form.** For fix/verify/cleanup steps use
+   `docs/runbooks/cortex-to-fleet-env-sweep.md` (release 2): `.env` secrets,
+   session identity and the deploy home are FLEET-spelled. A surviving
+   `CORTEX_*` name is NOT read; on the next deploy `consolidate-env.sh`
+   converts it and `consolidate-env.sh --check` fails while any survives
+   (asserted by `tests/test-consolidate-env.sh`). **`mycortex` remains a KEEP
+   in every form.** For fix/verify/cleanup steps use
    `docs/runbooks/cortex-to-fleet-env-sweep.md`.
 
 ## What changed on 2026-11-12 (the final hc sweep)
@@ -77,7 +78,7 @@ code; the brand lint's `RECORD_FILTER` exempts dated records, not these.
 
 ## Sequencing requirement (deploy-home default)
 
-The original sweep flipped the deploy-home variable's default — `FLEET_DEPLOY_HOME` at the time, STALE name since release 2 renamed it `FLEET_DEPLOY_HOME` (`${HOME}/.hermes-cortex`
+The original sweep flipped the deploy-home variable's default — `CORTEX_DEPLOY_HOME` at the time, a STALE name since release 2 renamed it `FLEET_DEPLOY_HOME` (`${HOME}/.hermes-cortex`
 → the new local path). A host that pulls this WITHOUT having renamed its local
 dirs first would deploy into an empty new home and orphan its real framework.
 Order:
