@@ -157,8 +157,8 @@ Titus cannot be polled (no inbound). Instead he pushes to Moses' inbox:
 
 1. **Pull steadfaste-fleet** and set up `~/steadfaste-fleet/.env` with his own credentials:
    ```ini
-   CORTEX_BUS_FALLBACK_URL="https://your-domain.com:13004"
-   CORTEX_BUS_AUTH="titus:<password>"
+   FLEET_BUS_FALLBACK_URL="https://your-domain.com:13004"
+   FLEET_BUS_AUTH="titus:<password>"
    AGENT_NAME="titus"
    ```
 2. Install the launchd agent:
@@ -226,7 +226,7 @@ This is the single source of truth for Fleet. ⚠ `~/.hermes/.env` is Hermes Age
 | Env var | Purpose | Default |
 |---------|---------|---------|
 | `IS_ORCHESTRATOR` | Gate orchestrator-only features (orch crons, team health, inbox remediation). Set `true` on Moses/Esther only. | `false` |
-| `CORTEX_HEALTH_URL` | External health endpoint. Orchestrator pollers use this to verify agent reachability through nginx. Format: `https://yourdomain.com:xx007/health` | _(none)_ |
+| `FLEET_HEALTH_URL` | External health endpoint. Orchestrator pollers use this to verify agent reachability through nginx. Format: `https://yourdomain.com:xx007/health` | _(none)_ |
 | `JUDGE_MODEL` | LLM-as-Judge scorer | `qwen2.5:3b` |
 | `EMBEDDING_MODEL` | Text embeddings (mycortex, session cache, loop scorer, offline_code) | `nomic-embed-text:v1.5` |
 | `CODING_MODEL` | Code generation via offline_code | `qwen2.5:3b` (single fleet model, also the judge; honors a pin, prefers an installed model) |

@@ -41,7 +41,7 @@ hosts that had no fallback configured.
 * Deploy gate (`metrics_sink_decision()` in `hermes-services-apply.py`, mirrored in
   `install-nginx-full.sh`):
   * `HERMES_SERVICES` unset → deploy **iff** a local VictoriaMetrics answers
-    (`CORTEX_VM_HEALTH_URL`, default `http://127.0.0.1:8428/-/healthy`). The default now
+    (`FLEET_VM_HEALTH_URL`, default `http://127.0.0.1:8428/-/healthy`). The default now
     works on hosts that have a sink and never creates a dead listener on hosts that don't.
   * `HERMES_SERVICES` set with `metrics`/`extra`/`all` → deploy (explicit).
   * `HERMES_SERVICES` set without them → do not deploy (explicit wins; if a live xx005
@@ -74,8 +74,8 @@ Metrics arrival age — 2 agent(s) pushed within 30m; arrived: Esther, Moses;
 * Levels: agents stale past the threshold → **WARN**; sink reachable but holding no agent
   series → **INFO** with the runbook pointer (silence must never read as health); sink
   unreachable → **INFO** naming what was tried.
-* Knobs: `CORTEX_VM_QUERY_URL` (pin one sink), `CORTEX_METRICS_STALE_MINUTES`
-  (default 30 — six missed 5m ticks), `CORTEX_VM_FRESHNESS_METRIC`
+* Knobs: `FLEET_VM_QUERY_URL` (pin one sink), `FLEET_METRICS_STALE_MINUTES`
+  (default 30 — six missed 5m ticks), `FLEET_VM_FRESHNESS_METRIC`
   (default `node_uptime_seconds`).
 
 What it showed on the first live run (2026-09-24): moses's **primary** sink

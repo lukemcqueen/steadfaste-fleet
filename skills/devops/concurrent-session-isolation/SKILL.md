@@ -45,7 +45,7 @@ paths and leave their in-flight files (tracked and untracked) untouched.
 |---|---|---|
 | git index + working tree | a commit in one session sweeps the other's STAGED work under the wrong message | **scope** — one worktree per session; until then, forbid BARE commits (pitfall 11) |
 | git author identity | commits unattributable; author-scoped gates cannot tell sessions apart | **scope** — per-worktree identity |
-| commit ATTRIBUTION (a `Cortex-Session` trailer) | two live locks matching ONE repo ⇒ the hook stamps EVERY commit with the SAME id, so a session-scoped review filter cannot separate them | **scope** — one worktree AND one lock namespace per session; a trailer cannot distinguish sessions that share it |
+| commit ATTRIBUTION (a `FLEET-Session` trailer) | two live locks matching ONE repo ⇒ the hook stamps EVERY commit with the SAME id, so a session-scoped review filter cannot separate them | **scope** — one worktree AND one lock namespace per session; a trailer cannot distinguish sessions that share it |
 | governance lock file | a CLOSE is session-scoped (own file, own cycle rows) — but a purge sweep removes past-TTL locks for ANY session, so a peer's deploy can end an idle session's lock | scope (already correct) for close; **serialise/verify** the purge — see pitfall 9 |
 | loop-governance DB | writes serialise | scope (rows carry `session_id`) |
 | MCP server process | one session's blocking handler freezes the server for EVERY session sharing that parent — all calls time out at once | **keep handlers off-loop** — see "A wedged shared MCP server" below |
@@ -244,7 +244,7 @@ git diff --cached --name-only                                     # only YOUR fi
 
    ```bash
    git status --short                      # EMPTY ⇒ the files are COMMITTED, not dirty
-   git log --format='%h %s%n  trailer=%(trailers:key=Cortex-Session,valueonly)' -8
+   git log --format='%h %s%n  trailer=%(trailers:key=FLEET-Session,valueonly)' -8
    grep -H -e '"session_id"' -e '"repo_path"' ~/.steadfaste-fleet/state/.governance-*.json
    ```
 

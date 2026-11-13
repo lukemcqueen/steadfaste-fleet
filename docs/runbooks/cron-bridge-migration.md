@@ -130,7 +130,7 @@ all four requests answered only at the 30-minute sweep timeout
   `--deliver <target>`; a `local` target saves to
   `~/.steadfaste-fleet/cron-output/<job>.log` and never sends, while anything
   else sends Telegram. Never let a test run the wrapper without an explicit
-  `--deliver local` + temp `CORTEX_DEPLOY_HOME`.
+  `--deliver local` + temp `FLEET_DEPLOY_HOME`.
 - **A silent watchdog proves nothing.** Exit 0 with empty stdout is the
   success case, so it cannot show the delivery chain works. Prove delivery on
   an always-output job, or check

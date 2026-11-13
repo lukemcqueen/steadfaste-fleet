@@ -1,5 +1,9 @@
 # Rename boundary — `cortex` → `fleet` short-name family
 
+> **Status: the sweep is LANDED (2026-11-12/13).** This file is kept as the historical boundary
+> reference (what was renamed, what was deliberately kept). For the live per-host verification and
+> cleanup procedure see `docs/runbooks/cortex-to-fleet-env-sweep.md`.
+>
 > **What this is.** The implementer quick-reference for the second naming sweep (2026-11-06): the
 > `cortex` short-name family (`cortex-`, `cortex_`, `Cortex`, `\bcortex\b`) renames to `fleet`,
 > staged in P0–P7. The full specification is
@@ -13,7 +17,8 @@
 - **Q2** Dashboard JOINS the rename → `fleet-dashboard.service` (+ plist). The earlier
   "hermes-cortex-dashboard keeps its name" note in `docs/rename-followups-steadfaste-fleet.md` is
   superseded for this artifact.
-- **Q3** Names-only. `CORTEX_*` env vars are DEFERRED to a follow-on release (§5 P4 spec).
+- **Q3** Names-only *at the time*; the `CORTEX_*` env vars followed in **P4**, which landed as
+  release 2 (2026-11-13). `FLEET_*` is now the only spelling.
 - **Q4** The four `hermes-cortex*` skills stay for a third sweep — do not touch their `name:` or dirs.
 
 ## Guard rule (first rule in any replacement pass)

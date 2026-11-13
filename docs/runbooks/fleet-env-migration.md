@@ -117,8 +117,8 @@ The doctor reports:
 | Doctor: `~/.steadfaste-fleet/.env is a REAL file` | an unowned real `.env` sits at the deploy-symlink path | resolve it by hand (check what it points to / where it came from), then `bash ~/.steadfaste-fleet/scripts/consolidate-env.sh` |
 | Doctor: `~/.steadfaste-fleet/.env symlink is MISSING` | canonical exists but the sanctioned symlink is gone | `bash ~/.steadfaste-fleet/scripts/consolidate-env.sh` |
 | Doctor: `retired fleet-bus.conf … remains` | old host not yet consolidated | `bash ~/.steadfaste-fleet/scripts/consolidate-env.sh` |
-| A script finds no `CORTEX_BUS_URL` | env resolves to the wrong path | check the script reads `~/steadfaste-fleet/.env` (grep for `fleet-bus.conf`) |
-| `CORTEX_BUS_URL not configured (checked: …/.steadfaste-fleet/.env)` | a script still hardcodes the old deploy-dir path | repoint it at the canonical env |
+| A script finds no `FLEET_BUS_URL` | env resolves to the wrong path | check the script reads `~/steadfaste-fleet/.env` (grep for `fleet-bus.conf`) |
+| `FLEET_BUS_URL not configured (checked: …/.steadfaste-fleet/.env)` | a script still hardcodes the old deploy-dir path | repoint it at the canonical env |
 
 ## Do not
 
@@ -138,5 +138,5 @@ The doctor reports:
 > layer and dual-export bridge are deployed, and consumers migrate in small
 > batches per `docs/runbooks/cortex-to-fleet-env-sweep.md`. Do not rename an
 > env var from this runbook's perspective — follow THAT runbook's
-> classification (local/derived names safe; `.env` secrets, `CORTEX_SESSION_*`
-> and `HERMES_CORTEX_HOME` are phase 2 / external contracts).
+> classification (local/derived names safe; the env family is `FLEET_*` only
+> since release 2 — no external-contract exception remains).

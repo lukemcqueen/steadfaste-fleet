@@ -39,9 +39,9 @@ return ["sg", "docker", "-c",
 - Keep the single transport seam (`_psql_base(role, db_name) -> list[str]`).
 - Role-parameterized in CLI/CRUD scripts; single-role in migrate.py
   (owner-run DDL).
-- Removed Darwin dead weight: `MYCORTEX_CONFIG` (`~/.steadfaste-fleet/
+- Removed Darwin dead weight: `MYFLEET_CONFIG` (`~/.steadfaste-fleet/
   mycortex.conf` `database_url`), `urlparse`/`shutil.which("psql")` fallback,
-  `os.environ.get("MYCORTEX_DB_URL")`, and the `json`/`os`/`shutil` imports
+  `os.environ.get("MYFLEET_DB_URL")`, and the `json`/`os`/`shutil` imports
   that only the dead branch used.
 
 ## Sibling sweep — fix the class, not the ticket
@@ -88,7 +88,7 @@ Pitfalls learned live:
 
 ## Verification evidence (2026-08-21)
 
-- 8/8 `py_compile`; zero `15432`/`MYCORTEX_CONFIG` refs left.
+- 8/8 `py_compile`; zero `15432`/`MYFLEET_CONFIG` refs left.
 - Darwin argv executed against live container: `SELECT 1` rc=0; CLI as
   `mycortex_reader_esther` rc=0.
 - Batteries: mycortex 15/15, tasks 93/93, learnings 21/21.

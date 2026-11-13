@@ -205,8 +205,8 @@ source ~/.zshrc
 
 **Fix:**
 ```bash
-chmod +x ${CORTEX_REPO:-$HOME/steadfaste-fleet}/install.sh
-bash ${CORTEX_REPO:-$HOME/steadfaste-fleet}/install.sh   # Run with bash, not ./
+chmod +x ${FLEET_REPO:-$HOME/steadfaste-fleet}/install.sh
+bash ${FLEET_REPO:-$HOME/steadfaste-fleet}/install.sh   # Run with bash, not ./
 ```
 
 ### 11. Ollama blocked by macOS Gatekeeper
@@ -786,7 +786,7 @@ resolved by `_derive_slug()` / `_derive_repo_path()` in `mcp-servers/loop-gov-mc
   not exist on those harnesses, and nothing but an operator could release the lock.
 
 **Fix (deployed 2026-10-09).** A caller with no injected repo works out its OWN
-repo instead: `CORTEX_SESSION_REPO`, else the MCP child's working directory (the
+repo instead: `FLEET_SESSION_REPO`, else the MCP child's working directory (the
 harness's project). Hermes callers are unaffected — they are never re-tagged from
 the shared daemon's cwd.
 
@@ -799,7 +799,7 @@ bash ~/.steadfaste-fleet/scripts/fleet-update.sh   # deploys tools/loop-governan
   purge); otherwise remove that one file and re-open the cycle.
 - A harness launched with its cwd outside the project (e.g. a gateway-spawned
   pi): pin the repo in the harness/MCP `env` block —
-  `CORTEX_SESSION_REPO=<repo-name or absolute path>`.
+  `FLEET_SESSION_REPO=<repo-name or absolute path>`.
 - Verify without an LLM turn: `python3 tests/test_non_hermes_repo_identity.py`
   (regression) and `python3 tests/run_non_hermes_lock_release_repro.py` (drives the
   reported flow against the pre-fix, working-tree and DEPLOYED modules; exits
@@ -835,7 +835,7 @@ per REPO (`~/.steadfaste-fleet/state/.session-<slug>.id`). A Hermes caller is
 unaffected: the enforcer injects its session id on every call.
 
 **Fix (deployed 2026-10-27).** Resolution step 0e reads a session id the caller's
-own environment already provides — `CORTEX_SESSION_KEY` first, then Pi's
+own environment already provides — `FLEET_SESSION_KEY` first, then Pi's
 `PI_SESSION_ID` — and namespaces it as `sess_<source>_<value>`. One MCP child
 serves one session, so that value is both a correct discriminator and stable
 across a child restart. A caller with no such variable keeps the per-repo
@@ -848,7 +848,7 @@ own `process.env`; its MCP client spawns the loop-gov child with
 `{...process.env, ...mcp.json env}`, and `mcp.json`'s `env` carries only
 `AGENT_NAME`. So a Pi session's loop-gov child saw neither key and fell through to
 the per-repo id — every Pi session in a repo shared it. The Pi extension now sets
-`CORTEX_SESSION_KEY` from `ctx.sessionManager.getSessionId()` at
+`FLEET_SESSION_KEY` from `ctx.sessionManager.getSessionId()` at
 `before_agent_start` (before the MCP child spawns), so a Pi session resolves a
 unique, stable id. Fix + execution guard:
 `ops/install/harnesses/pi/extensions/fleet-context.ts` /
@@ -863,7 +863,7 @@ ls ~/.steadfaste-fleet/state/.governance-*.json
   (`loop-gov.py begin_change '{"task_id":"...","description":"...","session_id":"sess_pi_<your id>","repo_path":"<abs repo path>"}'`)
   — but include `repo_path`: a lock minted with an explicit id and no repo_path
   records an empty repo, which is the unclosable-lock class.
-- Or set `CORTEX_SESSION_KEY` in the harness/MCP `env` block (the
+- Or set `FLEET_SESSION_KEY` in the harness/MCP `env` block (the
   fleet-gateway `command` backend already pins it per chat).
 - Verify without an LLM turn: `python3 tests/test_harness_session_id_env.py`
   (resolver) and `node ops/install/harnesses/pi/verify-extension.mjs` (the Pi
@@ -877,7 +877,7 @@ return the CALLER's own repo ONLY (strict since 2026-10-19) — never every repo
 tasks — and an UNRESOLVABLE repo returns nothing at all. The repo resolves in this
 order: the `repo` argument → the repo the `governance-enforcer` injected for
 this session (it stamps `mcp__tasks__*` calls exactly as it does governance
-calls) → `CORTEX_SESSION_REPO` → the git repo at the process's cwd.
+calls) → `FLEET_SESSION_REPO` → the git repo at the process's cwd.
 
 **Two empty answers that are not the same problem:**
 
@@ -892,7 +892,7 @@ This is not an empty database. Diagnose it in that order:
 
 ```bash
 python3 ~/.steadfaste-fleet/scripts/task-db.py pending --repo <your-repo>   # explicit works?
-echo "$CORTEX_SESSION_REPO"; git -C "$PWD" rev-parse --show-toplevel    # a lever? a git cwd?
+echo "$FLEET_SESSION_REPO"; git -C "$PWD" rev-parse --show-toplevel    # a lever? a git cwd?
 python3 ~/.steadfaste-fleet/scripts/task-db.py list --status pending --repo <your-repo> --include-untagged
 python3 ~/.steadfaste-fleet/scripts/task-db.py list --status pending --repo ALL   # fleet view
 ```
@@ -998,7 +998,7 @@ Issues that appear when running `pull latest` + `fleet-update.sh` on a macOS hos
 _home=$(getent passwd "$_user" 2>/dev/null | cut -d: -f6)
 ```
 
-On macOS `getent` is not found → command substitution returns empty (or aborts the script under `pipefail`), leaving `CORTEX_HOME` / `_home` / `ORCH_HOME` / `_os_home` unset and any orch-detection logic dead.
+On macOS `getent` is not found → command substitution returns empty (or aborts the script under `pipefail`), leaving `FLEET_HOME` / `_home` / `ORCH_HOME` / `_os_home` unset and any orch-detection logic dead.
 
 **Fix:** guard the lookup and fall back to `$HOME`:
 
@@ -1021,7 +1021,7 @@ _home="${_home:-$HOME}"
 
 ```bash
 if [[ "$(uname -s)" == "Darwin" ]]; then
-  bash "${CORTEX_DEPLOY_HOME}/scripts/hermes-plugin-lock" lock 2>&1 || warn "enforcement files NOT locked (macOS)"
+  bash "${FLEET_DEPLOY_HOME}/scripts/hermes-plugin-lock" lock 2>&1 || warn "enforcement files NOT locked (macOS)"
 else
   sudo hermes-plugin-lock lock 2>&1
 fi
@@ -1263,7 +1263,7 @@ launcher bare-execs the venv path again.
 
 **Same class on macOS launchd templates.** `docs/templates/*.plist` cannot rely on either
 expansion: **launchd expands nothing inside plist strings**, so a literal `$HOME/...` or
-`CORTEX_HOME/...` in `ProgramArguments` is a service that never starts, and an XML comment
+`FLEET_HOME/...` in `ProgramArguments` is a service that never starts, and an XML comment
 containing a double hyphen makes the whole plist unparseable (launchctl rejects it silently).
 Both patterns are now covered by `tests/test_fleet_venv_launchers.py`, which fails the suite on
 a hardcoded `/Users/<name>/` path, on `$HOME` in `ProgramArguments` without `/bin/bash -lc`, or

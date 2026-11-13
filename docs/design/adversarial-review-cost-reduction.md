@@ -1,7 +1,7 @@
 # Adversarial-review cost reduction — plan
 
 **Status: A1 + A2 of Lever A are IMPLEMENTED** (cycle `session-scoped-review-window`, 2026-10-19):
-a `Cortex-Session:` commit trailer written by the `prepare-commit-msg` hook from the live lock,
+a `FLEET-Session:` commit trailer written by the `prepare-commit-msg` hook from the live lock,
 and a close-review scope that excludes commits whose trailer names another session (fail-closed:
 no trailer / ambiguous / no session id ⇒ the commit stays in scope). Levers B (diff-derived
 tiers) and D (bounded close) below remain PLAN ONLY.
@@ -93,7 +93,7 @@ with `--author=esther-agent` matches all four, so **A as first drafted would fai
 today's whole-window behaviour and save nothing.** A therefore needs a session discriminator
 first:
 
-1. **A1 — a `Cortex-Session: <session_id>` commit trailer, derived from the LIVE governance
+1. **A1 — a `FLEET-Session: <session_id>` commit trailer, derived from the LIVE governance
    lock.** The `prepare-commit-msg` hook appends the trailer using the session id from the lock
    file the enforcer already required for that commit. It is read from governance state — never
    from an env var the agent exports — so it cannot be forged from prose or spoofed.

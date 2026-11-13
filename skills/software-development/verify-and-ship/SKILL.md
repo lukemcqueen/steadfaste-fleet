@@ -158,6 +158,14 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
 - Run the SIBLING tests that exercise the seams you changed; prove
   pre-existence of a failure at the range base in a worktree (run both sides
   the same way, absolute paths).
+- Run the FULL suite WITHOUT `-x`/`--maxfail` when triage is the goal: a
+  first-failure stop hides the other reds you need to separate pre-existing
+  from introduced, so the report answers nothing about the rest of the change.
+- A suite a prior session reported 'still running' may be a ghost — the
+  background process died with that session and the notification never comes.
+  Check for a captured log artifact; if none exists, re-run into a log file
+  (`pytest -q > /tmp/<name>.log 2>&1; echo EXIT=$? >> …`, backgrounded with
+  notify) instead of waiting on a handle the restart invalidated.
 - Changing a DEFAULT CONSTANT breaks hardcoded old literals in tests — sweep
   both shapes (fixture AND assertion), run to prove both moved.
 

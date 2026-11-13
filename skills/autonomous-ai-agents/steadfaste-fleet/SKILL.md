@@ -429,10 +429,10 @@ grep "skip default" ~/.legacy-brain/sync-watch.sh # confirm --skip default is pr
 
 **PROBLEM:** `fleet-update.sh`'s env step PROVISIONs/append `FLEET_PYTHON=...` to
 `~/.steadfaste-fleet/agent.env` via `>>`. If the existing file does not end in a newline,
-the append lands on the SAME line as the prior var (e.g. `AGENT_NAME=mosesCORTEX_PYTHON=...`).
+the append lands on the SAME line as the prior var (e.g. `AGENT_NAME=mosesFLEET_PYTHON=...`).
 `task-db.py`'s `_env_agent_name()` reads `line.split("=",1)[1]` and returns the whole
 concatenated garbage as the profile, so `CRUD_ROLE` resolves to
-`mycortex_reader_mosesCORTEX_PYTHON=...` and EVERY task-db/RLS probe fails with
+`mycortex_reader_mosesFLEET_PYTHON=...` and EVERY task-db/RLS probe fails with
 `role "..." does not exist` — surfacing as doctor `❌ Task DB connectivity` and
 `❌ Task Lifecycle v2 events RLS`, which look unrelated to the real cause.
 
@@ -1714,7 +1714,7 @@ Some pages embed successfully (showing progress) but others fail partway through
 
 **Fix:** Set the environment variable in ALL mycortex scripts:
 ```bash
-export MYCORTEX_AI_EMBED_TIMEOUT_MS=300000
+export MYFLEET_AI_EMBED_TIMEOUT_MS=300000
 mycortex embed --stale
 ```
 
@@ -1729,7 +1729,7 @@ mycortex embed --stale
 mycortex stats | grep "Embedded"
 
 # After retry
-export MYCORTEX_AI_EMBED_TIMEOUT_MS=300000
+export MYFLEET_AI_EMBED_TIMEOUT_MS=300000
 mycortex embed --all 2>&1 | tail -5
 # Expected: "Embedded X chunks across Y pages" with 0 errors
 

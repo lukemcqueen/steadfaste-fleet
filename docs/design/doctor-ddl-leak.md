@@ -34,10 +34,10 @@ Transcript produced by `docs/evidence/doctor-ddl-leak/probe-doctor-apply-schema.
 |---|---|
 | The doctor runs `--apply-schema` as a **health check** | `~/.steadfaste-fleet/scripts/fleet_doctor/checks.py:5357`: `ver_out = run_bg([sys.executable, str(task_script), "--apply-schema"], …)`. The doctor runs on every `agent-message-handler` tick (~5 min). |
 | `cmd_apply_schema` resolves `migrate.py` by candidate list | `ops/scripts/manage/task-db.py:1563-1569` |
-| Candidate 1 is **`Path(os.environ.get("CORTEX_REPO", ""))/…`** | With `CORTEX_REPO` unset (measured: `CORTEX_REPO env = None`) that expression is the **relative** path `ops/services/tasks/migrate.py`. The probe reported `1. exists=True` only because its **cwd** was the repo. So the resolved migration authority depends on the *caller's working directory* — a second defect in the same function, independent of the repo-vs-deployed question. |
+| Candidate 1 is **`Path(os.environ.get("FLEET_REPO", ""))/…`** | With `FLEET_REPO` unset (measured: `FLEET_REPO env = None`) that expression is the **relative** path `ops/services/tasks/migrate.py`. The probe reported `1. exists=True` only because its **cwd** was the repo. So the resolved migration authority depends on the *caller's working directory* — a second defect in the same function, independent of the repo-vs-deployed question. |
 | Candidate 2 is the repo working tree (home prefix shown as `$HOME`, normalized for PII hygiene per commit 93029175) | `exists=True  $HOME/steadfaste-fleet/ops/services/tasks/migrate.py` — picked whenever candidate 1 misses (the doctor's own cwd). |
 | Candidate 4 is the DEPLOYED tree | `exists=True  $HOME/.steadfaste-fleet/services/tasks/migrate.py` — **last**, so it is never reached while a repo tree exists. |
-| `fleet-update.sh` applies the DEPLOYED copy | `fleet-update.sh:3298`: `local tasks_migrate="${CORTEX_DEPLOY_HOME}/services/tasks/migrate.py"`. The deploy path and the doctor path resolve to *different* files. |
+| `fleet-update.sh` applies the DEPLOYED copy | `fleet-update.sh:3298`: `local tasks_migrate="${FLEET_DEPLOY_HOME}/services/tasks/migrate.py"`. The deploy path and the doctor path resolve to *different* files. |
 | The register map IS the deploy (stated contract) | `fleet-update.sh:446`: *"The register map IS the deploy. migrate.py discovers migrations by FILE — the repo applying cleanly proves nothing about any other host."* |
 | Currently latent on this host, not active | live `tasks.schema_version` = **16**; deployed schema dir also reaches **v016**; `task_upsert` count = **1**, 21 args (`p_plan` last). The 10-27 deploy repaired the *state*; the code path that caused it is unchanged, so a **new uncommitted** migration file would still reach the live `mycortex` DB within ~5 minutes. |
 
@@ -78,7 +78,7 @@ ver_out = tdb.psql("SELECT COALESCE(MAX(version), 0) FROM tasks.schema_version;"
 
 **New, and the "(a) WARN/FAIL when it needs raising" half of the row:** compare
 the live version against the **deployed** schema dir's highest migration number
-(`CORTEX_HOME/services/tasks/schema/vNNN__*.sql`). If the deployed tree is ahead
+(`FLEET_HOME/services/tasks/schema/vNNN__*.sql`). If the deployed tree is ahead
 of the live DB, the check reports **WARN** with the exact remedy —
 `bash fleet-update.sh` — instead of silently applying the difference. If the
 deployed schema dir is absent, the comparison is skipped (no claim).
@@ -94,8 +94,8 @@ allowed to close it.
 `ops/scripts/manage/task-db.py:1561-1569` becomes:
 
 ```
-deploy_home = Path(os.environ.get("CORTEX_DEPLOY_HOME") or (Path.home() / ".steadfaste-fleet"))
-repo_home   = Path(os.environ.get("CORTEX_REPO") or (Path.home() / "steadfaste-fleet"))
+deploy_home = Path(os.environ.get("FLEET_DEPLOY_HOME") or (Path.home() / ".steadfaste-fleet"))
+repo_home   = Path(os.environ.get("FLEET_REPO") or (Path.home() / "steadfaste-fleet"))
 candidates = [
     deploy_home / "services/tasks/migrate.py",                 # deployed (reg-map target)
     deploy_home / "scripts/ops/services/tasks/migrate.py",     # deployed (legacy shape)
@@ -109,9 +109,9 @@ Two fixes in that list, both measured in §2:
    register map maintains; the repo tree is only a fallback for a host with
    nothing deployed.
 2. **The relative-path defect:** `or (Path.home() / "steadfaste-fleet")` replaces
-   the `""` default, so an unset `CORTEX_REPO` can no longer resolve candidate 1
+   the `""` default, so an unset `FLEET_REPO` can no longer resolve candidate 1
    against the caller's cwd. The same `or` default is applied to
-   `CORTEX_DEPLOY_HOME`.
+   `FLEET_DEPLOY_HOME`.
 
 No behaviour is removed: a host with no deployed copy still resolves its repo
 tree, exactly as today.
@@ -130,7 +130,7 @@ apply an *undeployed* tree.
     `tests/test_task_queue_evidence.py:65` already asserts it for
     `task-queue-evidence.py` (`assert '"--apply-schema"' not in src`);
   - `cmd_apply_schema`'s candidate list resolves the **deployed** path first,
-    with `CORTEX_REPO` both **unset** and set to the repo;
+    with `FLEET_REPO` both **unset** and set to the repo;
   - the unset case yields an **absolute** path (the relative-path defect).
   RED = both assertions against the pre-change files (they fail: the call site
   exists and the deployed copy is last).

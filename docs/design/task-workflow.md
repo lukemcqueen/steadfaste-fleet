@@ -300,7 +300,7 @@ scoping and governance-lock identity agree:
 |---|--------|-----------------|
 | 1 | explicit `repo` argument | the caller's declaration (`--repo`, MCP `repo`) |
 | 2 | injected `repo_path` / `repo_slug` | `governance-enforcer` — it observed this session's repo and injects it into `mcp__tasks__*` calls exactly as it does for `mcp__loop_governance__*` |
-| 3 | `CORTEX_SESSION_REPO` | the documented per-harness lever (absolute path, or a bare repo name) |
+| 3 | `FLEET_SESSION_REPO` | the documented per-harness lever (absolute path, or a bare repo name) |
 | 4 | the process's own git repo | a harness that spawns one MCP child per session inside the session's project (pi / Claude Code / Codex) |
 | 5 | *nothing* → **no tasks** | operator rule: an unresolvable repo returns NOTHING, never every repo's tasks |
 

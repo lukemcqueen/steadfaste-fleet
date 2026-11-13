@@ -50,7 +50,7 @@ The confusion is that "agent inbox" sounds like one thing. It's two (and was for
 MOSES / ESTHER (bus servers)     ORCHESTRATORS ONLY (MCP client)        WORKERS (HTTP path)
 ─────────────────────────────      ─────────────────────────────────────  ───────────────────────────
 Hermes gateway (:8905)         ~/.hermes/config.yaml                  ~/steadfaste-fleet/.env
- ↳ built-in Agent Bus API        ↳ mcp_servers.fleet-bus               ↳ CORTEX_BUS_URL + CORTEX_BASIC_AUTH
+ ↳ built-in Agent Bus API        ↳ mcp_servers.fleet-bus               ↳ FLEET_BUS_URL + FLEET_BASIC_AUTH
  ↳ stores messages (PGMQ)        ↳ runs fleet-bus-mcp.py as subprocess  ↳ contact-orchestrator.sh / lib.fleet_bus.bus_send
                      ↳ reads ~/steadfaste-fleet/.env
 nginx proxy (:13004 / :14004)       ↳ calls remote Agent Bus via HTTP
@@ -160,8 +160,8 @@ grep -A4 "fleet-bus" ~/.hermes/config.yaml
 nano ~/steadfaste-fleet/.env
 ```
 ```ini
-CORTEX_BUS_URL="https://your-domain.com:13004"
-CORTEX_BASIC_AUTH="your_username:your_password"
+FLEET_BUS_URL="https://your-domain.com:13004"
+FLEET_BASIC_AUTH="your_username:your_password"
 AGENT_NAME="your_agent_name"
 ```
 ```bash
@@ -251,11 +251,11 @@ The installer:
 The worker reads from `~/steadfaste-fleet/.env`:
 ```ini
 BUS_URL=http://bus-host:8905
-CORTEX_BUS_AUTH=<your-basic-auth>
+FLEET_BUS_AUTH=<your-basic-auth>
 AGENT_NAME=<your-name>
 ```
 
-Also accepts `CORTEX_BUS_FALLBACK_URL` and `CORTEX_BUS_AUTH` (primary names). Deprecated names `CORTEX_BUS_URL` and `CORTEX_INBOX_AUTH` still work as fallback.
+Also accepts `FLEET_BUS_FALLBACK_URL` and `FLEET_BUS_AUTH` (primary names). Deprecated names `FLEET_BUS_URL` and `FLEET_INBOX_AUTH` still work as fallback.
 
 > Moved from AGENTS.md by `agents-doc-audit.py --prune --apply`
 > Date: 2026-07-17T00:00:00+00:00
@@ -339,7 +339,7 @@ Or raw curl:
 ```bash
 
 
-curl -s -u "$CORTEX_BASIC_AUTH" -X POST \
+curl -s -u "$FLEET_BASIC_AUTH" -X POST \
 
 
  -H "Content-Type: application/json" \

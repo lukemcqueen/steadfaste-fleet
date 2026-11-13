@@ -13,7 +13,7 @@
   2. THE FLEET VENV (~/.steadfaste-fleet/venv) — for a host that already has it;
      `fix-fleet-venv.py` fills it from the declared requirements.
 
-  PORTABLE (2026-10-13). This template used to say "Replace CORTEX_HOME with
+  PORTABLE (2026-10-13). This template used to say "Replace CORTEX_HOME (STALE name — pre-rename spelling) with
   $HOME (literally, launchd expands it)" and then put $HOME straight into
   ProgramArguments. launchd does NOT expand $HOME inside plist strings, so the
   job tried to exec a literal '$HOME/...' and never started — the same class of

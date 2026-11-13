@@ -351,10 +351,10 @@ does not apply.
   changed no source — or wait for the peer's stream to pause so the window holds only your
   own commit.
   **A peer SESSION on the same host is not separable by authorship** (one host, one git
-  identity), so the close scopes by a `Cortex-Session:` commit trailer instead: commits
+  identity), so the close scopes by a `FLEET-Session:` commit trailer instead: commits
   carrying a DIFFERENT session's trailer stay out of the material and are disclosed as
   `[OTHER SESSIONS' COMMITS … DISCLOSED, NOT REVIEWED]`. Check the trailer before re-arguing
-  authorship — `git log --format='%h %s %(trailers:key=Cortex-Session,valueonly)' <base>..HEAD`
+  authorship — `git log --format='%h %s %(trailers:key=FLEET-Session,valueonly)' <base>..HEAD`
   — and note it fails CLOSED: a commit with no trailer (a cron, an ungoverned committer) is
   still judged as yours.
   **The trailer's PRODUCER must read the LIVE lock, never an env var the agent can export** — a

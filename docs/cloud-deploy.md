@@ -114,17 +114,17 @@ Required variables — set every one:
 
 | Variable | Example | Source |
 |----------|---------|--------|
-| `CORTEX_HEALTH_URL` | `https://yourdomain.com:13007/health` | Your domain + port |
-| `CORTEX_BUS_FALLBACK_URL` | `https://yourdomain.com:13004` | Your domain + port (legacy: `CORTEX_INBOX_URL`) |
-| `CORTEX_BUS_AUTH` | `moses:your-generated-password` | Fleet admin (legacy: `CORTEX_INBOX_AUTH`) |
+| `FLEET_HEALTH_URL` | `https://yourdomain.com:13007/health` | Your domain + port |
+| `FLEET_BUS_FALLBACK_URL` | `https://yourdomain.com:13004` | Your domain + port (legacy: `FLEET_INBOX_URL`) |
+| `FLEET_BUS_AUTH` | `moses:your-generated-password` | Fleet admin (legacy: `FLEET_INBOX_AUTH`) |
 | `AGENT_NAME` | `moses` | Match inbox auth user |
 | `IS_ORCHESTRATOR` | `false` | `true` only for Moses/Esther |
 | `OPENROUTER_API_KEY` | `sk-or-...` | openrouter.ai |
 | `DEEPSEEK_API_KEY` | `sk-...` | platform.deepseek.com |
 | `HERMES_LANGFUSE_PUBLIC_KEY` | `pk-lf-...` | Langfuse project settings |
 | `HERMES_LANGFUSE_SECRET_KEY` | `sk-lf-...` | Langfuse project settings |
-| `CORTEX_SSL_CERT_PATH` | `/etc/letsencrypt/live/.../fullchain.pem` | certbot output |
-| `CORTEX_SSL_CERT_KEY_PATH` | `/etc/letsencrypt/live/.../privkey.pem` | certbot output |
+| `FLEET_SSL_CERT_PATH` | `/etc/letsencrypt/live/.../fullchain.pem` | certbot output |
+| `FLEET_SSL_CERT_KEY_PATH` | `/etc/letsencrypt/live/.../privkey.pem` | certbot output |
 | `JUDGE_MODEL` | `qwen2.5:3b` | Local or API model |
 | `EMBEDDING_MODEL` | `nomic-embed-text:v1.5` | Local Ollama model |
 | `LLM_CRON_MODEL` | `deepseek/deepseek-v4.1-flash` | API model (provider-specific id form) |

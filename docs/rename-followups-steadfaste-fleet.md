@@ -48,14 +48,15 @@ code; the brand lint's `RECORD_FILTER` exempts dated records, not these.
    `hermes-cortex-dashboard.service` entry some hosts still show is a stale
    not-found process from the pre-migration path, not a name to preserve.
 4. **`cortex` short-name family** — a SEPARATE naming layer from the `hc`
-   sweep, and **IN PROGRESS since 2026-11-13** under the broadened policy:
+   sweep, **COMPLETE (landed 2026-11-12/13)** under the broadened policy:
    `fleet-bus`, `cortex-dashboard` → `fleet-dashboard`, "Fleet Dashboard", and
-   the `CORTEX_*` env-var family are migrating to `fleet`/`FLEET_*` per
-   `docs/runbooks/cortex-to-fleet-env-sweep.md` (classification + batch loop;
-   `.env` secrets, `CORTEX_SESSION_*` and `HERMES_CORTEX_HOME` are phase 2 /
-   external contracts). **`mycortex` remains a KEEP in every form.** Renaming
-   this layer has real runtime-contract risks (service names, env vars, DB
-   roles) — do NOT sweep it blindly; use the runbook.
+   the `CORTEX_*` env-var family migrated to `FLEET_*` per
+   `docs/runbooks/cortex-to-fleet-env-sweep.md` (release 2, `62630b02`):
+   `.env` secrets, session identity and the deploy home are all FLEET-spelled;
+   there is no legacy spelling and no fallback;
+   `0deb362f`), which also deleted the transition layer. **`mycortex` remains a
+   KEEP in every form.** For fix/verify/cleanup steps use
+   `docs/runbooks/cortex-to-fleet-env-sweep.md`.
 
 ## What changed on 2026-11-12 (the final hc sweep)
 
@@ -64,7 +65,7 @@ code; the brand lint's `RECORD_FILTER` exempts dated records, not these.
   `steadfaste-fleet-maintenance`, `hermes-cortex-repo-deploy` →
   `steadfaste-fleet-repo-deploy`. The old names are no longer load keys; the
   "Stale name — migrated" banners were removed.
-- Enforcer `_SANCTIONED_CORTEX_UPDATE_RE` + write_class parity copy: dropped the
+- Enforcer `_SANCTIONED_FLEET_UPDATE_RE` + write_class parity copy: dropped the
   `hermes-cortex` repo-name alternation (single-URL). The PII-URL regex keeps the
   legacy URL (STALE detection literal, see table).
 - `HC_AGENT` env var → `FLEET_AGENT` (fleet.py + `.env.example` + tests). Hosts:
@@ -76,7 +77,7 @@ code; the brand lint's `RECORD_FILTER` exempts dated records, not these.
 
 ## Sequencing requirement (deploy-home default)
 
-The original sweep flipped `CORTEX_DEPLOY_HOME`'s default (`${HOME}/.hermes-cortex`
+The original sweep flipped the deploy-home variable's default — `FLEET_DEPLOY_HOME` at the time, STALE name since release 2 renamed it `FLEET_DEPLOY_HOME` (`${HOME}/.hermes-cortex`
 → the new local path). A host that pulls this WITHOUT having renamed its local
 dirs first would deploy into an empty new home and orphan its real framework.
 Order:

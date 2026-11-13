@@ -199,7 +199,7 @@ The repo sweep and §1–§7 leave several **harness-owned, non-repo** configs s
 - `~/.pi/agent/settings.json` — Pi harness extension scripts
   `/Users/luke/.hermes-cortex/harnesses/pi/extensions/{fleet-context,fleet-governance}.ts` →
   `~/.steadfaste-fleet/harnesses/pi/extensions/`.
-- `~/.steadfaste-fleet/agent.env` — `CORTEX_PYTHON=/Users/luke/.hermes-cortex/venv/bin/python3` →
+- `~/.steadfaste-fleet/agent.env` — `FLEET_PYTHON=/Users/luke/.hermes-cortex/venv/bin/python3` →
   `~/.steadfaste-fleet/venv/bin/python3` (the doctor flags this if left).
 - `~/.steadfaste-fleet/gateway.yaml` — the `fleet-gateway/pi_control.py` commands (`compact`,
   `check-model`) carry `/Users/luke/.hermes-cortex/...` → `~/.steadfaste-fleet/...`.
@@ -309,7 +309,7 @@ sweep them; each is labeled `STALE` in the code and documented in
 - Historical `hermes-cortex` mentions in `docs/evidence/` and `docs/older/` and
   dated references — migration records, never falsified.
 - The `cortex` short-name family (cortex-bus, cortex-dashboard, mycortex,
-  CORTEX_DEPLOY_HOME) is a SEPARATE naming layer, not part of the hc sweep.
+  FLEET_DEPLOY_HOME) is a SEPARATE naming layer, not part of the hc sweep.
 
 Renamed 2026-11-12 (no longer deliberate keeps): the four `hermes-cortex*`
 skills → `steadfaste-fleet*`; the enforcer sanctioned-update regex → single-URL;

@@ -1,13 +1,18 @@
 # Steadfaste Fleet — Environment Variable Reference
 
-**Naming (2026-11-13):** `FLEET_*` is the canonical spelling; `CORTEX_*` is the
-legacy spelling, kept alive by the deployed dual-read layer
-(`ops/scripts/fleet_lib/env.py` + `ops/scripts/lib/fleet-env-compat.sh` + the
-`FLEET_DEPLOY_HOME` dual-export bridge in `fleet-update.sh`) until release 2.
-New code reads `FLEET_*` (or uses `fleet_env.get`); migrating a reader is NOT
-find-and-replace — follow `docs/runbooks/cortex-to-fleet-env-sweep.md`.
-`CORTEX_SESSION_*` and `HERMES_CORTEX_HOME` are external contracts (set by the
-Hermes harness) and are not renamed from this repo.
+**Naming (2026-11-13; the migration COMPLETED 2026-11-13):** `FLEET_*` is the
+only spelling. The `CORTEX_*` → `FLEET_*` sweep is done and the transition layer
+it needed is GONE: the dual-read fallback in `ops/scripts/fleet_lib/env.py`, the
+shell mirror `ops/scripts/lib/fleet-env-compat.sh`, and the `FLEET_DEPLOY_HOME`
+dual-export bridge have all been removed. `fleet_env.get("X")` resolves `FLEET_X`
+then the default — nothing else. A host still carrying the retired spelling is
+converted in place on its next deploy by `consolidate-env.sh`, which also FAILs
+`--check` if any `CORTEX_` line survives in `.env`.
+The env family is `FLEET_*` only since release 2. The Hermes harness injects
+`FLEET_SESSION_*` (session identity) and `FLEET_DEPLOY_HOME` directly — already
+FLEET-spelled. There is no legacy spelling and no fallback; a surviving
+`CORTEX_*` token anywhere is a regression.
+Per-host verification and cleanup: `docs/runbooks/cortex-to-fleet-env-sweep.md`.
 
 All env variables used across the nginx deploy pipeline
 and related scripts. New variables should be added here with all fields.
@@ -27,7 +32,7 @@ provider keys, Telegram, browser/terminal settings — and is never merged here.
 
 These claims are pinned by committed tests (run them to verify): the doctor check's
 sanctioned-symlink / real-file-FAIL / missing-symlink behaviour is exercised by
-`tests/test_doctor_cortex_env.py`; the migration / idempotence / real-file-refusal /
+`tests/test_fleet_doctor_env.py`; the migration / idempotence / real-file-refusal /
 `--check` behaviours of `consolidate-env.sh` by `tests/test-consolidate-env.sh`.
 
 ```bash
@@ -43,20 +48,20 @@ bash ~/.steadfaste-fleet/scripts/consolidate-env.sh
 
 | Variable | Default | Scripts | Purpose |
 |----------|---------|---------|---------|
-| `CORTEX_PYTHON` | `~/.steadfaste-fleet/venv/bin/python3` (declared in `~/.steadfaste-fleet/agent.env` by `fleet-update.sh`) | `python-with-module.sh`, every caller that needs "the fleet python" | **The ONE named fleet interpreter.** Callers read this instead of re-deriving a path, so a wrong one is visible in one place instead of seven. `python-with-module.sh` consults it first (after `PYTHON=`) and still requires the CAPABILITY to import the module it was asked for — a declaration that cannot import is NAMED, not silently skipped. Never overwritten by a deploy: an operator may legitimately point a host elsewhere. |
-| `CORTEX_REPO` | `$HOME/steadfaste-fleet` | `fleet-update.sh`, `hermes-services-apply.py` | Path to the hermec-fleet repo. Multiple scripts source templates and configs from here. |
-|| `CORTEX_SKIP_NGINX` | _(unset)_ | `fleet-update.sh`, `hermes-services-apply.py` | When set to any value, skip nginx config deploy, test, and reload. ||
-|| `CORTEX_FORCE_DEPLOY` | _(unset)_ | `fleet-update.sh`, `hermes-services-apply.py` | When set to `1`, re-resolve SSL certs and port prefix from env/auto-detect instead of preserving existing values from the live config. |
-|| `CORTEX_NGINX_PORT_PREFIX` | `13` | `fleet-update.sh`, `hermes-services-apply.py` | Two-digit port prefix for nginx server blocks. Template ships as `13xxx`; set to `12` (Joseph), `14` (Esther), etc. |
-|| `CORTEX_SSL_CERT_PATH` | *(auto-detect)* | `hermes-services-apply.py`, `fleet-update.sh` | Explicit SSL certificate path. Overrides all auto-detection. |
-|| `CORTEX_SSL_CERT_KEY_PATH` | *(auto-detect)* | `hermes-services-apply.py`, `fleet-update.sh` | Explicit SSL certificate key path. Overrides all auto-detection. |
-|| `CORTEX_SSL_DOMAIN` | *(auto-scan)* | `hermes-services-apply.py`, `fleet-update.sh` | Domain name for Let's Encrypt cert lookup at `/etc/letsencrypt/live/<domain>`. When unset, scans all directories under `/etc/letsencrypt/live/`. |
+| `FLEET_PYTHON` | `~/.steadfaste-fleet/venv/bin/python3` (declared in `~/.steadfaste-fleet/agent.env` by `fleet-update.sh`) | `python-with-module.sh`, every caller that needs "the fleet python" | **The ONE named fleet interpreter.** Callers read this instead of re-deriving a path, so a wrong one is visible in one place instead of seven. `python-with-module.sh` consults it first (after `PYTHON=`) and still requires the CAPABILITY to import the module it was asked for — a declaration that cannot import is NAMED, not silently skipped. Never overwritten by a deploy: an operator may legitimately point a host elsewhere. |
+| `FLEET_REPO` | `$HOME/steadfaste-fleet` | `fleet-update.sh`, `hermes-services-apply.py` | Path to the hermec-fleet repo. Multiple scripts source templates and configs from here. |
+|| `FLEET_SKIP_NGINX` | _(unset)_ | `fleet-update.sh`, `hermes-services-apply.py` | When set to any value, skip nginx config deploy, test, and reload. ||
+|| `FLEET_FORCE_DEPLOY` | _(unset)_ | `fleet-update.sh`, `hermes-services-apply.py` | When set to `1`, re-resolve SSL certs and port prefix from env/auto-detect instead of preserving existing values from the live config. |
+|| `FLEET_NGINX_PORT_PREFIX` | `13` | `fleet-update.sh`, `hermes-services-apply.py` | Two-digit port prefix for nginx server blocks. Template ships as `13xxx`; set to `12` (Joseph), `14` (Esther), etc. |
+|| `FLEET_SSL_CERT_PATH` | *(auto-detect)* | `hermes-services-apply.py`, `fleet-update.sh` | Explicit SSL certificate path. Overrides all auto-detection. |
+|| `FLEET_SSL_CERT_KEY_PATH` | *(auto-detect)* | `hermes-services-apply.py`, `fleet-update.sh` | Explicit SSL certificate key path. Overrides all auto-detection. |
+|| `FLEET_SSL_DOMAIN` | *(auto-scan)* | `hermes-services-apply.py`, `fleet-update.sh` | Domain name for Let's Encrypt cert lookup at `/etc/letsencrypt/live/<domain>`. When unset, scans all directories under `/etc/letsencrypt/live/`. |
 | `HERMES_SERVICES` | _(unset ⇒ auto)_ | `hermes-services-apply.py`, `install-nginx-full.sh` | Comma-separated nginx service opt-ins: `dashboard,langfuse,health,grafana,bus,metrics` (or `all` / `extra`). The extras bundle is grafana (xx003) + bus (xx004). **Unset is the default**: extras stay off, while the push-metrics sink (xx005, `metrics-sink.conf`) deploys automatically wherever a local VictoriaMetrics answers — that default exists because the push client is universal but the sink used to be opt-in and defaulted off. Set it explicitly to override; a list without `metrics` keeps xx005 off. |
-| `CORTEX_VM_HEALTH_URL` | `http://127.0.0.1:8428/-/healthy` | `hermes-services-apply.py`, `install-nginx-full.sh` | Backend health probe behind the push-metrics auto-detect gate. Repoint it if VictoriaMetrics runs on a non-default address. |
-| `CORTEX_VM_QUERY_URL` | _(derived)_ | `fleet-doctor` (Metrics arrival age) | Pin the sink the arrival check queries. Unset, it derives from this host's `VICTORIA_METRICS_URL`/`_FALLBACK_URL` in push order (local backend last), so it asks the sink that actually receives. |
-| `CORTEX_METRICS_STALE_MINUTES` | `30` | `fleet-doctor` (Metrics arrival age) | Warn when an agent that has pushed before has not been seen at the sink for this long (6 missed 5m ticks). |
-| `CORTEX_COST_DAILY_TARGET_USD` | `10` | `orch-weekly-cost-report.py` | Weekly fleet cost report: alert (non-zero exit + `⚠️ FLEET COST ABOVE TARGET`) when the measured daily average exceeds this. The average covers MEASURED hosts only — the report prints a COVERAGE block naming what it does not cover, and a missing spend source prints `NO DATA` and never alerts. |
-| `CORTEX_VM_FRESHNESS_METRIC` | `node_uptime_seconds` | `fleet-doctor` (Metrics arrival age) | Series used to measure arrival age per agent. Pick a metric every pushing agent reports. |
+| `FLEET_VM_HEALTH_URL` | `http://127.0.0.1:8428/-/healthy` | `hermes-services-apply.py`, `install-nginx-full.sh` | Backend health probe behind the push-metrics auto-detect gate. Repoint it if VictoriaMetrics runs on a non-default address. |
+| `FLEET_VM_QUERY_URL` | _(derived)_ | `fleet-doctor` (Metrics arrival age) | Pin the sink the arrival check queries. Unset, it derives from this host's `VICTORIA_METRICS_URL`/`_FALLBACK_URL` in push order (local backend last), so it asks the sink that actually receives. |
+| `FLEET_METRICS_STALE_MINUTES` | `30` | `fleet-doctor` (Metrics arrival age) | Warn when an agent that has pushed before has not been seen at the sink for this long (6 missed 5m ticks). |
+| `FLEET_COST_DAILY_TARGET_USD` | `10` | `orch-weekly-cost-report.py` | Weekly fleet cost report: alert (non-zero exit + `⚠️ FLEET COST ABOVE TARGET`) when the measured daily average exceeds this. The average covers MEASURED hosts only — the report prints a COVERAGE block naming what it does not cover, and a missing spend source prints `NO DATA` and never alerts. |
+| `FLEET_VM_FRESHNESS_METRIC` | `node_uptime_seconds` | `fleet-doctor` (Metrics arrival age) | Series used to measure arrival age per agent. Pick a metric every pushing agent reports. |
 
 ### Agent-side metrics push (read by `agent-push-metrics.sh`, set in `~/steadfaste-fleet/.env`)
 
@@ -83,8 +88,8 @@ names are the contract — never invent a new name without checking here first
 | `ADVERSARIAL_TRIAGE_MODEL` | Faster "System One" model for the close-gate's finding triage. **Unset = triage DISABLED** — the gate then behaves exactly as it did before triage existed, with the reviewer's severities unchanged. It is **not** a chat-completions model: see `docs/runbooks/review-triage-jev.md` |
 | `JUDGMENT_CONFIG_PATH` | Optional override for the judgment client's provider/routing config. Default: `judgment-providers.yaml` beside `judgment.py`. Set per host to route triage to your own judge |
 | `TYPESAFE_API_KEY` | Credential for the Jev judge (`typesafe/jev-router`). **Name only — the value lives in the gitignored env file.** Without it the `review-triage` class cannot run and triage stays off (fail-safe) |
-| `CORTEX_ENV_FILE` | Explicit path to the env file the **gate** reads for its own config (reviewer backend/model, triage switch, credentials). Unset ⇒ it resolves `$CORTEX_REPO/.env` (default `~/steadfaste-fleet/.env`), then the deploy root, and only **last** `~/.hermes/.env` |
-| `CORTEX_REPO` | Fleet repo root, used to locate the canonical env when `CORTEX_ENV_FILE` is unset |
+| `FLEET_ENV_FILE` | Explicit path to the env file the **gate** reads for its own config (reviewer backend/model, triage switch, credentials). Unset ⇒ it resolves `$FLEET_REPO/.env` (default `~/steadfaste-fleet/.env`), then the deploy root, and only **last** `~/.hermes/.env` |
+| `FLEET_REPO` | Fleet repo root, used to locate the canonical env when `FLEET_ENV_FILE` is unset |
 | `ADVERSARIAL_REVIEW_BACKEND` | Who reviews a complex change before it can close: `llm` (default; canonical fleet-wide) or `agent` (fallback-only — offline/test-execution needs). **All agents configure the same way**: `llm` + the canonical reviewer model. See `docs/runbooks/review-triage-jev.md` |
 | `ADVERSARIAL_REVIEWER_MODEL` | _llm backend._ The reviewer model. **DRY (2026-11-13, cycle 8265):** the canonical model lives in `ops/scripts/fleet_lib/models.py` (`REVIEWER_MODEL_DEFAULT`, resolved via `get_reviewer_model()`); every surface — loop-gov-mcp close gate, adversarial-review plan reviewer, deepseek-review-mcp, reviewer-agent-pi — resolves through it. **Changing the reviewer = one-line edit to that constant + fleet update.** This env var is the per-host override, honored first. Use a model DIFFERENT from the worker's — a model reviewing its own output is not a review |
 | `ADVERSARIAL_REVIEW_LIGHT_MODEL` | _llm backend._ Model for the **light-but-complex** review tier (2026-10-06). The tier changes the **transport, not the model**: a change that crosses the complexity gate but is NOT an always-review surface and stays under the heavy bar (≥10 files or ≥200 added+removed lines) is reviewed over a fast chat-completions call instead of spawning a coding agent — and it uses `ADVERSARIAL_REVIEWER_MODEL` (the canonical `deepseek/deepseek-v4-pro-0813`) like every other review. Set this ONLY to review the light tier with a different model on purpose; before 2026-10-08 it defaulted to `deepseek/deepseek-v4-flash-0731`, which nothing had chosen. Heavy changes (enforcement/governance files, or above the heavy bar) keep the deep backend. **Enforcement is unchanged** — every complex change still needs an independent CLEAN verdict before the lock releases. See `docs/runbooks/review-triage-jev.md` |
@@ -101,15 +106,15 @@ names are the contract — never invent a new name without checking here first
 | `HERMES_TIMEZONE` | Fleet timezone (Asia/Seoul, KST) |
 | `IS_ORCHESTRATOR` | Orchestrator flag (host-derived) |
 | `IS_SERVER` | Server-mode flag |
-| `CORTEX_BASE` | Cortex base path |
-| `CORTEX_DOMAIN` | Fleet public domain (values never in repo) |
-| `CORTEX_BASIC_AUTH` | Basic-auth credential pair |
-| `CORTEX_BUS_URL` | Bus primary endpoint (env-first — see ADR history) |
-| `CORTEX_BUS_FALLBACK_URL` | Bus fallback endpoint |
-| `CORTEX_BUS_TOKEN` | Bus bearer token |
-| `CORTEX_BUS_PG_*` (HOST/PORT/DB/USER/PASS) | Bus Postgres connection |
-| `CORTEX_INBOX_URL` | Agent inbox v2 API base |
-| `CORTEX_NGINX_PORT_PREFIX` | Nginx port prefixing |
+| `FLEET_BASE` | Cortex base path |
+| `FLEET_DOMAIN` | Fleet public domain (values never in repo) |
+| `FLEET_BASIC_AUTH` | Basic-auth credential pair |
+| `FLEET_BUS_URL` | Bus primary endpoint (env-first — see ADR history) |
+| `FLEET_BUS_FALLBACK_URL` | Bus fallback endpoint |
+| `FLEET_BUS_TOKEN` | Bus bearer token |
+| `FLEET_BUS_PG_*` (HOST/PORT/DB/USER/PASS) | Bus Postgres connection |
+| `FLEET_INBOX_URL` | Agent inbox v2 API base |
+| `FLEET_NGINX_PORT_PREFIX` | Nginx port prefixing |
 
 ### Health-probe variables (`~/.hermes/.env` — the file the gateway/cron reads)
 
@@ -136,7 +141,7 @@ Hermes-owned — never merged into the Fleet env.
    over-scrubbed in the 2026-08-24 history rewrite because they were
    hardcoded in scripts — the fix moved them to env (commit `9a95ceb8`).
 2. **Never invent a name** — survey this registry first.
-3. **Auth-gated liveness** uses `CORTEX_BUS_URL` + token; `/health` alone
+3. **Auth-gated liveness** uses `FLEET_BUS_URL` + token; `/health` alone
    is insufficient.
 
 ---
@@ -145,7 +150,7 @@ Hermes-owned — never merged into the Fleet env.
 
 By default, all three deploy scripts **preserve** the port prefix and SSL cert
 paths from the existing deployed config. They only auto-discover new values if
-the existing config has placeholders (`__SSL_CERT__`) or if `CORTEX_FORCE_DEPLOY=1`
+the existing config has placeholders (`__SSL_CERT__`) or if `FLEET_FORCE_DEPLOY=1`
 is set (or `--force` passed to the Python script).
 
 To force re-evaluation on the next deploy:
@@ -155,15 +160,15 @@ To force re-evaluation on the next deploy:
 python3 ~/steadfaste-fleet/ops/install/deploy/nginx/hermes-services-apply.py --force
 
 # Or with the legacy bash script (not recommended)
-# CORTEX_FORCE_DEPLOY=1 sudo install-nginx-full.sh
+# FLEET_FORCE_DEPLOY=1 sudo install-nginx-full.sh
 ```
 
 ### Discovery Order (when not preserved)
 
 All three scripts follow the same priority:
 
-1. **Explicit env var** — `CORTEX_SSL_CERT_PATH` and `CORTEX_SSL_CERT_KEY_PATH` both set. Paths are trusted directly (no user-level readability check — certs are often in root-protected `/etc/letsencrypt/`). `nginx -t` catches invalid paths at deploy time.
-2. **Let's Encrypt by domain** — `CORTEX_SSL_DOMAIN` set → `/etc/letsencrypt/live/<domain>/fullchain.pem` + `privkey.pem`
+1. **Explicit env var** — `FLEET_SSL_CERT_PATH` and `FLEET_SSL_CERT_KEY_PATH` both set. Paths are trusted directly (no user-level readability check — certs are often in root-protected `/etc/letsencrypt/`). `nginx -t` catches invalid paths at deploy time.
+2. **Let's Encrypt by domain** — `FLEET_SSL_DOMAIN` set → `/etc/letsencrypt/live/<domain>/fullchain.pem` + `privkey.pem`
 3. **Let's Encrypt scan** — scan all directories in `/etc/letsencrypt/live/` for valid certs
 4. **Self-signed** — `$HOME/certs/fullchain.pem` + `privkey.pem` (or `cert.pem` + `privkey.pem`)
 5. **System fallback** — `/etc/ssl/certs/` and `/etc/ssl/private/`
@@ -184,7 +189,7 @@ valid cert paths are provided — this is intentional. SSL is mandatory, not opt
 | `__NGINX_CONFIG_DIR__` | ✓ | ✓ | ✓ |
 | `__NGINX_LOG_DIR__` | ✓ | ✓ | ✓ |
 | `__HTPASSWD_FILE__` | ✓ | ✓ | ✓ |
-| `__CORTEX_HOME__` | ✓ | ✗ | ✓ |
+| `__FLEET_USER_HOME__` | ✓ | ✗ | ✓ |
 | `__SSL_CERT__` / `__SSL_CERT_KEY__` | ✓ | ✓ | ✓ |
 | Port prefix translation | ✓ (sed) | ✗ **no** | ✓ (re) |
 | Live port range preserve | ✓ | ✗ **no** | ✓ |
@@ -192,7 +197,7 @@ valid cert paths are provided — this is intentional. SSL is mandatory, not opt
 | Deploys to correct path | ✓ | ✗ writes to `/etc/nginx/servers/` instead of `sites-available/` | ✓ |
 | Dry-run mode | ✗ | ✗ | ✓ |
 | nginx -t before reload | ✓ | ✓ | ✓ |
-| `CORTEX_SKIP_NGINX` | ✓ | ✗ | ✓ |
+| `FLEET_SKIP_NGINX` | ✓ | ✗ | ✓ |
 
 ---
 
@@ -205,13 +210,13 @@ valid cert paths are provided — this is intentional. SSL is mandatory, not opt
 bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh
 
 # With custom SSL and port prefix
-CORTEX_SSL_CERT_PATH=/etc/letsencrypt/live/mydomain.com/fullchain.pem \
-CORTEX_SSL_CERT_KEY_PATH=/etc/letsencrypt/live/mydomain.com/privkey.pem \
-CORTEX_NGINX_PORT_PREFIX=12 \
+FLEET_SSL_CERT_PATH=/etc/letsencrypt/live/mydomain.com/fullchain.pem \
+FLEET_SSL_CERT_KEY_PATH=/etc/letsencrypt/live/mydomain.com/privkey.pem \
+FLEET_NGINX_PORT_PREFIX=12 \
 bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh
 
 # Skip nginx entirely (scripts-only update)
-CORTEX_SKIP_NGINX=1 bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh
+FLEET_SKIP_NGINX=1 bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh
 ```
 
 > ⚠ **Legacy script:** `install-nginx-full.sh` is deprecated. Use `hermes-services-apply.py` above instead.
@@ -248,6 +253,6 @@ deploy time by all three scripts above:
 | `__NGINX_CONFIG_DIR__` | OS-aware nginx root directory | `/etc/nginx` |
 | `__NGINX_LOG_DIR__` | OS-aware nginx log directory | `/opt/homebrew/var/log/nginx` |
 | `__HTPASSWD_FILE__` | htpasswd file path | `/opt/homebrew/etc/nginx/.htpasswd` |
-| `__CORTEX_HOME__` | User home directory | `/Users/luke` |
+| `__FLEET_USER_HOME__` | User home directory | `/Users/luke` |
 | `__SSL_CERT__` | SSL certificate file | `/etc/letsencrypt/live/example.com/fullchain.pem` |
 | `__SSL_CERT_KEY__` | SSL certificate key | `/etc/letsencrypt/live/example.com/privkey.pem` |

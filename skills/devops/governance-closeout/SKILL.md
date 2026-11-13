@@ -671,13 +671,13 @@ repo state, audited range, the task's description, the diff stat, and the diff:
   One host has ONE git identity, so a PEER SESSION's commits satisfy the author filter and their
   diffs land in the material, the Diff stat and the tier — the shape where a close is refused on
   a file you cannot see in `git status --short` and cannot fix. The discriminator is a
-  `Cortex-Session: <id>` commit trailer, written by the `prepare-commit-msg` hook from the LIVE
+  `FLEET-Session: <id>` commit trailer, written by the `prepare-commit-msg` hook from the LIVE
   lock; commits carrying a DIFFERENT session's trailer leave the material and appear instead as
   `[OTHER SESSIONS' COMMITS … DISCLOSED, NOT REVIEWED]` (names, subjects and changed paths —
   never their diff). It is fail-CLOSED by construction: no trailer (a cron, or a session with no
   lock), an ambiguous trailer, an empty own session id, or a git error leaves the commit IN
   scope. So when a peer's file is still being reviewed, check the trailer before re-arguing
-  authorship — `git log --format='%h %s %(trailers:key=Cortex-Session,valueonly)' <base>..HEAD` —
+  authorship — `git log --format='%h %s %(trailers:key=FLEET-Session,valueonly)' <base>..HEAD` —
   and never hand-write a trailer: the hook REPLACES whatever is there with the live lock's id,
   and a body carrying two different trailers reads as ambiguous and is deliberately not excluded.
   **Check the trailer VALUES, not just their presence — identical ids are not "a different session".**
@@ -687,7 +687,7 @@ repo state, audited range, the task's description, the diff stat, and the diff:
   strictly worse than no trailer. A hook must therefore stamp only when EXACTLY ONE live lock matches
   the repo, and write NOTHING when zero or several do (the window then fails closed). Read the range
   before re-arguing authorship:
-  `git log --format='%h %s%(trailers:key=Cortex-Session,valueonly)' <base>..HEAD` — when every commit
+  `git log --format='%h %s%(trailers:key=FLEET-Session,valueonly)' <base>..HEAD` — when every commit
   carries the SAME id across two sessions, no consumer or prompt change can separate them and the fix
   is structural: stop sharing a lock namespace (one worktree per session,
   `concurrent-session-isolation`). Never "clean the range" by stashing or reverting the peer's files:

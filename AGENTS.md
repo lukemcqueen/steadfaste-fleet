@@ -177,7 +177,7 @@ For ANY non-trivial task (multi-file, >50 lines, a feature, a pipeline, a harnes
 Your change runs in more places than your session. Name all three before calling it done:
 
 1. **macOS** — fleet hosts run **bash 3.2** + BSD userland. Run `python3 tests/test_shell_portability.py`. Hard bans: heredoc inside `$( )` (breaks 3.2 parsing outright — take it out of the substitution, never delete the apostrophe), `grep -P`, `declare -A`, `mapfile`, `${var,,}`, `sed -i` (no suffix), `date -d`, `readlink -f`, bare `sha256sum`, bare `timeout`. Never "fix" a 3.2 refusal by deleting the offending character.
-2. **Two sessions in ONE repo** — one host = one git identity, so `git log --author` cannot tell sessions apart. Never blanket-stage (`git add -A`), revert, reset, or deploy beside a peer's uncommitted work; stand down rather than race a peer's open cycle. Attribute commits with the `Cortex-Session:` trailer; a commit with NO trailer is in-scope (fail closed).
+2. **Two sessions in ONE repo** — one host = one git identity, so `git log --author` cannot tell sessions apart. Never blanket-stage (`git add -A`), revert, reset, or deploy beside a peer's uncommitted work; stand down rather than race a peer's open cycle. Attribute commits with the `FLEET-Session:` trailer; a commit with NO trailer is in-scope (fail closed).
 3. **Repos that are not steadfaste-fleet** — `core.hooksPath` is global, so your hook runs in every repo, client projects included. Scope cortex-only gates to the cortex repo, resolve tools repo-local FIRST then `$HOME/.steadfaste-fleet/scripts/`, and keep a shared hook's degradation paths ending in `exit 0` unless it is a genuine universal gate.
 
 ## Loop Governance

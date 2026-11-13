@@ -22,7 +22,7 @@ preserving in any similar fleet migration:
 - **Embed the re-apply SQL, don't reference schema files.** The roles/RLS/
   grants re-apply block is embedded in the script (not a path dependency on
   the repo schema dir) so the script is one-shot standalone on any host.
-- **Password chain**: the new `MYCORTEX_PG_PASSWORD` reuses the OLD secret
+- **Password chain**: the new `MYFLEET_PG_PASSWORD` reuses the OLD secret
   value (`GBRAIN_PG_PASSWORD` or `FLEET_BUS_PG_PASS`) rather than generating
   a fresh one — verified by comparing hashes, never printed. This keeps the
   bus's `FLEET_BUS_PG_PASS` working unchanged through the flip.

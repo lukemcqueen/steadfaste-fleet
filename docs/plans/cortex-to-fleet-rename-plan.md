@@ -1,9 +1,14 @@
 # Plan — `cortex-` short-name rename (`cortex-*` / `cortex_*` / `CORTEX_*` → `fleet-*`)
 
-> **Status:** PLAN — not started. **Boundary and scope are decided** (operator decisions §*decisions*
-> below, recorded 2026-11-06: staged not bang · dashboard joins as `fleet-dashboard` · names-only
-> with `CORTEX_*` env vars deferred · `hermes-cortex*` skills deferred to a third sweep). P0 begins
-> once this plan is approved.
+> **Status: LANDED (2026-11-12/13).** P0–P7 were executed. The env family (P4) shipped as
+> release 2 on 2026-11-13 (`62630b02`, `0deb362f`) and its transition layer was then removed, so
+> `FLEET_*` is now the only spelling. **This document is the HISTORICAL SPEC** — for the live
+> check, verification and cleanup procedure read
+> `docs/runbooks/cortex-to-fleet-env-sweep.md`. Every number below is a measurement taken
+> 2026-11-06, BEFORE the sweep: it describes the pre-migration state, not current counts.
+> **Operator decisions (2026-11-06), kept for provenance:** staged not bang · dashboard joins as
+> `fleet-dashboard` · names-only at the time (the env family followed in P4) · the
+> `hermes-cortex*` skills deferred to a third sweep.
 > **Author:** Esther (orchestrator). **Governance cycle:** #14235.
 > **Predecessors:** the `hermes-cortex` → `steadfaste-fleet` sweep (2026-11-04, 938 files) and the
 > `hc-` prefix drop (`aa03092f`, 2026-11-06). Both left the **`cortex` short-name family** in place
@@ -118,8 +123,8 @@ match it, never "fix" it, never rename its `cortex` half:
 - PG: database `mycortex`, roles `mycortex` / `mycortex_admin`, schema `mycortex.*`
   (`ops/services/mycortex/schema/mycortex.sql`). `CORTEX_BUS_PG_DB` **defaults to** the value
   `mycortex` (`core/cortex_bus/queue.py:28`). Neither renames in THIS sweep: the VALUE stays
-  `mycortex` (this section), and the variable NAME stays `CORTEX_BUS_PG_DB` until the deferred P4
-  env-var change (Q3) — **this note must not be read as permission to sweep `CORTEX_*` now.**
+  `mycortex` (this section). The variable NAME became `FLEET_BUS_PG_DB` when P4 landed — the
+  VALUE is still `mycortex`, because that names the brain, not the framework.
 - `plugins/mycortex-mem/`, `plugins/mycortex-command/`, `ops/services/mycortex-mem/`,
   `ops/services/mycortex/`, `ops/install/deploy/docker-compose.mycortex.yml`
 - `mycortex` CLI, `mycortex-parity.py`, `agent-mycortex-sync.sh`, `agent-mycortex-retention.py`
@@ -444,7 +449,7 @@ The phase that must not break the deploy chain.
 the old name still works via the shim; `tests/test_repo_resource_paths.py` passes (it computes the
 register-map numbers).
 
-### P4 — Env vars `CORTEX_*` → `FLEET_*`, dual-read — 🚧 **IN PROGRESS (since 2026-11-13)**
+### P4 — Env vars `CORTEX_*` → `FLEET_*`, dual-read — ✅ **LANDED (release 2, 2026-11-13)**
 
 > **Execution started 2026-11-13** (operator directed the env migration, then
 > "work each one by one"). Status: the dual-read layer is BUILT and deployed —

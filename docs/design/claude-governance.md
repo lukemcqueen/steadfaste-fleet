@@ -158,7 +158,7 @@ the Claude Code session to load the servers.
 | 3 | `docs/design/claude-governance.md` (this) | the equivalence contract | ✅ this file |
 | 4 | `ops/scripts/install/install-claude-governance.sh` | **USER-scope registration** (`~/.claude.json` `mcpServers`) — governance MCP available in EVERY repo Claude opens | ✅ shipped 2026-09-29 |
 | 5 | per-PROJECT session id for non-Hermes callers (`mcp-servers/loop-gov-mcp.py`) | restart-stable, cross-project-disjoint lock identity | ✅ shipped 2026-09-29 |
-| 6 | per-SESSION repo identity for non-Hermes callers (`mcp-servers/loop-gov-mcp.py`) | the lock is tagged with the caller's OWN repo (`CORTEX_SESSION_REPO`, else the MCP child's cwd) instead of the host-canonical `~/steadfaste-fleet` | ✅ shipped 2026-10-09 |
+| 6 | per-SESSION repo identity for non-Hermes callers (`mcp-servers/loop-gov-mcp.py`) | the lock is tagged with the caller's OWN repo (`FLEET_SESSION_REPO`, else the MCP child's cwd) instead of the host-canonical `~/steadfaste-fleet` | ✅ shipped 2026-10-09 |
 
 ### 6.1 Shipped 2026-10-09 — the lock that could not be released (titus, pi)
 
@@ -169,7 +169,7 @@ gate refused with *"the lock's repo cannot contain this session's work"* — a
 refusal keeps the lock HELD, and its printed remedy (an enforcer injection) does
 not exist on a non-Hermes harness. Nothing but the operator could release it.
 
-Fix: a caller with no injected repo resolves its OWN repo — `CORTEX_SESSION_REPO`
+Fix: a caller with no injected repo resolves its OWN repo — `FLEET_SESSION_REPO`
 first, else the MCP child's working directory (the harness spawns one child per
 session in the session's project). A Hermes caller is deliberately excluded: the
 shared gateway daemon's cwd is a launch artifact, so a Hermes session is never

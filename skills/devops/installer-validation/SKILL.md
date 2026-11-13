@@ -71,7 +71,7 @@ Classify each match:
   is a 404 (became `.tar.zst`), and the replacement (mycortex) is pure Python
   needing no `llama-server`. Remove the whole block.
 - **Compat logic (keep, relabel):** password-variable reuse
-  (`LEGACY_BRAIN_PG_PASSWORD` → `MYCORTEX_PG_PASSWORD` (variable renamed)), legacy plugin-name checks
+  (`LEGACY_BRAIN_PG_PASSWORD` → `MYFLEET_PG_PASSWORD` (variable renamed)), legacy plugin-name checks
   in `config.yaml`, decommission comments. Keep these; only fix wording that
   claims the old component is installed/needed.
 

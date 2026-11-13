@@ -222,8 +222,8 @@ The gate is a fleet component, so it resolves its own configuration itself — i
 does **not** depend on Hermes, and it does not need Hermes to pass the values in:
 
 1. the **process** environment (wins, so an explicit export always overrides);
-2. `$CORTEX_ENV_FILE`, else `$CORTEX_REPO/.env` (default `~/steadfaste-fleet/.env`);
-3. the deploy root (`$CORTEX_DEPLOY_HOME/.env`);
+2. `$FLEET_ENV_FILE`, else `$FLEET_REPO/.env` (default `~/steadfaste-fleet/.env`);
+3. the deploy root (`$FLEET_DEPLOY_HOME/.env`);
 4. `~/.hermes/.env` — **last resort only**, kept so a host whose credential happens
    to live there keeps working. It is not the source of truth for fleet config.
 

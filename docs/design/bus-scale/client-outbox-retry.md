@@ -89,8 +89,8 @@ immune to wall-clock races.
 
 | Env | Default | Purpose |
 |-----|---------|---------|
-| `CORTEX_BUS_RETRY_DIR` | `~/.steadfaste-fleet/bus-retry/` | Outbox location (tests override) |
-| `CORTEX_BUS_NO_OUTBOX` | unset | `1` = hard-fail to `None` (no queueing) |
+| `FLEET_BUS_RETRY_DIR` | `~/.steadfaste-fleet/bus-retry/` | Outbox location (tests override) |
+| `FLEET_BUS_NO_OUTBOX` | unset | `1` = hard-fail to `None` (no queueing) |
 
 ## Why files, not a DB or daemon
 

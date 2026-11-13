@@ -25,8 +25,8 @@
 #                                   Telegram user could talk to the agent
 #            TELEGRAM_HOME_CHANNEL  default delivery target — REQUIRED
 #            GATEWAY_SECRET         HMAC signing secret for bus envelopes — REQUIRED
-#            CORTEX_BUS_URL         (or set bus_url in gateway.yaml)
-#            CORTEX_BUS_TOKEN  or  CORTEX_BASIC_AUTH
+#            FLEET_BUS_URL         (or set bus_url in gateway.yaml)
+#            FLEET_BUS_TOKEN  or  FLEET_BASIC_AUTH
 #            TELEGRAM_API_BASE      (optional)
 #          Same NAMES as Hermes (no invented config), but the VALUES live here,
 #          in the cortex env — copy them over once during migration.

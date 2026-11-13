@@ -16,8 +16,8 @@ import pathlib
 import subprocess
 import sys
 
-# Portable default: run from the repo (or set HERMES_CORTEX_REPO).
-REPO = os.environ.get("HERMES_CORTEX_REPO") or os.getcwd()
+# Portable default: run from the repo (or set HERMES_FLEET_REPO).
+REPO = os.environ.get("HERMES_FLEET_REPO") or os.getcwd()
 
 
 def funcs_of(text: str) -> set:

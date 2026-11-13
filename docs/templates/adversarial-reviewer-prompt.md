@@ -199,12 +199,16 @@ the provenance). For such a file judge ONLY:
 its keep list is the contract. Tokens it documents as deliberately kept are NOT findings:
 
 - the `fleet` short-name family — a SEPARATE naming layer from the hc sweep: `fleet-bus.service`,
-  the whole `CORTEX_*` env-var family (`CORTEX_DEPLOY_HOME`, `CORTEX_BUS_URL`, `CORTEX_BASIC_AUTH`,
-  `CORTEX_SESSION_KEY`, `CORTEX_PROFILE`, `CORTEX_OS`, `CORTEX_HOME`, …), `Fleet Dashboard` (the
-  dashboard component/service), `mycortex`, and `fleet-bus.conf` STALE-labeled teaching;
+  `fleet-dashboard`, `Fleet Dashboard` (the dashboard component/service), `mycortex`, and
+  `fleet-bus.conf` STALE-labeled teaching. **The `CORTEX_*` env family is NOT a keep** — it was
+  migrated to `FLEET_*` (release 2, 2026-11-13), so a residual live `CORTEX_<NAME>` token is a
+  FINDING. The only kept old spellings are `consolidate-env.sh`, which must name the
+  spelling it converts, the residue detectors' own probe strings, and dated records;
 - `Hermes`/`hermes` (Hermes Agent runtime: `~/.hermes`, `hermes cron`, the `hermes-agent` skill)
   — a separate live product, never part of the `hermes-cortex` brand;
-- `hermes-cortex-dashboard.service` — the dashboard unit keeps its pre-rename name.
+- **NOT a keep: `hermes-cortex-dashboard.service`.** The dashboard unit was renamed to
+  `fleet-dashboard.service` (operator decision Q2, 2026-11-06) — a live reference to the old unit
+  name is a FINDING.
 
 A `STALE` label on a line marks a kept literal — the sweep's own contract
 (`tests/test_fleet_cli_brand.sh` B7).

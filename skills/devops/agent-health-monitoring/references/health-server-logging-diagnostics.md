@@ -120,8 +120,8 @@ stressed or crashing, it can take the full 45s internal timeout, or hang
 indefinitely.
 
 **Cache parameters:**
-- `_MYCORTEX_CACHE_TTL = 900` — 15 minutes (bumped from 300 to reduce blocking frequency)
-- `_MYCORTEX_CACHE_TTL = 300` — was 5 minutes (original; caused a 20s block every 5 min)
+- `_MYFLEET_CACHE_TTL = 900` — 15 minutes (bumped from 300 to reduce blocking frequency)
+- `_MYFLEET_CACHE_TTL = 300` — was 5 minutes (original; caused a 20s block every 5 min)
 - 20s hard deadline via `_run_with_deadline()` prevents the endpoint from
   hanging even when the cache is cold
 

@@ -170,7 +170,7 @@ rule to every wrapper whose failure is silent by design (a swallowed store
 ## Every harness-invoked psql must be non-interactive: always pass `-w`
 
 `psql` prompts for a password on **/dev/tty** whenever no usable credential is
-available (`MYCORTEX_MEM_PASSWORD` empty, wrong or missing `PGPASSFILE`). That
+available (`MYFLEET_MEM_PASSWORD` empty, wrong or missing `PGPASSFILE`). That
 prompt is invisible to the caller — it is neither stdout nor stderr — so a script
 or an agent harness running psql sees NO output and **blocks** instead of failing.
 A fail-open contract then reads the call as "store unavailable" only after its

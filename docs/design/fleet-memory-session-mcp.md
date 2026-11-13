@@ -223,7 +223,7 @@ cannot shred session history.
 
 **Set the session identity once per session** (all optional; falls back to git):
 ```bash
-export CORTEX_SESSION_HARNESS=pi CORTEX_SESSION_REPO=<repo> CORTEX_SESSION_BRANCH=main
+export FLEET_SESSION_HARNESS=pi FLEET_SESSION_REPO=<repo> FLEET_SESSION_BRANCH=main
 ```
 Then tools need no session argument, and a checkpoint written by the harness and
 one read by the MCP server agree on the session.

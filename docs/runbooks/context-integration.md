@@ -147,7 +147,7 @@ fleet-context mem_context '{}'      # or: python3 ~/steadfaste-fleet/ops/scripts
 
 Expect JSON with `"card": [...]`. If you get
 `memory unavailable — the fleet store is not reachable from this host`, fix that
-first (`MYCORTEX_MEM_PASSWORD` in `~/steadfaste-fleet/.env`; is the
+first (`MYFLEET_MEM_PASSWORD` in `~/steadfaste-fleet/.env`; is the
 `mycortex-postgres` container up?). Do not debug the harness while the store is
 down — you will chase a phantom.
 
@@ -206,12 +206,12 @@ pi -e ~/.steadfaste-fleet/harnesses/pi/extensions/fleet-context.ts \
 Set the session identity (else it is derived from git, which is usually right):
 
 ```bash
-export CORTEX_SESSION_HARNESS=pi
-export CORTEX_SESSION_REPO=<repo-name>
-export CORTEX_SESSION_BRANCH=<branch>
+export FLEET_SESSION_HARNESS=pi
+export FLEET_SESSION_REPO=<repo-name>
+export FLEET_SESSION_BRANCH=<branch>
 ```
 
-**One session = one identity.** Precedence is `args → CORTEX_SESSION_* env → git`,
+**One session = one identity.** Precedence is `args → FLEET_SESSION_* env → git`,
 identical in every layer, which is what makes a checkpoint written by the
 extension restorable by the MCP server and vice versa.
 
@@ -229,7 +229,7 @@ running service").
    ```bash
    fleet-context session_restore '{}' | grep wiring-proof
    ```
-   If it is missing, your hook is not firing — check stderr for `CORTEX_FAIL`.
+   If it is missing, your hook is not firing — check stderr for `FLEET_FAIL`.
 3. **Session-start injection.** Start a SECOND session and confirm the checkpoint
    appears in the prompt without you asking (injection is the return value — there
    is no stderr marker on a clean resume).
@@ -243,15 +243,15 @@ running service").
 | Symptom | Cause | Fix |
 |---|---|---|
 | `memory unavailable…` | password unset / container down | `~/steadfaste-fleet/.env`, restart Postgres |
-| Tools listed but every call is empty | CLI path wrong inside the harness | set `CORTEX_CONTEXT_CLI` |
-| Checkpoints land, restore finds none | identity mismatch (different repo/branch) | pin `CORTEX_SESSION_*`, or pass `session_key` |
+| Tools listed but every call is empty | CLI path wrong inside the harness | set `FLEET_CONTEXT_CLI` |
+| Checkpoints land, restore finds none | identity mismatch (different repo/branch) | pin `FLEET_SESSION_*`, or pass `session_key` |
 | A checkpoint every turn | suppression state unwritable | the stderr message names it; fix perms |
 | Hook never fires | wrong hook name for that harness | read the harness's own extension docs |
-| **macOS: every call returns empty, `CORTEX_FAIL` on stderr** | `python3` not on Pi's PATH (Homebrew is at `/opt/homebrew/bin` on Apple Silicon, `/usr/local/bin` on Intel; a GUI-launched app sees a narrower PATH) | `export CORTEX_CONTEXT_PYTHON=/opt/homebrew/bin/python3` |
-| **macOS: the store is unreachable but Linux works** | the Linux path shells through `sg docker -c docker exec` — neither exists on macOS | the store has a darwin path (direct `psql` + 0600 `PGPASSFILE`); if it is not firing, check `MYCORTEX_MEM_PASSWORD` and that Postgres is listening locally |
+| **macOS: every call returns empty, `FLEET_FAIL` on stderr** | `python3` not on Pi's PATH (Homebrew is at `/opt/homebrew/bin` on Apple Silicon, `/usr/local/bin` on Intel; a GUI-launched app sees a narrower PATH) | `export FLEET_CONTEXT_PYTHON=/opt/homebrew/bin/python3` |
+| **macOS: the store is unreachable but Linux works** | the Linux path shells through `sg docker -c docker exec` — neither exists on macOS | the store has a darwin path (direct `psql` + 0600 `PGPASSFILE`); if it is not firing, check `MYFLEET_MEM_PASSWORD` and that Postgres is listening locally |
 | **The store works by hand but is unreachable from the SERVING unit** | the unit sets `NoNewPrivileges=true`, which refuses `sg`'s `setgroups()`/`setgid()` — even when the process already holds the docker group. Reported for weeks as a database outage: `available()` is fail-open by design and returned a bare "unavailable". | the module now tries **direct `docker exec` FIRST** (no group switch, so it survives the flag) and keeps `sg` as the fallback for hosts where the user is not in the docker group; on failure it records the cause in `last_error`, so the message names the hardening flag instead of blaming Postgres. Verify with `setpriv --no-new-privs -- <the module's own call>` — `systemd-run` is NOT a faithful repro (it drops supplementary groups and fails for the wrong reason) |
 
-`CORTEX_FAIL` / `session-autocheckpoint: …` lines on **stderr are
+`FLEET_FAIL` / `session-autocheckpoint: …` lines on **stderr are
 findings, not noise** — they mean a capability is silently degraded. Everything
 else (a resume, a checkpoint, an empty turn) stays **silent** on stderr: noise
 there sits directly above the Pi TUI input prompt.

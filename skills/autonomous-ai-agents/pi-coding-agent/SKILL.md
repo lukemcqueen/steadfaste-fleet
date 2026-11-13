@@ -349,7 +349,7 @@ repo. Load it with the harness: `bash install-pi-integration.sh` registers both 
   never cross it. Registering loop-governance over MCP gives pi the *ritual*, not a
   gate: an MCP server is a tool surface and cannot see the host's own tools.
 - The commit-time hook DOES carry a lock check (`pre-commit-score`, "Level 3"), so a claim that it has none is wrong — but its refusal is scoped
-  `IS_CORTEX_REPO && !LOCK_FOUND`, i.e. `~/steadfaste-fleet` only, deliberately, so manual
+  `IS_FLEET_REPO && !LOCK_FOUND`, i.e. `~/steadfaste-fleet` only, deliberately, so manual
   human commits in client repos are not blocked. The RITUAL gate is NOT so scoped:
   the reflexion/survey loop demands the ritual skills in EVERY repo since 2026-10-29,
   skipping only no-session (human) commits — so a Pi session IS disciplined in its

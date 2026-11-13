@@ -209,14 +209,14 @@ sg docker -c "docker compose -f ~/steadfaste-fleet/ops/install/deploy/docker-com
 python3 ~/steadfaste-fleet/ops/services/mycortex/migrate.py
 
 # 3. Register a brain source (git repo required per source)
-MYCORTEX_CLI="$HOME/.steadfaste-fleet/scripts/mycortex"
-"$MYCORTEX_CLI" sources add steadfaste-fleet --path ~/steadfaste-fleet
+MYFLEET_CLI="$HOME/.steadfaste-fleet/scripts/mycortex"
+"$MYFLEET_CLI" sources add steadfaste-fleet --path ~/steadfaste-fleet
 
 # 4. Sync it (index now; the cron keeps it fresh)
-"$MYCORTEX_CLI" sync --source steadfaste-fleet
+"$MYFLEET_CLI" sync --source steadfaste-fleet
 
 # 5. Verify
-"$MYCORTEX_CLI" doctor --json
+"$MYFLEET_CLI" doctor --json
 ```
 
 Sources are per-host (design D4): every agent populates its own sources. The
@@ -363,8 +363,8 @@ retention policy. There is nothing to enable with systemd.
 
 ```bash
 # Manual sync (index now, don't wait for the cron)
-MYCORTEX_CLI="$HOME/.steadfaste-fleet/scripts/mycortex"
-"$MYCORTEX_CLI" sync --source steadfaste-fleet
+MYFLEET_CLI="$HOME/.steadfaste-fleet/scripts/mycortex"
+"$MYFLEET_CLI" sync --source steadfaste-fleet
 
 # Verify the cron is registered
 hermes cron list --all 2>/dev/null | grep agent-mycortex-sync
@@ -688,16 +688,16 @@ After extracting brain files into the MECE brain directory structure, register
 the tree as a mycortex source and sync it to become searchable:
 
 ```bash
-MYCORTEX_CLI="$HOME/.steadfaste-fleet/scripts/mycortex"
+MYFLEET_CLI="$HOME/.steadfaste-fleet/scripts/mycortex"
 
 # Register the brain dir as a source (git repo required)
-"$MYCORTEX_CLI" sources add default --path ~/brain/default
+"$MYFLEET_CLI" sources add default --path ~/brain/default
 
 # Index now (the 15-min cron keeps it fresh afterward)
-"$MYCORTEX_CLI" sync --source default
+"$MYFLEET_CLI" sync --source default
 
 # Verify
-"$MYCORTEX_CLI" search "test"  # Should return imported pages
+"$MYFLEET_CLI" search "test"  # Should return imported pages
 ```
 
 There is no daemon to stop and no DB lock to free — mycortex is a cron-synced

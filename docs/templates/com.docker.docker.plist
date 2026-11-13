@@ -16,7 +16,7 @@
     1. an XML COMMENT CONTAINING A DOUBLE HYPHEN is not well formed XML, so this
        plist could not be parsed and launchctl would reject it. (Same family as
        the missing-venv break: the service simply never starts, and says nothing.)
-    2. the log paths were the literal string CORTEX_HOME/... which launchd does
+    2. the log paths were the literal string CORTEX_HOME/... (STALE name — pre-rename spelling) which launchd does
        not expand. Paths are now $HOME-expanded by /bin/bash -lc, and the redirect
        lives inside that command because StandardOutPath must be a literal path.
 -->

@@ -70,7 +70,7 @@ New `ops/scripts/manage/orch-weekly-cost-report.py`, `no_agent: true`, schedule 
 - Prints total, per-day, top jobs by tokens, and a COVERAGE block naming which hosts are measured
   and which are not (a report that hides missing data is worse than none — the design rule kept from
   the removed digest, `fleet-cost-data-sources.md`).
-- Alert: when the measured fleet daily average > `CORTEX_COST_DAILY_TARGET_USD` (default `10`), print
+- Alert: when the measured fleet daily average > `FLEET_COST_DAILY_TARGET_USD` (default `10`), print
   `⚠️ FLEET COST ABOVE TARGET …` and exit 1 (cron failure → visible); otherwise exit 0 and stay quiet.
 - Registered in BOTH `ops/install/cron-manifest.yaml` and the orchestrator installer's `create_cron`
   block in the same commit (orphan rule), plus a `docs/cron-schedules.md` row.
@@ -108,6 +108,6 @@ Verified: 15 passed (`docs/evidence/cost3-per-cron-cost-metrics/verify.txt`).
 - No stored price table (§3.1) — the removed stack's failure mode.
 - `agent-push-metrics.sh` is universal: cost metrics must be cheap and fail-soft, and the change must
   not alter the existing failure accounting or exit codes.
-- No new env var is invented: the one knob (`CORTEX_COST_DAILY_TARGET_USD`) is read with a default and
+- No new env var is invented: the one knob (`FLEET_COST_DAILY_TARGET_USD`) is read with a default and
   documented in `docs/env-vars.md`; `VICTORIA_METRICS_URL` / `AGENT_NAME` already exist.
 - The four worker hosts stay unmeasured until [cost/4] returns; the report must say so, never extrapolate.

@@ -410,7 +410,7 @@ to them must be doubly scoped or it will block innocent work in project repos:
 before the repo guard existed keeps firing in every repo, and one stale fleet
 state then blocks ordinary commits in unrelated projects while telling the user
 to run a fleet deploy they have no reason to run. The failure mode is
-structural and greppable: the gate sits ABOVE the `IS_CORTEX_REPO` assignment
+structural and greppable: the gate sits ABOVE the `IS_FLEET_REPO` assignment
 (`REPO_ROOT == ${HOME}/steadfaste-fleet`), so it is unscoped BY CONSTRUCTION.
 
 - When touching any shared hook, walk every `echo "❌ …"` block and classify it:

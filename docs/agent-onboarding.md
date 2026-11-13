@@ -83,8 +83,8 @@ to receive fleet updates, and what you use to message the orchestrator.
 Create `~/steadfaste-fleet/.env`:
 
 ```ini
-CORTEX_BUS_URL="https://example.com:13004"
-CORTEX_BASIC_AUTH="titus:your-password-here"
+FLEET_BUS_URL="https://example.com:13004"
+FLEET_BASIC_AUTH="titus:your-password-here"
 AGENT_NAME="titus"
 ```
 
@@ -100,7 +100,7 @@ chmod 600 ~/steadfaste-fleet/.env
 > **Escalation path:** the HTTP client targets `inbox_orchestrator` (the
 > **shared orchestrator inbox**) by default — visible to **whichever
 > orchestrator is available** (Moses, or Esther during failover). Only set
-> `CORTEX_INBOX_TARGET=inbox_<agent>` for point-to-point replies to a
+> `FLEET_INBOX_TARGET=inbox_<agent>` for point-to-point replies to a
 > specific orchestrator. Both Moses and Esther read the shared
 > `inbox_orchestrator` queue.
 

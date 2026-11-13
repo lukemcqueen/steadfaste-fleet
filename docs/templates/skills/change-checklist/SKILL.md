@@ -63,7 +63,7 @@ metadata:
 - [ ] **Adversarial scan passed — MANDATORY for every changed script** (change-checklist Phase 1.5): `python3 ops/scripts/quality/adversarial-verify.py --file <changed-file> --level A2 --gate` per file (A4 for security/guard/hook/enforcer paths). Must exit 0. The pre-commit hook runs this gate too — no `--no-verify`, no bypass.
 - [ ] Verify all services restart cleanly (launchctl list / systemctl status)
 - [ ] Verify symlinks are valid
-- [ ] Verify no stale paths remain (`grep -r '/home/luke\\|${CORTEX_HOME}\\|${CORTEX_DEPLOY}'` on changed files)
+- [ ] Verify no stale paths remain (`grep -r '/home/luke\\|${FLEET_HOME}\\|${FLEET_DEPLOY}'` on changed files)
 
 ## Closing the Cycle
 
