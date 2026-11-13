@@ -87,20 +87,23 @@ def server(command, args, env=None):
 GOVERNANCE = {
     # Slice B: the ONE loop-gov binary under BOTH role-distinct names, each with the
     # matching --role in its args (the doctor's role of record).
+    # Use the ABSOLUTE paths passed in as argv (same vars the hermes config uses);
+    # never a literal ~ — Claude Code / posix_spawn does not shell-expand it, so a
+    # tilde-prefixed command or arg ENOENTs (see docs/design/claude-governance.md).
     "loop-governance": server(py_cmd,
-                              ["~/.steadfaste-fleet/tools/loop-governance/loop-gov-mcp.py", "--role", "loop-governance"],
+                              [loop_gov, "--role", "loop-governance"],
                               {"AGENT_NAME": "{{AGENT_NAME}}"}),
     "review": server(py_cmd,
-                              ["~/.steadfaste-fleet/tools/loop-governance/loop-gov-mcp.py", "--role", "review"],
+                              [loop_gov, "--role", "review"],
                               {"AGENT_NAME": "{{AGENT_NAME}}"}),
     "tasks": server(py_cmd,
-                    ["~/.steadfaste-fleet/scripts/task-mcp.py"],
+                    [task_mcp],
                     {"AGENT_NAME": "{{AGENT_NAME}}"}),
     "executor": server(py_cmd,
-                       ["~/.steadfaste-fleet/scripts/executor-mcp.py"],
+                       [executor_mcp],
                        {"AGENT_NAME": "{{AGENT_NAME}}"}),
     "agent-bus": server(py_cmd,
-                        ["~/.steadfaste-fleet/scripts/fleet-bus-mcp.py"],
+                        [bus_mcp],
                         {"AGENT_NAME": "{{AGENT_NAME}}"}),
 }
 

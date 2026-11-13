@@ -1,23 +1,28 @@
 {
   "mcpServers": {
     "loop-governance": {
-      "command": "~/.hermes/hermes-agent/venv/bin/python3",
-      "args": ["~/.steadfaste-fleet/tools/loop-governance/loop-gov-mcp.py"],
+      "command": "/Users/luke/.steadfaste-fleet/venv/bin/python3",
+      "args": ["/Users/luke/.steadfaste-fleet/tools/loop-governance/loop-gov-mcp.py", "--role", "loop-governance"],
+      "env": {"AGENT_NAME": "titusclaude"}
+    },
+    "review": {
+      "command": "/Users/luke/.steadfaste-fleet/venv/bin/python3",
+      "args": ["/Users/luke/.steadfaste-fleet/tools/loop-governance/loop-gov-mcp.py", "--role", "review"],
       "env": {"AGENT_NAME": "titusclaude"}
     },
     "tasks": {
-      "command": "~/.hermes/hermes-agent/venv/bin/python3",
-      "args": ["~/.steadfaste-fleet/scripts/task-mcp.py"],
+      "command": "/Users/luke/.steadfaste-fleet/venv/bin/python3",
+      "args": ["/Users/luke/.steadfaste-fleet/scripts/task-mcp.py"],
       "env": {"AGENT_NAME": "titusclaude"}
     },
     "executor": {
-      "command": "~/.hermes/hermes-agent/venv/bin/python3",
-      "args": ["~/.steadfaste-fleet/scripts/executor-mcp.py"],
+      "command": "/Users/luke/.steadfaste-fleet/venv/bin/python3",
+      "args": ["/Users/luke/.steadfaste-fleet/scripts/executor-mcp.py"],
       "env": {"AGENT_NAME": "titusclaude"}
     },
     "agent-bus": {
-      "command": "~/.hermes/hermes-agent/venv/bin/python3",
-      "args": ["~/.steadfaste-fleet/scripts/fleet-bus-mcp.py"],
+      "command": "/Users/luke/.steadfaste-fleet/venv/bin/python3",
+      "args": ["/Users/luke/.steadfaste-fleet/scripts/fleet-bus-mcp.py"],
       "env": {"AGENT_NAME": "titusclaude"}
     }
   }

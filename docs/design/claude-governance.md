@@ -57,34 +57,58 @@ governance contract in it:
 ### 3.2 `.mcp.json` (repo root — project-scoped MCP for Claude Code)
 
 Claude Code auto-loads `.mcp.json` in the project root. Points titusclaude
-at the same governance servers:
+at the same governance servers.
+
+> **CRITICAL — never use `~` in `command` or `args`.** Claude Code feeds these
+> straight to `posix_spawn`, which does **not** shell-expand `~`. A tilde-prefixed
+> `command` (or `args` entry that is itself a path) fails at startup with
+> `ENOENT: posix_spawn '~/.steadfaste-fleet/venv/bin/python3'` — the server never
+> starts and the governance tools are silently absent. Use **absolute** paths
+> (`$HOME` expanded) exactly as below. See §6.2 for the 2026-11-13 incident.
+
+The loop-gov binary must be registered under **exactly two** role-distinct names —
+`loop-governance` (`--role loop-governance`) and `review` (`--role review`) — each
+with the matching `--role` in its args. This is the doctor's `fleet_doctor/mcp_names.py`
+"exactly two, role-matched" rule; a third registration of the probe, or a missing
+`--role`, is a doctor FAIL. The other three servers (`tasks`, `executor`, `agent-bus`)
+are non-loop-gov and need no role:
 
 ```json
 {
   "mcpServers": {
     "loop-governance": {
-      "command": "~/.steadfaste-fleet/venv/bin/python3",
-      "args": ["~/.steadfaste-fleet/tools/loop-governance/loop-gov-mcp.py"],
+      "command": "/Users/luke/.steadfaste-fleet/venv/bin/python3",
+      "args": ["/Users/luke/.steadfaste-fleet/tools/loop-governance/loop-gov-mcp.py", "--role", "loop-governance"],
+      "env": {"AGENT_NAME": "titusclaude"}
+    },
+    "review": {
+      "command": "/Users/luke/.steadfaste-fleet/venv/bin/python3",
+      "args": ["/Users/luke/.steadfaste-fleet/tools/loop-governance/loop-gov-mcp.py", "--role", "review"],
       "env": {"AGENT_NAME": "titusclaude"}
     },
     "tasks": {
-      "command": "~/.steadfaste-fleet/venv/bin/python3",
-      "args": ["~/.steadfaste-fleet/scripts/task-mcp.py"],
+      "command": "/Users/luke/.steadfaste-fleet/venv/bin/python3",
+      "args": ["/Users/luke/.steadfaste-fleet/scripts/task-mcp.py"],
       "env": {"AGENT_NAME": "titusclaude"}
     },
     "executor": {
-      "command": "~/.steadfaste-fleet/venv/bin/python3",
-      "args": ["~/.steadfaste-fleet/scripts/executor-mcp.py"],
+      "command": "/Users/luke/.steadfaste-fleet/venv/bin/python3",
+      "args": ["/Users/luke/.steadfaste-fleet/scripts/executor-mcp.py"],
       "env": {"AGENT_NAME": "titusclaude"}
     },
     "agent-bus": {
-      "command": "~/.steadfaste-fleet/venv/bin/python3",
-      "args": ["~/.steadfaste-fleet/scripts/fleet-bus-mcp.py"],
+      "command": "/Users/luke/.steadfaste-fleet/venv/bin/python3",
+      "args": ["/Users/luke/.steadfaste-fleet/scripts/fleet-bus-mcp.py"],
       "env": {"AGENT_NAME": "titusclaude"}
     }
   }
 }
 ```
+
+`install-claude-governance.sh` writes this same shape at USER scope
+(`~/.claude.json`) so it works in every repo, not just the fleet checkout. Run it
+(rather than hand-editing) to keep the deployment path canonical, and then restart
+the Claude Code session to load the servers.
 
 ### 3.3 Identity (`AGENT_NAME=titusclaude`)
 
@@ -153,6 +177,49 @@ re-tagged from it. Evidence:
 `tests/artifacts/non-hermes-repo-identity-repro.txt` (pre-fix vs current
 transcript); regression: `tests/test_non_hermes_repo_identity.py`.
 
+### 6.2 Shipped 2026-11-13 — the `~` that posix_spawn never expands
+
+**Symptom:** a fresh Claude Code session started with ALL four governance/tasks MCP
+servers failing to connect:
+
+```
+Loop-governance (ENOENT): "ENOENT: no such file or directory, posix_spawn
+  '~/.hermes/hermes-agent/venv/bin/python3'"
+```
+
+**Root cause:** every server in the project `.mcp.json` used a literal `~` in both
+`command` (`~/.hermes/hermes-agent/venv/bin/python3`) and `args`
+(`~/.steadfaste-fleet/tools/...`). Claude Code does **not** shell-expand `~` — it
+hands the string straight to `posix_spawn`, which treats `~` as a literal character
+and ENOENTs. The venv and scripts all existed; the paths were simply never resolved.
+
+**Fix (in scope, the canonical shape):**
+1. `.mcp.json` — absolute `command`/`args` (fleet venv), add the missing `review`
+   role server, add `--role` to both loop-gov registrations.
+2. `.claude/settings.local.json` — add `"review"` to `enabledMcpjsonServers`
+   (it was wired in the files but not listed → not loaded).
+3. `install-claude-governance.sh` — it *already* computed absolute paths
+   (`$LOOP_GOV` etc.) but then hard-coded `~` in the heredoc `args`. Switched to the
+   absolute argv values so a USER-scope install can never reintroduce the bug.
+
+**Why `~` is the trap:** Claude Code is not a shell. `.mcp.json` values are consumed
+by the MCP client lifecycle, which uses `posix_spawn`/`exec` directly. `~` is a shell
+convention, not something `exec` understands. Same applies to `$VAR` references —
+nothing is interpolated or expanded.
+
+**Guard:** when adding or editing an MCP server that points at a fleet script or the
+fleet venv, use the absolute `$HOME`-expanded path / the value `install-claude-governance.sh`
+computes, never `~`. Prefer running the installer to hand-editing.
+
+**Verification for an agent who suspects this class of bug:**
+```bash
+# The failing server should ENOENT only if the path truly doesn't exist.
+# With absolute paths, this must exit 0 and print the version:
+/Users/luke/.steadfaste-fleet/venv/bin/python3 -c "import mcp, sys; print('mcp OK')"
+# Confirm the registered servers carry no tilde in command/args:
+python3 -c "import json;d=json.load(open('$HOME/.claude.json'));print(json.dumps(d.get('mcpServers',{}),indent=2))"
+```
+
 ## 7. Shipped 2026-09-29 — the two bugs that broke Claude on separate repos
 
 Luke's report: Claude Code on a separate titus repo "couldn't use governance
@@ -194,3 +261,41 @@ temp HOME, never the real config).
 **Titus rollout** (no SSH by design — deploy via the bus/fleet notice):
 `git pull` → `fleet-update.sh` → `bash ops/scripts/install/install-claude-governance.sh`
 → restart the Claude Code session → verify with the script's `--check`.
+
+```
+Loop-governance (ENOENT): "ENOENT: no such file or directory, posix_spawn
+  '~/.hermes/hermes-agent/venv/bin/python3'"
+```
+
+**Root cause:** every server in the project `.mcp.json` used a literal `~` in both
+`command` (`~/.hermes/hermes-agent/venv/bin/python3`) and `args`
+(`~/.steadfaste-fleet/tools/...`). Claude Code does **not** shell-expand `~` — it
+hands the string straight to `posix_spawn`, which treats `~` as a literal character
+and ENOENTs. The venv and scripts all existed; the paths were simply never resolved.
+
+**Fix (in scope, the canonical shape):**
+1. `.mcp.json` — absolute `command`/`args` (fleet venv), add the missing `review`
+   role server, add `--role` to both loop-gov registrations.
+2. `.claude/settings.local.json` — add `"review"` to `enabledMcpjsonServers`
+   (it was wired in the files but not listed → not loaded).
+3. `install-claude-governance.sh` — it *already* computed absolute paths
+   (`$LOOP_GOV` etc.) but then hard-coded `~` in the heredoc `args`. Switched to the
+   absolute argv values so a USER-scope install can never reintroduce the bug.
+
+**Why `~` is the trap:** Claude Code is not a shell. `.mcp.json` values are consumed
+by the MCP client lifecycle, which uses `posix_spawn`/`exec` directly. `~` is a shell
+convention, not something `exec` understands. Same applies to `$VAR` references —
+nothing is interpolated or expanded.
+
+**Guard:** when adding or editing an MCP server that points at a fleet script or the
+fleet venv, use the absolute `$HOME`-expanded path / the value `install-claude-governance.sh`
+computes, never `~`. Prefer running the installer to hand-editing.
+
+**Verification for an agent who suspects this class of bug:**
+```bash
+# The failing server should ENOENT only if the path truly doesn't exist.
+# With absolute paths, this must exit 0 and print the version:
+/Users/luke/.steadfaste-fleet/venv/bin/python3 -c "import mcp, sys; print('mcp OK')"
+# Confirm the registered servers carry no tilde in command/args:
+python3 -c "import json;d=json.load(open('$HOME/.claude.json'));print(json.dumps(d.get('mcpServers',{}),indent=2))"
+```
