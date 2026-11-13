@@ -179,6 +179,22 @@ def test_reviewer_timeout_clamped_below_client_ceiling():
     240s ceiling, so a big review ran past the ceiling — where the caller sees
     neither a verdict nor a refusal while the lock stays held.
     """
+    # This test is about the MCP path (bounded by the 300s client). The CLI
+    # adapter marks itself via FLEET_LOOP_GOV_CLIENT=cli and gets a larger bound
+    # (600s) — if a prior test left that marker set, the ceiling here would be
+    # 600, not 240, and the clamp would not fire. Force the MCP path, restore
+    # the marker afterwards (this test must not pollute its siblings).
+    _saved_client = os.environ.pop("FLEET_LOOP_GOV_CLIENT", None)
+    try:
+        _assert_mcp_timeout_clamped()
+    finally:
+        if _saved_client is not None:
+            os.environ["FLEET_LOOP_GOV_CLIENT"] = _saved_client
+        else:
+            os.environ.pop("FLEET_LOOP_GOV_CLIENT", None)
+
+
+def _assert_mcp_timeout_clamped():
     ceiling = getattr(mcp, "REVIEWER_TIMEOUT_CEILING", None)
     assert ceiling is not None, (
         "REVIEWER_TIMEOUT_CEILING is not defined -- a reviewer timeout longer "

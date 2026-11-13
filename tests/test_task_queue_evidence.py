@@ -120,6 +120,10 @@ def test_the_committed_evidence_is_actual_script_output():
         # load-bearing provenance value and a hand-written or wrong table fails
         # on it. Only the ephemeral current-HEAD token is scrubbed.
         text = _re.sub(r"now \([0-9a-f]{7,40}\)", "now (<rev>)", text)
+        # pytest's "===== N passed =====" separator width tracks the terminal
+        # width, so it varies between the run that wrote the artifact and any
+        # fresh run. Collapse `=` runs — the count is the claim, not the width.
+        text = _re.sub(r"={2,}", "=", text)
         text = _re.sub(r"\s+", " ", text)
         return text.strip()
 
