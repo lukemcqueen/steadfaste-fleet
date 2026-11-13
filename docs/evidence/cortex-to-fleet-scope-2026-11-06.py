@@ -113,15 +113,15 @@ def main() -> int:
     for d in DEFERRED_DIRS:
         print(f"    q4   {d}")
 
-    print("\n## 4. register() map — exact count in cortex-update.sh")
-    upd = REPO / "ops/scripts/cortex-update.sh"
+    print("\n## 4. register() map — exact count in fleet-update.sh")
+    upd = REPO / "ops/scripts/fleet-update.sh"
     txt = upd.read_text(errors="replace")
     n_calls = len(re.findall(r"(?m)^\s*register\s+\"", txt))
     n_orch = len(re.findall(r"(?m)^\s*register_orch\s+\"", txt))
     n_token = len(re.findall(r"register", txt))
     n_deploy_home = len(re.findall(
         r"(?m)^(?:register|register_orch)\s+\"[^\"]+\"\s+\"\$\{CORTEX_DEPLOY_HOME\}/", txt))
-    print(f"  cmd: grep -cE '^[[:space:]]*register[[:space:]]+\"' ops/scripts/cortex-update.sh")
+    print(f"  cmd: grep -cE '^[[:space:]]*register[[:space:]]+\"' ops/scripts/fleet-update.sh")
     print(f"  leading-anchored register \"<...>\" calls    = {n_calls}")
     print(f"  leading-anchored register_orch \"<...>\" calls = {n_orch}")
     print(f"  MAP TOTAL (register + register_orch)         = {n_calls + n_orch}")

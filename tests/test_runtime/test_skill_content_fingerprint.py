@@ -85,7 +85,7 @@ def test_fingerprint_ignores_mtime_only_change(skills_tree):
 
 def test_fingerprint_changes_on_content_change(skills_tree):
     before = enforcer._skills_fingerprint()
-    (skills_tree / "test-driven-development" / "SKILL.md").write_text("# tdd v2\n")
+    (skills_tree / "execute-right" / "SKILL.md").write_text("# tdd v2\n")
     assert enforcer._skills_fingerprint() != before, (
         "a real skill content change must invalidate the fingerprint"
     )
@@ -94,26 +94,26 @@ def test_fingerprint_changes_on_content_change(skills_tree):
 def test_fingerprint_changes_on_same_size_content_change(skills_tree):
     """Same byte length, different bytes — the mtime-keyed hash cache must miss."""
     before = enforcer._skills_fingerprint()
-    (skills_tree / "task-start" / "SKILL.md").write_text("# task-start\nbody-v2\n")
+    (skills_tree / "task-orient" / "SKILL.md").write_text("# task-orient\nbody-v2\n")
     assert enforcer._skills_fingerprint() != before
 
 
 # ── credit: per-skill invalidation ────────────────────────────────────────
 
 def test_credit_survives_noop_redeploy(state_dir, skills_tree):
-    _load("sess_noop", "test-driven-development", "codebase-design")
+    _load("sess_noop", "execute-right", "codebase-design")
     enforcer._session_skills_loaded.clear()          # plugin reload after deploy
     for name in _REQUIRED:
         _bump_mtime(skills_tree / name / "SKILL.md")
     assert enforcer._session_skills("sess_noop") == {
-        "test-driven-development", "codebase-design",
+        "execute-right", "codebase-design",
     }, "credit must survive a deploy that changed no skill CONTENT"
 
 
 def test_credit_revoked_only_for_changed_skill(state_dir, skills_tree):
-    _load("sess_partial", "test-driven-development", "codebase-design")
+    _load("sess_partial", "execute-right", "codebase-design")
     enforcer._session_skills_loaded.clear()
-    (skills_tree / "test-driven-development" / "SKILL.md").write_text("# tdd v2\n")
+    (skills_tree / "execute-right" / "SKILL.md").write_text("# tdd v2\n")
     assert enforcer._session_skills("sess_partial") == {"codebase-design"}, (
         "only the skill whose content changed may lose credit"
     )
@@ -122,8 +122,8 @@ def test_credit_revoked_only_for_changed_skill(state_dir, skills_tree):
 def test_stale_skills_names_only_the_changed_one(state_dir, skills_tree):
     _load("sess_stale", *_REQUIRED)
     enforcer._session_skills_loaded.clear()
-    (skills_tree / "task-start" / "SKILL.md").write_text("# task-start v2\n")
-    assert enforcer._stale_skills("sess_stale") == ["task-start"], (
+    (skills_tree / "task-orient" / "SKILL.md").write_text("# task-orient v2\n")
+    assert enforcer._stale_skills("sess_stale") == ["task-orient"], (
         "the block message must name exactly which skills to reload"
     )
 
@@ -147,23 +147,23 @@ def test_credit_survives_reload_then_new_load(state_dir, skills_tree):
     """
     enforcer._credit_skill("sess_merge", "codebase-design")
     enforcer._session_skills_loaded.clear()                    # plugin reload
-    enforcer._credit_skill("sess_merge", "test-driven-development")
+    enforcer._credit_skill("sess_merge", "execute-right")
     assert enforcer._session_skills("sess_merge") == {
-        "codebase-design", "test-driven-development",
+        "codebase-design", "execute-right",
     }, "a later skill_view must keep earlier credit, not overwrite the journal"
     journal = json.loads(
         (state_dir / "skills-credit" / "sess_merge.json").read_text()
     )
-    assert set(journal["skills"]) == {"codebase-design", "test-driven-development"}
+    assert set(journal["skills"]) == {"codebase-design", "execute-right"}
 
 
 def test_journal_records_content_hashes(state_dir, skills_tree):
-    _load("sess_hashes", "test-driven-development")
+    _load("sess_hashes", "execute-right")
     data = json.loads(
         (state_dir / "skills-credit" / "sess_hashes.json").read_text()
     )
-    assert data["hashes"]["test-driven-development"] == (
+    assert data["hashes"]["execute-right"] == (
         enforcer._skill_content_hash(
-            skills_tree / "test-driven-development" / "SKILL.md"
+            skills_tree / "execute-right" / "SKILL.md"
         )
     )

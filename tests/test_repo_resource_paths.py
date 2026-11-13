@@ -146,8 +146,15 @@ def test_no_mcp_server_hand_rolls_a_candidate_list_for_a_repo_resource():
         src = path.read_text()
         if "resolve_repo_resource" in src:
             continue
-        for marker in ("_CANDIDATES = [", "cand in (Path(__file__)",
-                       "parents[1] / \"ops\""):
+        # The candidate-list marker is word-bounded: a server that hand-rolls
+        # its own repo-resource paths declares a bare `_CANDIDATES = [...]`.
+        # A PREFIXED list is a different, legitimate shape — e.g.
+        # `_ENV_CANDIDATES` (host env-file paths, not a deploy-mapped repo
+        # resource) — and must not be flagged.
+        if re.search(r"\b_CANDIDATES\s*=\s*\[", src):
+            offenders.append(f"{path.name}: _CANDIDATES = [")
+        for marker in ("cand in (Path(__file__)",
+                       'parents[1] / "ops"'):
             if marker in src:
                 offenders.append(f"{path.name}: {marker}")
     assert not offenders, (
