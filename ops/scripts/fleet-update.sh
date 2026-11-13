@@ -188,6 +188,13 @@ if [[ -f "${REPO_DIR}/ops/scripts/lib/fleet-env-compat.sh" ]]; then
   source "${REPO_DIR}/ops/scripts/lib/fleet-env-compat.sh"
 fi
 CORTEX_DEPLOY_HOME="${CORTEX_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}"
+# Dual-export bridge (env migration P4): FLEET_DEPLOY_HOME is canonical now;
+# CORTEX_DEPLOY_HOME remains for not-yet-migrated consumers until release 2.
+# The compat mirror above set FLEET_* from CORTEX_DEPLOY_HOME only if .env had
+# it; this default keeps BOTH spellings resolving for the whole deploy, so a
+# child script may still read either side while the sweep progresses.
+FLEET_DEPLOY_HOME="${FLEET_DEPLOY_HOME:-${CORTEX_DEPLOY_HOME}}"
+export CORTEX_DEPLOY_HOME FLEET_DEPLOY_HOME
 
 # ── Deploy-in-progress marker ───────────────────────────────────────────
 # This run unlocks the enforcement files early and relocks them at the END, so
