@@ -60,7 +60,7 @@ launchd
  |   +-- All containers restart (restart: always/unless-stopped)
  +-- com.legacy-brain.sync-watch       (Mycortex memory sync daemon)
  +-- ai.hermes.gateway            (Hermes agent gateway)
- +-- com.hermes.cortex-dashboard  (Flask dashboard, :8901)
+ +-- com.hermes.fleet-dashboard  (Flask dashboard, :8901)
 ```
 
 **Full boot verification:**

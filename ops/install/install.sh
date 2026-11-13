@@ -10,7 +10,7 @@
 #  git clone --depth 1 https://github.com/lukemcqueen/steadfaste-fleet.git
 #  cd steadfaste-fleet && bash install.sh
 #
-# Installs: Ollama · Bun · mycortex · Langfuse† · Cortex Dashboard† ·
+# Installs: Ollama · Bun · mycortex · Langfuse† · Fleet Dashboard† ·
 #      nginx† · Brain directory structure · Hermes plugins ·
 #      Web Cache · Offline Knowledge (kiwix ZIM) · Skills
 # † Server profile only (CORTEX_PROFILE=server). Laptop profile
@@ -1862,15 +1862,15 @@ ENVFILE
 fi
 
 # ─────────────────────────────────────────────────────────────
-# 13. Cortex Dashboard — Flask companion app
+# 13. Fleet Dashboard — Flask companion app
 # ─────────────────────────────────────────────────────────────
-step "Installing Cortex Dashboard"
+step "Installing Fleet Dashboard"
 
 DASHBOARD_DEST="${CORTEX_DEPLOY_HOME}/dashboard"
 DASHBOARD_PLIST="${CORTEX_HOME}/Library/LaunchAgents/com.hermes.fleet-dashboard.plist"
 
 if [[ -f "$DASHBOARD_DEST/server.py" ]]; then
- skip "Cortex Dashboard already installed"
+ skip "Fleet Dashboard already installed"
 else
  mkdir -p "$DASHBOARD_DEST"
 
@@ -1907,7 +1907,7 @@ else
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.hermes.cortex-dashboard</string>
+  <string>com.hermes.fleet-dashboard</string>
   <key>ProgramArguments</key>
   <array>
     <string>${DASHBOARD_DEST}/venv/bin/python3</string>
@@ -1927,9 +1927,9 @@ else
     <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
   </dict>
   <key>StandardOutPath</key>
-  <string>${CORTEX_DEPLOY_HOME}/logs/cortex-dashboard.log</string>
+  <string>${CORTEX_DEPLOY_HOME}/logs/fleet-dashboard.log</string>
   <key>StandardErrorPath</key>
-  <string>${CORTEX_DEPLOY_HOME}/logs/cortex-dashboard.log</string>
+  <string>${CORTEX_DEPLOY_HOME}/logs/fleet-dashboard.log</string>
 </dict>
 </plist>
 PLIST
@@ -1961,8 +1961,8 @@ WorkingDirectory=${DASHBOARD_DEST}
 Restart=always
 RestartSec=5
 Environment=PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
-StandardOutput=append:${CORTEX_DEPLOY_HOME}/logs/cortex-dashboard.log
-StandardError=append:${CORTEX_DEPLOY_HOME}/logs/cortex-dashboard.log
+StandardOutput=append:${CORTEX_DEPLOY_HOME}/logs/fleet-dashboard.log
+StandardError=append:${CORTEX_DEPLOY_HOME}/logs/fleet-dashboard.log
 
 [Install]
 WantedBy=default.target
@@ -2234,7 +2234,7 @@ printf " ${GREEN}•${RESET} Bun       — JS runtime\n"
 printf " ${GREEN}•${RESET} mycortex   — Knowledge brain (mycortex-postgres + pgvector)\n"
 if [[ "$CORTEX_PROFILE" == "server" ]]; then
 printf " ${GREEN}•${RESET} Langfuse     — LLM observability (Docker, port 3000)\n"
-printf " ${GREEN}•${RESET} Cortex Dashboard — Flask companion app (port 8901)\n"
+printf " ${GREEN}•${RESET} Fleet Dashboard — Flask companion app (port 8901)\n"
 printf " ${GREEN}•${RESET} nginx      — Reverse proxy (ports 13001-13002)\\n"
 fi
 printf " ${GREEN}•${RESET} Brain sources  → ${BRAIN_DIR}/{%s}\n" "$(echo "${SOURCES[*]}" | tr ' ' ',')"
@@ -2259,7 +2259,7 @@ printf "          com.ollama.serve\n"
 printf "          agent-mycortex-sync (cron, every 15 min)\n"
 if [[ "$CORTEX_PROFILE" == "server" ]]; then
 printf "          com.docker.docker\n"
-printf "          com.hermes.cortex-dashboard\n"
+printf "          com.hermes.fleet-dashboard\n"
 printf "          homebrew.mxcl.nginx\n"
 fi
 printf "\n"
@@ -2330,7 +2330,7 @@ printf "${RESET}${BOLD}${CYAN}────────────────�
 printf "\n${BOLD}📚 Quick Reference${RESET}\n"
 if [[ "$CORTEX_PROFILE" == "server" ]]; then
 printf " ${GREEN}•${RESET} Langfuse:    http://localhost:3000 (nginx: :13002)\\n"
-printf " ${GREEN}•${RESET} Cortex Dashboard: http://localhost:8901 (nginx: :13001)\n"
+printf " ${GREEN}•${RESET} Fleet Dashboard: http://localhost:8901 (nginx: :13001)\n"
 printf " ${GREEN}•${RESET} 🔒 Security:   Read docs/SECURITY.md for firewall + hardening\n"
 printf " ${GREEN}•${RESET} Langfuse setup:  bash fleet-setup-langfuse.sh --start (generates .env + starts)\n"
 printf " ${GREEN}•${RESET} System health:  bash fleet-health.sh (green-check status)\n"

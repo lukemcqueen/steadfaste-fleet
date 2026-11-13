@@ -170,4 +170,4 @@ server {
 
 ## Dashboard Default Host
 
-The Cortex Dashboard (`server.py`) defaults `LANGFUSE_HOST` to `http://localhost:3001`. Set `LANGFUSE_HOST` env var to override.
+The Fleet Dashboard (`server.py`) defaults `LANGFUSE_HOST` to `http://localhost:3001`. Set `LANGFUSE_HOST` env var to override.

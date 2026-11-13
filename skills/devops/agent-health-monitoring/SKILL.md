@@ -153,7 +153,7 @@ referenced in older documentation or templates.
 | 0 | nginx | 1=up, -1=down, 0=n/a |
 | 1 | Ollama | same |
 | 2 | mycortex | same |
-| 3 | Cortex Dashboard | same |
+| 3 | Fleet Dashboard | same |
 | 4 | Langfuse web | same |
 | 5 | Langfuse worker | same |
 | 6 | Docker | same |
@@ -163,7 +163,7 @@ referenced in older documentation or templates.
 
 If you see vector index 3 = -1, it means:
 - **In compact format (DEPLOYED):** Stale cron jobs (no_stale = False)
-- **In legacy format:** Cortex Dashboard is down
+- **In legacy format:** Fleet Dashboard is down
 
 **Always check which format the endpoint serves** before diagnosing.
 See `references/compact-health-vector-format.md` for detailed source
@@ -327,7 +327,7 @@ Each check function probes for the service:
 - **nginx**: `pgrep -x nginx`
 - **Ollama**: systemd/launchd service, fallback to `pgrep ollama`
 - **mycortex**: systemd/launchd service, fallback to `pgrep mycortex`
-- **Cortex Dashboard**: `curl http://127.0.0.1:8901/api/health`
+- **Fleet Dashboard**: `curl http://127.0.0.1:8901/api/health`
 - **Langfuse web/worker**: Docker container check
 - **Docker**: `dockerd` process or `/var/run/docker.sock`
 - **Hermes Gateway**: `pgrep -f "gateway run"`
@@ -815,8 +815,8 @@ The orchestrator poller (`orch-health-report.py`) has a hardcoded `SERVICE_MAP` 
 | **Sharing orchestrator credentials** | Peer agents get Moses' htpasswd password. If one is compromised, all are. | Each agent gets their own htpasswd entry. `sudo htpasswd /etc/nginx/.hermes-htpasswd <agent-name>` on Moses' server. |
 | **pgrep -x -f combined** | `_pgrep("gateway run", full=True)` with `exact=True` default produces `pgrep -x -f "gateway run"` which requires exact command-line match (full string), not substring | Use `_pgrep("gateway run", exact=False, full=True)` to produce `pgrep -f "gateway run"` for substring match |
 | **Agent registry uses dict key, not name** | Duplicate agent entries in health data — one with key from registry, another from fallback | Registry entries use the dict key (e.g. "moses") as the agent key, not the `name` field (e.g. "Moses"). The fallback check must compare against the same namespace. |
-| **Cortex Dashboard uses "overall" not "healthy"** | Legacy format handler reports healthy=False when services are actually up | Dashboard returns `{"overall": "healthy"}`, not `{"healthy": true}`. Check `data.get("overall") == "healthy"`. |
-| **Compact format has different indices from legacy** | You see vector[3] = -1 and assume "Cortex Dashboard" is down. Actually it means "stale cron jobs" in the deployed compact format. | Always check the backend script serving the endpoint. `health-server.py` → compact 9-element format. `health-vector.py` → can serve either format; check CHECK_FUNCTIONS length. |
+| **Fleet Dashboard uses "overall" not "healthy"** | Legacy format handler reports healthy=False when services are actually up | Dashboard returns `{"overall": "healthy"}`, not `{"healthy": true}`. Check `data.get("overall") == "healthy"`. |
+| **Compact format has different indices from legacy** | You see vector[3] = -1 and assume "Fleet Dashboard" is down. Actually it means "stale cron jobs" in the deployed compact format. | Always check the backend script serving the endpoint. `health-server.py` → compact 9-element format. `health-vector.py` → can serve either format; check CHECK_FUNCTIONS length. |
 | **`-1` means "unhealthy/warning", not "down"** | The compact format has no `0` (n/a) — every index is always `1` or `-1`. A stale cron job (index 3) returns `-1` but the service is not "down" — it just hasn't run recently. See `references/schedule-aware-stale-detection.md` for how the stale threshold is computed from cron expressions (replaces hardcoded 24h). | Understand the semantics: `-1` may indicate a warning condition, not necessarily a service outage. |
 | **`-1` for uninstalled services** | Agents without a given binary (e.g. nginx on a macOS dev box) report `-1` because the check function only looks for the running process. Titus' nginx = -1 is misleading — it's not "nginx is down", it's "nginx doesn't exist on this machine" | Per-service checks (`check_nginx()`, `check_ollama()`, `check_mycortex()`) now use `shutil.which()` to detect if the binary exists. Returns `0` (not applicable) if not found. `check_services()` also returns `0` if no services are installed on the system (macOS fallback). See `references/uninstalled-service-detection.md`. |
 | **External endpoint timeout sensitivity** | Agents behind nginx SSL (Moses 13007, Joseph 12007, Esther 14007) occasionally get marked "unreachable" even though they respond in ~0.1s — DNS/TCP jitter on the HTTPS handshake spikes past the 3s timeout | Use 5s timeout for the orchestrator poller. 3s is fine for localhost (127.0.0.1) but external SSL-terminated endpoints need headroom. Polls every 10m — 5s per agent doesn't block the cycle. |

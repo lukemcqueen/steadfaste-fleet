@@ -661,7 +661,7 @@ echo "  ┌─────────────────────┬─
 echo "  │ Service             │ URL                                      │"
 echo "  ├─────────────────────┼──────────────────────────────────────────┤"
 printf "  │ Hermes Agent        │ your terminal / dashboard               │\n"
-printf "  │ Cortex Dashboard   │ https://%s:13001                  │\n" "$AGENT_DOMAIN"
+printf "  │ Fleet Dashboard   │ https://%s:13001                  │\n" "$AGENT_DOMAIN"
 printf "  │ Langfuse           │ https://%s:13002                  │\n" "$AGENT_DOMAIN"
 printf "  │ Agent Inbox API    │ https://%s:13004                  │\n" "$AGENT_DOMAIN"
 printf "  │ Health Endpoint    │ https://%s:13007/health            │\n" "$AGENT_DOMAIN"

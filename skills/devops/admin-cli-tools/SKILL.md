@@ -131,4 +131,4 @@ html += secs;
 
 ## Related
 - `bus.recover_timeouts()` for stuck message cleanup
-- `~/.steadfaste-fleet/dashboard/` — the Cortex Dashboard (Flask app)
+- `~/.steadfaste-fleet/dashboard/` — the Fleet Dashboard (Flask app)

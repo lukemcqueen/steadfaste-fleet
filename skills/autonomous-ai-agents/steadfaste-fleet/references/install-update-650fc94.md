@@ -1,9 +1,9 @@
 <!-- Renamed from skills/autonomous-ai-agents/hermes-cortex/references/install-update-650fc94.md in the 2026-11-12 hc→fleet brand sweep (commit 2dc01b0e); content predates the range. -->
 
-# Install.sh Update — Langfuse, Cortex Dashboard, nginx
+# Install.sh Update — Langfuse, Fleet Dashboard, nginx
 
 **Commit:** 650fc94 (2026-06-04)
-**Issue:** Public installer claimed to install Langfuse, Cortex Dashboard, and nginx but had zero code to actually install them. These were excised when Clawmetry was removed from public repo.
+**Issue:** Public installer claimed to install Langfuse, Fleet Dashboard, and nginx but had zero code to actually install them. These were excised when Clawmetry was removed from public repo.
 
 **Fix:** Added 3 new installation steps (now 13 total):
 
@@ -37,7 +37,7 @@ LANGFUSE_COMPOSE="${LANGFUSE_DIR}/docker-compose.yml"
 
 **Components (v2 original):**
 
-## Step 10 — Cortex Dashboard (Flask)
+## Step 10 — Fleet Dashboard (Flask)
 
 ```bash
 DASHBOARD_DEST="${HERMES_HOME}/dashboard"
@@ -94,7 +94,7 @@ Updated installer summary to reflect new components:
   • Bun              — JS runtime
   • mycortex           — Knowledge brain (PGLite)
   • Langfuse         — LLM observability (Docker, port 3000)
-  • Cortex Dashboard — Flask companion app (port 8901)
+  • Fleet Dashboard — Flask companion app (port 8901)
   • nginx            — Reverse proxy (ports 11002, 11003)
   • Brain sources    → ~/brain/{default,...}
   • mycortex plugin    → /brain slash command
@@ -103,7 +103,7 @@ Updated installer summary to reflect new components:
   Launchd services:
     com.ollama.serve
     com.legacy-brain.sync-watch
-    com.hermes.cortex-dashboard
+    com.hermes.fleet-dashboard
     homebrew.mxcl.nginx
 ```
 

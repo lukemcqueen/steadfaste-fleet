@@ -135,7 +135,7 @@ components:
 
 ## Overview
 
-The Cortex Dashboard is the operational nerve center for the Hermes multi-agent
+The Fleet Dashboard is the operational nerve center for the Hermes multi-agent
 fleet. It surfaces agent health, Langfuse observability data, system metrics,
 LLM cost trends, cron status, and session activity in a single glanceable view.
 The design language is *engineering precision meets atmospheric calm* — a

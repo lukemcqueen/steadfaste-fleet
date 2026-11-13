@@ -1,7 +1,7 @@
 ---
 name: steadfaste-fleet
 version: 2.0.0
-description: Install, configure, and maintain Steadfaste Fleet — the observability and knowledge layer for Hermes Agent (Ollama, mycortex, Langfuse, Cortex Dashboard, nginx, systemd/launchd services, Hermes plugins, offline code assistant, offline content auto-update).
+description: Install, configure, and maintain Steadfaste Fleet — the observability and knowledge layer for Hermes Agent (Ollama, mycortex, Langfuse, Fleet Dashboard, nginx, systemd/launchd services, Hermes plugins, offline code assistant, offline content auto-update).
 tags: [setup, installation, mycortex, langfuse, dashboard, nginx, systemd, launchd, linux, macos, plugins, docker-compose, offline, code-assistant, rag, bible, hymns]
 related_skills: [hermes-agent, docker-compose-common-issues]
 ---
@@ -79,7 +79,7 @@ The installer runs **~30 steps** (exact count varies by OS/profile):
 | 11 | MCP servers | loop-governance (loop-gov-mcp.py), tasks (task-mcp.py) |
 | 12 | Web Cache | Semantic web result cache |
 | 13 | Langfuse | Docker Compose stack with auto-generated secrets |
-| 14 | Cortex Dashboard | Flask app + systemd/launchd service |
+| 14 | Fleet Dashboard | Flask app + systemd/launchd service |
 | 15 | Offline tools | cache cascade + ZIM viewer |
 | 16 | nginx | Reverse proxy (SSL or local-only mode) |
 | 17 | Hardening | File permission lockdown on sensitive files |
@@ -92,7 +92,7 @@ The installer runs **~30 steps** (exact count varies by OS/profile):
 | Ollama | 11434 | Local LLM serving |
 | mycortex-postgres | 15432 | Knowledge brain (Postgres + pgvector, Docker) |
 | Langfuse | 3000 | LLM observability (Docker) |
-| Cortex Dashboard | 8901 | System health + Langfuse companion |
+| Fleet Dashboard | 8901 | System health + Langfuse companion |
 | ClickHouse (Langfuse) | 8123/9000 | Analytics DB for Langfuse v3 |
 | nginx | 11002, 11003 | Reverse proxy for external access |
 
@@ -123,7 +123,7 @@ This was done for 42 files in June 2026. Any future fleet-update maintenance sho
 
 **External access (via nginx):**
 - Langfuse: `https://your-domain.com:11002` (TLS + basic auth, upstream `127.0.0.1:3000`)
-- Cortex Dashboard: `https://your-domain.com:11003` (TLS + basic auth)
+- Fleet Dashboard: `https://your-domain.com:11003` (TLS + basic auth)
 
 ### Verify Installation
 
@@ -144,7 +144,7 @@ curl -s http://127.0.0.1:11434/api/tags | jq .
 docker ps | grep langfuse
 curl http://localhost:3000/api/public/health
 
-# Cortex Dashboard
+# Fleet Dashboard
 curl http://localhost:8901/api/health
 # Linux: systemctl status cortex-dashboard
 # macOS: launchctl list | grep cortex-dashboard
@@ -197,7 +197,7 @@ bash ~/.hermes/scripts/fleet-health.sh
 ```
 
 This produces a single-pane report covering Ollama, Langfuse, mycortex sources,
-mycortex sync freshness, memory sync freshness, Cortex Dashboard, and disk usage.
+mycortex sync freshness, memory sync freshness, Fleet Dashboard, and disk usage.
 Exits with:
 - **0** (HEALTHY) — all green
 - **1** (DEGRADED) — non-critical issues like stale brain sources
@@ -698,7 +698,7 @@ puts Homebrew/usr-local ahead of `/usr/bin`:
 
 (Applied to `install-fleet-update-cron.sh` in commit c806edf4 — if you
 generate or hand-write a plist, include the block; `launchctl unload` +
-`load` to apply.) The `com.hermes.health-push` and `com.hermes.cortex-dashboard`
+`load` to apply.) The `com.hermes.health-push` and `com.hermes.fleet-dashboard`
 plist templates already carry PATH — check any NEW plist against them.
 **PREVENT:** after writing any plist, verify `EnvironmentVariables.PATH` exists
 and includes the toolchain dir (`/opt/homebrew/bin` on Apple Silicon,
@@ -1595,14 +1595,14 @@ docker exec langfuse-postgres-1 psql -U postgres -f /tmp/fix.sql
 
 Langfuse uses `$2a$` bcrypt prefix (not Python's default `$2b$`) — replace after generation.
 
-### Cortex Dashboard Not Loading
+### Fleet Dashboard Not Loading
 
 ```bash
 # Check launchd service
 launchctl list | grep cortex-dashboard
 
 # Check logs
-tail -50 ~/.hermes/logs/cortex-dashboard.log
+tail -50 ~/.hermes/logs/fleet-dashboard.log
 
 # Restart
 launchctl unload ~/Library/LaunchAgents/com.hermes.fleet-dashboard.plist
@@ -1850,7 +1850,7 @@ Steadfaste Fleet uses a two-repo architecture:
 - ✅ mycortex sync cron (no daemon)
 - ✅ `/brain` Hermes plugin (`mycortex-command`)
 - ✅ **Langfuse** (Docker Compose, auto-generated secrets)
-- ✅ **Cortex Dashboard** (Flask app + systemd/launchd)
+- ✅ **Fleet Dashboard** (Flask app + systemd/launchd)
 - ✅ **nginx** reverse proxy (SSL or local-only mode)
 - ✅ Utility scripts (heartbeat.py, memory-to-brain-sync.py, check-memory-budget.sh, etc.)
 - ✅ Cron jobs, hooks, MCP servers (loop-governance, tasks)
@@ -2172,7 +2172,7 @@ approach is `.steadfaste-fleet/` (project-anchored) + `~/.hermes/` (home-dir)
 - `references/mycortex-npm-collision.md` — Detailed documentation of the npm package collision issue
 - `references/mycortex-cron-maintenance.md` — mycortex cron maintenance reference, update workflows, and source migration notes
 - `references/plugin-enablement.md` — Plugin enablement pitfall and post-install checklist
-- `references/install-update-650fc94.md` — Langfuse, Cortex Dashboard, nginx installation (commit 650fc94)
+- `references/install-update-650fc94.md` — Langfuse, Fleet Dashboard, nginx installation (commit 650fc94)
 - `references/public-repo-privacy.md` — Domain privacy pattern (example.com placeholder, git history rewriting with git-filter-repo)
 - `references/langfuse-v3-migration.md` — Full Langfuse v3 env var reference and migration steps
 - `references/security-hardening.md` — File permission lockdown, bind address audit, nginx unload, restart resilience check, full audit one-liner

@@ -24,7 +24,7 @@ Refactored to use **direct Postgres** (`docker exec legacy Postgres psql -U myco
 Messages consumed via PGMQ `read` (state='processing') but never archived sit in `processing` state until `bus.recover_timeouts()` runs. Set up a no_agent cron every 5 min.
 
 ## Dashboard Addition
-- Added `_bus_data()` + `/api/bus` endpoint to Cortex Dashboard (Flask, port 8901/13001)
+- Added `_bus_data()` + `/api/bus` endpoint to Fleet Dashboard (Flask, port 8901/13001)
 - Added HTML card + `renderBus()` JS to existing dashboard
 - Creating dedicated `/bus` and `/langfuse` pages
 

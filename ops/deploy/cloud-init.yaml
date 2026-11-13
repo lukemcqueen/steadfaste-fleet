@@ -200,7 +200,7 @@ runcmd:
     <h1>✅ Steadfaste Fleet</h1>
     <p>This server is running the Steadfaste Fleet agent stack.</p>
     <ul>
-      <li><a href="https://DOMAIN:13001/">Cortex Dashboard</a></li>
+      <li><a href="https://DOMAIN:13001/">Fleet Dashboard</a></li>
       <li><a href="https://DOMAIN:13002/">Langfuse</a></li>
       <li><a href="https://DOMAIN:13005/">Hermes UI</a></li>
     </ul>

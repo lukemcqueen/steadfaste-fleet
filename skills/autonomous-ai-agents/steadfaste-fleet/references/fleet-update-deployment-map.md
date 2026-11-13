@@ -134,7 +134,7 @@ file copies complete:
 |----------|---------|-------------|
 | `restart_legacy_sync` | `com.legacy-brain.sync-watch` | Unloads launchd, removes stale sync-watch.sh, re-runs install-legacy-sync.sh to regenerate script + reload plist |
 | `restart_langfuse` | Docker Compose stack | Runs `docker compose up -d` in `~/langfuse/` |
-| `restart_dashboard` | `com.hermes.cortex-dashboard` (kept name — the dashboard unit keeps its pre-rename identifier) | Unloads/reloads launchd plist |
+| `restart_dashboard` | `com.hermes.fleet-dashboard` (kept name — the dashboard unit keeps its pre-rename identifier) | Unloads/reloads launchd plist |
 
 ### restart_legacy_sync Pitfall
 

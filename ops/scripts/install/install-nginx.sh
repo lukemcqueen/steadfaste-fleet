@@ -93,7 +93,7 @@ upstream health_backend {
     server 127.0.0.1:8905;
 }
 
-# Cortex Dashboard — port ${listen_dashboard}
+# Fleet Dashboard — port ${listen_dashboard}
 server {
     listen ${listen_dashboard};
     server_name localhost;

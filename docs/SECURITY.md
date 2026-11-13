@@ -562,7 +562,7 @@ docker compose -f ~/steadfaste-fleet/ops/install/deploy/docker-compose.langfuse.
 curl -s http://localhost:8901/api/health
 
 # Restart the dashboard
-launchctl kickstart gui/$(id -u)/com.hermes.cortex-dashboard
+launchctl kickstart gui/$(id -u)/com.hermes.fleet-dashboard
 
 # Check nginx
 nginx -t && nginx -s reload

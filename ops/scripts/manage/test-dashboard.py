@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Comprehensive test suite for Cortex Dashboard v2."""
+"""Comprehensive test suite for Fleet Dashboard v2."""
 import json, sys, urllib.request, urllib.error
 
 BASE = "http://127.0.0.1:8901"

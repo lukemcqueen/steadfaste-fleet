@@ -533,7 +533,7 @@ hermes cron run <id>  # Test a job immediately
 
 **Root cause:** Langfuse v3.178+ requires `fromTimestamp` on trace API queries. The dashboard's `_lf()` function must auto-append it.
 
-**Fix — ensure `_lf()` in `~/.steadfaste-fleet/dashboard/server.py` appends `fromTimestamp={iso_7days_ago}` when missing from the path. Then restart: `launchctl kickstart gui/$(id -u)/com.hermes.cortex-dashboard`
+**Fix — ensure `_lf()` in `~/.steadfaste-fleet/dashboard/server.py` appends `fromTimestamp={iso_7days_ago}` when missing from the path. Then restart: `launchctl kickstart gui/$(id -u)/com.hermes.fleet-dashboard`
 
 **Alternative:** Add `LANGFUSE_API_TRACES_REJECT_NO_DATE_RANGE=false` to `~/langfuse/.env` and recreate Docker containers (less secure).
 

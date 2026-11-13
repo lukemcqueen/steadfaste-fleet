@@ -184,7 +184,7 @@ diagnostics belong in a log file, never on a stream a user is looking at.
 |---|---|---|
 | Fleet ops sink | `~/.steadfaste-fleet/logs/` | per writer |
 | ↳ governance cycles | `~/.steadfaste-fleet/logs/loop-governance.log` | 5 MB × 3 |
-| ↳ dashboard | `~/.steadfaste-fleet/logs/cortex-dashboard.log` | per writer |
+| ↳ dashboard | `~/.steadfaste-fleet/logs/fleet-dashboard.log` | per writer |
 | ↳ harness diagnostics (Pi) | `~/.steadfaste-fleet/logs/pi-context.log` | 1 MB → `.log.1` |
 | Hermes agent / errors / gateway | `~/.hermes/logs/{agent,errors,gateway}.log` | Hermes-managed |
 | MCP server stderr | `~/.hermes/logs/mcp-stderr.log` | Hermes-managed |

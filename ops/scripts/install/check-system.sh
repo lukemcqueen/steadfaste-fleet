@@ -339,12 +339,12 @@ check_service_manager() {
         SERVICES=(
             "com.ollama.serve"
             "com.hermes.gateway"
-            "com.hermes.cortex-dashboard"
+            "com.hermes.fleet-dashboard"
         )
         SERVICE_NAMES=(
             "Ollama"
             "Hermes Gateway"
-            "Cortex Dashboard"
+            "Fleet Dashboard"
         )
         local svc_mgr="launchd"
     elif [[ "$os" == "Linux" ]]; then
@@ -357,7 +357,7 @@ check_service_manager() {
         SERVICE_NAMES=(
             "Ollama"
             "Hermes Gateway"
-            "Cortex Dashboard"
+            "Fleet Dashboard"
         )
         local svc_mgr="systemd"
     else

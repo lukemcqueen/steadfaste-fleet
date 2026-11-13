@@ -296,7 +296,7 @@ done
 
 #### 7e. Dashboard — Direct Launch (gateway workaround)
 
-The Hermes gateway blocks `systemctl start` commands (SIGTERM propagation concern). To start the Cortex Dashboard without triggering the blocker:
+The Hermes gateway blocks `systemctl start` commands (SIGTERM propagation concern). To start the Fleet Dashboard without triggering the blocker:
 
 ```bash
 # Create service file (this is fine)

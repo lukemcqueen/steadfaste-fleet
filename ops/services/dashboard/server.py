@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cortex Dashboard v2 — Enriched companion dashboard for Langfuse + Hermes."""
+"""Fleet Dashboard v2 — Enriched companion dashboard for Langfuse + Hermes."""
 import base64, json, os, platform, re, shutil, sqlite3, subprocess, sys, time
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
@@ -1192,7 +1192,7 @@ def static_files(path):
 
 # ── Main ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print(f"Cortex Dashboard v2 → http://127.0.0.1:{PORT}")
+    print(f"Fleet Dashboard v2 → http://127.0.0.1:{PORT}")
     print(f"  Langfuse: {LANGFUSE_HOST} ({'authed' if LANGFUSE_AUTH else 'no creds'})")
     print(f"  Hermes: {HERMES_HOME}")
     print(f"  Cache TTL: {CACHE_TTL}s")

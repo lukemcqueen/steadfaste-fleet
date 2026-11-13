@@ -1,4 +1,4 @@
-// ── Cortex Dashboard v2.1 — Design System Refresh ──
+// ── Fleet Dashboard v2.1 — Design System Refresh ──
 // DESIGN.md at /DESIGN.md for token reference
 
 (function() {
