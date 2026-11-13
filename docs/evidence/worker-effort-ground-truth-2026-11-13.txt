@@ -1,0 +1,58 @@
+Worker reasoning effort — ground-truth evidence for the high->low change
+Captured 2026-11-13, cycle 8258 (review-cost-optimization).
+
+==============================================================================
+THE CONTRADICTION RESOLVED (pro finding ADV-0-2 required this before any
+mechanism choice)
+==============================================================================
+1. config.yaml line 26: agent.reasoning_effort: medium
+2. `hermes config get agent.reasoning_effort` -> "medium" BUT with the warning
+   "'agent.reasoning_effort' is not a recognized config key — Hermes may not
+   read it". So the web-config SCHEMA does not know the key, but the runtime
+   DOES read it: hermes_constants.py resolve_reasoning_config() reads
+   agent_cfg.get("reasoning_effort") directly from the raw YAML (line 1129),
+   with per-model agent.reasoning_overrides taking precedence (line 1124).
+3. Live ~/.hermes/jev/routing.json has NO effort block -> Jev effort routing is
+   OFF -> the plugin's effort.pick() returns None -> the worker uses whatever
+   Hermes resolved from config.yaml. So the canonical knob for the WORKER
+   default is config.yaml agent.reasoning_effort, NOT the jev routing table.
+4. No agent.reasoning_overrides exist in config.yaml (only the bare
+   reasoning_effort key at line 26).
+
+OPERATOR DIRECTIVE (recorded per ADV-0-2, from Luke in this session):
+  "we are on 'high' mode for deepseek v4 flash" / "there is no 'medium' for
+  deepseek v4 flash" / "i think the high reasoning for the worker is also
+  related to cost".
+Reading: the operator observes high-effort behaviour on the worker and wants it
+lowered. The files show medium as the stored value; the operator's observation
+is ground truth for the BEHAVIOUR (the provider's own effort mapping may treat
+medium generously). Either way the change target is the same: lower the worker
+effort to low, measure, report, keep only if it preserves capability.
+
+MEASURED REASONING-TOKEN COST (state.db, 2026-11-13)
+  This session (20261113_150407_dbe8cf51, deepseek-v4-flash-0731):
+    reasoning_tokens = 56,178  (single interactive session, worker)
+  Cron sessions today (same worker model):
+    cron_eac7081f  156 sessions, 624,078 reasoning tokens
+    cron_888b4dcc   95 sessions, 729,835 reasoning tokens
+    cron_e0b40b47   96 sessions, 535,648 reasoning tokens
+    cron_944de18a  109 sessions, 464,269 reasoning tokens
+    cron_544ec4ce   72 sessions, 195,150 reasoning tokens
+  Reading: reasoning tokens are the direct spend of thinking effort on
+  deepseek-v4-flash-0731 (0.238/M output). Lowering effort high->low cuts this
+  multiplier at the source.
+
+MECHANISM CHOSEN (from the evidence, not by guess):
+  hermes config set agent.reasoning_effort low
+  - the runtime reads this key (resolve_reasoning_config), so it is the real
+    knob; the jev routing.json is inert for effort (no effort block).
+  - reversible: hermes config set agent.reasoning_effort medium (or high)
+  - applies to NEW sessions (resolve_reasoning_config resolves per session).
+
+VERIFICATION (after change):
+  1. hermes config get agent.reasoning_effort -> low
+  2. spawn `hermes chat -q "Reply with exactly: OK"` -> confirms the worker
+     still answers AND routes tools (no tool-less regression).
+  3. compare reasoning_tokens on the new session vs the 56K baseline.
+  4. revert if the worker shows degraded tool routing (the Jev 'none'
+     regression mode).
