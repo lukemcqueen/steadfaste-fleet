@@ -1,0 +1,69 @@
+# Fleet cost coverage — 6/6 hosts, 2026-11-07..13 window
+
+**Story:** c579ef95 *Fleet cost under $10/day avg + halve review queue*
+**Slice:** e7003dc2 `[cost/1]` (per-host $/day gap) — the fleet daily-average gap
+`docs/cost-baseline-2026-11.md` §4 left open.
+**Measured:** 2026-11-14 KST by the orch-bus-worker cron (esther, orchestrator).
+**Instrument:** `cron-cost-metrics.py --json-summary --since 2026-11-07`
+(ops/scripts/manage/, deployed) — the [cost/4] per-host adapter. One EXEC per
+host over the bus (esther self-test, then joseph/kustos/gisu/titus), moses read
+over ssh (mosesaaron), because moses' local state.db is authoritative on its
+host.
+
+This is the fresh re-run of the 2026-10-28 [cost/4] loop
+(`docs/evidence/cost4-coverage-2026-10-28.txt`) against the current window. It
+takes the baseline's "fleet 2026-11 daily average NOT computed" to measured.
+
+## Per-host (window 2026-11-07..13, 7 days)
+
+| host | 7d cron fires | 7d cron tokens (M) | lifetime cron $ (state.db) | Langfuse 7d $ (cron+interactive) |
+|---|---|---|---|---|
+| moses | 48 | 70.0 | 25.74 | — (0 traces in window) |
+| esther | 83 | 105.9 | 64.25 | 88.36 (321 traces) |
+| joseph | 30 | 46.1 | 43.51 | — (0 traces in window) |
+| kustos | 49 | 66.7 | 52.36 | 7.70 (62 traces) |
+| gisu | 30 | 36.4 | 72.65 | 10.49 (94 traces) |
+| titus | 58 | 87.7 | 21.53 | — (0 traces in window) |
+| **fleet** | **298** | **412.8** | **280.05** | **106.55** (3/6 hosts) |
+
+## What this says (honest reading)
+
+- **Cron compute is nowhere near the $10/day target.** Aggregate LIFETIME cron
+  spend across all six hosts is **$280.05** — the fleet has never accumulated
+  meaningfully against a $10/day run-rate on cron compute. Confirms, not rejects,
+  the prior baseline's verdict.
+- **Interactive spend is the real driver, and it is concentrated on esther.**
+  Langfuse reports a 7-day trace total of $88.36 on esther alone (≈$12.6/day
+  cron+interactive), $10.49 on gisu, $7.70 on kustos. Three hosts (moses,
+  joseph, titus) report zero Langfuse traces for the window — joseph/titus/moses
+  run no local interactive surface that reports through this Langfuse daily
+  endpoint, so their interactive spend is NOT zero, just not measured here.
+  (joseph returned HTTP 401 / titus no instance on the 10-26/27 run; same gap
+  shape repeats.)
+
+## Coverage (not implied, stated)
+
+- **Cron tokens/fires + lifetime cron $: 6 of 6 hosts** (measured, re-runnable).
+- **Interactive spend: 3 of 6 hosts** (esther, gisu, kustos) via Langfuse. The
+  other three report no traces — a GAP, never a zero.
+- **Per-day cron $ (the $0.64/day-style daily figure) is NOT in this instrument**:
+  `cron-cost-metrics.py --json-summary` emits lifetime + per-day token/fire
+  counts, not per-day $ spend. Per-day cron $ comes from
+  `orch-weekly-cost-report.py --days 7` (reads state.db `source='cron'` per day),
+  which reads THIS host's state.db only. A per-host per-day cron $ breakdown
+  would additionally need that instrument run on each worker host; it is not
+  fabricated here from lifetime totals.
+
+## Commands
+
+```
+# esther (self-test, direct)
+~/.steadfaste-fleet/venv/bin/python3 ~/.steadfaste-fleet/scripts/cron-cost-metrics.py --json-summary --since 2026-11-07
+# joseph/kustos/gisu/titus
+~/.steadfaste-fleet/scripts/fleet exec <host> cron-cost-metrics.py --json-summary --since 2026-11-07
+# moses
+ssh mosesaaron '~/.steadfaste-fleet/venv/bin/python3 ~/.steadfaste-fleet/scripts/cron-cost-metrics.py --json-summary --since 2026-11-07'
+```
+
+All six returned exit 0 with `spend.available: true`. Live reads; the current
+day grows sub-cent between reads, which is live data, not an inconsistency.

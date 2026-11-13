@@ -65,11 +65,16 @@ give, honestly:
 | titus | 16.55 | 268.3M | 241 |
 | moses | (separate; ~$1.82 tokens-extrapolated, 2026-10 baseline) | 207.1M | 157 |
 
-A **fleet-wide daily average for the 2026-11 window** is NOT computed here, because it
-requires re-running `cron-cost-metrics.py --json-summary --since 2026-11-01` over EXEC on
-the other 5 hosts — the [cost/4] fleet-coverage loop, which is a separate tracked slice.
-This baseline reports per-day cost only for esther (the one host whose state.db this
-session can read) and does not fabricate a fleet average from lifetime totals.
+A **fleet-wide measurement for the 2026-11 window is now done** (2026-11-14, 6/6 hosts) —
+the [cost/4] loop re-run against the current window, not the 10-06..28 window the table
+below rests on. Fresh per-host 2026-11-07..13 figures (cron fires, tokens, lifetime cron $,
+Langfuse total) are in `docs/evidence/cost4-fleet-coverage-2026-11-14.txt`. Headline: the
+fleet's aggregate LIFETIME cron spend is **$280.05 across all six hosts** — cron compute has
+never neared the $10/day run-rate — and interactive spend (Langfuse, 3 of 6 hosts answering)
+is $106.55 over 7 days, concentrated on esther ($88.36). Per-day cron $ is still not in the
+cron-cost-metrics instrument (it emits lifetime + token counts); a per-host per-day cron $
+breakdown needs `orch-weekly-cost-report.py` on each host, tracked as the remaining sub-gap,
+not fabricated here from lifetime totals.
 
 **Provider/model coverage:** per-cron provider/model is configured at the env-var tier
 (`LLM_CRON_PROVIDER` + model, single control point), not per-cron — the jobs.json

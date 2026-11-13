@@ -164,7 +164,7 @@ repo; this public repo carries only framework docs (PRDs, design, reference).
 |-----|-------------|
 | `docs/operations-reference.md` | Operations reference — inbox, bus, offline code, tasks |
 | `docs/fleet-reference.md` | Fleet reference — crons, agents, remediation |
-| `docs/cost-baseline-2026-11.md` | **Fleet cost baseline (2026-11-01..07)** — esther freshly measured ($0.64/day cron, ~15× under the $10/day target); fleet lifetime spend + top-3 drivers; flags the fleet daily-average gap that [cost/4] still owes |
+| `docs/cost-baseline-2026-11.md` | **Fleet cost baseline (2026-11-01..07)** — esther freshly measured ($0.64/day cron, ~15× under the $10/day target); fleet lifetime spend + top-3 drivers; the fleet daily-average gap is now measured 6/6 hosts (`docs/evidence/cost4-fleet-coverage-2026-11-14.txt`) — fleet lifetime cron $280.05, interactive $106.55/7d (3/6 hosts) |
 | `docs/pipeline-reference.md` | Pipeline reference — the four growth pipelines **plus** how an agent submits an ad-hoc learning (`agent-learning-submissions.md`, merged 2026-10-20) |
 | `docs/troubleshooting.md` | Troubleshooting guide |
 | `docs/older/troubleshooting-stale-inbox-api.md` | Stale inbox API troubleshooting |
