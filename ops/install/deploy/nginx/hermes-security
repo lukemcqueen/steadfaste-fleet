@@ -21,7 +21,12 @@ __SUDO_USERS__ ALL=(root) NOPASSWD: /bin/cp /tmp/blocked_ips.conf.new /etc/nginx
 # Fleet agents — governance enforcement helper (2026-07-31 hardening)
 # Gated inside the helper: unlock/update require --fleet-update (sanctioned)
 # or --orchestrator (orchestrator Unix accounts). lock/status open to all.
+# BOTH platform paths listed: Linux /usr/local/sbin, macOS /usr/local/bin
+# (the helper lives at /usr/local/bin on macOS). A path that doesn't exist on a
+# host simply never matches — harmless dead entry on the other platform
+# (macOS portability, Titus 2026-08-05 — same pattern as fix-blocked-ips.py).
 __SUDO_USERS__ ALL=(root) NOPASSWD: /usr/local/sbin/hermes-plugin-lock
+__SUDO_USERS__ ALL=(root) NOPASSWD: /usr/local/bin/hermes-plugin-lock
 # Full nginx service installer + clean restart (fleet-update deploy targets)
 __SUDO_USERS__ ALL=(root) NOPASSWD: /usr/local/sbin/install-nginx-full.sh
 __SUDO_USERS__ ALL=(root) NOPASSWD: /usr/local/sbin/hermes-nginx-clean-restart
