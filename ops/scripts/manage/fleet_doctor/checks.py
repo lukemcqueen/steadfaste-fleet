@@ -3158,7 +3158,11 @@ def check_governance(res):
   #
   # The canonical value is READ FROM THE REVIEWER'S OWN SOURCE rather than restated here —
   # a second hardcoded copy is where a check and the code it checks drift apart.
-  _rv_source = FLEET_REPO / "mcp-servers" / "loop-gov-mcp.py"
+  # DRY (2026-11-13, cycle 8265): the single source is now fleet_lib/models.py
+  # (REVIEWER_MODEL_DEFAULT), and every surface (loop-gov-mcp, adversarial-review,
+  # deepseek-review-mcp) resolves through it. Read THAT, not the loop-gov literal
+  # (which is now an import).
+  _rv_source = FLEET_REPO / "ops" / "scripts" / "fleet_lib" / "models.py"
   try:
     # Explicit None check: relying on AttributeError from `.group()` to mean "pattern absent"
     # is the same failure shape as the gates this session has been fixing — it works, but the
@@ -3174,7 +3178,7 @@ def check_governance(res):
     res.add("Adversarial reviewer model config", "WARN",
         f"COULD NOT VERIFY: cannot read REVIEWER_MODEL_DEFAULT from {_rv_source.name} "
         f"({type(_rv_err).__name__})",
-        "Restore mcp-servers/loop-gov-mcp.py from the repo")
+        "Restore ops/scripts/fleet_lib/models.py from the repo")
   if _rv_canonical:
     def _reviewer_env(_name):
       """The value the REVIEWER resolves for `_name`, and its source.
