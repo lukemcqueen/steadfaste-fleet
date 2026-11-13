@@ -21,11 +21,11 @@ write_service() {
 
   mkdir -p "$SERVICE_DIR"
 
-  if [[ "$CORTEX_OS" == "macos" ]]; then
+  if [[ "$FLEET_OS" == "macos" ]]; then
     _write_launchd_plist "$name" "$command" "$workdir" "$extra_env"
-  elif [[ "$CORTEX_OS" == "linux" ]]; then
+  elif [[ "$FLEET_OS" == "linux" ]]; then
     _write_systemd_unit "$name" "$command" "$workdir" "$extra_env"
-  elif [[ "$CORTEX_OS" == "windows" ]]; then
+  elif [[ "$FLEET_OS" == "windows" ]]; then
     _write_windows_task "$name" "$command" "$workdir" "$extra_env"
   fi
 }
@@ -33,14 +33,14 @@ write_service() {
 # ── Start (Load) Service ────────────────────────────────────
 start_service() {
   local name="$1"
-  if [[ "$CORTEX_OS" == "macos" ]]; then
+  if [[ "$FLEET_OS" == "macos" ]]; then
     launchctl load "${SERVICE_DIR}/${name}.${SERVICE_EXT}" 2>/dev/null || true
     launchctl start "$name" 2>/dev/null || true
-  elif [[ "$CORTEX_OS" == "linux" ]]; then
+  elif [[ "$FLEET_OS" == "linux" ]]; then
     systemctl --user daemon-reload 2>/dev/null || true
     systemctl --user enable "$name" 2>/dev/null || true
     systemctl --user start "$name" 2>/dev/null || true
-  elif [[ "$CORTEX_OS" == "windows" ]]; then
+  elif [[ "$FLEET_OS" == "windows" ]]; then
     powershell -File "${SERVICE_DIR}/${name}.ps1" -Action Start 2>/dev/null || true
   fi
 }
@@ -48,13 +48,13 @@ start_service() {
 # ── Stop (Unload) Service ───────────────────────────────────
 stop_service() {
   local name="$1"
-  if [[ "$CORTEX_OS" == "macos" ]]; then
+  if [[ "$FLEET_OS" == "macos" ]]; then
     launchctl stop "$name" 2>/dev/null || true
     launchctl unload "${SERVICE_DIR}/${name}.${SERVICE_EXT}" 2>/dev/null || true
-  elif [[ "$CORTEX_OS" == "linux" ]]; then
+  elif [[ "$FLEET_OS" == "linux" ]]; then
     systemctl --user stop "$name" 2>/dev/null || true
     systemctl --user disable "$name" 2>/dev/null || true
-  elif [[ "$CORTEX_OS" == "windows" ]]; then
+  elif [[ "$FLEET_OS" == "windows" ]]; then
     powershell -File "${SERVICE_DIR}/${name}.ps1" -Action Stop 2>/dev/null || true
   fi
 }
@@ -62,11 +62,11 @@ stop_service() {
 # ── Check if Service is Running ─────────────────────────────
 service_running() {
   local name="$1"
-  if [[ "$CORTEX_OS" == "macos" ]]; then
+  if [[ "$FLEET_OS" == "macos" ]]; then
     launchctl list "$name" &>/dev/null
-  elif [[ "$CORTEX_OS" == "linux" ]]; then
+  elif [[ "$FLEET_OS" == "linux" ]]; then
     systemctl --user is-active "$name" &>/dev/null
-  elif [[ "$CORTEX_OS" == "windows" ]]; then
+  elif [[ "$FLEET_OS" == "windows" ]]; then
     powershell "Get-ScheduledTask -TaskName 'Hermes-${name}' -ErrorAction SilentlyContinue" &>/dev/null
   fi
 }

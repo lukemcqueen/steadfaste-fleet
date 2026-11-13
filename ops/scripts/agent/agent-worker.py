@@ -35,8 +35,8 @@ if not AGENT_NAME or AGENT_NAME == "unknown":
           "~/.steadfaste-fleet/agent.env / ~/steadfaste-fleet/.env or export AGENT_NAME",
           file=sys.stderr)
     sys.exit(1)
-BUS_URL = os.environ.get("BUS_URL") or os.environ.get("CORTEX_BUS_URL", "http://127.0.0.1:8903")
-CORTEX_BASIC_AUTH = os.environ.get("CORTEX_BASIC_AUTH") or os.environ.get("CORTEX_BUS_AUTH") or os.environ.get("CORTEX_INBOX_AUTH", "")
+BUS_URL = os.environ.get("BUS_URL") or os.environ.get("FLEET_BUS_URL", "http://127.0.0.1:8903")
+FLEET_BASIC_AUTH = os.environ.get("FLEET_BASIC_AUTH") or os.environ.get("FLEET_BUS_AUTH") or os.environ.get("FLEET_INBOX_AUTH", "")
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5:3b")
 POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", "30"))
@@ -49,8 +49,8 @@ LOG_DIR = HOME / ".hermes" / "logs"
 STATE_DIR = HOME / ".hermes" / "state" / "worker-completed"
 
 HEADERS = {"Content-Type": "application/json", "X-Forwarded-User": AGENT_NAME}
-if CORTEX_BASIC_AUTH:
-    HEADERS["Authorization"] = f"Basic {base64.b64encode(CORTEX_BASIC_AUTH.encode()).decode()}"
+if FLEET_BASIC_AUTH:
+    HEADERS["Authorization"] = f"Basic {base64.b64encode(FLEET_BASIC_AUTH.encode()).decode()}"
 
 
 def _request(method, path, data=None, timeout=30):

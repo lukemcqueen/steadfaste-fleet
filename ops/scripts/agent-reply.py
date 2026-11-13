@@ -46,11 +46,11 @@ def _bus_config() -> tuple:
     sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
     import lib.fleet_bus as cb  # noqa: PLC0415
     auth = {}
-    if cb.CORTEX_BUS_TOKEN:
-        auth = {"Authorization": f"Bearer {cb.CORTEX_BUS_TOKEN}"}
-    elif cb.CORTEX_BUS_AUTH:
+    if cb.FLEET_BUS_TOKEN:
+        auth = {"Authorization": f"Bearer {cb.FLEET_BUS_TOKEN}"}
+    elif cb.FLEET_BUS_AUTH:
         import base64
-        auth = {"Authorization": "Basic " + base64.b64encode(cb.CORTEX_BUS_AUTH.encode()).decode()}
+        auth = {"Authorization": "Basic " + base64.b64encode(cb.FLEET_BUS_AUTH.encode()).decode()}
     return cb.BUS_URL, auth
 
 
@@ -105,7 +105,7 @@ def main(argv=None) -> int:
 
     bus_url, headers = _bus_config()
     if not bus_url:
-        raise SystemExit("agent-reply: CORTEX_BUS_URL is not configured (checked the fleet env)")
+        raise SystemExit("agent-reply: FLEET_BUS_URL is not configured (checked the fleet env)")
 
     ok = publish_reply(bus_url, headers, agent, reply)
     if not ok:

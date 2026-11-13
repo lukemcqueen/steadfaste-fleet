@@ -11,14 +11,14 @@ Substitutes placeholders in hermes-services.conf:
   __CORTEX_HOME__      → user home directory
 
 SSL cert discovery order (first found wins):
-  1. CORTEX_SSL_CERT_PATH / CORTEX_SSL_CERT_KEY_PATH env vars (explicit paths)
-  2. CORTEX_SSL_DOMAIN env var → /etc/letsencrypt/live/<domain>/
+  1. FLEET_SSL_CERT_PATH / FLEET_SSL_CERT_KEY_PATH env vars (explicit paths)
+  2. FLEET_SSL_DOMAIN env var → /etc/letsencrypt/live/<domain>/
   3. Scan /etc/letsencrypt/live/ for any valid cert
   4. Scan ~/certs/ for self-signed cert.pem / privkey.pem
   5. Scan /etc/ssl/certs/ and /etc/ssl/private/
   6. If nothing found, leave placeholders unchanged (skip SSL substitution)
 
-Also handles port prefix translation (CORTEX_NGINX_PORT_PREFIX) and OS-aware
+Also handles port prefix translation (FLEET_NGINX_PORT_PREFIX) and OS-aware
 path detection matching install-nginx-full.sh conventions.
 
 Usage:
@@ -27,12 +27,12 @@ Usage:
   python3 hermes-services-apply.py --validate        # just test nginx config
 
 Environment:
-  CORTEX_SSL_CERT_PATH       Explicit cert path (overrides auto-detect)
-  CORTEX_SSL_CERT_KEY_PATH   Explicit key path (overrides auto-detect)
-  CORTEX_SSL_DOMAIN          Domain name for Let's Encrypt lookup
-  CORTEX_NGINX_PORT_PREFIX   Port prefix (default: 13)
-  CORTEX_REPO                Path to steadfaste-fleet repo (default: $HOME/steadfaste-fleet)
-  CORTEX_SKIP_NGINX          Set to skip nginx test/reload
+  FLEET_SSL_CERT_PATH       Explicit cert path (overrides auto-detect)
+  FLEET_SSL_CERT_KEY_PATH   Explicit key path (overrides auto-detect)
+  FLEET_SSL_DOMAIN          Domain name for Let's Encrypt lookup
+  FLEET_NGINX_PORT_PREFIX   Port prefix (default: 13)
+  FLEET_REPO                Path to steadfaste-fleet repo (default: $HOME/steadfaste-fleet)
+  FLEET_SKIP_NGINX          Set to skip nginx test/reload
 """
 
 import argparse
@@ -57,7 +57,7 @@ def _source_env_overrides():
     importing process's environment (it polluted os.environ for unrelated tests
     and callers that merely loaded this module).
     """
-    repo = Path(os.environ.get("CORTEX_REPO", Path.home() / "steadfaste-fleet"))
+    repo = Path(os.environ.get("FLEET_REPO", Path.home() / "steadfaste-fleet"))
     env_path = repo / ".env"
     if not env_path.exists():
         return
@@ -216,17 +216,17 @@ def discover_ssl_certs(domain="", explicit_cert=None, explicit_key=None, user_ho
 
     # Priority 2: Env vars
     if not (explicit_cert and explicit_key):
-        env_cert = os.environ.get("CORTEX_SSL_CERT_PATH")
-        env_key = os.environ.get("CORTEX_SSL_CERT_KEY_PATH")
+        env_cert = os.environ.get("FLEET_SSL_CERT_PATH")
+        env_key = os.environ.get("FLEET_SSL_CERT_KEY_PATH")
         if env_cert and env_key:
             try:
                 if Path(env_cert).is_file() and Path(env_key).is_file():
                     return env_cert, env_key
             except PermissionError:
                 # Permission denied — trust the env path (nginx reads as root)
-                print(f"  ✓ CORTEX_SSL_CERT_PATH trust (PermissionError on stat — trusting nginx can read)")
+                print(f"  ✓ FLEET_SSL_CERT_PATH trust (PermissionError on stat — trusting nginx can read)")
                 return env_cert, env_key
-            print(f"  ⚠ CORTEX_SSL_CERT_PATH/CORTEX_SSL_CERT_KEY_PATH files not found")
+            print(f"  ⚠ FLEET_SSL_CERT_PATH/FLEET_SSL_CERT_KEY_PATH files not found")
 
     # Priority 3: Let's Encrypt (specific domain or scan)
     cert, key = find_letsencrypt_certs(domain)
@@ -393,7 +393,7 @@ def main():
     )
     parser.add_argument("--dry-run", action="store_true", help="Show what would be done without writing")
     parser.add_argument("--force", action="store_true", help="Re-resolve SSL certs and port prefix from env/auto-detect instead of preserving existing values")
-    parser.add_argument("--domain", help="Domain for Let's Encrypt cert lookup (or set CORTEX_SSL_DOMAIN)")
+    parser.add_argument("--domain", help="Domain for Let's Encrypt cert lookup (or set FLEET_SSL_DOMAIN)")
     parser.add_argument("--cert", help="Explicit SSL cert path")
     parser.add_argument("--key", help="Explicit SSL key path")
     parser.add_argument("--validate", action="store_true", help="Only run nginx -t, skip all other steps")
@@ -410,7 +410,7 @@ def main():
 
     # ── Determine paths ──
     config_dir, available_dir, log_dir, htpasswd = detect_nginx_paths()
-    cortex_repo = Path(os.environ.get("CORTEX_REPO", Path.home() / "steadfaste-fleet"))
+    cortex_repo = Path(os.environ.get("FLEET_REPO", Path.home() / "steadfaste-fleet"))
     # Detect real user (works even under sudo)
     sudo_user = os.environ.get("SUDO_USER")
     if sudo_user:
@@ -430,11 +430,11 @@ def main():
         sys.exit(1)
 
     # ── Port prefix ──
-    port_prefix = os.environ.get("CORTEX_NGINX_PORT_PREFIX", "13")
+    port_prefix = os.environ.get("FLEET_NGINX_PORT_PREFIX", "13")
 
     # ── Read existing config (preserve ports/SSL unless forced) ──
     cert_path, key_path = None, None
-    force_deploy = args.force or os.environ.get("CORTEX_FORCE_DEPLOY", "")
+    force_deploy = args.force or os.environ.get("FLEET_FORCE_DEPLOY", "")
     live_path = config_dir / "hermes-services.conf"
     if not force_deploy and live_path.is_file():
         try:
@@ -459,7 +459,7 @@ def main():
 
     # ── SSL discovery (only if not preserved) ──
     if not cert_path:
-        domain = args.domain or os.environ.get("CORTEX_SSL_DOMAIN") or ""
+        domain = args.domain or os.environ.get("FLEET_SSL_DOMAIN") or ""
         cert_path, key_path = discover_ssl_certs(
             domain=domain,
             explicit_cert=args.cert,
@@ -641,7 +641,7 @@ def main():
     metrics_dst = services_enabled_dir / metrics_conf
     metrics_explicit = metrics_sink_decision(os.environ.get("HERMES_SERVICES"), False)[0]
 
-    vm_health_url = os.environ.get("CORTEX_VM_HEALTH_URL",
+    vm_health_url = os.environ.get("FLEET_VM_HEALTH_URL",
                                    "http://127.0.0.1:8428/-/healthy")
     vm_present = False
     try:
@@ -723,7 +723,7 @@ def main():
                 os.unlink(tmp2.name)
 
     # ── Test and reload ──
-    skip_nginx = os.environ.get("CORTEX_SKIP_NGINX", "")
+    skip_nginx = os.environ.get("FLEET_SKIP_NGINX", "")
     if skip_nginx or args.dry_run:
         return
 
@@ -739,7 +739,7 @@ def main():
 
 if __name__ == "__main__":
     # ── Auto-source env file (so agents don't need env_keep in sudoers) ──
-    env_file = Path(os.environ.get("CORTEX_REPO", Path.home() / "steadfaste-fleet")) / ".env"
+    env_file = Path(os.environ.get("FLEET_REPO", Path.home() / "steadfaste-fleet")) / ".env"
     if env_file.is_file():
         with open(env_file) as f:
             for line in f:

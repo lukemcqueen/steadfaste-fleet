@@ -266,7 +266,7 @@
           loop:
             - { var: AGENT_NAME, value: "{{ agent_name }}" }
             - { var: IS_ORCHESTRATOR, value: "{{ 'true' if is_orch else 'false' }}" }
-            - { var: CORTEX_NGINX_PORT_PREFIX, value: "13" }
+            - { var: FLEET_NGINX_PORT_PREFIX, value: "13" }
           become: false
 
     # ═══════════════════════════════════════════════════════════

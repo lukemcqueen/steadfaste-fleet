@@ -34,7 +34,7 @@ REPO_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"  # steadfaste-fleet repo root
 TEMPLATES_DIR="${REPO_DIR}/docs/templates"
 AGENTS_TEMPLATE="${TEMPLATES_DIR}/AGENTS.seed.md"
 MANIFEST_TEMPLATE="${REPO_DIR}/skills.yaml"   # cortex owns the manifest at the repo root
-CORTEX_COMMIT="$(cd "$REPO_DIR" && git rev-parse --short HEAD 2>/dev/null || echo 'unknown')"
+FLEET_COMMIT="$(cd "$REPO_DIR" && git rev-parse --short HEAD 2>/dev/null || echo 'unknown')"
 HERMES_CORTEX_SKILLS="${HOME}/.hermes/skills"  # resolved via symlink
 
 # ── Help ─────────────────────────────────────────────────────
@@ -183,7 +183,7 @@ create_backup() {
 {
   "timestamp": "${ts}",
   "project": "${project}",
-  "cortex_commit": "${CORTEX_COMMIT}",
+  "cortex_commit": "${FLEET_COMMIT}",
   "files": [
     $(for f in "$BACKUP_DIR"/*; do
         [[ -f "$f" ]] && echo "\"$(basename "$f")\","
@@ -335,7 +335,7 @@ deploy_agents_md() {
   content="${content//"{{PROJECT_NAME}}"/${name:-$(basename "$project")}}"
   content="${content//"{{PROJECT_DESCRIPTION}}"/$(basename "$project") — seeded project}"
   content="${content//"{{SEED_DATE}}"/$(date -u +'%Y-%m-%d')}"
-  content="${content//"{{SEED_COMMIT}}"/${CORTEX_COMMIT}}"
+  content="${content//"{{SEED_COMMIT}}"/${FLEET_COMMIT}}"
 
   if [[ "$MODE" == "diff" ]]; then
     if [[ ! -f "$dest" ]] || [[ "$(cat "$dest" 2>/dev/null)" != "$content" ]]; then

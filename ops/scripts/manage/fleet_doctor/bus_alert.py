@@ -42,7 +42,7 @@ def load_repo_owners() -> dict:
 
 def read_bus_token() -> str:
     """Read bus Bearer token from env or config files. Returns empty string if not found."""
-    token = os.environ.get("CORTEX_BUS_TOKEN", "")
+    token = os.environ.get("FLEET_BUS_TOKEN", "")
     if token:
         return token
     for cfg_path in BUS_CONFIG_PATHS:
@@ -55,7 +55,7 @@ def read_bus_token() -> str:
                     continue
                 k, v = (x.strip().strip("'\"").strip() for x in line.split("=", 1))
                 v = re.sub(r"\s+#.*$", "", v).strip()
-                if k == "CORTEX_BUS_TOKEN" and v:
+                if k == "FLEET_BUS_TOKEN" and v:
                     return v
         except OSError as e:
             print(f"bus_alert: could not read bus config {cfg_path} ({type(e).__name__}: {e})",
@@ -65,7 +65,7 @@ def read_bus_token() -> str:
 
 def read_basic_auth() -> str:
     """Read Basic Auth credentials from env or config files."""
-    for env_key in ("CORTEX_BUS_AUTH", "CORTEX_BASIC_AUTH", "CORTEX_INBOX_AUTH"):
+    for env_key in ("FLEET_BUS_AUTH", "FLEET_BASIC_AUTH", "FLEET_INBOX_AUTH"):
         val = os.environ.get(env_key, "")
         if val:
             return val
@@ -79,7 +79,7 @@ def read_basic_auth() -> str:
                     continue
                 k, v = (x.strip().strip("'\"").strip() for x in line.split("=", 1))
                 v = re.sub(r"\s+#.*$", "", v).strip()
-                if k in ("CORTEX_BUS_AUTH", "CORTEX_BASIC_AUTH", "CORTEX_INBOX_AUTH") and v:
+                if k in ("FLEET_BUS_AUTH", "FLEET_BASIC_AUTH", "FLEET_INBOX_AUTH") and v:
                     return v
         except OSError as e:
             print(f"bus_alert: could not read basic-auth config {cfg_path} ({type(e).__name__}: {e})",
@@ -170,12 +170,12 @@ def dispatch_bus_alerts(res):
     if not token and not basic_auth_val:
         print(
             "  ℹ️  --bus-alert: no bus auth found "
-            "(set CORTEX_BUS_TOKEN or CORTEX_BUS_AUTH in env or .env)"
+            "(set FLEET_BUS_TOKEN or FLEET_BUS_AUTH in env or .env)"
         )
         return
 
-    primary_url = os.environ.get("CORTEX_BUS_URL", "")
-    fallback_url = os.environ.get("CORTEX_BUS_FALLBACK_URL", "")
+    primary_url = os.environ.get("FLEET_BUS_URL", "")
+    fallback_url = os.environ.get("FLEET_BUS_FALLBACK_URL", "")
 
     if not primary_url:
         for cfg_path in BUS_CONFIG_PATHS:
@@ -188,11 +188,11 @@ def dispatch_bus_alerts(res):
                         continue
                     k, v = (x.strip().strip("'\"").strip() for x in line.split("=", 1))
                     v = re.sub(r"\s+#.*$", "", v).strip()
-                    if k == "CORTEX_BUS_URL" and v:
+                    if k == "FLEET_BUS_URL" and v:
                         primary_url = v
                         break
             except OSError as e:
-                print(f"bus_alert: could not read {cfg_path} for CORTEX_BUS_URL "
+                print(f"bus_alert: could not read {cfg_path} for FLEET_BUS_URL "
                       f"({type(e).__name__}: {e})", file=sys.stderr)
             if primary_url:
                 break
@@ -208,11 +208,11 @@ def dispatch_bus_alerts(res):
                         continue
                     k, v = (x.strip().strip("'\"'").strip() for x in line.split("=", 1))
                     v = re.sub(r"\s+#.*$", "", v).strip()
-                    if k == "CORTEX_BUS_FALLBACK_URL" and v:
+                    if k == "FLEET_BUS_FALLBACK_URL" and v:
                         fallback_url = v
                         break
             except OSError as e:
-                print(f"bus_alert: could not read {cfg_path} for CORTEX_BUS_FALLBACK_URL "
+                print(f"bus_alert: could not read {cfg_path} for FLEET_BUS_FALLBACK_URL "
                       f"({type(e).__name__}: {e})", file=sys.stderr)
             if fallback_url:
                 break
@@ -220,7 +220,7 @@ def dispatch_bus_alerts(res):
     if not primary_url and not fallback_url:
         print(
             "  ℹ️  --bus-alert: no bus URL configured — "
-            "set CORTEX_BUS_URL (Moses) or CORTEX_BUS_FALLBACK_URL (Esther)"
+            "set FLEET_BUS_URL (Moses) or FLEET_BUS_FALLBACK_URL (Esther)"
         )
         return
 

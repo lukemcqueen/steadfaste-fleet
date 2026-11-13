@@ -23,11 +23,11 @@ def _load_config() -> dict:
     """
     # Check env vars first
     config = {
-        "host": os.environ.get("CORTEX_BUS_PG_HOST", ""),
-        "port": int(os.environ.get("CORTEX_BUS_PG_PORT", "15432")),
-        "db": os.environ.get("CORTEX_BUS_PG_DB", "mycortex"),
-        "user": os.environ.get("CORTEX_BUS_PG_USER", ""),
-        "password": os.environ.get("CORTEX_BUS_PG_PASS", ""),
+        "host": os.environ.get("FLEET_BUS_PG_HOST", ""),
+        "port": int(os.environ.get("FLEET_BUS_PG_PORT", "15432")),
+        "db": os.environ.get("FLEET_BUS_PG_DB", "mycortex"),
+        "user": os.environ.get("FLEET_BUS_PG_USER", ""),
+        "password": os.environ.get("FLEET_BUS_PG_PASS", ""),
     }
 
     # Fall back to .env
@@ -41,15 +41,15 @@ def _load_config() -> dict:
                 k, v = line.split("=", 1)
                 k = k.strip()
                 v = v.strip().strip("\"'")
-                if k == "CORTEX_BUS_PG_HOST" and not config["host"]:
+                if k == "FLEET_BUS_PG_HOST" and not config["host"]:
                     config["host"] = v
-                elif k == "CORTEX_BUS_PG_PORT" and not config["port"]:
+                elif k == "FLEET_BUS_PG_PORT" and not config["port"]:
                     config["port"] = int(v)
-                elif k == "CORTEX_BUS_PG_DB" and config["db"] == "mycortex":
+                elif k == "FLEET_BUS_PG_DB" and config["db"] == "mycortex":
                     config["db"] = v
-                elif k == "CORTEX_BUS_PG_USER" and not config["user"]:
+                elif k == "FLEET_BUS_PG_USER" and not config["user"]:
                     config["user"] = v
-                elif k == "CORTEX_BUS_PG_PASS" and not config["password"]:
+                elif k == "FLEET_BUS_PG_PASS" and not config["password"]:
                     config["password"] = v
 
     # Fall back to mycortex Postgres (same instance)
@@ -76,7 +76,7 @@ def _connect():
     if not config["user"] or not config["password"]:
         raise NotAvailableError(
             "Bus requires Postgres credentials. "
-            "Set CORTEX_BUS_PG_USER and CORTEX_BUS_PG_PASS env vars, "
+            "Set FLEET_BUS_PG_USER and FLEET_BUS_PG_PASS env vars, "
             "or run on the inbox server (Moses/Esther)."
         )
 

@@ -45,8 +45,8 @@ header(){ printf "\n${BOLD}━ %s ━${RESET}\n" "$*"; }
 
 # ── Globals ─────────────────────────────────────────────────────────
 HERMES_HOME="${HOME:?}/.hermes"
-CORTEX_REPO="${HOME:?}/steadfaste-fleet"
-CORTEX_DEPLOY="${HOME:?}/.steadfaste-fleet"
+FLEET_REPO="${HOME:?}/steadfaste-fleet"
+FLEET_DEPLOY="${HOME:?}/.steadfaste-fleet"
 LANGFUSE_DIR="${HOME:?}/langfuse"
 
 # Secrets (populated by interactive prompts)
@@ -358,42 +358,42 @@ fi
 # ═══════════════════════════════════════════════════════════════════════
 next_step "Clone steadfaste-fleet + run installer"
 
-if [[ -d "$CORTEX_REPO" ]]; then
+if [[ -d "$FLEET_REPO" ]]; then
     info "steadfaste-fleet already cloned — pulling latest..."
-    cd "$CORTEX_REPO" && git pull --ff-only origin main 2>/dev/null || true
+    cd "$FLEET_REPO" && git pull --ff-only origin main 2>/dev/null || true
 else
     info "Cloning steadfaste-fleet..."
     sudo -u "$REAL_USER" git clone --depth 1 \
-        https://github.com/lukemcqueen/steadfaste-fleet.git "$CORTEX_REPO"
+        https://github.com/lukemcqueen/steadfaste-fleet.git "$FLEET_REPO"
     ok "Repo cloned"
 fi
 
 # Create .env from template
-if [[ ! -f "$CORTEX_REPO/.env" ]]; then
+if [[ ! -f "$FLEET_REPO/.env" ]]; then
     info "Creating .env from template..."
-    cp "$CORTEX_REPO/.env.example" "$CORTEX_REPO/.env"
-    chown "$REAL_USER:$REAL_USER" "$CORTEX_REPO/.env"
-    chmod 600 "$CORTEX_REPO/.env"
+    cp "$FLEET_REPO/.env.example" "$FLEET_REPO/.env"
+    chown "$REAL_USER:$REAL_USER" "$FLEET_REPO/.env"
+    chmod 600 "$FLEET_REPO/.env"
 
     # Write collected secrets
     declare -A SECRETS
     SECRETS[AGENT_NAME]="$AGENT_NAME"
-    SECRETS[CORTEX_HEALTH_URL]="https://${AGENT_DOMAIN}:13007/health"
-    SECRETS[CORTEX_BUS_FALLBACK_URL]="https://${AGENT_DOMAIN}:13004"
-    SECRETS[CORTEX_BUS_FALLBACK_AUTH]="${AGENT_NAME}:${INBOX_PASSWORD}"
+    SECRETS[FLEET_HEALTH_URL]="https://${AGENT_DOMAIN}:13007/health"
+    SECRETS[FLEET_BUS_FALLBACK_URL]="https://${AGENT_DOMAIN}:13004"
+    SECRETS[FLEET_BUS_FALLBACK_AUTH]="${AGENT_NAME}:${INBOX_PASSWORD}"
     SECRETS[OPENROUTER_API_KEY]="$OPENROUTER_KEY"
     SECRETS[DEEPSEEK_API_KEY]="$DEEPSEEK_KEY"
     SECRETS[HERMES_LANGFUSE_PUBLIC_KEY]="$LANGFUSE_PK"
     SECRETS[HERMES_LANGFUSE_SECRET_KEY]="$LANGFUSE_SK"
-    SECRETS[CORTEX_SSL_CERT_PATH]="/etc/letsencrypt/live/${AGENT_DOMAIN}/fullchain.pem"
-    SECRETS[CORTEX_SSL_CERT_KEY_PATH]="/etc/letsencrypt/live/${AGENT_DOMAIN}/privkey.pem"
+    SECRETS[FLEET_SSL_CERT_PATH]="/etc/letsencrypt/live/${AGENT_DOMAIN}/fullchain.pem"
+    SECRETS[FLEET_SSL_CERT_KEY_PATH]="/etc/letsencrypt/live/${AGENT_DOMAIN}/privkey.pem"
     SECRETS[AGENT_DOMAIN]="$AGENT_DOMAIN"
 
     for key in "${!SECRETS[@]}"; do
         val="${SECRETS[$key]}"
         if [[ -n "$val" ]]; then
             # Uncomment + set the value
-            sed -i "s/^#\? *${key}=.*/${key}=\"${val//\//\\/}\"/" "$CORTEX_REPO/.env" 2>/dev/null || true
+            sed -i "s/^#\? *${key}=.*/${key}=\"${val//\//\\/}\"/" "$FLEET_REPO/.env" 2>/dev/null || true
         fi
     done
     ok ".env configured with secrets"
@@ -404,8 +404,8 @@ fi
 # Create Langfuse .env
 if [[ ! -f "$LANGFUSE_DIR/.env" ]]; then
     mkdir -p "$LANGFUSE_DIR"
-    if [[ -f "$CORTEX_REPO/ops/install/deploy/.env.example" ]]; then
-        cp "$CORTEX_REPO/ops/install/deploy/.env.example" "$LANGFUSE_DIR/.env"
+    if [[ -f "$FLEET_REPO/ops/install/deploy/.env.example" ]]; then
+        cp "$FLEET_REPO/ops/install/deploy/.env.example" "$LANGFUSE_DIR/.env"
         chown "$REAL_USER:$REAL_USER" "$LANGFUSE_DIR/.env"
         chmod 600 "$LANGFUSE_DIR/.env"
     fi
@@ -428,9 +428,9 @@ fi
 
 # Run the install.sh as the real user
 info "Running steadfaste-fleet installer..."
-cd "$CORTEX_REPO"
+cd "$FLEET_REPO"
 sudo -u "$REAL_USER" HOME="$REAL_HOME" \
-    CORTEX_PROFILE="${CORTEX_PROFILE:-server}" \
+    FLEET_PROFILE="${FLEET_PROFILE:-server}" \
     bash ops/install/install.sh 2>&1 | \
     while IFS= read -r line; do printf "    %s\n" "$line"; done
 ok "steadfaste-fleet install complete"
@@ -441,11 +441,11 @@ ok "steadfaste-fleet install complete"
 next_step "nginx + SSL"
 
 # Create nginx config from repo template if it exists
-if [[ -f "$CORTEX_REPO/ops/deploy/ansible/templates/hermes-nginx.conf.j2" ]]; then
+if [[ -f "$FLEET_REPO/ops/deploy/ansible/templates/hermes-nginx.conf.j2" ]]; then
     info "Generating nginx config from Ansible template..."
     # Simple variable substitution for the Jinja2 template
     sed "s/{{ agent_domain }}/$AGENT_DOMAIN/g" \
-        "$CORTEX_REPO/ops/deploy/ansible/templates/hermes-nginx.conf.j2" \
+        "$FLEET_REPO/ops/deploy/ansible/templates/hermes-nginx.conf.j2" \
         > /etc/nginx/sites-available/steadfaste-fleet.conf
 
     # Remove default site, enable Hermes
@@ -461,7 +461,7 @@ if [[ -f "$CORTEX_REPO/ops/deploy/ansible/templates/hermes-nginx.conf.j2" ]]; th
 else
     # Use the install.sh's nginx setup
     info "Using install.sh nginx setup..."
-    cd "$CORTEX_REPO"
+    cd "$FLEET_REPO"
     bash ops/scripts/install/install-nginx.sh 2>/dev/null || \
         warn "nginx install script had issues — manual config may be needed"
 fi
@@ -582,7 +582,7 @@ sysctl --system >/dev/null 2>&1 || true
 ok "sysctl tuned"
 
 # File permissions
-chmod 600 "$CORTEX_REPO/.env" 2>/dev/null || true
+chmod 600 "$FLEET_REPO/.env" 2>/dev/null || true
 chmod 600 "$LANGFUSE_DIR/.env" 2>/dev/null || true
 chmod 600 /etc/nginx/.hermes-htpasswd 2>/dev/null || true
 ok "Sensitive file permissions hardened (chmod 600)"
@@ -607,14 +607,14 @@ sleep 3
 
 # Run doctor
 info "Running fleet-doctor.py..."
-cd "$CORTEX_REPO"
+cd "$FLEET_REPO"
 # Resolve the interpreter by CAPABILITY, not by PATH. fleet-doctor.py imports yaml, and a bare
 # `python3` on a host like this one may not have it — the agent session even puts a Hermes tools
 # python ahead of /usr/bin on PATH. At bootstrap time the fleet venv may not exist yet, so ask
 # the shared resolver; if nothing here can import yaml, say COULD NOT VERIFY instead of letting
 # the doctor die with an ImportError that reads like a broken host (2026-10-13).
 _DOCTOR_RC=0
-_DOCTOR_PY="$(bash "$CORTEX_REPO/ops/scripts/lib/python-with-module.sh" --print yaml 2>/dev/null)" || _DOCTOR_RC=$?
+_DOCTOR_PY="$(bash "$FLEET_REPO/ops/scripts/lib/python-with-module.sh" --print yaml 2>/dev/null)" || _DOCTOR_RC=$?
 if [[ -n "$_DOCTOR_PY" ]]; then
   sudo -u "$REAL_USER" HOME="$REAL_HOME" "$_DOCTOR_PY" ops/scripts/manage/fleet-doctor.py --quiet 2>&1 | \
     while IFS= read -r line; do printf "    %s\n" "$line"; done
@@ -627,7 +627,7 @@ else
   # dependency story — different problem, different fix (self-adversarial ADV-12432-2, 2026-10-13).
   # Note the `|| _DOCTOR_RC=$?` above is required: this script runs under `set -e`, so a bare
   # failing substitution in an assignment would abort the bootstrap instead of reaching this line.
-  warn "the interpreter resolver FAILED (rc=${_DOCTOR_RC}) — fleet-doctor was not run; check $CORTEX_REPO/ops/scripts/lib/python-with-module.sh"
+  warn "the interpreter resolver FAILED (rc=${_DOCTOR_RC}) — fleet-doctor was not run; check $FLEET_REPO/ops/scripts/lib/python-with-module.sh"
 fi
 
 # Check key endpoints

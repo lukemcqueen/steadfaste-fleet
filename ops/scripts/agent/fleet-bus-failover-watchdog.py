@@ -18,7 +18,7 @@ ROLE BEHAVIOR
                restore/unlink lives in _restore().
   RECOVERED  Moses healthy 3 consecutive checks while failover active
              → RESTORE: swap config back, remove marker, notify fleet, report.
-  CORTEX_BUS_URL and CORTEX_BUS_FALLBACK_URL are REQUIRED for orchestrator
+  FLEET_BUS_URL and FLEET_BUS_FALLBACK_URL are REQUIRED for orchestrator
   activation (swap_bus_config reads both; not optional — env var NAMES are
   P4-deferred but the values are mandatory here).
   Executes for real by default (FAILOVER_DRY_RUN=0) — that is the point of
@@ -224,25 +224,25 @@ def _esther_reachable(urls: list[str] | None = None) -> bool:
 def swap_bus_config(active: bool) -> bool:
     """Rewrite .env primary/fallback URLs (Esther only).
 
-    active=True  → acting primary: URL=local :8903, FALLBACK=CORTEX_BUS_URL
+    active=True  → acting primary: URL=local :8903, FALLBACK=FLEET_BUS_URL
                    (the other side's bus; Moses :13004 in normal operation)
-    active=False → standby restored: URL=CORTEX_BUS_URL, FALLBACK =
-                   CORTEX_BUS_FALLBACK_URL (Esther :14004 in operation)
+    active=False → standby restored: URL=FLEET_BUS_URL, FALLBACK =
+                   FLEET_BUS_FALLBACK_URL (Esther :14004 in operation)
 
     Returns True on success. Creates the file if missing.
     """
-    # CORTEX_BUS_URL / CORTEX_BUS_FALLBACK_URL are ENV VAR NAMES — the
+    # FLEET_BUS_URL / FLEET_BUS_FALLBACK_URL are ENV VAR NAMES — the
     # cortex->fleet plan defers CORTEX_ env-name tokens to P4 by design
     # (renaming them here would strand every deployed .env and the bus
     # client that reads them). The file/command rename (fleet-*) landed in
     # P3 steps 2-3; the env var names follow in P4.
     # Read from the .env (CONF_FILE) with env-var override, so this process
     # reads what it writes: the watchdog may run under cron/systemd without
-    # CORTEX_BUS_* in its process env, and the values it swaps live in .env.
-    bus_url = _env_value(CONF_FILE, "CORTEX_BUS_URL").strip()
-    bus_fallback = _env_value(CONF_FILE, "CORTEX_BUS_FALLBACK_URL").strip()
+    # FLEET_BUS_* in its process env, and the values it swaps live in .env.
+    bus_url = _env_value(CONF_FILE, "FLEET_BUS_URL").strip()
+    bus_fallback = _env_value(CONF_FILE, "FLEET_BUS_FALLBACK_URL").strip()
     if not bus_url or not bus_fallback:
-        _log("ERROR: CORTEX_BUS_URL / CORTEX_BUS_FALLBACK_URL not set in env — cannot swap")
+        _log("ERROR: FLEET_BUS_URL / FLEET_BUS_FALLBACK_URL not set in env — cannot swap")
         return False
     if active:
         primary, fallback = "http://127.0.0.1:8903", bus_url
@@ -258,18 +258,18 @@ def swap_bus_config(active: bool) -> bool:
     seen_url = seen_fallback = False
     out = []
     for line in lines:
-        if line.startswith("CORTEX_BUS_URL="):
-            out.append(f"CORTEX_BUS_URL={primary}")
+        if line.startswith("FLEET_BUS_URL="):
+            out.append(f"FLEET_BUS_URL={primary}")
             seen_url = True
-        elif line.startswith("CORTEX_BUS_FALLBACK_URL="):
-            out.append(f"CORTEX_BUS_FALLBACK_URL={fallback}")
+        elif line.startswith("FLEET_BUS_FALLBACK_URL="):
+            out.append(f"FLEET_BUS_FALLBACK_URL={fallback}")
             seen_fallback = True
         else:
             out.append(line)
     if not seen_url:
-        out.append(f"CORTEX_BUS_URL={primary}")
+        out.append(f"FLEET_BUS_URL={primary}")
     if not seen_fallback:
-        out.append(f"CORTEX_BUS_FALLBACK_URL={fallback}")
+        out.append(f"FLEET_BUS_FALLBACK_URL={fallback}")
 
     try:
         CONF_FILE.write_text("\n".join(out) + "\n")

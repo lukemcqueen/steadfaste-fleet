@@ -26,7 +26,7 @@
 # Silent when nothing is stranded (watchdog pattern).
 set -euo pipefail
 
-CORTEX_REPO="${CORTEX_REPO:-${HOME}/steadfaste-fleet}"
+FLEET_REPO="${FLEET_REPO:-${HOME}/steadfaste-fleet}"
 GOV_STATE="${HOME}/.steadfaste-fleet/state"
 _PIPE_MARKER="${GOV_STATE}/.pipeline-commit"
 _LOCK="${GOV_STATE}/.skill-reconcile.lock"
@@ -40,10 +40,10 @@ if ! mkdir "$_LOCK" 2>/dev/null; then
 fi
 
 # ── Guard: abort on stale git state before touching anything ───
-if git -C "$CORTEX_REPO" rev-parse --git-dir &>/dev/null; then
-  if git -C "$CORTEX_REPO" rebase --show-current &>/dev/null 2>&1; then
+if git -C "$FLEET_REPO" rev-parse --git-dir &>/dev/null; then
+  if git -C "$FLEET_REPO" rebase --show-current &>/dev/null 2>&1; then
     _ABORT_RC=0
-    git -C "$CORTEX_REPO" rebase --abort 2>/dev/null || _ABORT_RC=$?
+    git -C "$FLEET_REPO" rebase --abort 2>/dev/null || _ABORT_RC=$?
     if [ "$_ABORT_RC" -ne 0 ]; then
       log "could not abort a stale rebase (rc=$_ABORT_RC) — lifting the lock and stopping; the repo needs a human"
       rm -f "$_PIPE_MARKER" 2>/dev/null || true
@@ -53,10 +53,10 @@ if git -C "$CORTEX_REPO" rev-parse --git-dir &>/dev/null; then
     log "aborted a stale rebase"
   fi
   _CP_QUIT_RC=0
-  git -C "$CORTEX_REPO" cherry-pick --quit 2>/dev/null || _CP_QUIT_RC=$?
+  git -C "$FLEET_REPO" cherry-pick --quit 2>/dev/null || _CP_QUIT_RC=$?
   [ "$_CP_QUIT_RC" -eq 0 ] || log "cherry-pick --quit failed (rc=$_CP_QUIT_RC)"
   _MG_QUIT_RC=0
-  git -C "$CORTEX_REPO" merge --quit 2>/dev/null || _MG_QUIT_RC=$?
+  git -C "$FLEET_REPO" merge --quit 2>/dev/null || _MG_QUIT_RC=$?
   [ "$_MG_QUIT_RC" -eq 0 ] || log "merge --quit failed (rc=$_MG_QUIT_RC)"
 fi
 
@@ -66,14 +66,14 @@ fi
 # surfaced with the real rc (a stale baseline could re-strand a peer's committed
 # work); the cycle still proceeds so a transient network blip retries next run.
 _PULL_RC=0
-git -C "$CORTEX_REPO" pull --ff-only >/dev/null 2>&1 || _PULL_RC=$?
+git -C "$FLEET_REPO" pull --ff-only >/dev/null 2>&1 || _PULL_RC=$?
 if [ "$_PULL_RC" -ne 0 ]; then
   log "git pull --ff-only failed (rc=$_PULL_RC) — proceeding on the local baseline"
 fi
 
 # ── Snapshot the skill tree before, so we can stage ONLY the delta ──
 SCOPE="skills/ docs/evidence/ docs/SKILLS-MANIFEST.md"
-BEFORE=$(cd "$CORTEX_REPO" && git status --porcelain --untracked-files=all -- $SCOPE 2>/dev/null || true)
+BEFORE=$(cd "$FLEET_REPO" && git status --porcelain --untracked-files=all -- $SCOPE 2>/dev/null || true)
 
 # ── Recover the safe (pure-superset) strand class ────────────────
 # A failed reconcile is SURFACED (not swallowed) and STOPS the cycle with a
@@ -81,7 +81,7 @@ BEFORE=$(cd "$CORTEX_REPO" && git status --porcelain --untracked-files=all -- $S
 # mask a broken reconciler. A transient failure retries next cycle with no
 # side effects. Capture rc BEFORE logging (a bare `$?` after `if !` is 0).
 _RECONCILE_RC=0
-(cd "$CORTEX_REPO" && python3 ops/scripts/manage/reconcile-stranded-skills.py --apply >/dev/null 2>&1) || _RECONCILE_RC=$?
+(cd "$FLEET_REPO" && python3 ops/scripts/manage/reconcile-stranded-skills.py --apply >/dev/null 2>&1) || _RECONCILE_RC=$?
 if [ "$_RECONCILE_RC" -ne 0 ]; then
   log "reconcile-stranded-skills.py --apply failed (rc=$_RECONCILE_RC) — leaving recovery to the next cycle"
   rmdir "$_LOCK" 2>/dev/null || true
@@ -92,12 +92,12 @@ fi
 # failed regen is logged with its real rc; the pre-commit doc-audit gate is the
 # backstop that refuses a stale-manifest commit.
 _MANIFEST_RC=0
-(cd "$CORTEX_REPO" && bash ops/scripts/manage/gen-skills-manifest.sh >/dev/null 2>&1) || _MANIFEST_RC=$?
+(cd "$FLEET_REPO" && bash ops/scripts/manage/gen-skills-manifest.sh >/dev/null 2>&1) || _MANIFEST_RC=$?
 if [ "$_MANIFEST_RC" -ne 0 ]; then
   log "gen-skills-manifest.sh failed (rc=$_MANIFEST_RC) — manifest may be stale for this commit"
 fi
 
-AFTER=$(cd "$CORTEX_REPO" && git status --porcelain --untracked-files=all -- $SCOPE 2>/dev/null || true)
+AFTER=$(cd "$FLEET_REPO" && git status --porcelain --untracked-files=all -- $SCOPE 2>/dev/null || true)
 if [ "$AFTER" == "$BEFORE" ] || [ -z "$AFTER" ]; then
   log "no new strands to recover — silent"
   rmdir "$_LOCK" 2>/dev/null || true
@@ -109,7 +109,7 @@ mkdir -p "$GOV_STATE"
 : > "$_PIPE_MARKER"
 trap 'rm -f "$_PIPE_MARKER"; rmdir "$_LOCK" 2>/dev/null || true' EXIT
 
-cd "$CORTEX_REPO"
+cd "$FLEET_REPO"
 # Paths the reconcile delta added/changed, EXCLUDING any scattered noise:
 # use git add on the differing paths only.
 {
@@ -167,7 +167,7 @@ log "committed ${N} skill(s) — deploying + pushing"
 
 # ── Deploy (satisfies deploy-sync + dogfood), then push ────────────
 _DEPLOY_RC=0
-_DEPLOY_LOG=$(bash "$CORTEX_REPO/ops/scripts/fleet-update.sh" 2>&1) || _DEPLOY_RC=$?
+_DEPLOY_LOG=$(bash "$FLEET_REPO/ops/scripts/fleet-update.sh" 2>&1) || _DEPLOY_RC=$?
 if [ "$_DEPLOY_RC" -ne 0 ]; then
   _reason=$(printf '%s\n' "$_DEPLOY_LOG" | grep -E '❌|FAIL|error|Error' | tail -1)
   log "deploy failed (rc=$_DEPLOY_RC): ${_reason:-see output} — not pushing this cycle"

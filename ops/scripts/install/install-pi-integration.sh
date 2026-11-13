@@ -120,7 +120,7 @@ GOVERNANCE_EXTENSION="$(resolve_ext fleet-governance.ts || true)"
 # The skills manifest is the ONE source of the always-set.
 MANIFEST=""
 for candidate in \
-    "${CORTEX_SKILLS_MANIFEST:-}" \
+    "${FLEET_SKILLS_MANIFEST:-}" \
     "${HOME}/.steadfaste-fleet/skills.yaml" \
     "${HOME}/steadfaste-fleet/skills.yaml"; do
   if [[ -n "$candidate" && -f "$candidate" ]]; then MANIFEST="$candidate"; break; fi

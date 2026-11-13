@@ -21,7 +21,7 @@
  * that classified by syntax let every one of them through. They are asserted
  * here by name.
  *
- * Hermetic: CORTEX_GOVERNANCE_CLI points at a throwaway stub, so the real
+ * Hermetic: FLEET_GOVERNANCE_CLI points at a throwaway stub, so the real
  * governance store is never consulted and no lock is touched.
  *
  *   node ops/install/harnesses/pi/verify-governance-extension.mjs
@@ -113,12 +113,12 @@ print(json.dumps({"covered": False, "repo_path": "/tmp/fake-repo", "lock": None,
 sys.exit(1)
 `);
 
-process.env.CORTEX_GOVERNANCE_CLI = stubCli;
-process.env.CORTEX_GOVERNANCE_PYTHON = process.env.CORTEX_GOVERNANCE_PYTHON || "python3";
-process.env.CORTEX_GOVERNANCE_LOG = path.join(tmp, "gov.log");
+process.env.FLEET_GOVERNANCE_CLI = stubCli;
+process.env.FLEET_GOVERNANCE_PYTHON = process.env.FLEET_GOVERNANCE_PYTHON || "python3";
+process.env.FLEET_GOVERNANCE_LOG = path.join(tmp, "gov.log");
 process.env.GOV_STUB_LOG = callsLog;
 process.env.CORTEX_SESSION_REPO = "/tmp/fake-repo"; // deterministic; no git needed
-delete process.env.CORTEX_GOVERNANCE_DEBUG;
+delete process.env.FLEET_GOVERNANCE_DEBUG;
 
 const callCount = () => (fs.existsSync(callsLog)
   ? fs.readFileSync(callsLog, "utf8").split("\n").filter(Boolean).length
@@ -303,10 +303,10 @@ note(r.reason.includes("GOVERNANCE UNAVAILABLE"), "the unavailable block says so
 note(r.reason.includes("THE COST"), "the unavailable block states what the refusal costs");
 
 // ── 8. CLI missing entirely => fail CLOSED ────────────────────────────────
-process.env.CORTEX_GOVERNANCE_CLI = path.join(tmp, "does-not-exist.py");
+process.env.FLEET_GOVERNANCE_CLI = path.join(tmp, "does-not-exist.py");
 r = await call("write", { file_path: "/tmp/fake-repo/x.txt" });
 note(r.blocked, "governance CLI missing => write BLOCKED (fail CLOSED, not a silent pass)");
-process.env.CORTEX_GOVERNANCE_CLI = stubCli;
+process.env.FLEET_GOVERNANCE_CLI = stubCli;
 
 // ── 9. no repo resolvable => fail CLOSED ──────────────────────────────────
 delete process.env.CORTEX_SESSION_REPO;

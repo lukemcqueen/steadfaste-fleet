@@ -10,7 +10,7 @@ import os
 import subprocess
 from datetime import datetime, timezone
 
-from .config import CORTEX_REPO
+from .config import FLEET_REPO
 
 
 class Results:
@@ -67,13 +67,13 @@ class Results:
                     agent = "unknown"
             try:
                 git_sha = subprocess.run(
-                    ["git", "-C", str(CORTEX_REPO), "rev-parse", "--short", "HEAD"],
+                    ["git", "-C", str(FLEET_REPO), "rev-parse", "--short", "HEAD"],
                     capture_output=True,
                     text=True,
                 ).stdout.strip()
             except Exception:
                 git_sha = ""
-            version_file = CORTEX_REPO / "VERSION"
+            version_file = FLEET_REPO / "VERSION"
             version = version_file.read_text().strip() if version_file.exists() else ""
             healthy = self.fail_count == 0 and self.warn_count == 0
             print(

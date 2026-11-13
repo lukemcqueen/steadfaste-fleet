@@ -54,9 +54,9 @@ for _t in _T_SCRIPTS:
 from fleet_lib.tools import read_file, write_file
 
 # Configuration
-CORTEX_HOME = Path.home() / ".steadfaste-fleet"
-TRACES_DIR = CORTEX_HOME / "evals" / "traces"
-REPORTS_DIR = CORTEX_HOME / "evals" / "reports"
+FLEET_HOME = Path.home() / ".steadfaste-fleet"
+TRACES_DIR = FLEET_HOME / "evals" / "traces"
+REPORTS_DIR = FLEET_HOME / "evals" / "reports"
 LANGFUSE_DIR = Path.home() / "langfuse"
 
 

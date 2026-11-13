@@ -25,10 +25,10 @@ class RateLimiter:
         window_seconds: int | None = None,
     ):
         self.max_per_window = max_per_window or int(
-            os.environ.get("CORTEX_BUS_RATE_LIMIT_PER_HOUR", "600")
+            os.environ.get("FLEET_BUS_RATE_LIMIT_PER_HOUR", "600")
         )
         self.window_seconds = window_seconds or int(
-            os.environ.get("CORTEX_BUS_RATE_WINDOW_SECONDS", "3600")
+            os.environ.get("FLEET_BUS_RATE_WINDOW_SECONDS", "3600")
         )
         self._events: dict[str, list[float]] = {}
         self._lock = threading.Lock()

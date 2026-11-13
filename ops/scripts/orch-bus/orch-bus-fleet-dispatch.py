@@ -41,7 +41,7 @@ from datetime import datetime, timezone
 HOME = Path.home()
 HERMES_STATE = HOME / ".steadfaste-fleet" / "state"
 REGISTRY_PATH = HERMES_STATE / "agent-registry.json"
-CORTEX_REPO = HOME / "steadfaste-fleet"
+FLEET_REPO = HOME / "steadfaste-fleet"
 DISPATCH_LOG = HERMES_STATE / "fleet-update-state.json"
 
 
@@ -62,7 +62,7 @@ def get_current_sha() -> str:
   """Get current git SHA of this repo."""
   try:
     r = subprocess.run(
-      ["git", "-C", str(CORTEX_REPO), "rev-parse", "--short", "HEAD"],
+      ["git", "-C", str(FLEET_REPO), "rev-parse", "--short", "HEAD"],
       capture_output=True, text=True, timeout=10
     )
     return r.stdout.strip()
@@ -95,7 +95,7 @@ def get_agents_for_update(registry: dict) -> list[dict]:
 
 
 def send_bus_message(queue: str, body: dict, correlation_id: str = "") -> bool:
-  """Send a message to PGMQ via bus library (CORTEX_BUS_URL).
+  """Send a message to PGMQ via bus library (FLEET_BUS_URL).
 
   Validates the body payload against the message subject's schema
   before sending (handoff_schema).
@@ -144,7 +144,7 @@ def send_bus_message(queue: str, body: dict, correlation_id: str = "") -> bool:
 
 
 def read_inbox_queue(queue: str, vt: int = 60) -> dict | None:
-  """Read one message from a PGMQ queue via bus library (CORTEX_BUS_URL)."""
+  """Read one message from a PGMQ queue via bus library (FLEET_BUS_URL)."""
   try:
     from lib.fleet_bus import bus_read
     return bus_read(queue, vt)

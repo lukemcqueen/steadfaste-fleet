@@ -39,8 +39,8 @@ defaults:
   # macOS: the interpreter may not be on Pi's PATH (Homebrew python lives at
   # /opt/homebrew/bin on Apple Silicon, /usr/local/bin on Intel) — override it.
   env_optional:
-    - CORTEX_CONTEXT_CLI
-    - CORTEX_CONTEXT_PYTHON
+    - FLEET_CONTEXT_CLI
+    - FLEET_CONTEXT_PYTHON
 
 harnesses:
   - name: pi
@@ -156,7 +156,7 @@ harnesses:
           verify:
           - git config --get core.hooksPath prints ~/.steadfaste-fleet/hooks — so a commit made from a Pi session is gated.
           - python3 ~/.steadfaste-fleet/scripts/loop-gov.py --list lists begin_change and end_change.
-          - "The CLI works under EVERY interpreter shape, and the skew that broke gisu (2026-10-20) is now a WARNING, not a failure — with no `mcp` at all the handlers run through their own stand-ins, with mcp>=2.0 the SDK is used, and an mcp in between (importable but too old for the 2.0 constructor API this server registers handlers with) used to kill the module at import and make the CLI exit 3 on every write gate, which read as governance being unavailable. It now prints on stderr `[mcp-server] WARNING: the installed MCP SDK cannot serve this module (<error>) — stdio serving is DISABLED; the CLI adapter still works` and the CLI exits 0/1 as usual. Seeing that warning means THE INTERPRETER's mcp is behind — the extension spawns CORTEX_GOVERNANCE_PYTHON, defaulting to `python3` from pi's PATH — not that governance is down. Fix it by running the CLI with ~/.steadfaste-fleet/venv/bin/python3, or repair that venv with `python3 ops/scripts/manage/fix-fleet-venv.py` (its --check probes this capability, not just the import)."
+          - "The CLI works under EVERY interpreter shape, and the skew that broke gisu (2026-10-20) is now a WARNING, not a failure — with no `mcp` at all the handlers run through their own stand-ins, with mcp>=2.0 the SDK is used, and an mcp in between (importable but too old for the 2.0 constructor API this server registers handlers with) used to kill the module at import and make the CLI exit 3 on every write gate, which read as governance being unavailable. It now prints on stderr `[mcp-server] WARNING: the installed MCP SDK cannot serve this module (<error>) — stdio serving is DISABLED; the CLI adapter still works` and the CLI exits 0/1 as usual. Seeing that warning means THE INTERPRETER's mcp is behind — the extension spawns FLEET_GOVERNANCE_PYTHON, defaulting to `python3` from pi's PATH — not that governance is down. Fix it by running the CLI with ~/.steadfaste-fleet/venv/bin/python3, or repair that venv with `python3 ops/scripts/manage/fix-fleet-venv.py` (its --check probes this capability, not just the import)."
           - python3 ~/.steadfaste-fleet/scripts/loop-gov.py check_lock returns a JSON status object (the CLI reaches the governance store). Note: its 'active' field is NOT the test the push gate uses — a lock FILE can exist (and permit a push) while check_lock reports inactive, so an inactive reading must not be taken as permission to push.
           - python3 ~/.steadfaste-fleet/scripts/loop-gov.py begin_change '{"task_id":"pi-smoke","description":"probe"}' returns a cycle id and end_change releases it — run this only when you hold no other lock.
         why: |
@@ -213,17 +213,17 @@ harnesses:
       - 'pi mcp list shows fleet-context with the memory/session tools.'
       - 'In a Pi session call mem_context — the peer card must come back.'
       - 'Let a turn end with a decision, then: fleet-context session_restore "{}" | grep <marker>'
-      - 'Start a second session; the checkpoint must appear unasked (`CORTEX_RESUME` in `~/.steadfaste-fleet/logs/pi-context.log`).'
+      - 'Start a second session; the checkpoint must appear unasked (`FLEET_RESUME` in `~/.steadfaste-fleet/logs/pi-context.log`).'
       - 'node ops/install/harnesses/pi/verify-governance-extension.mjs exits 0 — it EXECUTES the write gate and asserts both directions.'
       - 'In a Pi session, with no lock: writing a file is refused with GOVERNANCE LOCK REQUIRED; after begin_change it succeeds.'
     # The extension's own knobs. Routine markers go to the cortex log, never the
     # prompt area, so a diagnosing agent needs to know where to look.
     env_optional:
-      - CORTEX_CONTEXT_CLI
-      - CORTEX_CONTEXT_PYTHON
-      - {CORTEX_CONTEXT_LOG: 'default: ~/.steadfaste-fleet/logs/pi-context.log'}
-      - {CORTEX_CONTEXT_LOG_MAX_BYTES: 'default: 1 MiB; rotates to <log>.1'}
-      - {CORTEX_CONTEXT_DEBUG: '1 = echo routine markers to stderr while diagnosing'}
+      - FLEET_CONTEXT_CLI
+      - FLEET_CONTEXT_PYTHON
+      - {FLEET_CONTEXT_LOG: 'default: ~/.steadfaste-fleet/logs/pi-context.log'}
+      - {FLEET_CONTEXT_LOG_MAX_BYTES: 'default: 1 MiB; rotates to <log>.1'}
+      - {FLEET_CONTEXT_DEBUG: '1 = echo routine markers to stderr while diagnosing'}
 
   - name: hermes
     layer: mcp

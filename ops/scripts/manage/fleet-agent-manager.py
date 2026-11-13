@@ -31,10 +31,10 @@ from pathlib import Path
 logger = logging.getLogger("fleet-agent-manager")
 
 # ── Paths ────────────────────────────────────────────────────
-CORTEX_HOME = Path(os.environ.get("CORTEX_DEPLOY_HOME", Path.home() / ".steadfaste-fleet"))
-SECRETS_FILE = CORTEX_HOME / "agent-secrets.yaml"
+FLEET_HOME = Path(os.environ.get("FLEET_DEPLOY_HOME", Path.home() / ".steadfaste-fleet"))
+SECRETS_FILE = FLEET_HOME / "agent-secrets.yaml"
 NGINX_HTPASSWD = Path("/etc/nginx/.hermes-htpasswd")
-BUS_URL = os.environ.get("CORTEX_BUS_URL", "http://127.0.0.1:8903")
+BUS_URL = os.environ.get("FLEET_BUS_URL", "http://127.0.0.1:8903")
 
 # ── Token management ──────────────────────────────────────────
 
@@ -192,13 +192,13 @@ def _create_queue(queue_name: str) -> bool:
 def _write_agent_labels(agent_name: str, labels: dict) -> None:
     """Write a local agent-labels.json for the handler to read during label checks.
     
-    The labels file is written to the agent's CORTEX_HOME directory so
+    The labels file is written to the agent's FLEET_HOME directory so
     agent-message-handler.py can read it without bus access.
     Labels are used for canary deployment targeting.
     """
     if not labels:
         return
-    labels_path = CORTEX_HOME / "agent-labels.json"
+    labels_path = FLEET_HOME / "agent-labels.json"
     try:
         labels_path.write_text(json.dumps(labels, indent=2))
         labels_path.chmod(0o644)
@@ -359,10 +359,10 @@ def cmd_add(args):
     print()
     print("📋 Agent config snippet:")
     print("-" * 50)
-    print(f"CORTEX_BUS_URL=https://your-domain.com:13004")
-    print(f"CORTEX_BASIC_AUTH={agent_name}:{password}")
-    print(f"CORTEX_BUS_FALLBACK_URL=https://your-domain.com:14004")
-    print(f"CORTEX_BUS_TOKEN={token}")
+    print(f"FLEET_BUS_URL=https://your-domain.com:13004")
+    print(f"FLEET_BASIC_AUTH={agent_name}:{password}")
+    print(f"FLEET_BUS_FALLBACK_URL=https://your-domain.com:14004")
+    print(f"FLEET_BUS_TOKEN={token}")
     print(f"AGENT_NAME={agent_name}")
     print("-" * 50)
     print(f"\n   Credentials stored in {SECRETS_FILE} (orchestrator only)")
@@ -442,7 +442,7 @@ def cmd_rotate(args):
     print(f"   New bus token (shown ONCE, only hash stored):")
     print(f"   {token}")
     print(f"   New htpasswd password: {password}")
-    print("   → Update the agent's .env (CORTEX_BUS_TOKEN + basic auth), then restart its bridge.")
+    print("   → Update the agent's .env (FLEET_BUS_TOKEN + basic auth), then restart its bridge.")
 
 
 def cmd_list(args):

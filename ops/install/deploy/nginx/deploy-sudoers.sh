@@ -10,9 +10,9 @@
 
 set -euo pipefail
 
-CORTEX_REPO="$(cd "$(dirname "$0")/../../../.." && pwd)"
-CORTEX_DEPLOY_HOME="${CORTEX_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}"
-SOURCE_FILE="${CORTEX_REPO}/ops/install/deploy/nginx/hermes-security"
+FLEET_REPO="$(cd "$(dirname "$0")/../../../.." && pwd)"
+FLEET_DEPLOY_HOME="${FLEET_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}"
+SOURCE_FILE="${FLEET_REPO}/ops/install/deploy/nginx/hermes-security"
 # Single sudoers file policy (2026-07-31): ALL hermes rules deploy to
 # /etc/sudoers.d/hermes. hermes-security was the old split target — kept
 # as the repo source name for continuity, but the deploy target is hermes.
@@ -47,16 +47,16 @@ else
 fi
 
 # Resolve the sudo user list (2026-08-05): real account names are PII and
-# must NOT live in the public template. Read CORTEX_SUDO_USERS from the
+# must NOT live in the public template. Read FLEET_SUDO_USERS from the
 # host's PRIVATE env (~/steadfaste-fleet/.env, never committed); fall back
 # to the user running this deploy.
 SUDO_USERS=""
 if [ -z "$SUDO_USERS" ] && [ -f "$HOME/steadfaste-fleet/.env" ]; then
-  SUDO_USERS="$(grep '^CORTEX_SUDO_USERS=' "$HOME/steadfaste-fleet/.env" 2>/dev/null | head -1 | cut -d= -f2- || true)"
+  SUDO_USERS="$(grep '^FLEET_SUDO_USERS=' "$HOME/steadfaste-fleet/.env" 2>/dev/null | head -1 | cut -d= -f2- || true)"
 fi
 if [ -z "$SUDO_USERS" ]; then
   SUDO_USERS="$(id -un)"
-  echo "  ⚠ CORTEX_SUDO_USERS not set — granting to deploying user only: ${SUDO_USERS}"
+  echo "  ⚠ FLEET_SUDO_USERS not set — granting to deploying user only: ${SUDO_USERS}"
 else
   echo "  ✓ Sudo user list: ${SUDO_USERS}"
 fi

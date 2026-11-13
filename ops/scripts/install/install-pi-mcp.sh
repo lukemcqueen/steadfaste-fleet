@@ -373,7 +373,7 @@ else
   _here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   _lib=""
   for _cand in "${_here}/../lib/python-with-module.sh" \
-               "${CORTEX_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/scripts/lib/python-with-module.sh"; do
+               "${FLEET_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/scripts/lib/python-with-module.sh"; do
     if [[ -f "$_cand" ]]; then _lib="$_cand"; break; fi
   done
   [[ -n "$_lib" ]] && PY_CMD="$(bash "$_lib" --print mcp)" || PY_CMD=""

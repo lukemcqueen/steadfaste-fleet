@@ -75,7 +75,7 @@ def registry_dir() -> Path:
     directory shape. Every candidate is checked, and the last one is only a
     fallback for the error message.
     """
-    override = os.environ.get("CORTEX_HARNESS_DIR")
+    override = os.environ.get("FLEET_HARNESS_DIR")
     candidates = [
         Path(override) if override else None,
         HERE.parents[1] / "install" / "harnesses",                        # repo: ops/install/harnesses
@@ -93,7 +93,7 @@ def registry_dir() -> Path:
 def contract_tools_py() -> Path | None:
     """The ONE implementation, as a file: repo layout first, then deployed."""
     candidates = [
-        Path(os.environ["CORTEX_CONTEXT_TOOLS"]) if os.environ.get("CORTEX_CONTEXT_TOOLS") else None,
+        Path(os.environ["FLEET_CONTEXT_TOOLS"]) if os.environ.get("FLEET_CONTEXT_TOOLS") else None,
         HERE.parents[1] / "services" / "mycortex-mem" / "context_tools.py",   # repo: ops/services
         Path.home() / "steadfaste-fleet" / "ops" / "services" / "mycortex-mem" / "context_tools.py",
         Path.home() / ".steadfaste-fleet" / "services" / "mycortex-mem" / "context_tools.py",
@@ -107,7 +107,7 @@ def contract_tools_py() -> Path | None:
 def context_cli() -> Path | None:
     """The shared CLI adapter (fleet-context.py): repo layout first, then deployed."""
     candidates = [
-        Path(os.environ["CORTEX_CONTEXT_CLI"]) if os.environ.get("CORTEX_CONTEXT_CLI") else None,
+        Path(os.environ["FLEET_CONTEXT_CLI"]) if os.environ.get("FLEET_CONTEXT_CLI") else None,
         HERE.parents[1] / "fleet-context.py",                                # repo: ops/scripts
         Path.home() / "steadfaste-fleet" / "ops" / "scripts" / "fleet-context.py",
         Path.home() / ".steadfaste-fleet" / "scripts" / "fleet-context.py",

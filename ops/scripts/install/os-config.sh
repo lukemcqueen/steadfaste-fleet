@@ -2,24 +2,24 @@
 #  Steadfaste Fleet — OS Configuration & Detection
 #  Source this from install.sh to get OS-agnostic variables.
 #
-#  Sets: CORTEX_OS, PKG_*, SERVICE_*, paths, init system
+#  Sets: FLEET_OS, PKG_*, SERVICE_*, paths, init system
 # ─────────────────────────────────────────────────────────────
 
 # ── OS Detection ────────────────────────────────────────────
-# Auto-detect, but allow override via CORTEX_OS env var
+# Auto-detect, but allow override via FLEET_OS env var
 DETECTED_OS="$(uname -s)"
-CORTEX_OS="${CORTEX_OS:-$DETECTED_OS}"
+FLEET_OS="${FLEET_OS:-$DETECTED_OS}"
 
 # Normalize
-case "$(echo "$CORTEX_OS" | tr '[:upper:]' '[:lower:]')" in
-  darwin)  CORTEX_OS="macos"  ;;
-  linux)   CORTEX_OS="linux"  ;;
-  windows|mingw*|msys*|cygwin*) CORTEX_OS="windows"  ;;
-  *)       CORTEX_OS="$CORTEX_OS" ;;  # passthrough
+case "$(echo "$FLEET_OS" | tr '[:upper:]' '[:lower:]')" in
+  darwin)  FLEET_OS="macos"  ;;
+  linux)   FLEET_OS="linux"  ;;
+  windows|mingw*|msys*|cygwin*) FLEET_OS="windows"  ;;
+  *)       FLEET_OS="$FLEET_OS" ;;  # passthrough
 esac
 
 # ── Profile (role) ──────────────────────────────────────────
-CORTEX_PROFILE="${CORTEX_PROFILE:-server}"
+FLEET_PROFILE="${FLEET_PROFILE:-server}"
 
 # ── Agent Type (role detection) ────────────────────────────
 # Used by scripts to self-audit: run only on correct agent type.
@@ -36,20 +36,20 @@ _os_home="${_os_home:-$HOME}"
 case "$_os_host" in
   moses|esther)
     if [[ "$_os_home" == "/home/$_os_host" ]]; then
-      CORTEX_AGENT_TYPE="orchestrator"
+      FLEET_AGENT_TYPE="orchestrator"
     else
-      CORTEX_AGENT_TYPE="server"
+      FLEET_AGENT_TYPE="server"
     fi
     ;;
-  *) CORTEX_AGENT_TYPE="server" ;;
+  *) FLEET_AGENT_TYPE="server" ;;
 esac
 
 # Self-audit: scripts call this to refuse on wrong agent type
 check_agent_type() {
   local required="$1"
   local script_name="${2:-${BASH_SOURCE[1]:-unknown}}"
-  if [[ "$CORTEX_AGENT_TYPE" != "$required" ]]; then
-    echo "❌ $script_name requires AGENT_TYPE=$required (current: $CORTEX_AGENT_TYPE)" >&2
+  if [[ "$FLEET_AGENT_TYPE" != "$required" ]]; then
+    echo "❌ $script_name requires AGENT_TYPE=$required (current: $FLEET_AGENT_TYPE)" >&2
     echo "   On $required agents, run the appropriate install or update script." >&2
     echo "   To remove this component if it should not be here:" >&2
     echo "     AGENT_TYPE=$required bash $script_name --uninstall" >&2
@@ -58,7 +58,7 @@ check_agent_type() {
   return 0
 }
 
-export CORTEX_AGENT_TYPE
+export FLEET_AGENT_TYPE
 
 # ── Agent identity (git authorship) ────────────────────────
 # ~/.steadfaste-fleet/agent.env is the per-host identity file
@@ -83,7 +83,7 @@ ensure_agent_identity() {
     fi
   fi
   # Orchestrator hosts: hostname IS the agent name — write if missing
-  if [[ -z "$AGENT_NAME" && "$CORTEX_AGENT_TYPE" == "orchestrator" ]]; then
+  if [[ -z "$AGENT_NAME" && "$FLEET_AGENT_TYPE" == "orchestrator" ]]; then
     AGENT_NAME=$(hostname -s 2>/dev/null || echo "unknown")
     if [[ "$AGENT_NAME" != "unknown" ]]; then
       mkdir -p "$(dirname "$AGENT_ENV_FILE")" 2>/dev/null || true
@@ -109,13 +109,13 @@ git_author_name()  { [[ -n "${AGENT_NAME:-}" && "$AGENT_NAME" != "unknown" ]] ||
 git_author_email() { [[ -n "${AGENT_NAME:-}" && "$AGENT_NAME" != "unknown" ]] || { echo "❌ AGENT_NAME not provisioned" >&2; return 1; }; echo "${AGENT_NAME}@hermes.local"; }
 
 # ── Package Manager ─────────────────────────────────────────
-if [[ "$CORTEX_OS" == "macos" ]]; then
+if [[ "$FLEET_OS" == "macos" ]]; then
   PKG_MANAGER="brew"
   PKG_INSTALL="brew install"
   PKG_CASK_INSTALL="brew install --cask"
   PKG_UPDATE="brew update"
   PKG_UPGRADE="brew upgrade"
-elif [[ "$CORTEX_OS" == "linux" ]]; then
+elif [[ "$FLEET_OS" == "linux" ]]; then
   # Detect Linux package manager
   if   command -v apt &>/dev/null; then
     PKG_MANAGER="apt"
@@ -148,7 +148,7 @@ elif [[ "$CORTEX_OS" == "linux" ]]; then
     PKG_UPDATE="true"
     PKG_UPGRADE="true"
   fi
-elif [[ "$CORTEX_OS" == "windows" ]]; then
+elif [[ "$FLEET_OS" == "windows" ]]; then
   # Windows — prefer winget, fall back to choco
   if command -v winget &>/dev/null; then
     PKG_MANAGER="winget"
@@ -172,7 +172,7 @@ elif [[ "$CORTEX_OS" == "windows" ]]; then
 fi
 
 # ── Service Manager ─────────────────────────────────────────
-if [[ "$CORTEX_OS" == "macos" ]]; then
+if [[ "$FLEET_OS" == "macos" ]]; then
   SERVICE_MANAGER="launchd"
   SERVICE_DIR="${HOME}/Library/LaunchAgents"
   SERVICE_EXT="plist"
@@ -181,7 +181,7 @@ if [[ "$CORTEX_OS" == "macos" ]]; then
   SERVICE_START="launchctl start"
   SERVICE_STOP="launchctl stop"
   SERVICE_LIST="launchctl list"
-elif [[ "$CORTEX_OS" == "linux" ]]; then
+elif [[ "$FLEET_OS" == "linux" ]]; then
   SERVICE_MANAGER="systemd"
   SERVICE_DIR="${HOME}/.config/systemd/user"
   SERVICE_EXT="service"
@@ -196,7 +196,7 @@ elif [[ "$CORTEX_OS" == "linux" ]]; then
   SYSTEM_SERVICE_UNLOAD="sudo systemctl disable"
   SYSTEM_SERVICE_START="sudo systemctl start"
   SYSTEM_SERVICE_STOP="sudo systemctl stop"
-elif [[ "$CORTEX_OS" == "windows" ]]; then
+elif [[ "$FLEET_OS" == "windows" ]]; then
   SERVICE_MANAGER="windows-service"
   SERVICE_DIR="${APPDATA}/steadfaste-fleet/services"
   SERVICE_EXT="ps1"  # PowerShell scripts for scheduled tasks
@@ -208,11 +208,11 @@ elif [[ "$CORTEX_OS" == "windows" ]]; then
 fi
 
 # ── Path Conventions ────────────────────────────────────────
-if [[ "$CORTEX_OS" == "macos" ]]; then
+if [[ "$FLEET_OS" == "macos" ]]; then
   :  # Use $HOME as-is
-elif [[ "$CORTEX_OS" == "linux" ]]; then
+elif [[ "$FLEET_OS" == "linux" ]]; then
   :  # Use $HOME as-is
-elif [[ "$CORTEX_OS" == "windows" ]]; then
+elif [[ "$FLEET_OS" == "windows" ]]; then
   # Convert to Windows paths where needed
   :  # $HOME maps to /c/Users/name in Git Bash
 fi
@@ -220,7 +220,7 @@ fi
 # ── nginx Path ──────────────────────────────────────────────
 # Uses : ${VAR:=default} pattern so env vars from ~/.hermes/steadfaste-fleet.env
 # (sourced before os-config.sh) override the auto-detected defaults.
-if [[ "$CORTEX_OS" == "macos" ]]; then
+if [[ "$FLEET_OS" == "macos" ]]; then
   if [[ "$(uname -m)" == "arm64" ]]; then
     : "${NGINX_CONFIG_DIR:=/opt/homebrew/etc/nginx/servers}"
     : "${NGINX_ROOT:=/opt/homebrew/etc/nginx}"
@@ -228,20 +228,20 @@ if [[ "$CORTEX_OS" == "macos" ]]; then
     : "${NGINX_CONFIG_DIR:=/usr/local/etc/nginx/servers}"
     : "${NGINX_ROOT:=/usr/local/etc/nginx}"
   fi
-elif [[ "$CORTEX_OS" == "linux" ]]; then
+elif [[ "$FLEET_OS" == "linux" ]]; then
   : "${NGINX_CONFIG_DIR:=/etc/nginx/sites-enabled}"
   : "${NGINX_ROOT:=/etc/nginx}"
 fi
 
 # ── nginx Log & htpasswd Paths (OS-aware) ────────────────────
-if [[ "$CORTEX_OS" == "macos" ]]; then
+if [[ "$FLEET_OS" == "macos" ]]; then
   if [[ "$(uname -m)" == "arm64" ]]; then
     : "${NGINX_LOG_DIR:=/opt/homebrew/var/log/nginx}"
   else
     : "${NGINX_LOG_DIR:=/usr/local/var/log/nginx}"
   fi
   : "${NGINX_HTPASSWD:=${NGINX_ROOT}/.htpasswd}"
-elif [[ "$CORTEX_OS" == "linux" ]]; then
+elif [[ "$FLEET_OS" == "linux" ]]; then
   : "${NGINX_LOG_DIR:=/var/log/nginx}"
   : "${NGINX_HTPASSWD:=${NGINX_ROOT}/.hermes-htpasswd}"
 fi
@@ -258,24 +258,24 @@ subst_nginx_paths() {
 }
 
 # ── Ollama Install Path ─────────────────────────────────────
-if [[ "$CORTEX_OS" == "macos" ]]; then
+if [[ "$FLEET_OS" == "macos" ]]; then
   if [[ "$(uname -m)" == "arm64" ]]; then
     OLLAMA_BIN="/opt/homebrew/bin/ollama"
   else
     OLLAMA_BIN="/usr/local/bin/ollama"
   fi
   OLLAMA_SERVICE_NAME="com.ollama.serve"
-elif [[ "$CORTEX_OS" == "linux" ]]; then
+elif [[ "$FLEET_OS" == "linux" ]]; then
   OLLAMA_BIN="/usr/local/bin/ollama"
   OLLAMA_SERVICE_NAME="ollama"
-elif [[ "$CORTEX_OS" == "windows" ]]; then
+elif [[ "$FLEET_OS" == "windows" ]]; then
   OLLAMA_BIN="${LOCALAPPDATA}/Ollama/ollama.exe"
   OLLAMA_SERVICE_NAME="HermesOllama"
 fi
 
 # ── Summary ─────────────────────────────────────────────────
 # Export for subprocesses
-export CORTEX_OS CORTEX_PROFILE
+export FLEET_OS FLEET_PROFILE
 export PKG_MANAGER PKG_INSTALL PKG_CASK_INSTALL
 export SERVICE_MANAGER SERVICE_DIR SERVICE_EXT
 export SERVICE_LOAD SERVICE_UNLOAD SERVICE_START SERVICE_STOP SERVICE_LIST

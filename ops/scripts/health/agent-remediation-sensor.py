@@ -43,12 +43,12 @@ CERT_HOLDER_HOSTS = {"joseph", "gisu", "kustos"}
 HOME = Path.home()
 HERMES_SCRIPTS = HOME / ".hermes" / "scripts"
 STATE_DIR = HOME / ".steadfaste-fleet" / "state"
-CORTEX_REPO_ENV = os.environ.get("CORTEX_REPO", "")
-if CORTEX_REPO_ENV:
-    CORTEX_REPO = Path(CORTEX_REPO_ENV)
+FLEET_REPO_ENV = os.environ.get("FLEET_REPO", "")
+if FLEET_REPO_ENV:
+    FLEET_REPO = Path(FLEET_REPO_ENV)
 else:
-    CORTEX_REPO = HOME / "steadfaste-fleet"
-CORTEX_SCRIPTS = CORTEX_REPO / "src" / "scripts"
+    FLEET_REPO = HOME / "steadfaste-fleet"
+FLEET_SCRIPTS = FLEET_REPO / "src" / "scripts"
 WEB_CACHE = HOME / ".steadfaste-fleet" / "data" / "web_cache.sqlite"
 
 ISSUES = []
@@ -96,20 +96,20 @@ def check_scripts():
 
 def check_git():
     """Check git health of fleet repo."""
-    if not CORTEX_REPO.exists():
+    if not FLEET_REPO.exists():
         return
     # Detached HEAD
-    out, _, rc = run(f"cd {CORTEX_REPO} && git symbolic-ref -q HEAD 2>/dev/null")
+    out, _, rc = run(f"cd {FLEET_REPO} && git symbolic-ref -q HEAD 2>/dev/null")
     if rc != 0:
-        add_issue("git_issue", "medium", "Detached HEAD in fleet repo", {"repo": str(CORTEX_REPO)})
+        add_issue("git_issue", "medium", "Detached HEAD in fleet repo", {"repo": str(FLEET_REPO)})
     # Merge conflicts
-    out, _, _ = run(f"cd {CORTEX_REPO} && git status --porcelain 2>/dev/null | grep -c '^UU'")
+    out, _, _ = run(f"cd {FLEET_REPO} && git status --porcelain 2>/dev/null | grep -c '^UU'")
     if out.strip() and int(out.strip()) > 0:
-        add_issue("git_issue", "critical", "Merge conflicts in fleet repo", {"repo": str(CORTEX_REPO)})
+        add_issue("git_issue", "critical", "Merge conflicts in fleet repo", {"repo": str(FLEET_REPO)})
     # Dirty scripts
-    out, _, _ = run(f"cd {CORTEX_REPO} && git status --porcelain -- ops/scripts/ 2>/dev/null | head -3")
+    out, _, _ = run(f"cd {FLEET_REPO} && git status --porcelain -- ops/scripts/ 2>/dev/null | head -3")
     if out.strip():
-        add_issue("git_issue", "low", "Uncommitted changes in ops/scripts/", {"repo": str(CORTEX_REPO)})
+        add_issue("git_issue", "low", "Uncommitted changes in ops/scripts/", {"repo": str(FLEET_REPO)})
 
 
 def check_disk():
@@ -372,12 +372,12 @@ def _read_bus_config():
     
     Returns (bus_url, bus_auth) or (None, None) if not configured.
     """
-    bus_url = os.environ.get("CORTEX_BUS_URL", "")
-    bus_auth = os.environ.get("CORTEX_BUS_AUTH", "")
+    bus_url = os.environ.get("FLEET_BUS_URL", "")
+    bus_auth = os.environ.get("FLEET_BUS_AUTH", "")
     
     if bus_url:
         if not bus_auth:
-            bus_auth = os.environ.get("CORTEX_BASIC_AUTH", "")
+            bus_auth = os.environ.get("FLEET_BASIC_AUTH", "")
         return bus_url, bus_auth
     
     conf_path = HOME / "steadfaste-fleet" / ".env"
@@ -389,11 +389,11 @@ def _read_bus_config():
                     continue
                 key, val = line.split("=", 1)
                 key, val = key.strip(), val.strip()
-                if key == "CORTEX_BUS_URL" and not bus_url:
+                if key == "FLEET_BUS_URL" and not bus_url:
                     bus_url = val
-                elif key == "CORTEX_BUS_AUTH" and not bus_auth:
+                elif key == "FLEET_BUS_AUTH" and not bus_auth:
                     bus_auth = val
-                elif key == "CORTEX_BASIC_AUTH" and not bus_auth:
+                elif key == "FLEET_BASIC_AUTH" and not bus_auth:
                     bus_auth = val
         except (OSError, ValueError):
             pass  # expected — silently handled
@@ -421,12 +421,12 @@ def check_fleet_bus():
     
     Handles two modes:
     - Local bus: checks launchd/systemd service + localhost:8905 health
-    - Remote bus: reads CORTEX_BUS_URL from env/config, probes that URL
+    - Remote bus: reads FLEET_BUS_URL from env/config, probes that URL
     """
     bus_url, bus_auth = _read_bus_config()
     
     # ── Remote bus mode ──────────────────────────────────────────
-    # If CORTEX_BUS_URL points to a remote host, probe it directly
+    # If FLEET_BUS_URL points to a remote host, probe it directly
     # instead of checking for a local bus service (which doesn't exist).
     if bus_url and not _is_local_url(bus_url):
         base = bus_url.rstrip("/").rstrip("send").rstrip("api/inbox").rstrip("/")
@@ -527,7 +527,7 @@ def _read_env_value(key: str) -> str:
     val = os.environ.get(key, "").strip()
     if val:
         return val
-    for env_file in (HOME / ".steadfaste-fleet" / "agent.env", CORTEX_REPO / ".env"):
+    for env_file in (HOME / ".steadfaste-fleet" / "agent.env", FLEET_REPO / ".env"):
         try:
             for line in env_file.read_text().splitlines():
                 line = line.strip()

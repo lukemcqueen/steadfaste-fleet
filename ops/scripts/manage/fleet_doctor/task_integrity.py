@@ -47,11 +47,11 @@ def _is_orchestrator() -> bool:
 
 
 def _repo() -> Path:
-    return Path(os.environ.get("CORTEX_REPO", Path.home() / "steadfaste-fleet"))
+    return Path(os.environ.get("FLEET_REPO", Path.home() / "steadfaste-fleet"))
 
 
 def _deploy() -> Path:
-    return Path(os.environ.get("CORTEX_DEPLOY_HOME", Path.home() / ".steadfaste-fleet"))
+    return Path(os.environ.get("FLEET_DEPLOY_HOME", Path.home() / ".steadfaste-fleet"))
 
 
 def _registered_schema() -> set:

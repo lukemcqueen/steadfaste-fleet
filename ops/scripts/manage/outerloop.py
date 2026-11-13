@@ -34,7 +34,7 @@ HOME = Path.home()
 STATE_DIR = HOME / ".steadfaste-fleet" / "state"
 DB_PATH = STATE_DIR / "outerloop.db"
 REGISTRY_PATH = STATE_DIR / "agent-registry.json"
-CORTEX_REPO = HOME / "steadfaste-fleet"
+FLEET_REPO = HOME / "steadfaste-fleet"
 
 
 def _resolve_agent_name() -> str:
@@ -176,7 +176,7 @@ def get_current_git_sha() -> str:
     try:
         import subprocess
         r = subprocess.run(
-            ["git", "-C", str(CORTEX_REPO), "rev-parse", "--short", "HEAD"],
+            ["git", "-C", str(FLEET_REPO), "rev-parse", "--short", "HEAD"],
             capture_output=True, text=True, timeout=5
         )
         return r.stdout.strip() if r.returncode == 0 else "unknown"

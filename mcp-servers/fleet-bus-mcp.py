@@ -16,19 +16,19 @@ FALLBACK: Old file-based inbox (Basic auth, port 8903, being deprecated)
 
 Config (options in order of precedence):
   # Primary — Agent Bus
-  CORTEX_BUS_URL=https://your-domain.com:13004
-  CORTEX_BUS_TOKEN=hbus_...
+  FLEET_BUS_URL=https://your-domain.com:13004
+  FLEET_BUS_TOKEN=hbus_...
 
   # Auth for nginx proxy (Basic auth for agents without tokens)
-  CORTEX_BUS_AUTH=agent_name:password
+  FLEET_BUS_AUTH=agent_name:password
 
   # Fallback — old inbox (deprecated, remove when full cutover complete)
-  CORTEX_BUS_FALLBACK_URL=...
+  FLEET_BUS_FALLBACK_URL=...
   AGENT_NAME=moses
 
   Or via ~/steadfaste-fleet/.env (key=value format)
-    CORTEX_BUS_URL=https://domain:13004
-    CORTEX_BUS_TOKEN=hbus_...
+    FLEET_BUS_URL=https://domain:13004
+    FLEET_BUS_TOKEN=hbus_...
 
 Tools:
   inbox_send         Send message (to agents or 'all')
@@ -86,21 +86,21 @@ PROXY_PATH = "/usr/local/bin/mcp-inbox-proxy"
 
 # ── Config keys ───────────────────────────────────────────────
 # Primary: Bus URL + Bearer token (new)
-bus_url = os.environ.get("CORTEX_BUS_URL", "")
-bus_token = os.environ.get("CORTEX_BUS_TOKEN", "")
+bus_url = os.environ.get("FLEET_BUS_URL", "")
+bus_token = os.environ.get("FLEET_BUS_TOKEN", "")
 
 # Primary auth for nginx bus access
-bus_auth = os.environ.get("CORTEX_BUS_AUTH", "") or os.environ.get("CORTEX_BASIC_AUTH", "")
+bus_auth = os.environ.get("FLEET_BUS_AUTH", "") or os.environ.get("FLEET_BASIC_AUTH", "")
 
-# Fallback: old inbox URL (deprecated, use CORTEX_BUS_URL)
-fallback_url = os.environ.get("CORTEX_BUS_FALLBACK_URL", "") or os.environ.get("CORTEX_INBOX_URL", "")
-fallback_auth = os.environ.get("CORTEX_BUS_AUTH", "") or os.environ.get("CORTEX_INBOX_AUTH", "") or os.environ.get("CORTEX_BASIC_AUTH", "")
+# Fallback: old inbox URL (deprecated, use FLEET_BUS_URL)
+fallback_url = os.environ.get("FLEET_BUS_FALLBACK_URL", "") or os.environ.get("FLEET_INBOX_URL", "")
+fallback_auth = os.environ.get("FLEET_BUS_AUTH", "") or os.environ.get("FLEET_INBOX_AUTH", "") or os.environ.get("FLEET_BASIC_AUTH", "")
 agent_name = os.environ.get("AGENT_NAME", "")
 
 # Support MOSES_* prefix (deprecated, remove eventually)
 _OLD_ENV_MAP = {
-    "MOSES_INBOX_URL": ("CORTEX_BUS_FALLBACK_URL or CORTEX_INBOX_URL", "fallback_url"),
-    "MOSES_INBOX_AUTH": ("CORTEX_BUS_AUTH or CORTEX_INBOX_AUTH", "fallback_auth"),
+    "MOSES_INBOX_URL": ("FLEET_BUS_FALLBACK_URL or FLEET_INBOX_URL", "fallback_url"),
+    "MOSES_INBOX_AUTH": ("FLEET_BUS_AUTH or FLEET_INBOX_AUTH", "fallback_auth"),
 }
 for old_key, (new_key, var_name) in _OLD_ENV_MAP.items():
     val = os.environ.get(old_key, "")
@@ -115,14 +115,14 @@ for old_key, (new_key, var_name) in _OLD_ENV_MAP.items():
 if CONFIG_FILE.exists():
     try:
         _KEY_MAP = {
-            "CORTEX_BUS_URL": ("bus_url", False),
-            "CORTEX_BUS_TOKEN": ("bus_token", False),
-            "CORTEX_BUS_AUTH": ("bus_auth", False),
-            "CORTEX_BUS_BASIC_AUTH": ("bus_auth", False),
-            "CORTEX_BASIC_AUTH": ("bus_auth", True),
-            "CORTEX_BUS_FALLBACK_URL": ("fallback_url", False),
-            "CORTEX_INBOX_URL": ("fallback_url", True),
-            "CORTEX_INBOX_AUTH": ("fallback_auth", True),
+            "FLEET_BUS_URL": ("bus_url", False),
+            "FLEET_BUS_TOKEN": ("bus_token", False),
+            "FLEET_BUS_AUTH": ("bus_auth", False),
+            "FLEET_BUS_BASIC_AUTH": ("bus_auth", False),
+            "FLEET_BASIC_AUTH": ("bus_auth", True),
+            "FLEET_BUS_FALLBACK_URL": ("fallback_url", False),
+            "FLEET_INBOX_URL": ("fallback_url", True),
+            "FLEET_INBOX_AUTH": ("fallback_auth", True),
             "AGENT_NAME": ("agent_name", False),
             "MOSES_INBOX_URL": ("fallback_url", True),
             "MOSES_INBOX_AUTH": ("fallback_auth", True),
@@ -138,7 +138,7 @@ if CONFIG_FILE.exists():
                 if not locals()[var_name]:
                     locals()[var_name] = v
                     if is_deprecated:
-                        log.warning("⚠️  %s in config is deprecated — use CORTEX_BUS_URL/CORTEX_BUS_TOKEN instead", k)
+                        log.warning("⚠️  %s in config is deprecated — use FLEET_BUS_URL/FLEET_BUS_TOKEN instead", k)
     except Exception as e:
         log.warning("Failed to read %s: %s", CONFIG_FILE, e)
 
@@ -166,7 +166,7 @@ if bus_url:
         encoded = base64.b64encode(bus_auth.encode()).decode()
         _ENDPOINTS.append(("Agent Bus (Basic)", bus_base, {"Authorization": "Basic " + encoded}))
 
-# 2. Old inbox fallback (deprecated — use CORTEX_BUS_URL)
+# 2. Old inbox fallback (deprecated — use FLEET_BUS_URL)
 if fallback_url:
     auth_headers = {}
     if fallback_auth:
@@ -175,10 +175,10 @@ if fallback_url:
     _ENDPOINTS.append(("Old Inbox (fallback)", fallback_url, auth_headers))
 
 if not _ENDPOINTS:
-    log.warning("⚠️  No bus endpoints configured — set CORTEX_BUS_URL or CORTEX_BUS_FALLBACK_URL")
+    log.warning("⚠️  No bus endpoints configured — set FLEET_BUS_URL or FLEET_BUS_FALLBACK_URL")
 
 log.info("Agent Bus MCP — agent=%s  bus=%s", DEFAULT_AGENT,
-         bool(bus_url) or "not configured (set CORTEX_BUS_URL)")
+         bool(bus_url) or "not configured (set FLEET_BUS_URL)")
 log.info("Endpoint chain:")
 for name, url, _ in _ENDPOINTS:
     log.info("  %s → %s", name, url)
@@ -616,7 +616,7 @@ def _inbox_read(args: dict) -> CallToolResult:
 
     msg = f"No messages found."
     if status2 == 401:
-        msg = "Read failed (HTTP 401). Configure CORTEX_BUS_TOKEN in ~/steadfaste-fleet/.env"
+        msg = "Read failed (HTTP 401). Configure FLEET_BUS_TOKEN in ~/steadfaste-fleet/.env"
     return CallToolResult(content=[TextContent(type="text", text=msg)])
 
 

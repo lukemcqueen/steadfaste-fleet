@@ -29,10 +29,10 @@ if [ -z "$AGENT_NAME" ]; then
   exit 1
 fi
 
-CORTEX_REPO="${CORTEX_REPO:-${HOME}/steadfaste-fleet}"
-CORTEX_DEPLOY_HOME="${CORTEX_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}"
+FLEET_REPO="${FLEET_REPO:-${HOME}/steadfaste-fleet}"
+FLEET_DEPLOY_HOME="${FLEET_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}"
 HERMES_HOME="${HERMES_HOME:-${HOME}/.hermes}"
-WORKER_SCRIPT_SRC="${CORTEX_REPO}/ops/scripts/agent/agent-worker.py"
+WORKER_SCRIPT_SRC="${FLEET_REPO}/ops/scripts/agent/agent-worker.py"
 WORKER_SCRIPT_DST="${HERMES_HOME}/scripts/agent-worker.py"
 SERVICE_FILE="${HOME}/.config/systemd/user/hermes-agent-worker.service"
 CONFIG_FILE="${HOME}/steadfaste-fleet/.env"
@@ -65,13 +65,13 @@ fi
 info "Installing agent-worker for: ${CYAN}${AGENT_NAME}${RESET}"
 
 if [ ! -f "$WORKER_SCRIPT_SRC" ]; then
-  warn "No local repo at ${CORTEX_REPO}. Will download from GitHub."
+  warn "No local repo at ${FLEET_REPO}. Will download from GitHub."
   WORKER_SCRIPT_SRC="https://raw.githubusercontent.com/lukemcqueen/steadfaste-fleet/main/ops/scripts/agent/agent-worker.py"
 fi
 
 if [ ! -f "$CONFIG_FILE" ]; then
   warn "Config not found: ${CONFIG_FILE}"
-  warn "Create it with: BUS_URL, CORTEX_BASIC_AUTH, AGENT_NAME"
+  warn "Create it with: BUS_URL, FLEET_BASIC_AUTH, AGENT_NAME"
 fi
 
 # ── Ensure systemd user dir ──

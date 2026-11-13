@@ -9,7 +9,7 @@ set -uo pipefail
 IS_MAC=0; [ "$(uname -s)" = "Darwin" ] && IS_MAC=1
 
 NEW_REPO="${HOME}/steadfaste-fleet"       # repo checkout
-NEW_HOME="${HOME}/.steadfaste-fleet"      # deployed home (CORTEX_DEPLOY_HOME)
+NEW_HOME="${HOME}/.steadfaste-fleet"      # deployed home (FLEET_DEPLOY_HOME)
 # STALE-path literals by design: this tool verifies the pre-migration paths are
 # symlinks to the new ones — do not rename them.
 OLD_REPO="${HOME}/hermes-cortex"

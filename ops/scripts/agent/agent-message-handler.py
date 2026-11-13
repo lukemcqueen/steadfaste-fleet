@@ -6,16 +6,16 @@ Polls the agent inbox for messages (UPDATE_REQUEST, ROLLBACK_REQUEST,
 GIT_AUTH_CHECK) and processes them, sending results back to Moses.
 
 Uses the Agent Bus HTTP API (lib/fleet_bus.py) — no Docker required.
-Set CORTEX_BUS_URL to the orchestrator's external bus endpoint before running.
+Set FLEET_BUS_URL to the orchestrator's external bus endpoint before running.
 
 Designed to run as a systemd timer (Linux), launchd plist (macOS),
 or cron on any fleet agent. Silent when no work to do — watchdog pattern.
 
 Env vars:
-  CORTEX_BUS_URL   Bus server URL (default http://127.0.0.1:8903)
+  FLEET_BUS_URL   Bus server URL (default http://127.0.0.1:8903)
             On remote agents, set to e.g. https://your-domain:13004
-  CORTEX_BUS_TOKEN  Bearer token for bus auth
-  CORTEX_BUS_AUTH  Basic auth string (user:pass) as fallback
+  FLEET_BUS_TOKEN  Bearer token for bus auth
+  FLEET_BUS_AUTH  Basic auth string (user:pass) as fallback
   AGENT_NAME     Agent identity (required; never hostname)
 
 Usage:
@@ -38,9 +38,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 HOME = Path.home()
-CORTEX_REPO = HOME / "steadfaste-fleet"
-CORTEX_UPDATE = CORTEX_REPO / "ops" / "scripts" / "fleet-update.sh"
-DOCTOR_PATH = CORTEX_REPO / "ops" / "scripts" / "manage" / "fleet-doctor.py"
+FLEET_REPO = HOME / "steadfaste-fleet"
+FLEET_UPDATE = FLEET_REPO / "ops" / "scripts" / "fleet-update.sh"
+DOCTOR_PATH = FLEET_REPO / "ops" / "scripts" / "manage" / "fleet-doctor.py"
 # Derive AGENT_NAME from env (set by cron/launchd) or .env (fleet setup)
 AGENT_NAME = os.environ.get("AGENT_NAME", "")
 if not AGENT_NAME:
@@ -263,7 +263,7 @@ UPDATE_RESULT_TIMEOUT_S = 1800  # worker must finish within 30 min or the sweep 
 # Deployed task-db.py path (repo path used when developing/deploying).
 TASK_DB_PATH = HOME / ".steadfaste-fleet" / "scripts" / "task-db.py"
 if not TASK_DB_PATH.exists():
-    TASK_DB_PATH = CORTEX_REPO / "ops" / "scripts" / "manage" / "task-db.py"
+    TASK_DB_PATH = FLEET_REPO / "ops" / "scripts" / "manage" / "task-db.py"
 
 
 def _taskdb(args: list[str], timeout: int = 20) -> tuple[int, str]:
@@ -562,7 +562,7 @@ def run_cortex_update() -> dict:
   log("Pulling latest code ...")
   try:
     pull = subprocess.run(
-      ["git", "-C", str(CORTEX_REPO), "pull", "origin", "main"],
+      ["git", "-C", str(FLEET_REPO), "pull", "origin", "main"],
       capture_output=True, text=True, timeout=60
     )
     if pull.returncode != 0:
@@ -579,7 +579,7 @@ def run_cortex_update() -> dict:
   log("Running fleet-update.sh ...")
   try:
     r = subprocess.run(
-      ["bash", str(CORTEX_UPDATE)],
+      ["bash", str(FLEET_UPDATE)],
       capture_output=True, text=True, timeout=300
     )
     result = {
@@ -876,7 +876,7 @@ def process_update_request(msg_body: dict, correlation_id: str) -> dict:
   # Get SHA before
   try:
     before = subprocess.run(
-      ["git", "-C", str(CORTEX_REPO), "rev-parse", "--short", "HEAD"],
+      ["git", "-C", str(FLEET_REPO), "rev-parse", "--short", "HEAD"],
       capture_output=True, text=True, timeout=5
     ).stdout.strip()
   except Exception:
@@ -892,7 +892,7 @@ def process_update_request(msg_body: dict, correlation_id: str) -> dict:
   # Get SHA after
   try:
     after = subprocess.run(
-      ["git", "-C", str(CORTEX_REPO), "rev-parse", "--short", "HEAD"],
+      ["git", "-C", str(FLEET_REPO), "rev-parse", "--short", "HEAD"],
       capture_output=True, text=True, timeout=5
     ).stdout.strip()
   except Exception:
@@ -970,7 +970,7 @@ def process_rollback_request(msg_body: dict) -> dict:
   # Get SHA before
   try:
     sha_before = subprocess.run(
-      ["git", "-C", str(CORTEX_REPO), "rev-parse", "--short", "HEAD"],
+      ["git", "-C", str(FLEET_REPO), "rev-parse", "--short", "HEAD"],
       capture_output=True, text=True, timeout=5
     ).stdout.strip()
   except Exception:
@@ -979,7 +979,7 @@ def process_rollback_request(msg_body: dict) -> dict:
   # Checkout target SHA
   try:
     r = subprocess.run(
-      ["git", "-C", str(CORTEX_REPO), "checkout", target_sha],
+      ["git", "-C", str(FLEET_REPO), "checkout", target_sha],
       capture_output=True, text=True, timeout=30
     )
     checkout_ok = r.returncode == 0
@@ -992,7 +992,7 @@ def process_rollback_request(msg_body: dict) -> dict:
   # Get SHA after
   try:
     sha_after = subprocess.run(
-      ["git", "-C", str(CORTEX_REPO), "rev-parse", "--short", "HEAD"],
+      ["git", "-C", str(FLEET_REPO), "rev-parse", "--short", "HEAD"],
       capture_output=True, text=True, timeout=5
     ).stdout.strip()
   except Exception:
@@ -1034,7 +1034,7 @@ def process_git_auth_check(msg_body: dict) -> dict:
 
   try:
     r = subprocess.run(
-      ["git", "-C", str(CORTEX_REPO), "remote", "get-url", "origin"],
+      ["git", "-C", str(FLEET_REPO), "remote", "get-url", "origin"],
       capture_output=True, text=True, timeout=5
     )
     remote_url = r.stdout.strip()
@@ -1051,7 +1051,7 @@ def process_git_auth_check(msg_body: dict) -> dict:
 
   try:
     r = subprocess.run(
-      ["git", "-C", str(CORTEX_REPO), "ls-remote", "origin", "HEAD"],
+      ["git", "-C", str(FLEET_REPO), "ls-remote", "origin", "HEAD"],
       capture_output=True, text=True, timeout=15
     )
     auth_ok = r.returncode == 0 and r.stdout.strip() != ""

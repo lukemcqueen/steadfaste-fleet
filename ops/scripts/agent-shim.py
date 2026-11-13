@@ -37,7 +37,7 @@ Usage:
     # emit a per-agent instance (bakes AGENT_NAME + queue names):
     python3 agent-shim.py --generate --agent codex > codex-shim.py
 
-Bus creds from env: CORTEX_BUS_URL + CORTEX_BUS_TOKEN (or CORTEX_BUS_AUTH).
+Bus creds from env: FLEET_BUS_URL + FLEET_BUS_TOKEN (or FLEET_BUS_AUTH).
 """
 from __future__ import annotations
 
@@ -51,15 +51,15 @@ from pathlib import Path
 from typing import Optional
 
 # Functional URLs come from env, never source (env-first rule).
-_BUS_URL = os.environ.get("CORTEX_BUS_URL", "").strip()
+_BUS_URL = os.environ.get("FLEET_BUS_URL", "").strip()
 
 
 def _headers() -> dict:
-    token = os.environ.get("CORTEX_BUS_TOKEN", "").strip()
+    token = os.environ.get("FLEET_BUS_TOKEN", "").strip()
     if token:
         return {"Authorization": f"Bearer {token}"}
-    auth = (os.environ.get("CORTEX_BUS_AUTH", "")
-            or os.environ.get("CORTEX_BASIC_AUTH", "")).strip()
+    auth = (os.environ.get("FLEET_BUS_AUTH", "")
+            or os.environ.get("FLEET_BASIC_AUTH", "")).strip()
     if auth:
         import base64
         return {"Authorization": "Basic "
@@ -69,7 +69,7 @@ def _headers() -> dict:
 
 def _post(path: str, payload: dict) -> Optional[dict]:
     if not _BUS_URL:
-        raise RuntimeError("CORTEX_BUS_URL not set")
+        raise RuntimeError("FLEET_BUS_URL not set")
     req = urllib.request.Request(f"{_BUS_URL}{path}",
                                  data=json.dumps(payload).encode(),
                                  method="POST")
@@ -150,7 +150,7 @@ def generate(out_path: Path, agent: str) -> None:
 Speaks the ADR-0005 envelope contract against the Agent Bus:
     poll  inbox_{agent}  → next inbound message (Telegram/WhatsApp user)
     reply out_{agent}    → answer back (gateway delivers to the user)
-Requires CORTEX_BUS_URL + CORTEX_BUS_TOKEN (or CORTEX_BUS_AUTH) in env.
+Requires FLEET_BUS_URL + FLEET_BUS_TOKEN (or FLEET_BUS_AUTH) in env.
 """
 import json
 import os
@@ -162,19 +162,19 @@ AGENT = "{agent}"
 
 
 def _post(path, payload):
-    url = os.environ.get("CORTEX_BUS_URL", "").rstrip("/")
+    url = os.environ.get("FLEET_BUS_URL", "").rstrip("/")
     if not url:
-        raise RuntimeError("CORTEX_BUS_URL not set")
+        raise RuntimeError("FLEET_BUS_URL not set")
     req = urllib.request.Request(url + path,
                                  data=json.dumps(payload).encode(),
                                  method="POST")
-    tok = os.environ.get("CORTEX_BUS_TOKEN", "").strip()
+    tok = os.environ.get("FLEET_BUS_TOKEN", "").strip()
     if tok:
         req.add_header("Authorization", "Bearer " + tok)
     else:
         import base64
-        auth = (os.environ.get("CORTEX_BUS_AUTH", "")
-                or os.environ.get("CORTEX_BASIC_AUTH", "")).strip()
+        auth = (os.environ.get("FLEET_BUS_AUTH", "")
+                or os.environ.get("FLEET_BASIC_AUTH", "")).strip()
         if auth:
             req.add_header("Authorization", "Basic "
                            + base64.b64encode(auth.encode()).decode())
@@ -232,9 +232,9 @@ def main() -> int:
         generate(Path("/dev/stdout"), args.agent)
         return 0
 
-    bus_url = os.environ.get("CORTEX_BUS_URL", "").strip()
+    bus_url = os.environ.get("FLEET_BUS_URL", "").strip()
     if not bus_url:
-        print("error: CORTEX_BUS_URL not set", file=sys.stderr)
+        print("error: FLEET_BUS_URL not set", file=sys.stderr)
         return 2
     headers = _headers()
 

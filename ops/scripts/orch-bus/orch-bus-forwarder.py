@@ -39,12 +39,12 @@ CONFIGURATION
   All via env vars (set in ~/steadfaste-fleet/.env or ~/steadfaste-fleet/.env):
 
   BUS_FORWARDER_LOCAL_URL     Local bus (default: http://127.0.0.1:8903)
-  BUS_FORWARDER_LOCAL_TOKEN   Token for local bus (default: CORTEX_BUS_TOKEN)
-  BUS_FORWARDER_PEER_URL      Peer bus address (default: CORTEX_BUS_FALLBACK_URL)
+  BUS_FORWARDER_LOCAL_TOKEN   Token for local bus (default: FLEET_BUS_TOKEN)
+  BUS_FORWARDER_PEER_URL      Peer bus address (default: FLEET_BUS_FALLBACK_URL)
   BUS_FORWARDER_PEER_AUTH     Basic auth for peer nginx proxy (optional)
   BUS_FORWARDER_PEER_TOKEN    Token for peer bus (default: same as local)
 
-  Defaults work on Moses: local = 127.0.0.1:8903, peer = $CORTEX_BUS_FALLBACK_URL
+  Defaults work on Moses: local = 127.0.0.1:8903, peer = $FLEET_BUS_FALLBACK_URL
 
 USAGE
   Run as a no_agent cron: */2 * * * *
@@ -123,17 +123,17 @@ def _resolve_var(key: str, default: str = "") -> str:
 # ── Config from env vars (with conf-file fallback) ──
 # NOTE (2026-08-05): ALL of these must resolve via _resolve_var (env →
 # .env → ~/steadfaste-fleet/.env), NOT os.environ alone. The
-# failover watchdog rewrites CORTEX_BUS_URL / CORTEX_BUS_FALLBACK_URL in
+# failover watchdog rewrites FLEET_BUS_URL / FLEET_BUS_FALLBACK_URL in
 # .env when it activates/recovers — an env-only read ignores
 # the swap, and cron runs (no env) resolve to empty peers/tokens, so the
 # LOCAL→PEER drain silently failed. Found 2026-08-05: 2 worker replies
 # stranded on Esther's bus despite Moses being reachable.
 LOCAL_URL = _resolve_var("BUS_FORWARDER_LOCAL_URL", "http://127.0.0.1:8903")
-LOCAL_TOKEN = _resolve_var("BUS_FORWARDER_LOCAL_TOKEN") or _resolve_var("CORTEX_BUS_TOKEN")
+LOCAL_TOKEN = _resolve_var("BUS_FORWARDER_LOCAL_TOKEN") or _resolve_var("FLEET_BUS_TOKEN")
 # ── Peer URL: role-aware. The peer is the OTHER orchestrator's bus. ──
-#   On Moses (primary): peer = Esther = CORTEX_BUS_FALLBACK_URL (:14004)
-#   On Esther (backup): peer = Moses = CORTEX_BUS_URL       (:13004)
-# The old default (always CORTEX_BUS_FALLBACK_URL) self-synced on Esther:
+#   On Moses (primary): peer = Esther = FLEET_BUS_FALLBACK_URL (:14004)
+#   On Esther (backup): peer = Moses = FLEET_BUS_URL       (:13004)
+# The old default (always FLEET_BUS_FALLBACK_URL) self-synced on Esther:
 # her fallback URL points at her own external :14004, so the forwarder was
 # syncing Esther↔Esther and never saw Moses' inbox. (found 2026-08-03,
 # take-charge assessment — worker fix requests invisible in the mirror)
@@ -141,25 +141,25 @@ _HOST = os.uname().nodename.split(".")[0]
 if _resolve_var("BUS_FORWARDER_PEER_URL"):
     PEER_URL = _resolve_var("BUS_FORWARDER_PEER_URL")
 elif _HOST == "moses":
-    PEER_URL = _resolve_var("CORTEX_BUS_FALLBACK_URL", "")
+    PEER_URL = _resolve_var("FLEET_BUS_FALLBACK_URL", "")
 else:
     # esther (and any non-moses orchestrator): peer = the OTHER host's bus.
-    # CORTEX_BUS_URL flips with failover state — the failover watchdog swaps
+    # FLEET_BUS_URL flips with failover state — the failover watchdog swaps
     # it between Moses :13004 (standby) and local :8903 (while acting
     # primary). NEVER peer with localhost: the forwarder would self-sync and
     # the backlog would never drain to Moses when he returns (found
     # 2026-08-05: failover messages stranded on Esther's bus for hours).
-    _primary = _resolve_var("CORTEX_BUS_URL", "")
+    _primary = _resolve_var("FLEET_BUS_URL", "")
     _is_local = _primary.startswith(("http://127.0.0.1", "http://localhost"))
     if _is_local:
-        PEER_URL = _resolve_var("CORTEX_BUS_FALLBACK_URL", "")
+        PEER_URL = _resolve_var("FLEET_BUS_FALLBACK_URL", "")
     else:
-        PEER_URL = _primary or _resolve_var("CORTEX_BUS_FALLBACK_URL", "")
+        PEER_URL = _primary or _resolve_var("FLEET_BUS_FALLBACK_URL", "")
 # External peer (nginx) authenticates with Basic auth, not Bearer.
 PEER_AUTH = (
     _resolve_var("BUS_FORWARDER_PEER_AUTH")
-    or _resolve_var("CORTEX_BUS_FALLBACK_AUTH")
-    or _resolve_var("CORTEX_BASIC_AUTH")
+    or _resolve_var("FLEET_BUS_FALLBACK_AUTH")
+    or _resolve_var("FLEET_BASIC_AUTH")
 )
 PEER_TOKEN = _resolve_var("BUS_FORWARDER_PEER_TOKEN") or LOCAL_TOKEN
 
@@ -512,20 +512,20 @@ def main():
 
     # Resolve via config files if not set
     if not LOCAL_TOKEN:
-        LOCAL_TOKEN = _resolve_var("CORTEX_BUS_TOKEN")
+        LOCAL_TOKEN = _resolve_var("FLEET_BUS_TOKEN")
     if not PEER_URL:
         # Role-aware peer resolution (same rule as module level):
-        # moses → CORTEX_BUS_FALLBACK_URL (Esther :14004)
-        # esther → CORTEX_BUS_URL (Moses :13004)
+        # moses → FLEET_BUS_FALLBACK_URL (Esther :14004)
+        # esther → FLEET_BUS_URL (Moses :13004)
         _h = os.uname().nodename.split(".")[0]
         if _h == "moses":
-            PEER_URL = _resolve_var("CORTEX_BUS_FALLBACK_URL", "")
+            PEER_URL = _resolve_var("FLEET_BUS_FALLBACK_URL", "")
         else:
-            PEER_URL = _resolve_var("CORTEX_BUS_URL", "") or _resolve_var("CORTEX_BUS_FALLBACK_URL", "")
+            PEER_URL = _resolve_var("FLEET_BUS_URL", "") or _resolve_var("FLEET_BUS_FALLBACK_URL", "")
     if not PEER_TOKEN:
         PEER_TOKEN = LOCAL_TOKEN
     if not PEER_AUTH:
-        PEER_AUTH = _resolve_var("CORTEX_BUS_FALLBACK_AUTH", "") or _resolve_var("CORTEX_BASIC_AUTH", "")
+        PEER_AUTH = _resolve_var("FLEET_BUS_FALLBACK_AUTH", "") or _resolve_var("FLEET_BASIC_AUTH", "")
 
     # Discover queues
     QUEUES = _discover_queues()
@@ -535,7 +535,7 @@ def main():
         print("ERROR: LOCAL_URL and LOCAL_TOKEN required", file=sys.stderr)
         sys.exit(1)
     if not PEER_URL:
-        print("ERROR: PEER_URL (CORTEX_BUS_FALLBACK_URL) required — no peer to sync with",
+        print("ERROR: PEER_URL (FLEET_BUS_FALLBACK_URL) required — no peer to sync with",
               file=sys.stderr)
         sys.exit(1)
 

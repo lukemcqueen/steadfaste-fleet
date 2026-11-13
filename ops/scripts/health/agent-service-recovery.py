@@ -40,7 +40,7 @@ def _cron_ts(name: str) -> str:
 UID = os.getuid()
 LANGFUSE_DIR = str(Path.home() / "langfuse")
 HERMES_SCRIPTS = Path.home() / ".steadfaste-fleet" / "scripts"
-CORTEX_REPO_ENV = os.environ.get("CORTEX_REPO", "")
+FLEET_REPO_ENV = os.environ.get("FLEET_REPO", "")
 
 def _docker_via_sg(container: str) -> bool:
     """Check if a Docker container is running via sg docker -c (fallback when user not in docker group)."""
@@ -53,11 +53,11 @@ def _docker_via_sg(container: str) -> bool:
     except Exception:
         return False
 
-CORTEX_REPO_ENV = os.environ.get("CORTEX_REPO", "")
-if CORTEX_REPO_ENV:
-    CORTEX_SCRIPTS = Path(CORTEX_REPO_ENV) / "ops" / "scripts"
+FLEET_REPO_ENV = os.environ.get("FLEET_REPO", "")
+if FLEET_REPO_ENV:
+    FLEET_SCRIPTS = Path(FLEET_REPO_ENV) / "ops" / "scripts"
 else:
-    CORTEX_SCRIPTS = Path.home() / "steadfaste-fleet" / "ops" / "scripts"
+    FLEET_SCRIPTS = Path.home() / "steadfaste-fleet" / "ops" / "scripts"
 
 
 def _make_service(name: str, label: str = "", pgrep: str = "",
@@ -150,10 +150,10 @@ def _try_restore_scripts() -> str | None:
     ]
     for name in critical:
         target = HERMES_SCRIPTS / name
-        source = CORTEX_SCRIPTS / name
+        source = FLEET_SCRIPTS / name
         if not source.exists():
             # Search subdirectories (health/, manage/, etc.)
-            for sub in sorted(CORTEX_SCRIPTS.rglob(name)):
+            for sub in sorted(FLEET_SCRIPTS.rglob(name)):
                 source = sub
                 break
         if not target.exists() and source.exists():

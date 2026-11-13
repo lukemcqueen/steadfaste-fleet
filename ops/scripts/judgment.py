@@ -276,12 +276,12 @@ def _validate_response(result, questions: dict) -> str | None:
 def _env_file_paths(env: dict) -> list:
     """Env files to consult for a credential, cortex-first (Hermes last)."""
     paths = []
-    explicit = (env.get("CORTEX_ENV_FILE") or "").strip()
+    explicit = (env.get("FLEET_ENV_FILE") or "").strip()
     if explicit:
         paths.append(Path(explicit))
-    repo = (env.get("CORTEX_REPO") or "").strip()
+    repo = (env.get("FLEET_REPO") or "").strip()
     paths.append((Path(repo) if repo else Path.home() / "steadfaste-fleet") / ".env")
-    paths.append(Path(env.get("CORTEX_DEPLOY_HOME") or (Path.home() / ".steadfaste-fleet")) / ".env")
+    paths.append(Path(env.get("FLEET_DEPLOY_HOME") or (Path.home() / ".steadfaste-fleet")) / ".env")
     paths.append(Path.home() / ".hermes" / ".env")     # legacy last resort
     return paths
 

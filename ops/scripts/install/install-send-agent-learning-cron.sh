@@ -16,8 +16,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/os-config.sh"
 
 SERVICE_NAME="com.hermes.agent-learning-sender"
-UPDATE_SCRIPT="${CORTEX_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/scripts/send-agent-learning.sh"
-STATE_DIR="${CORTEX_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/state"
+UPDATE_SCRIPT="${FLEET_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/scripts/send-agent-learning.sh"
+STATE_DIR="${FLEET_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/state"
 mkdir -p "$STATE_DIR"
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; RESET='\033[0m'
@@ -32,24 +32,24 @@ install_cron() {
     return 1
   fi
 
-  if [[ "$CORTEX_OS" == "macos" ]]; then
+  if [[ "$FLEET_OS" == "macos" ]]; then
     _install_launchd
-  elif [[ "$CORTEX_OS" == "linux" ]]; then
+  elif [[ "$FLEET_OS" == "linux" ]]; then
     _install_systemd
-  elif [[ "$CORTEX_OS" == "windows" ]]; then
+  elif [[ "$FLEET_OS" == "windows" ]]; then
     _install_windows
   else
-    warn "Unsupported OS: ${CORTEX_OS} — falling back to crontab"
+    warn "Unsupported OS: ${FLEET_OS} — falling back to crontab"
     _install_crontab
   fi
 }
 
 uninstall_cron() {
-  if [[ "$CORTEX_OS" == "macos" ]]; then
+  if [[ "$FLEET_OS" == "macos" ]]; then
     _uninstall_launchd
-  elif [[ "$CORTEX_OS" == "linux" ]]; then
+  elif [[ "$FLEET_OS" == "linux" ]]; then
     _uninstall_systemd
-  elif [[ "$CORTEX_OS" == "windows" ]]; then
+  elif [[ "$FLEET_OS" == "windows" ]]; then
     _uninstall_windows
   else
     _uninstall_crontab

@@ -6,7 +6,7 @@
 # ─────────────────────────────────────────────────────────────
 set -euo pipefail
 
-# Source OS config (expects CORTEX_OS, PKG_*, SERVICE_* to be set)
+# Source OS config (expects FLEET_OS, PKG_*, SERVICE_* to be set)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/os-config.sh"
 
@@ -30,7 +30,7 @@ install_ollama() {
 
   echo "  Installing Ollama…"
 
-  if [[ "$CORTEX_OS" == "macos" ]]; then
+  if [[ "$FLEET_OS" == "macos" ]]; then
     if command -v brew &>/dev/null; then
       brew install --cask ollama
     else
@@ -40,14 +40,14 @@ install_ollama() {
       rm -f /tmp/ollama-install.sh
     fi
 
-  elif [[ "$CORTEX_OS" == "linux" ]]; then
+  elif [[ "$FLEET_OS" == "linux" ]]; then
     if ! command -v ollama &>/dev/null; then
       curl -fsSL --retry 3 --retry-delay 5 https://ollama.com/install.sh -o /tmp/ollama-install.sh
       sh /tmp/ollama-install.sh
       rm -f /tmp/ollama-install.sh
     fi
 
-  elif [[ "$CORTEX_OS" == "windows" ]]; then
+  elif [[ "$FLEET_OS" == "windows" ]]; then
     # Windows: download the installer
     local installer="/tmp/OllamaSetup.exe"
     curl -fsSL https://ollama.com/download/OllamaSetup.exe -o "$installer"
@@ -75,7 +75,7 @@ setup_ollama_service() {
 
   echo "  Configuring Ollama service…"
 
-  if [[ "$CORTEX_OS" == "macos" ]]; then
+  if [[ "$FLEET_OS" == "macos" ]]; then
     mkdir -p "${HOME}/.ollama"
     write_service "$OLLAMA_SERVICE_NAME" \
       "$ollama_bin serve" \
@@ -83,7 +83,7 @@ setup_ollama_service() {
       "PATH=/usr/local/bin:/usr/bin:/bin HOME=${HOME} OLLAMA_HOST=127.0.0.1 OLLAMA_NUM_THREADS=2 OLLAMA_KEEP_ALIVE=0"
     start_service "$OLLAMA_SERVICE_NAME"
 
-  elif [[ "$CORTEX_OS" == "linux" ]]; then
+  elif [[ "$FLEET_OS" == "linux" ]]; then
     # On Linux, the Ollama install script usually sets up systemd.
     # If not, create a user service.
     if ! systemctl --user is-active ollama &>/dev/null 2>&1; then
@@ -94,7 +94,7 @@ setup_ollama_service() {
       start_service "$OLLAMA_SERVICE_NAME"
     fi
 
-  elif [[ "$CORTEX_OS" == "windows" ]]; then
+  elif [[ "$FLEET_OS" == "windows" ]]; then
     write_service "$OLLAMA_SERVICE_NAME" \
       "\"${ollama_bin}\" serve" \
       "$workdir"

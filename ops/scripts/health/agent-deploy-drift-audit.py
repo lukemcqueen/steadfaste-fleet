@@ -28,7 +28,7 @@ watchdogs):
 
 Usage:
   python3 agent-deploy-drift-audit.py
-  CORTEX_REPO=... CORTEX_HOME=... python3 agent-deploy-drift-audit.py
+  FLEET_REPO=... FLEET_HOME=... python3 agent-deploy-drift-audit.py
 
 Exit codes: 0 = clean/silent, 1 = drift alert.
 """
@@ -53,8 +53,8 @@ for _candidate in (_HERE, _HERE.parent):
 from state_tracker import StateTracker  # noqa: E402
 from hermes_tz import format_timestamp  # noqa: E402
 
-CORTEX_REPO = Path(os.environ.get("CORTEX_REPO", str(Path.home() / "steadfaste-fleet")))
-CORTEX_HOME = Path(os.environ.get("CORTEX_HOME", str(Path.home() / ".steadfaste-fleet")))
+FLEET_REPO = Path(os.environ.get("FLEET_REPO", str(Path.home() / "steadfaste-fleet")))
+FLEET_HOME = Path(os.environ.get("FLEET_HOME", str(Path.home() / ".steadfaste-fleet")))
 
 # Local-only no_agent cron scripts — deployed per-host, intentionally absent
 # from register() mappings. Mirrors check_stale_deploys() + fleet-update.sh
@@ -133,7 +133,7 @@ def _parse_registrations(cortex_update: Path) -> list[tuple[str, str, Path, str]
         content = cortex_update.read_text()
     except OSError:
         return out
-    deploy_home_str = str(CORTEX_HOME)
+    deploy_home_str = str(FLEET_HOME)
     home_str = str(Path.home())
     for line in content.splitlines():
         line = line.strip()
@@ -143,7 +143,7 @@ def _parse_registrations(cortex_update: Path) -> list[tuple[str, str, Path, str]
         if not m:
             continue
         src_rel, dest_str = m.group(1), m.group(2)
-        dest_str = dest_str.replace("${CORTEX_DEPLOY_HOME}", deploy_home_str)
+        dest_str = dest_str.replace("${FLEET_DEPLOY_HOME}", deploy_home_str)
         dest_str = dest_str.replace("${HOME}", home_str)
         kind = "register_orch" if line.startswith("register_orch ") else "register"
         out.append((kind, src_rel, Path(dest_str), dest_str))
@@ -151,7 +151,7 @@ def _parse_registrations(cortex_update: Path) -> list[tuple[str, str, Path, str]
 
 
 def main() -> int:
-    cortex_update = CORTEX_REPO / "ops" / "scripts" / "fleet-update.sh"
+    cortex_update = FLEET_REPO / "ops" / "scripts" / "fleet-update.sh"
     if not cortex_update.exists():
         print(f"{_cron_ts('deploy-drift-audit')} fleet-update.sh not found at {cortex_update}")
         return 1
@@ -166,7 +166,7 @@ def main() -> int:
         if is_orch_entry and not orch:
             continue
         destinations.add(dest)
-        src = CORTEX_REPO / src_rel
+        src = FLEET_REPO / src_rel
 
         if not src.exists():
             findings.append(("FAIL", f"deploy source missing: {src_rel} -> {dest_str}"))
@@ -196,7 +196,7 @@ def main() -> int:
         findings.append(("FAIL", f"content drift: {dest} differs from repo source {src_rel} (run fleet-update.sh)"))
 
     # Orphan scan of the deployed scripts dir (mirrors check_stale_deploys).
-    scripts_dir = CORTEX_HOME / "scripts"
+    scripts_dir = FLEET_HOME / "scripts"
     if scripts_dir.is_dir():
         for f in sorted(scripts_dir.rglob("*")):
             if not (f.is_file() and f.suffix in (".py", ".sh") and "__pycache__" not in str(f)):
@@ -204,7 +204,7 @@ def main() -> int:
             if f in destinations or f.name in PRESERVE or f.name.startswith("local-"):
                 continue
             size = f.stat().st_size
-            findings.append(("WARN", f"stale deploy (orphan): {f.relative_to(CORTEX_HOME)} — {size:,} bytes, not in any register() mapping"))
+            findings.append(("WARN", f"stale deploy (orphan): {f.relative_to(FLEET_HOME)} — {size:,} bytes, not in any register() mapping"))
 
     if not findings:
         return 0  # clean — silent

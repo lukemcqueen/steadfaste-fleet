@@ -16,17 +16,17 @@
 # ─────────────────────────────────────────────────────────────
 set -euo pipefail
 
-CORTEX_DEPLOY_HOME="${CORTEX_DEPLOY_HOME:-$HOME/.steadfaste-fleet}"
-STATE_DIR="$CORTEX_DEPLOY_HOME/state"
+FLEET_DEPLOY_HOME="${FLEET_DEPLOY_HOME:-$HOME/.steadfaste-fleet}"
+STATE_DIR="$FLEET_DEPLOY_HOME/state"
 REGISTRY_FILE="$STATE_DIR/agent-registry.json"
 
 # ── Source config ───────────────────────────────────────────
 # Resolve bus config with canonical precedence env → .env → .env
 # (same as orch-bus-forwarder.py). Fix 2026-08-17: the old if/elif sourced
 # ONLY ~/steadfaste-fleet/.env when it existed, so INBOX_URL fell back to the
-# dead CORTEX_INBOX_URL (localhost:8904 — the bus listens on 8903) and every
+# dead FLEET_INBOX_URL (localhost:8904 — the bus listens on 8903) and every
 # send silently failed ("0 sent, 4 failed", cron reported ok). The conf
-# carries the live CORTEX_BUS_URL / CORTEX_BASIC_AUTH; resolve across both.
+# carries the live FLEET_BUS_URL / FLEET_BASIC_AUTH; resolve across both.
 resolve_var() {
   local varname="$1" val=""
   if [[ -n "${!varname:-}" ]]; then val="${!varname}"; fi
@@ -39,17 +39,17 @@ resolve_var() {
   printf '%s' "$val"
 }
 
-CORTEX_BUS_URL="$(resolve_var CORTEX_BUS_URL)"
-CORTEX_BUS_FALLBACK_URL="$(resolve_var CORTEX_BUS_FALLBACK_URL)"
-CORTEX_INBOX_URL="$(resolve_var CORTEX_INBOX_URL)"
-CORTEX_BASIC_AUTH="$(resolve_var CORTEX_BASIC_AUTH)"
-CORTEX_BUS_AUTH="$(resolve_var CORTEX_BUS_AUTH)"
-CORTEX_INBOX_AUTH="$(resolve_var CORTEX_INBOX_AUTH)"
-CORTEX_BUS_TOKEN="$(resolve_var CORTEX_BUS_TOKEN)"
+FLEET_BUS_URL="$(resolve_var FLEET_BUS_URL)"
+FLEET_BUS_FALLBACK_URL="$(resolve_var FLEET_BUS_FALLBACK_URL)"
+FLEET_INBOX_URL="$(resolve_var FLEET_INBOX_URL)"
+FLEET_BASIC_AUTH="$(resolve_var FLEET_BASIC_AUTH)"
+FLEET_BUS_AUTH="$(resolve_var FLEET_BUS_AUTH)"
+FLEET_INBOX_AUTH="$(resolve_var FLEET_INBOX_AUTH)"
+FLEET_BUS_TOKEN="$(resolve_var FLEET_BUS_TOKEN)"
 
-INBOX_URL="${CORTEX_BUS_URL:-${CORTEX_BUS_FALLBACK_URL:-${CORTEX_INBOX_URL:-}}}"
-INBOX_AUTH="${CORTEX_BASIC_AUTH:-${CORTEX_BUS_AUTH:-${CORTEX_INBOX_AUTH:-}}}"
-BUS_TOKEN="${CORTEX_BUS_TOKEN:-}"
+INBOX_URL="${FLEET_BUS_URL:-${FLEET_BUS_FALLBACK_URL:-${FLEET_INBOX_URL:-}}}"
+INBOX_AUTH="${FLEET_BASIC_AUTH:-${FLEET_BUS_AUTH:-${FLEET_INBOX_AUTH:-}}}"
+BUS_TOKEN="${FLEET_BUS_TOKEN:-}"
 
 # ── Agent identity — fail loud, NEVER hostname ─────────────
 # A machine name is not an agent name; requests must be signed by the
@@ -126,7 +126,7 @@ REQUEST_ID="skill-req-${TIMESTAMP}"
 
 # Skip if inbox URL not configured
 if [[ -z "$INBOX_URL" ]]; then
-  echo "WARN: CORTEX_BUS_FALLBACK_URL (or CORTEX_INBOX_URL) not set — cannot send requests" >&2
+  echo "WARN: FLEET_BUS_FALLBACK_URL (or FLEET_INBOX_URL) not set — cannot send requests" >&2
   exit 1
 fi
 

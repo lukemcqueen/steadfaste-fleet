@@ -17,7 +17,7 @@ ts() {
 # Schedule: daily (recommended 22:33 KST, 10 min after hermes-update)
 set -euo pipefail
 
-CORTEX_REPO="$HOME/steadfaste-fleet"
+FLEET_REPO="$HOME/steadfaste-fleet"
 
 # timeout: linux=timeout, mac=gtimeout (brew coreutils). Never assume the
 # binary exists — fail with a clear message instead of a cryptic 127.
@@ -30,12 +30,12 @@ if [ -z "$TIMEOUT_CMD" ]; then
   exit 1
 fi
 
-if [ ! -d "$CORTEX_REPO" ]; then
-    echo "[$(ts) cortex-sync] Repo not found at $CORTEX_REPO"
+if [ ! -d "$FLEET_REPO" ]; then
+    echo "[$(ts) cortex-sync] Repo not found at $FLEET_REPO"
     exit 1
 fi
 
-cd "$CORTEX_REPO"
+cd "$FLEET_REPO"
 
 # Fail-safe cleanup for an interrupted rebase (added 2026-10-18). A `git pull
 # --rebase` that hits a conflict leaves the repository STOPPED MID-REBASE; every
@@ -44,7 +44,7 @@ cd "$CORTEX_REPO"
 # not required-if-present: a deploy that ships one without the other must fail
 # loudly here rather than silently drop the guard.
 # shellcheck source=ops/scripts/lib/git-stalled-rebase.sh
-source "$CORTEX_REPO/ops/scripts/lib/git-stalled-rebase.sh"
+source "$FLEET_REPO/ops/scripts/lib/git-stalled-rebase.sh"
 
 # Use the same strategy as the working monitor script - assert repo exists and log what's happening
 log()  { echo "[$(ts) cortex-sync] $*"; }
@@ -128,7 +128,7 @@ PULL_OUTPUT=$(GIT_EDITOR=true SKIP_POST_MERGE=1 "$TIMEOUT_CMD" 20 git pull --reb
         printf '%s\n' "$abort_out" | while IFS= read -r line; do log "$line"; done
     fi
     if [ "$abort_rc" -ne 0 ]; then
-        log "FATAL: a rebase is stopped in $CORTEX_REPO and could not be aborted — commits and pushes stay blocked until it is cleared by hand"
+        log "FATAL: a rebase is stopped in $FLEET_REPO and could not be aborted — commits and pushes stay blocked until it is cleared by hand"
         stash_pop
         exit 1
     fi
@@ -152,7 +152,7 @@ stash_pop
 # timeout only bounds the network operation. Run the full fleet-update.sh
 # now with a generous budget; without this the hook's deploy was killed
 # mid-flight at 20s, erroring the cron on every merge (v3: 2026-08-07).
-DEPLOY_OUTPUT=$("$TIMEOUT_CMD" 600 bash "$CORTEX_REPO/ops/scripts/fleet-update.sh" 2>&1) || {
+DEPLOY_OUTPUT=$("$TIMEOUT_CMD" 600 bash "$FLEET_REPO/ops/scripts/fleet-update.sh" 2>&1) || {
     DEPLOY_EXIT=$?
     CTS=$(ts)
     echo "[$CTS cortex-sync] fleet-update.sh failed (exit $DEPLOY_EXIT)"
@@ -161,7 +161,7 @@ DEPLOY_OUTPUT=$("$TIMEOUT_CMD" 600 bash "$CORTEX_REPO/ops/scripts/fleet-update.s
 }
 
 # Deploy skills manifest from template
-SKILLS_TEMPLATE="$CORTEX_REPO/skills.yaml"
+SKILLS_TEMPLATE="$FLEET_REPO/skills.yaml"
 SKILLS_DEST="$HOME/.steadfaste-fleet/skills.yaml"
 if [ -f "$SKILLS_TEMPLATE" ]; then
     if [ ! -f "$SKILLS_DEST" ] || ! diff -q "$SKILLS_TEMPLATE" "$SKILLS_DEST" >/dev/null 2>&1; then

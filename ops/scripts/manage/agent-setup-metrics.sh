@@ -13,7 +13,7 @@ set -euo pipefail
 echo "[agent-setup-metrics] === Metrics push setup ==="
 
 # ── 1. Source .env ──
-bus_conf="${CORTEX_BUS_CONF:-${HOME}/steadfaste-fleet/.env}"
+bus_conf="${FLEET_BUS_CONF:-${HOME}/steadfaste-fleet/.env}"
 if [ ! -f "$bus_conf" ]; then
   echo "[agent-setup-metrics] ❌ .env not found at $bus_conf"
   exit 1
@@ -21,13 +21,13 @@ fi
 # shellcheck source=/dev/null
 source "$bus_conf"
 
-if [ -z "${CORTEX_BUS_URL:-}" ] || [ -z "${CORTEX_BASIC_AUTH:-}" ]; then
-  echo "[agent-setup-metrics] ❌ .env missing CORTEX_BUS_URL or CORTEX_BASIC_AUTH"
+if [ -z "${FLEET_BUS_URL:-}" ] || [ -z "${FLEET_BASIC_AUTH:-}" ]; then
+  echo "[agent-setup-metrics] ❌ .env missing FLEET_BUS_URL or FLEET_BASIC_AUTH"
   exit 1
 fi
 
-bus_host=$(echo "$CORTEX_BUS_URL" | sed -E 's|^https?://([^:/]+).*|\1|')
-VM_URL="https://${CORTEX_BASIC_AUTH}@${bus_host}:13005/api/v1/import/prometheus"
+bus_host=$(echo "$FLEET_BUS_URL" | sed -E 's|^https?://([^:/]+).*|\1|')
+VM_URL="https://${FLEET_BASIC_AUTH}@${bus_host}:13005/api/v1/import/prometheus"
 echo "[agent-setup-metrics] ✅ Derived VICTORIA_METRICS_URL from .env"
 
 # ── 2. Set env var in steadfaste-fleet.env ──

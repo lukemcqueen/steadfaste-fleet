@@ -15,8 +15,8 @@ and POSTs the structured result to Moses's agent inbox for
 dashboard consumption.
 
 Configuration (env vars or ~/steadfaste-fleet/.env):
-  CORTEX_BUS_FALLBACK_URL     — Moses inbox MCP endpoint (POST via internal API)
-  CORTEX_BUS_FALLBACK_AUTH    — "user:pass" for Basic Auth
+  FLEET_BUS_FALLBACK_URL     — Moses inbox MCP endpoint (POST via internal API)
+  FLEET_BUS_FALLBACK_AUTH    — "user:pass" for Basic Auth
   AGENT_NAME           — name to report as (required; never hostname)
   EXTERNAL_HEALTH_URL  — external URL to verify reachability (Principle #14)
 
@@ -49,9 +49,9 @@ TIMEOUT = 15
 # ── Config ────────────────────────────────────────────────────
 
 # Load from config file first
-inbox_url = os.environ.get("CORTEX_BUS_URL", "") or os.environ.get("CORTEX_BUS_FALLBACK_URL", "") or os.environ.get("CORTEX_INBOX_URL", "")
-inbox_auth = os.environ.get("CORTEX_BASIC_AUTH", "") or os.environ.get("CORTEX_BUS_AUTH", "") or os.environ.get("CORTEX_INBOX_AUTH", "")
-bus_token = os.environ.get("CORTEX_BUS_TOKEN", "")
+inbox_url = os.environ.get("FLEET_BUS_URL", "") or os.environ.get("FLEET_BUS_FALLBACK_URL", "") or os.environ.get("FLEET_INBOX_URL", "")
+inbox_auth = os.environ.get("FLEET_BASIC_AUTH", "") or os.environ.get("FLEET_BUS_AUTH", "") or os.environ.get("FLEET_INBOX_AUTH", "")
+bus_token = os.environ.get("FLEET_BUS_TOKEN", "")
 agent_name = os.environ.get("AGENT_NAME", "")
 external_health_url = os.environ.get("EXTERNAL_HEALTH_URL", "")
 
@@ -66,15 +66,15 @@ if CONFIG_FILE.exists():
                     k, v = line.split("=", 1)
                     k = k.strip()
                     v = v.strip().strip("'\"")
-                    if k == "CORTEX_BUS_URL" and not inbox_url:
+                    if k == "FLEET_BUS_URL" and not inbox_url:
                         inbox_url = v
-                    elif k == "CORTEX_BUS_FALLBACK_URL" and not inbox_url:
+                    elif k == "FLEET_BUS_FALLBACK_URL" and not inbox_url:
                         inbox_url = v
-                    elif k == "CORTEX_INBOX_URL" and not inbox_url:
+                    elif k == "FLEET_INBOX_URL" and not inbox_url:
                         inbox_url = v
-                    elif k == "CORTEX_BASIC_AUTH" and not inbox_auth:
+                    elif k == "FLEET_BASIC_AUTH" and not inbox_auth:
                         inbox_auth = v
-                    elif k == "CORTEX_BUS_TOKEN" and not bus_token:
+                    elif k == "FLEET_BUS_TOKEN" and not bus_token:
                         bus_token = v
                     elif k == "EXTERNAL_HEALTH_URL" and not external_health_url:
                         external_health_url = v
@@ -84,7 +84,7 @@ if CONFIG_FILE.exists():
         print("expected — silently handled", file=sys.stderr)
 
 if not inbox_url:
-    print("ERROR: CORTEX_BUS_FALLBACK_URL (or CORTEX_INBOX_URL) not set", file=sys.stderr)
+    print("ERROR: FLEET_BUS_FALLBACK_URL (or FLEET_INBOX_URL) not set", file=sys.stderr)
     sys.exit(1)
 
 # Agent identity — env → agent.env → .env. NEVER hostname: a

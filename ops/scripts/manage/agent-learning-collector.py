@@ -72,7 +72,7 @@ if not AGENT_NAME or AGENT_NAME == "unknown":
     sys.exit(1)
 
 # Repo path
-CORTEX_REPO = Path(os.environ.get("CORTEX_REPO", HOME / "steadfaste-fleet"))
+FLEET_REPO = Path(os.environ.get("FLEET_REPO", HOME / "steadfaste-fleet"))
 
 # ── Report thresholds ─────────────────────────────────────────
 MAX_SKILLS_IN_REPORT = 20       # don't send more than this per cycle
@@ -406,7 +406,7 @@ def _resolve_env(key: str, default: str = "") -> str:
         return val
     for cfg in [
         HOME / "steadfaste-fleet" / ".env",
-        CORTEX_REPO / ".env",
+        FLEET_REPO / ".env",
     ]:
         if cfg.exists():
             try:
@@ -422,14 +422,14 @@ def _resolve_env(key: str, default: str = "") -> str:
 def _build_auth_headers(url: str) -> dict[str, str]:
     """Build auth headers for the PGMQ bus.
     
-    Primary: Basic auth via CORTEX_BASIC_AUTH (or CORTEX_BUS_AUTH).
-    Fallback: Bearer token via CORTEX_BUS_TOKEN (for local/bare PGMQ)."""
+    Primary: Basic auth via FLEET_BASIC_AUTH (or FLEET_BUS_AUTH).
+    Fallback: Bearer token via FLEET_BUS_TOKEN (for local/bare PGMQ)."""
     import base64
-    basic = _resolve_env("CORTEX_BASIC_AUTH") or _resolve_env("CORTEX_BUS_AUTH")
+    basic = _resolve_env("FLEET_BASIC_AUTH") or _resolve_env("FLEET_BUS_AUTH")
     if basic and ":" in basic:
         encoded = base64.b64encode(basic.encode()).decode()
         return {"Authorization": f"Basic {encoded}"}
-    token = _resolve_env("CORTEX_BUS_TOKEN")
+    token = _resolve_env("FLEET_BUS_TOKEN")
     if token:
         return {"Authorization": f"Bearer {token}"}
     return {}
@@ -445,8 +445,8 @@ def send_report(report: dict, dry_run: bool = False) -> list[str] | None:
     from urllib.error import URLError
 
     bus_url = (
-        _resolve_env("CORTEX_BUS_URL") or
-        _resolve_env("CORTEX_BUS_FALLBACK_URL") or
+        _resolve_env("FLEET_BUS_URL") or
+        _resolve_env("FLEET_BUS_FALLBACK_URL") or
         ""
     )
     if not bus_url:

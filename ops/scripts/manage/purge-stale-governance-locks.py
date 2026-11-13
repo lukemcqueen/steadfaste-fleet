@@ -39,11 +39,11 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
-# CORTEX_HOME-driven (matching agent-pending-cycle-watchdog.py) so the whole sweep can be pointed at
+# FLEET_HOME-driven (matching agent-pending-cycle-watchdog.py) so the whole sweep can be pointed at
 # a throwaway tree by a test or a probe. Unset in the deploy and the cron: the paths are unchanged.
-CORTEX_HOME = Path(os.environ.get("CORTEX_HOME", str(Path.home() / ".steadfaste-fleet")))
-STATE_DIR = CORTEX_HOME / "state"
-DB_PATH = CORTEX_HOME / "data" / "loop-governance.db"
+FLEET_HOME = Path(os.environ.get("FLEET_HOME", str(Path.home() / ".steadfaste-fleet")))
+STATE_DIR = FLEET_HOME / "state"
+DB_PATH = FLEET_HOME / "data" / "loop-governance.db"
 DEFAULT_TTL = 3600  # 1 hour
 MARKER_MAX_AGE = 86400  # 24 hours
 

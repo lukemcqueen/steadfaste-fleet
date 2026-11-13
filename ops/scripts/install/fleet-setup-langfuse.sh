@@ -169,20 +169,20 @@ fi
 
 # ── Step 6: Write Langfuse env vars to Cortex .env ─────────────────
 # ⚠ Appends to ~/steadfaste-fleet/.env — does NOT touch ~/.hermes/.env
-CORTEX_ENV_FILE="${HOME}/steadfaste-fleet/.env"
-mkdir -p "$(dirname "$CORTEX_ENV_FILE")"
+FLEET_ENV_FILE="${HOME}/steadfaste-fleet/.env"
+mkdir -p "$(dirname "$FLEET_ENV_FILE")"
 
 # Remove any existing Langfuse vars to avoid duplicates on re-run
-if [[ -f "$CORTEX_ENV_FILE" ]]; then
+if [[ -f "$FLEET_ENV_FILE" ]]; then
     for var in HERMES_LANGFUSE_PUBLIC_KEY HERMES_LANGFUSE_SECRET_KEY HERMES_LANGFUSE_BASE_URL HERMES_LANGFUSE_ENV HERMES_LANGFUSE_RELEASE HERMES_LANGFUSE_SAMPLE_RATE; do
-        sed -i "/^${var}=/d" "$CORTEX_ENV_FILE" || {
-          error "could not clean old ${var} from ${CORTEX_ENV_FILE}"
+        sed -i "/^${var}=/d" "$FLEET_ENV_FILE" || {
+          error "could not clean old ${var} from ${FLEET_ENV_FILE}"
           exit 1
         }
     done
 fi
 
-cat >> "$CORTEX_ENV_FILE" <<HERMES_ENVEOF
+cat >> "$FLEET_ENV_FILE" <<HERMES_ENVEOF
 
 # ── Langfuse integration (added by fleet-setup-langfuse.sh) ──
 HERMES_LANGFUSE_PUBLIC_KEY=$HAPI_KEY_PUBLIC
@@ -193,8 +193,8 @@ HERMES_LANGFUSE_RELEASE=v1
 HERMES_LANGFUSE_SAMPLE_RATE=1.0
 HERMES_ENVEOF
 
-chmod 600 "$CORTEX_ENV_FILE"
-info "Appended Langfuse env vars to: ${CORTEX_ENV_FILE}"
+chmod 600 "$FLEET_ENV_FILE"
+info "Appended Langfuse env vars to: ${FLEET_ENV_FILE}"
 info "  To make them available to Hermes Agent, add them to ~/.hermes/.env manually."
 
 # ── Step 7: Install Langfuse Python SDK ──────────────────────────────

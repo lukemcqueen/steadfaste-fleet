@@ -7,16 +7,16 @@
 #   priority: normal (default), urgent, critical
 #
 # FALLBACK (2026-08-05): this script now uses lib.fleet_bus (bus_send) instead of a
-# hand-rolled curl. The library resolves CORTEX_BUS_URL from env or .env
-# and AUTOMATICALLY falls back to CORTEX_BUS_FALLBACK_URL when the primary bus is
+# hand-rolled curl. The library resolves FLEET_BUS_URL from env or .env
+# and AUTOMATICALLY falls back to FLEET_BUS_FALLBACK_URL when the primary bus is
 # unreachable (per-call failover — same mechanism the rest of the fleet uses). It
 # fails with a clear message only when BOTH buses are unreachable. Previously this
 # script had no fallback at all: with the primary bus down it just failed, which is
 # what stranded agent reports during the 2026-08-05 outage.
 #
 # Target queue resolution order:
-#   1. CORTEX_INBOX_TARGET env var
-#   2. CORTEX_INBOX_TARGET in ~/steadfaste-fleet/.env
+#   1. FLEET_INBOX_TARGET env var
+#   2. FLEET_INBOX_TARGET in ~/steadfaste-fleet/.env
 #   3. Default: inbox_orchestrator (shared orchestrator inbox — seen by BOTH
 #      orchestrators, Moses and Esther, so whichever is available handles it)
 #
@@ -41,7 +41,7 @@ SUBJECT="${1:-}"
 BODY="${2:-}"
 PRIORITY="${3:-normal}"
 
-CONF="${CORTEX_BUS_CONF:-${HOME}/steadfaste-fleet/.env}"
+CONF="${FLEET_BUS_CONF:-${HOME}/steadfaste-fleet/.env}"
 
 _read_conf() {
   local key="$1"
@@ -50,9 +50,9 @@ _read_conf() {
   fi
 }
 
-TARGET_QUEUE="${CORTEX_INBOX_TARGET:-}"
+TARGET_QUEUE="${FLEET_INBOX_TARGET:-}"
 if [ -z "$TARGET_QUEUE" ]; then
-  TARGET_QUEUE="$(_read_conf "CORTEX_INBOX_TARGET")"
+  TARGET_QUEUE="$(_read_conf "FLEET_INBOX_TARGET")"
 fi
 if [ -z "$TARGET_QUEUE" ]; then
   TARGET_QUEUE="inbox_orchestrator"
@@ -65,7 +65,7 @@ if [ -z "$SUBJECT" ] || [ -z "$BODY" ]; then
 fi
 
 # lib.fleet_bus is deployed alongside this script (~/.steadfaste-fleet/scripts/lib/).
-LIB_DIR="${CORTEX_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/scripts"
+LIB_DIR="${FLEET_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/scripts"
 
 echo "📤 Sending to ${TARGET_QUEUE} (primary bus, fallback automatic)..."
 RESULT=$(AGENT_NAME="$AGENT_NAME" SUBJECT="$SUBJECT" BODY="$BODY" PRIORITY="$PRIORITY" \
@@ -94,7 +94,7 @@ if [ -n "$RESULT" ] && echo "$RESULT" | grep -q '"msg_id"'; then
 else
   echo "❌ Failed: both the primary bus and its fallback are unreachable." >&2
   echo "   Message was NOT sent. Retry when a bus returns." >&2
-  echo "   Config: ${CONF} (CORTEX_BUS_URL / CORTEX_BUS_FALLBACK_URL)" >&2
+  echo "   Config: ${CONF} (FLEET_BUS_URL / FLEET_BUS_FALLBACK_URL)" >&2
   [ -n "$RESULT" ] && echo "   Detail: $(echo "$RESULT" | head -c 300)" >&2
   exit 1
 fi

@@ -64,7 +64,7 @@ fi
 SKILLS_CHANGED=$(echo "$STAGED" | grep -c '^skills/' 2>/dev/null || true)
 
 if [[ "$SKILLS_CHANGED" -gt 0 ]]; then
-    GEN="${CORTEX_DEPLOY_HOME:-$HOME/steadfaste-fleet}/ops/scripts/manage/gen-skills-manifest.sh"
+    GEN="${FLEET_DEPLOY_HOME:-$HOME/steadfaste-fleet}/ops/scripts/manage/gen-skills-manifest.sh"
     if [[ ! -f "$GEN" ]]; then
         GEN="$HOME/steadfaste-fleet/ops/scripts/manage/gen-skills-manifest.sh"
     fi

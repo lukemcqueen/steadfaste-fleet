@@ -75,9 +75,9 @@ fi
 # briefing cron, so worker hosts without it are unaffected.
 #
 # PATHS: this gate is deployed by fleet-update.sh to
-#   ${CORTEX_DEPLOY_HOME}/scripts/orch-daily-regression-gate.sh  ->  SCRIPT_DIR = <deploy>/scripts
+#   ${FLEET_DEPLOY_HOME}/scripts/orch-daily-regression-gate.sh  ->  SCRIPT_DIR = <deploy>/scripts
 # and the checker it calls is registered two lines below verify_briefing.py, i.e.
-#   ${CORTEX_DEPLOY_HOME}/scripts/manage/check-latest-briefing.py  ->  ${SCRIPT_DIR}/manage/...
+#   ${FLEET_DEPLOY_HOME}/scripts/manage/check-latest-briefing.py  ->  ${SCRIPT_DIR}/manage/...
 # which is why the sibling under manage/ is tried FIRST below; the beside-this-
 # script fallback covers a non-deployed (repo) run of this file.
 BRIEF_CHECK="${SCRIPT_DIR}/manage/check-latest-briefing.py"

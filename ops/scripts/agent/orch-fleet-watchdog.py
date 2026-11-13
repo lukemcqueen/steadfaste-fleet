@@ -51,7 +51,7 @@ DASHBOARD_FILE = HOME / ".steadfaste-fleet" / "state" / "fleet-data.json"
 REGISTRY_PATH = HOME / ".steadfaste-fleet" / "state" / "agent-registry.json"
 REGISTRY_TEMPLATE = HOME / "steadfaste-fleet" / "ops" / "install" / "deploy" / "agent-registry.template.json"
 REGISTRY_LOCAL = HOME / ".steadfaste-fleet" / "state" / "agent-registry.local.json"
-CORTEX_ENV = HOME / "steadfaste-fleet" / ".env"
+FLEET_ENV = HOME / "steadfaste-fleet" / ".env"
 INBOX_DIR = HOME / ".hermes" / "inbox"
 TIMEOUT = 10
 
@@ -116,14 +116,14 @@ def _get_agents() -> list[dict]:
 
     if not agents:
         # Fallback: Moses health URL from .env, then localhost
-        moses_url = os.environ.get("CORTEX_HEALTH_URL", "")
-        if not moses_url and CORTEX_ENV.exists():
-            for line in CORTEX_ENV.read_text().splitlines():
+        moses_url = os.environ.get("FLEET_HEALTH_URL", "")
+        if not moses_url and FLEET_ENV.exists():
+            for line in FLEET_ENV.read_text().splitlines():
                 line = line.strip()
                 if not line or line.startswith("#") or "=" not in line:
                     continue
                 k, v = line.split("=", 1)
-                if k.strip() == "CORTEX_HEALTH_URL":
+                if k.strip() == "FLEET_HEALTH_URL":
                     moses_url = v.strip().strip("'\"")
         if moses_url:
             agents.append({"key": "moses", "name": "Moses", "url": moses_url})

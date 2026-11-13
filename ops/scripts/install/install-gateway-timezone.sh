@@ -40,8 +40,8 @@ esac
 
 HOME_DIR="${HOME:?}"
 HERMES_HOME="${HERMES_HOME:-${HOME_DIR}/.hermes}"
-CORTEX_DEPLOY_HOME="${CORTEX_DEPLOY_HOME:-${HOME_DIR}/.steadfaste-fleet}"
-STATE_FILE="${CORTEX_DEPLOY_HOME}/state/gateway-timezone-env"
+FLEET_DEPLOY_HOME="${FLEET_DEPLOY_HOME:-${HOME_DIR}/.steadfaste-fleet}"
+STATE_FILE="${FLEET_DEPLOY_HOME}/state/gateway-timezone-env"
 
 MECH=""
 

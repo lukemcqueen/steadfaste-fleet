@@ -26,10 +26,10 @@ from pathlib import Path
 
 # ── Config ──────────────────────────────────────────────────
 HOME = os.path.expanduser("~")
-CORTEX_HOME = os.environ.get("CORTEX_DEPLOY_HOME", f"{HOME}/.steadfaste-fleet")
+FLEET_HOME = os.environ.get("FLEET_DEPLOY_HOME", f"{HOME}/.steadfaste-fleet")
 CRON_OUTPUT_DIR = f"{HOME}/.hermes/cron/output"
-SESSION_DIR = f"{CORTEX_HOME}/sessions"
-STATE_FILE = f"{CORTEX_HOME}/state/.secret-leak-watchdog-state.json"
+SESSION_DIR = f"{FLEET_HOME}/sessions"
+STATE_FILE = f"{FLEET_HOME}/state/.secret-leak-watchdog-state.json"
 LOOKBACK_HOURS = int(os.environ.get("WATCHDOG_LOOKBACK_HOURS", "6"))
 MAX_ALERTS = int(os.environ.get("WATCHDOG_MAX_ALERTS", "5"))
 

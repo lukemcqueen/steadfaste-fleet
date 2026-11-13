@@ -18,7 +18,7 @@
 set -uo pipefail
 
 REPO="${REPO:-$HOME/steadfaste-fleet}"
-DEPLOY="${CORTEX_DEPLOY_HOME:-$HOME/.steadfaste-fleet}"
+DEPLOY="${FLEET_DEPLOY_HOME:-$HOME/.steadfaste-fleet}"
 OUT="${1:-$REPO/docs/evidence/gateway-cutover-evidence.md}"
 GUARD="$DEPLOY/scripts/fleet_gateway/guard_distinct_token.py"
 PROD_CONFIG="$DEPLOY/gateway.yaml"

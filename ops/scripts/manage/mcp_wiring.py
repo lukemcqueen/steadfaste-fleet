@@ -66,7 +66,7 @@ def repo_rel_script(script):
 #: A command inside the HERMES venv works, but it is the tree the fleet is migrating off
 #: (Luke 2026-10-13: use the cortex venv). Worth a warning, not a failure.
 HERMES_VENV_MARK = "hermes-agent/venv"
-CORTEX_VENV = "~/.steadfaste-fleet/venv/bin/python3"
+FLEET_VENV = "~/.steadfaste-fleet/venv/bin/python3"
 
 
 def _entry_blocks(config_text):
@@ -203,7 +203,7 @@ def audit(config_text, expected=None, exists=None, is_orch=True, which=None):
                   f"the HERMES venv ({command}) — the tree the fleet is migrating off"
             results.append((name, "WARN", f"registered against {why}",
                             f"hermes mcp remove {name} && hermes mcp add {name} "
-                            f"--command {CORTEX_VENV} "
+                            f"--command {FLEET_VENV} "
                             f"--args ~/steadfaste-fleet/{repo_rel_script(script)}"
                             f"   (there is no 'hermes mcp update'; re-add it)"))
             continue

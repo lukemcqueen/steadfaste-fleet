@@ -32,12 +32,12 @@ get_val() { # <file> <key> → value (empty if absent)
   grep -E "^${2}=" "$1" 2>/dev/null | head -1 | cut -d= -f2- || true
 }
 
-# ── Dual-spelling mirror (env migration P4): CORTEX_X ↔ FLEET_X ──────────────
+# ── Dual-spelling mirror (env migration P4): FLEET_X ↔ FLEET_X ──────────────
 # The canonical .env is the ONE env boundary read by every runtime entrypoint
 # (gateway EnvironmentFile, fleet-bus-bridge-run's child env, fleet-update).
 # During the CORTEX_* → FLEET_* migration the .env carries BOTH spellings with
 # equal values, so a reader on either side — migrated or not — resolves. FLEET_*
-# is canonical: a hand-set FLEET_X that DIFFERS from its CORTEX_X is a data
+# is canonical: a hand-set FLEET_X that DIFFERS from its FLEET_X is a data
 # conflict and aborts (never guess). Idempotent and deterministic: given the
 # same input it rewrites to the same output. FLEET-only vars (no CORTEX
 # sibling) are preserved.
@@ -98,7 +98,7 @@ materialize_dual_spellings() {   # <env-file>
   fi
 }
 
-check_dual_spellings() {   # <env-file> — verify every CORTEX_X has a matching FLEET_X; no mutation
+check_dual_spellings() {   # <env-file> — verify every FLEET_X has a matching FLEET_X; no mutation
   local f="$1" ck cvv fn fv2 rc=0
   while IFS= read -r line || [[ -n "$line" ]]; do
     [[ "$line" =~ ^(CORTEX_[A-Za-z0-9_]+)=(.*)$ ]] || continue
@@ -190,7 +190,7 @@ if [[ "${CHECK_ONLY}" == "1" ]]; then
     warn "check: ${#missing_keys[@]} var(s) in ${LEGACY} missing from ${REPO_ENV}: ${missing_keys[*]}"
     exit 1
   fi
-  # Mirrors: every CORTEX_X should have a FLEET_X of the same value (and vice
+  # Mirrors: every FLEET_X should have a FLEET_X of the same value (and vice
   # versa). Report any missing/mismatched without mutating.
   if ! check_dual_spellings "${REPO_ENV}"; then
     info "check: dual-spelling mirrors NOT fully present"
@@ -213,7 +213,7 @@ else
   info "no new vars in ${LEGACY} — only the symlink step remains"
 fi
 
-# ── Materialize dual spellings (CORTEX_X ↔ FLEET_X) ──────────────────────
+# ── Materialize dual spellings (FLEET_X ↔ FLEET_X) ──────────────────────
 # So every runtime boundary (gateway EnvironmentFile, bridge-run child env,
 # fleet-update) resolves FLEET_* even before its readers are migrated. A
 # hand-set FLEET that differs from CORTEX is surfaced as a warning (the

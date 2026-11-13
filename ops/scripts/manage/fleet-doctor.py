@@ -60,7 +60,7 @@ if os.path.isdir(_pkg_dir):
 # because a host whose venv is broken must still be diagnosable by the tool that
 # repairs it (`fix-fleet-venv.py`).
 DECLARED_MODULES = ("yaml", "mcp")
-REEXEC_FLAG = "CORTEX_DOCTOR_REEXEC"
+REEXEC_FLAG = "FLEET_DOCTOR_REEXEC"
 
 
 def _can_import_here(name):
@@ -92,19 +92,19 @@ def _child_imports_all(py, mods=DECLARED_MODULES):
 def candidate_interpreters():
     """Interpreters to try, in preference order, excluding the current one.
 
-    `CORTEX_PYTHON` is the host's own declaration (written by fleet-update.sh
+    `FLEET_PYTHON` is the host's own declaration (written by fleet-update.sh
     into ~/.steadfaste-fleet/agent.env) and wins — an operator who points it
     somewhere else must not be overruled. The fleet venv is the fallback, and a
     `PYTHON=`-style override is deliberately NOT invented here: one declaration
     per host is the rule.
     """
-    declared = os.environ.get("CORTEX_PYTHON", "")
+    declared = os.environ.get("FLEET_PYTHON", "")
     if not declared:
         env_file = os.path.join(os.path.expanduser("~"), ".steadfaste-fleet", "agent.env")
         try:
             with open(env_file) as fh:
                 for line in fh:
-                    if line.startswith("CORTEX_PYTHON="):
+                    if line.startswith("FLEET_PYTHON="):
                         declared = line.split("=", 1)[1].strip()
                         break
         except OSError:

@@ -49,9 +49,9 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-CORTEX_HOME = Path(os.environ.get("CORTEX_HOME", str(Path.home() / ".steadfaste-fleet")))
-DEFAULT_DB = CORTEX_HOME / "data" / "loop-governance.db"
-LEDGER = CORTEX_HOME / "state" / "autonomy-shadow-ledger.jsonl"
+FLEET_HOME = Path(os.environ.get("FLEET_HOME", str(Path.home() / ".steadfaste-fleet")))
+DEFAULT_DB = FLEET_HOME / "data" / "loop-governance.db"
+LEDGER = FLEET_HOME / "state" / "autonomy-shadow-ledger.jsonl"
 
 # ---------------------------------------------------------------------------
 # Capability table — deterministic, deny-by-default.

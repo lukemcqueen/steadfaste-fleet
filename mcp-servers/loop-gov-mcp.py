@@ -160,7 +160,7 @@ logging.basicConfig(level=logging.DEBUG, format=_LOG_FORMAT, stream=sys.stderr, 
 try:
     from logging.handlers import RotatingFileHandler
 
-    _log_dir = Path(os.environ.get("CORTEX_DEPLOY_HOME") or (Path.home() / ".steadfaste-fleet")) / "logs"
+    _log_dir = Path(os.environ.get("FLEET_DEPLOY_HOME") or (Path.home() / ".steadfaste-fleet")) / "logs"
     _log_dir.mkdir(parents=True, exist_ok=True)
     _file_handler = RotatingFileHandler(
         str(_log_dir / "loop-governance.log"),
@@ -1866,7 +1866,7 @@ def _push_base_candidates(repo: Path) -> list[str]:
                            "refs/remotes/origin/HEAD").strip()
     if default:
         cands.append(default)
-    remote = (_env_value("CORTEX_PUSH_REMOTE") or "origin").strip() or "origin"
+    remote = (_env_value("FLEET_PUSH_REMOTE") or "origin").strip() or "origin"
     cands += [f"{remote}/main", f"{remote}/master", "main", "master"]
     seen: set[str] = set()
     out: list[str] = []
@@ -2085,11 +2085,11 @@ PREFLIGHT_MAX_PATHS = 20      # the scan is one `git diff` per path; a range can
 def _layout_prefixes() -> tuple[str, ...]:
     """Directory hints for the 'names another file' advice.
 
-    Cortex's own layout by default, overridable with CORTEX_REVIEW_LAYOUT_PREFIXES (comma-separated)
+    Cortex's own layout by default, overridable with FLEET_REVIEW_LAYOUT_PREFIXES (comma-separated)
     for a repo that lays its code out differently — the hardcoded list was correct only for this repo
     (review finding ADV-0-4).
     """
-    raw = (_env_value("CORTEX_REVIEW_LAYOUT_PREFIXES") or "").strip()
+    raw = (_env_value("FLEET_REVIEW_LAYOUT_PREFIXES") or "").strip()
     if raw:
         return tuple(p.strip() for p in raw.split(",") if p.strip())
     return ("ops/scripts/", "mcp-servers/", "tests/", "docs/templates/")
@@ -2740,8 +2740,8 @@ def _range_blobs(repo: Path, base: str, head: str):
         import importlib.util
         candidates = [
             Path(__file__).resolve().parent.parent / _REVIEW_RECEIPT_CHECK_REL,   # repo layout
-            Path(os.environ.get("CORTEX_REPO") or (HOME / "steadfaste-fleet")) / _REVIEW_RECEIPT_CHECK_REL,
-            Path(os.environ.get("CORTEX_DEPLOY_HOME") or (HOME / ".steadfaste-fleet")) / _REVIEW_RECEIPT_CHECK_REL,
+            Path(os.environ.get("FLEET_REPO") or (HOME / "steadfaste-fleet")) / _REVIEW_RECEIPT_CHECK_REL,
+            Path(os.environ.get("FLEET_DEPLOY_HOME") or (HOME / ".steadfaste-fleet")) / _REVIEW_RECEIPT_CHECK_REL,
         ]
         path = next((c for c in candidates if c.is_file()), None)
         if path is None:
@@ -3807,7 +3807,7 @@ def _config() -> dict:
 # ── MCP Server ───────────────────────────────────────────────
 
 # Role gate (Moses plan, reviewed by pro 2026-10-29): ONE binary, two named
-# registrations, distinguished ONLY by CORTEX_MCP_ROLE. `review` exposes the
+# registrations, distinguished ONLY by FLEET_MCP_ROLE. `review` exposes the
 # re-review/feedback/cycle-read tools (no lock authority); `loop-governance`
 # exposes the rest (lock lifecycle + scoring + task state); NO env = the full set
 # (today's behaviour). The registration NAME (mcp__review__* vs
@@ -3822,7 +3822,7 @@ REVIEW_TOOLS = {
 }
 
 def _current_role() -> str:
-    """Resolve CORTEX_MCP_ROLE / `--role` at CALL time so one import is testable
+    """Resolve FLEET_MCP_ROLE / `--role` at CALL time so one import is testable
     across roles. ARGV `--role <x>` WINS (the registered command line is the role
     of record — the doctor reads it out of each registration's args); env is the
     parallel seam for wrappers/tests where argv carries no role.
@@ -3831,10 +3831,10 @@ def _current_role() -> str:
     for i, tok in enumerate(a):
         if tok == "--role" and i + 1 < len(a):
             return a[i + 1].strip()
-    return _os_mcp.environ.get("CORTEX_MCP_ROLE", "").strip()
+    return _os_mcp.environ.get("FLEET_MCP_ROLE", "").strip()
 
 def _role_allows(name: str) -> bool:
-    """True if tool `name` is exposed under the current CORTEX_MCP_ROLE.
+    """True if tool `name` is exposed under the current FLEET_MCP_ROLE.
     review / loop-governance partition exactly; no/unknown role = allow all."""
     role = _current_role()
     if not role:
@@ -3846,7 +3846,7 @@ def _role_allows(name: str) -> bool:
     return True  # unknown role: fail open (a mistyped role must not hide tools)
 
 async def list_tools(ctx, params=None) -> ListToolsResult:
-    """Role-aware tool list: filter the full set by CORTEX_MCP_ROLE (see _role_allows)."""
+    """Role-aware tool list: filter the full set by FLEET_MCP_ROLE (see _role_allows)."""
     full = await _list_all_tools(ctx, params)
     allowed = [t for t in (full.tools or []) if _role_allows(t.name)]
     return ListToolsResult(tools=allowed)
@@ -4822,7 +4822,7 @@ REVIEWER_TIMEOUT_CEILING = 240      # seconds; must stay < the 300s client ceili
 # the CALLER's patience: the adapter marks itself in CLIENT_MARKER_ENV and gets the
 # larger bound, while the MCP path keeps the clamp that keeps its budget observable.
 REVIEWER_TIMEOUT_CEILING_CLI = 600
-CLIENT_MARKER_ENV = "CORTEX_LOOP_GOV_CLIENT"
+CLIENT_MARKER_ENV = "FLEET_LOOP_GOV_CLIENT"
 
 
 def _reviewer_timeout_ceiling() -> int:
@@ -5514,12 +5514,12 @@ def _env_file_paths() -> list:
     the source of truth for cortex config.
     """
     paths = []
-    explicit = (os.environ.get("CORTEX_ENV_FILE", "") or "").strip()
+    explicit = (os.environ.get("FLEET_ENV_FILE", "") or "").strip()
     if explicit:
         paths.append(Path(explicit))
-    repo = (os.environ.get("CORTEX_REPO", "") or "").strip()
+    repo = (os.environ.get("FLEET_REPO", "") or "").strip()
     paths.append((Path(repo) if repo else HOME / "steadfaste-fleet") / ".env")
-    paths.append(Path(os.environ.get("CORTEX_DEPLOY_HOME", str(HOME / ".steadfaste-fleet"))) / ".env")
+    paths.append(Path(os.environ.get("FLEET_DEPLOY_HOME", str(HOME / ".steadfaste-fleet"))) / ".env")
     paths.append(HOME / ".hermes" / ".env")          # legacy last resort
     return paths
 
@@ -5528,7 +5528,7 @@ def _env_value(name: str, default: str = "") -> str:
     """Resolve ONE config value, decoupled from Hermes.
 
     Order: the PROCESS environment, then the canonical fleet env
-    (CORTEX_ENV_FILE, else ~/steadfaste-fleet/.env, else the deploy root), and only
+    (FLEET_ENV_FILE, else ~/steadfaste-fleet/.env, else the deploy root), and only
     then the Hermes-owned ~/.hermes/.env.
 
     Two deliberate choices:

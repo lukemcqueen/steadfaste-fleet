@@ -11,10 +11,10 @@
 set -euo pipefail
 
 # ── Paths ──────────────────────────────────────────────────────────────
-# Priority: CORTEX_REPO env var > ~/.steadfaste-fleet/offline/ (install.sh dest) > ~/steadfaste-fleet/
+# Priority: FLEET_REPO env var > ~/.steadfaste-fleet/offline/ (install.sh dest) > ~/steadfaste-fleet/
 MINE_SCRIPT=""
 for candidate in \
-  "${CORTEX_REPO:-}/ops/offline/session_mine.py" \
+  "${FLEET_REPO:-}/ops/offline/session_mine.py" \
   "$HOME/.hermes/offline/session_mine.py" \
   "$HOME/steadfaste-fleet/ops/offline/session_mine.py"; do
   if [ -f "$candidate" ]; then

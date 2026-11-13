@@ -30,15 +30,15 @@
 # ─────────────────────────────────────────────────────────────
 set -euo pipefail
 
-BUS_BASE="${CORTEX_BUS_LOCAL_URL:-http://127.0.0.1:8903}"
+BUS_BASE="${FLEET_BUS_LOCAL_URL:-http://127.0.0.1:8903}"
 ENV_FILE="${HOME}/steadfaste-fleet/.env"
 PEEK_LIMIT="${BUS_SURVEY_PEEK_LIMIT:-500}"
 
-if [[ -z "${BUS_SURVEY_FIXTURE:-}" && -z "${CORTEX_BUS_TOKEN:-}" && -r "$ENV_FILE" ]]; then
+if [[ -z "${BUS_SURVEY_FIXTURE:-}" && -z "${FLEET_BUS_TOKEN:-}" && -r "$ENV_FILE" ]]; then
     # read token without echoing it
-    CORTEX_BUS_TOKEN="$(grep -m1 '^CORTEX_BUS_TOKEN=' "$ENV_FILE" | cut -d= -f2- | tr -d '"'"'"' ')"
+    FLEET_BUS_TOKEN="$(grep -m1 '^FLEET_BUS_TOKEN=' "$ENV_FILE" | cut -d= -f2- | tr -d '"'"'"' ')"
 fi
-export CORTEX_BUS_TOKEN BUS_BASE PEEK_LIMIT
+export FLEET_BUS_TOKEN BUS_BASE PEEK_LIMIT
 
 python3 - <<'PY'
 import os, sys, json, urllib.request, datetime
@@ -56,7 +56,7 @@ def fail(msg):
 def http(path):
     req = urllib.request.Request(
         base + path,
-        headers={"Authorization": "Bearer " + os.environ.get("CORTEX_BUS_TOKEN", "")})
+        headers={"Authorization": "Bearer " + os.environ.get("FLEET_BUS_TOKEN", "")})
     with urllib.request.urlopen(req, timeout=8) as r:
         return json.load(r)
 

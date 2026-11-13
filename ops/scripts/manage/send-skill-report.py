@@ -7,11 +7,11 @@ via PGMQ Agent Bus. Silent when no custom skills to report.
 
 Requires (from ~/steadfaste-fleet/.env, ~/steadfaste-fleet/.env,
   or env vars):
-  CORTEX_BUS_URL         — Moses Agent Bus URL (primary)
-  CORTEX_BUS_FALLBACK_URL — Esther Agent Bus URL (fallback)
-  CORTEX_BUS_TOKEN       — Bearer token for bus auth
+  FLEET_BUS_URL         — Moses Agent Bus URL (primary)
+  FLEET_BUS_FALLBACK_URL — Esther Agent Bus URL (fallback)
+  FLEET_BUS_TOKEN       — Bearer token for bus auth
 
-For remote agents, CORTEX_BUS_URL must point to Moses's external bus
+For remote agents, FLEET_BUS_URL must point to Moses's external bus
 endpoint (e.g. https://<bus-host>:13004).
 """
 from __future__ import annotations
@@ -59,10 +59,10 @@ def _resolve_var(key: str, default: str = "") -> str:
 
 
 # ── Resolve connection config ──
-BUS_URL = _resolve_var("CORTEX_BUS_URL")
+BUS_URL = _resolve_var("FLEET_BUS_URL")
 if not BUS_URL:
-    BUS_URL = _resolve_var("CORTEX_BUS_FALLBACK_URL")
-BUS_TOKEN = _resolve_var("CORTEX_BUS_TOKEN")
+    BUS_URL = _resolve_var("FLEET_BUS_FALLBACK_URL")
+BUS_TOKEN = _resolve_var("FLEET_BUS_TOKEN")
 
 # ── Agent identity — fail loud, NEVER hostname ──
 # A machine name is not an agent name; reporting under the OS hostname
@@ -77,7 +77,7 @@ if not AGENT_NAME or AGENT_NAME == "unknown":
 # ── Resolve auth ──
 # Local (127.0.0.1/localhost): Bearer token
 # Remote (external via nginx): Basic auth
-CORTEX_BASIC_AUTH = _resolve_var("CORTEX_BASIC_AUTH")
+FLEET_BASIC_AUTH = _resolve_var("FLEET_BASIC_AUTH")
 
 def _is_local(url: str) -> bool:
     """Check if a URL points to localhost."""
@@ -89,9 +89,9 @@ def _build_auth_headers(url: str) -> dict[str, str]:
     if _is_local(url):
         return {"Authorization": f"Bearer {BUS_TOKEN}"} if BUS_TOKEN else {}
     # Remote via nginx — use Basic auth
-    if CORTEX_BASIC_AUTH:
+    if FLEET_BASIC_AUTH:
         import base64
-        encoded = base64.b64encode(CORTEX_BASIC_AUTH.encode()).decode()
+        encoded = base64.b64encode(FLEET_BASIC_AUTH.encode()).decode()
         return {"Authorization": f"Basic {encoded}"}
     return {}
 

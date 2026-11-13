@@ -21,8 +21,8 @@
 set -euo pipefail
 
 HERMES_SCRIPTS="${HOME}/.steadfaste-fleet/scripts"
-CORTEX_REPO="${HOME}/steadfaste-fleet"
-CORTEX_SCRIPTS="${CORTEX_REPO}/ops/scripts"
+FLEET_REPO="${HOME}/steadfaste-fleet"
+FLEET_SCRIPTS="${FLEET_REPO}/ops/scripts"
 ACTION="${1:-diagnose}"
 
 case "${ACTION}" in
@@ -40,24 +40,24 @@ case "${ACTION}" in
     done
 
     # Check fleet repo
-    if [ -d "${CORTEX_REPO}" ]; then
-      cd "${CORTEX_REPO}"
+    if [ -d "${FLEET_REPO}" ]; then
+      cd "${FLEET_REPO}"
       # Check git health
       if ! git rev-parse --git-dir >/dev/null 2>&1; then
-        issues+=("GIT:not-a-repo:${CORTEX_REPO}")
+        issues+=("GIT:not-a-repo:${FLEET_REPO}")
       else
         # Check for conflicts
         if git status --porcelain | grep -q "^UU"; then
-          issues+=("GIT:merge-conflict:${CORTEX_REPO}")
+          issues+=("GIT:merge-conflict:${FLEET_REPO}")
         fi
         # Check detached HEAD
         if ! git symbolic-ref -q HEAD >/dev/null 2>&1; then
-          issues+=("GIT:detached-head:${CORTEX_REPO}")
+          issues+=("GIT:detached-head:${FLEET_REPO}")
         fi
         # Check for unstaged/ uncommitted changes in scripts
         DIRTY_SCRIPTS=$(git status --porcelain -- ops/scripts/ 2>/dev/null | head -5)
         if [ -n "${DIRTY_SCRIPTS}" ]; then
-          issues+=("GIT:dirty-scripts:${CORTEX_REPO}")
+          issues+=("GIT:dirty-scripts:${FLEET_REPO}")
         fi
       fi
     fi
@@ -164,8 +164,8 @@ case "${ACTION}" in
                   langfuse-retention-prune.py lesson-compound-stats-brief.sh \
                   llm-judge-scorer.py agent-memory-to-brain-sync.py memory-compress.py \
                   web-cache-backup.sh web-cache-prune.sh; do
-      if [ ! -f "${HERMES_SCRIPTS}/${script}" ] && [ -f "${CORTEX_SCRIPTS}/${script}" ]; then
-        cp "${CORTEX_SCRIPTS}/${script}" "${HERMES_SCRIPTS}/${script}"
+      if [ ! -f "${HERMES_SCRIPTS}/${script}" ] && [ -f "${FLEET_SCRIPTS}/${script}" ]; then
+        cp "${FLEET_SCRIPTS}/${script}" "${HERMES_SCRIPTS}/${script}"
         chmod +x "${HERMES_SCRIPTS}/${script}"
         echo "RESTORED:${script}"
         fixed=$((fixed + 1))
@@ -183,8 +183,8 @@ case "${ACTION}" in
 
   # ── Fix git state ─────────────────────────────────────────
   fix-git)
-    if [ -d "${CORTEX_REPO}" ]; then
-      cd "${CORTEX_REPO}"
+    if [ -d "${FLEET_REPO}" ]; then
+      cd "${FLEET_REPO}"
       # Fix detached HEAD
       if ! git symbolic-ref -q HEAD >/dev/null 2>&1; then
         git checkout main 2>/dev/null || git checkout master 2>/dev/null || true

@@ -24,16 +24,16 @@ set -euo pipefail
 # ── Source derivation ───────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -n "${SUDO_USER:-}" ]; then
-  CORTEX_REPO="${CORTEX_REPO:-$(getent passwd "$SUDO_USER" | cut -d: -f6)/steadfaste-fleet}"
-  CORTEX_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
+  FLEET_REPO="${FLEET_REPO:-$(getent passwd "$SUDO_USER" | cut -d: -f6)/steadfaste-fleet}"
+  FLEET_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
 else
-  CORTEX_REPO="${CORTEX_REPO:-${HOME}/steadfaste-fleet}"
-  CORTEX_HOME="${HOME}"
+  FLEET_REPO="${FLEET_REPO:-${HOME}/steadfaste-fleet}"
+  FLEET_HOME="${HOME}"
 fi
 
 # ── Source user environment ──────────────────────────────────
-CORTEX_ENV="${CORTEX_REPO}/.env"
-[ -f "$CORTEX_ENV" ] && { set -a; source "$CORTEX_ENV"; set +a; }
+FLEET_ENV="${FLEET_REPO}/.env"
+[ -f "$FLEET_ENV" ] && { set -a; source "$FLEET_ENV"; set +a; }
 
 # ── OS-aware nginx & fail2ban paths ─────────────────────────
 case "$(uname -s)" in
@@ -66,23 +66,23 @@ esac
 BACKUP_DIR="/etc/steadfaste-fleet-backups/$(date +%Y%m%d-%H%M%S)"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
-BLOCKED_IPS="${CORTEX_REPO}/ops/install/deploy/nginx/blocked_ips.add"
+BLOCKED_IPS="${FLEET_REPO}/ops/install/deploy/nginx/blocked_ips.add"
 ALLOW_IPS_MANUAL="${NGINX_DIR}/allow-ips-manual.conf"
-BADBOTS_CONF="${CORTEX_REPO}/ops/install/deploy/fail2ban/filter.d/nginx-badbots.conf"
+BADBOTS_CONF="${FLEET_REPO}/ops/install/deploy/fail2ban/filter.d/nginx-badbots.conf"
 ZONE_DEFS="${NGINX_DIR}/hermes-zone-defs.conf"
 SERVICES_CONF="${NGINX_DIR}/sites-enabled/hermes-services.conf"
 
 echo "━━━ Hermes Security Deploy — ${TIMESTAMP} ━━━"
 
 # ── Source SSL cert paths from .env ──
-CORTEX_ENV="${CORTEX_REPO}/.env"
-if [ -f "$CORTEX_ENV" ]; then
-  set -a; source "$CORTEX_ENV"; set +a
+FLEET_ENV="${FLEET_REPO}/.env"
+if [ -f "$FLEET_ENV" ]; then
+  set -a; source "$FLEET_ENV"; set +a
 fi
 
 # ── Ensure repo exists ──
-if [ ! -d "$CORTEX_REPO" ]; then
-  echo "✗ fleet repo not found at ${CORTEX_REPO}"
+if [ ! -d "$FLEET_REPO" ]; then
+  echo "✗ fleet repo not found at ${FLEET_REPO}"
   exit 1
 fi
 
@@ -104,7 +104,7 @@ echo "── Step 2: Nginx configs ──"
 
 # hermes-zone-defs.conf — include the health rate-limit zone if present
 # (the source file in the repo should already have it)
-for src in "${CORTEX_REPO}/ops/install/deploy/nginx/hermes-zone-defs.conf" "${CORTEX_REPO}/ops/install/deploy/nginx/hermes-services.conf"; do
+for src in "${FLEET_REPO}/ops/install/deploy/nginx/hermes-zone-defs.conf" "${FLEET_REPO}/ops/install/deploy/nginx/hermes-services.conf"; do
   base=$(basename "$src")
   # Only deploy if source file exists in the deploy directory
   # For now, zone defs and services live in the repo and are managed via git
@@ -118,7 +118,7 @@ for src in "${CORTEX_REPO}/ops/install/deploy/nginx/hermes-zone-defs.conf" "${CO
       # ── Read existing config (preserve ports/SSL unless forced) ──
       existing_conf="${NGINX_AVAILABLE_DIR}/${base}"
       existing_port_prefix="" existing_ssl_cert="" existing_ssl_key=""
-      force_deploy="${CORTEX_FORCE_DEPLOY:-}"
+      force_deploy="${FLEET_FORCE_DEPLOY:-}"
       if [[ -f "$existing_conf" && -z "$force_deploy" ]]; then
         existing_port_prefix=$(grep -oP 'listen\s+(?:127\.0\.0\.1:)?\K[0-9]{2}(?=[0-9]{3}\b)' "$existing_conf" | head -1)
         existing_ssl_cert=$(grep -oP 'ssl_certificate\s+\K\S+' "$existing_conf" | head -1 | sed 's/;$//')
@@ -129,24 +129,24 @@ for src in "${CORTEX_REPO}/ops/install/deploy/nginx/hermes-zone-defs.conf" "${CO
       fi
 
       # ── Port prefix ────────────────────────────────────
-      port_prefix="${CORTEX_NGINX_PORT_PREFIX:-${existing_port_prefix:-13}}"
+      port_prefix="${FLEET_NGINX_PORT_PREFIX:-${existing_port_prefix:-13}}"
       if [[ -n "$existing_port_prefix" && -z "$force_deploy" ]]; then
         if [[ "$port_prefix" == "$existing_port_prefix" ]]; then
           echo "  ✓ Preserved port prefix: ${port_prefix}xxx"
         else
-          echo "  ✓ Using CORTEX_NGINX_PORT_PREFIX: ${port_prefix}xxx (config had ${existing_port_prefix}xxx)"
+          echo "  ✓ Using FLEET_NGINX_PORT_PREFIX: ${port_prefix}xxx (config had ${existing_port_prefix}xxx)"
         fi
       fi
 
       # ── SSL cert resolution (only if not preserved) ────
       ssl_cert="$existing_ssl_cert" ssl_key="$existing_ssl_key"
       if [[ -z "$ssl_cert" ]]; then
-        if [ -n "${CORTEX_SSL_CERT_PATH:-}" ] && [ -n "${CORTEX_SSL_CERT_KEY_PATH:-}" ]; then
+        if [ -n "${FLEET_SSL_CERT_PATH:-}" ] && [ -n "${FLEET_SSL_CERT_KEY_PATH:-}" ]; then
           # Trust the user's env var paths — nginx -t will catch invalid paths
-          ssl_cert="$CORTEX_SSL_CERT_PATH"
-          ssl_key="$CORTEX_SSL_CERT_KEY_PATH"
+          ssl_cert="$FLEET_SSL_CERT_PATH"
+          ssl_key="$FLEET_SSL_CERT_KEY_PATH"
         elif [ -d /etc/letsencrypt/live ]; then
-          le_domain="${CORTEX_SSL_DOMAIN:-}"
+          le_domain="${FLEET_SSL_DOMAIN:-}"
           if [ -n "$le_domain" ] && [ -f "/etc/letsencrypt/live/${le_domain}/fullchain.pem" ]; then
             ssl_cert="/etc/letsencrypt/live/${le_domain}/fullchain.pem"
             ssl_key="/etc/letsencrypt/live/${le_domain}/privkey.pem"
@@ -160,9 +160,9 @@ for src in "${CORTEX_REPO}/ops/install/deploy/nginx/hermes-zone-defs.conf" "${CO
             done
           fi
         fi
-        if [ -z "$ssl_cert" ] && [ -f "${CORTEX_HOME}/certs/fullchain.pem" ] && [ -f "${CORTEX_HOME}/certs/privkey.pem" ]; then
-          ssl_cert="${CORTEX_HOME}/certs/fullchain.pem"
-          ssl_key="${CORTEX_HOME}/certs/privkey.pem"
+        if [ -z "$ssl_cert" ] && [ -f "${FLEET_HOME}/certs/fullchain.pem" ] && [ -f "${FLEET_HOME}/certs/privkey.pem" ]; then
+          ssl_cert="${FLEET_HOME}/certs/fullchain.pem"
+          ssl_key="${FLEET_HOME}/certs/privkey.pem"
         fi
       fi
 
@@ -199,7 +199,7 @@ for src in "${CORTEX_REPO}/ops/install/deploy/nginx/hermes-zone-defs.conf" "${CO
       fi
 
       # ── Deploy shared defaults to conf.d/ ──
-      SHARED_DEFAULTS_SRC="${CORTEX_REPO}/ops/install/deploy/nginx/hermes-services-shared-defaults.conf"
+      SHARED_DEFAULTS_SRC="${FLEET_REPO}/ops/install/deploy/nginx/hermes-services-shared-defaults.conf"
       SHARED_DEFAULTS_DST="${NGINX_DIR}/conf.d/hermes-services-shared-defaults.conf"
       if [ -f "$SHARED_DEFAULTS_SRC" ]; then
         mkdir -p "$(dirname "$SHARED_DEFAULTS_DST")"
@@ -211,7 +211,7 @@ for src in "${CORTEX_REPO}/ops/install/deploy/nginx/hermes-zone-defs.conf" "${CO
       fi
 
       # ── Deploy extra services to conf.d/ (grafana, bus, metrics) ──
-      EXTRAS_SRC="${CORTEX_REPO}/ops/install/deploy/nginx/orch-hermes-services.conf"
+      EXTRAS_SRC="${FLEET_REPO}/ops/install/deploy/nginx/orch-hermes-services.conf"
       EXTRAS_DST="${NGINX_DIR}/conf.d/orch-hermes-services.conf"
       # Orchestrators (Moses, Esther) get extras; others get core only.
       # Controlled via HERMES_SERVICES env var (comma-separated).
@@ -240,9 +240,9 @@ for src in "${CORTEX_REPO}/ops/install/deploy/nginx/hermes-zone-defs.conf" "${CO
       # Explicit HERMES_SERVICES wins; when it is unset (the default) the sink
       # is deployed only if a local VictoriaMetrics backend actually answers —
       # a host never gets a proxy pointing at a service it doesn't run.
-      METRICS_SRC="${CORTEX_REPO}/ops/install/deploy/nginx/metrics-sink.conf"
+      METRICS_SRC="${FLEET_REPO}/ops/install/deploy/nginx/metrics-sink.conf"
       METRICS_DST="${NGINX_DIR}/conf.d/metrics-sink.conf"
-      VM_HEALTH_URL="${CORTEX_VM_HEALTH_URL:-http://127.0.0.1:8428/-/healthy}"
+      VM_HEALTH_URL="${FLEET_VM_HEALTH_URL:-http://127.0.0.1:8428/-/healthy}"
       if [ -z "${HERMES_SERVICES:-}" ]; then
         if curl -fsS --max-time 2 -o /dev/null "$VM_HEALTH_URL" 2>/dev/null; then
           METRICS_ON=1

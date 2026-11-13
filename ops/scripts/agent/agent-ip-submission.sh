@@ -22,7 +22,7 @@ _GOV_LOCK="${HOME}/.steadfaste-fleet/state/.governance-agent-ip-submission.json"
 trap 'rm -f "$_GOV_LOCK"' EXIT
 _create_gov_lock() {
   mkdir -p "${HOME}/.steadfaste-fleet/state"
-  local _slug; _slug=$(basename "${CORTEX_REPO:-${HOME}/steadfaste-fleet}")
+  local _slug; _slug=$(basename "${FLEET_REPO:-${HOME}/steadfaste-fleet}")
   cat > "$_GOV_LOCK" <<-LOCKEOF
 {
   "task_id": "agent-ip-submission",
@@ -35,15 +35,15 @@ _create_gov_lock() {
 LOCKEOF
 }
 
-CORTEX_REPO="${CORTEX_REPO:-${HOME}/steadfaste-fleet}"
+FLEET_REPO="${FLEET_REPO:-${HOME}/steadfaste-fleet}"
 
 # Fail-safe cleanup for an interrupted rebase (added 2026-10-18): a `git pull --rebase`
 # that conflicts leaves the repository stopped mid-rebase, refusing every commit and push
 # on the host until someone cleans it up by hand.
 # shellcheck source=ops/scripts/lib/git-stalled-rebase.sh
-source "$CORTEX_REPO/ops/scripts/lib/git-stalled-rebase.sh"
-SUBMIT_FILE="${CORTEX_REPO}/ops/install/deploy/nginx/blocked_ips.submit"
-ADD_FILE="${CORTEX_REPO}/ops/install/deploy/nginx/blocked_ips.add"
+source "$FLEET_REPO/ops/scripts/lib/git-stalled-rebase.sh"
+SUBMIT_FILE="${FLEET_REPO}/ops/install/deploy/nginx/blocked_ips.submit"
+ADD_FILE="${FLEET_REPO}/ops/install/deploy/nginx/blocked_ips.add"
 NEW_IPS=false
 PIPELINE_OUTPUT=""
 
@@ -103,7 +103,7 @@ PIPELINE_OUTPUT+="  ✓ Added ${NEW_COUNT} agent-submitted IPs to blocked_ips.ad
 PIPELINE_OUTPUT+="  ✓ Cleared blocked_ips.submit"$'\n'
 
 # ── Commit and push ──
-cd "$CORTEX_REPO"
+cd "$FLEET_REPO"
 if git diff --quiet ops/install/deploy/nginx/blocked_ips.add 2>/dev/null; then
   log "  No git changes (unexpected) — skipping commit"
 else
@@ -130,7 +130,7 @@ else
           printf '%s\n' "$abort_out" | while IFS= read -r line; do log "$line"; done
         fi
         if [ "$abort_rc" -ne 0 ]; then
-          PIPELINE_OUTPUT+="  ❌ A rebase is stopped in ${CORTEX_REPO} and could not be aborted — commits and pushes stay blocked until it is cleared by hand"$'\n'
+          PIPELINE_OUTPUT+="  ❌ A rebase is stopped in ${FLEET_REPO} and could not be aborted — commits and pushes stay blocked until it is cleared by hand"$'\n'
           break
         fi
       else
@@ -141,9 +141,9 @@ else
 fi
 
 # ── Deploy live if deploy-blocked-ips is available ──
-DEPLOY_BLOCKED="${CORTEX_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/scripts/deploy-blocked-ips.sh"
+DEPLOY_BLOCKED="${FLEET_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/scripts/deploy-blocked-ips.sh"
 if [ ! -x "$DEPLOY_BLOCKED" ]; then
-  DEPLOY_BLOCKED="${CORTEX_REPO}/ops/scripts/manage/deploy-blocked-ips.sh"
+  DEPLOY_BLOCKED="${FLEET_REPO}/ops/scripts/manage/deploy-blocked-ips.sh"
 fi
 if [ -x "$DEPLOY_BLOCKED" ]; then
   if bash "$DEPLOY_BLOCKED" 2>&1; then

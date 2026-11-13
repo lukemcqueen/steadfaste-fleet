@@ -178,7 +178,7 @@ def migrate(cortex: Path, borrower: Path, backup_cortex: bool, stamp: str,
 
 
 def main() -> int:
-    default_cortex = Path(os.environ.get("CORTEX_HOME", Path.home() / ".steadfaste-fleet")) / "skills"
+    default_cortex = Path(os.environ.get("FLEET_HOME", Path.home() / ".steadfaste-fleet")) / "skills"
     default_borrower = Path.home() / ".hermes" / "skills"
 
     ap = argparse.ArgumentParser(description=(__doc__ or "invert skills-tree ownership").split("\n")[0])

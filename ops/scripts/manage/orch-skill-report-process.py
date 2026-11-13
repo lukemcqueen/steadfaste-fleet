@@ -25,11 +25,11 @@ from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 
 # ── Config from environment ─────────────────────────────────
-CORTEX_BUS_URL = os.environ.get("CORTEX_BUS_URL", "http://127.0.0.1:8903")
-CORTEX_BUS_TOKEN = os.environ.get("CORTEX_BUS_TOKEN", "")
+FLEET_BUS_URL = os.environ.get("FLEET_BUS_URL", "http://127.0.0.1:8903")
+FLEET_BUS_TOKEN = os.environ.get("FLEET_BUS_TOKEN", "")
 
 # Try reading from .env if env vars not set
-if not CORTEX_BUS_TOKEN:
+if not FLEET_BUS_TOKEN:
     for conf in [Path.home() / "steadfaste-fleet" / ".env",
                  Path.home() / "steadfaste-fleet" / ".env",
                  Path.home() / ".hermes" / ".env"]:
@@ -37,21 +37,21 @@ if not CORTEX_BUS_TOKEN:
             try:
                 for line in conf.read_text().splitlines():
                     line = line.strip()
-                    if line.startswith("CORTEX_BUS_TOKEN="):
+                    if line.startswith("FLEET_BUS_TOKEN="):
                         val = line.split("=", 1)[1].strip().strip("'\"")
                         if val:
-                            CORTEX_BUS_TOKEN = val
-                    elif line.startswith("CORTEX_BUS_URL=") and not CORTEX_BUS_URL:
+                            FLEET_BUS_TOKEN = val
+                    elif line.startswith("FLEET_BUS_URL=") and not FLEET_BUS_URL:
                         val = line.split("=", 1)[1].strip().strip("'\"")
                         if val:
-                            CORTEX_BUS_URL = val
+                            FLEET_BUS_URL = val
             except (IOError, OSError, UnicodeDecodeError, ValueError) as e:
                 print(f"[config] Warning: skipping {conf}: {e}", file=sys.stderr)  # unreadable/malformed — try next location
-        if CORTEX_BUS_TOKEN:
+        if FLEET_BUS_TOKEN:
             break
 
-BUS_URL = CORTEX_BUS_URL.rstrip("/")
-STATE_DIR = Path(os.environ.get("CORTEX_DEPLOY_HOME", Path.home() / ".steadfaste-fleet")) / "state"
+BUS_URL = FLEET_BUS_URL.rstrip("/")
+STATE_DIR = Path(os.environ.get("FLEET_DEPLOY_HOME", Path.home() / ".steadfaste-fleet")) / "state"
 PROCESSED_MARKER = STATE_DIR / "last-skill-report-processed.txt"
 QUEUE = "inbox_orchestrator"
 
@@ -60,7 +60,7 @@ def bus_request(endpoint: str, data: dict | None = None, method: str | None = No
     """Make an authenticated request to the PGMQ bus API."""
     url = f"{BUS_URL}{endpoint}"
     headers = {
-        "Authorization": f"Bearer {CORTEX_BUS_TOKEN}",
+        "Authorization": f"Bearer {FLEET_BUS_TOKEN}",
         "Content-Type": "application/json",
     }
     body = json.dumps(data).encode() if data else None
@@ -102,7 +102,7 @@ def read_staged_reports() -> list[dict]:
     before this branch existed). The staged files are the authoritative input:
     each is "<agent>-<ts>-partXofY.md" (or "<agent>-<ts>.md" for single-part).
     """
-    state_dir = Path(os.environ.get("CORTEX_DEPLOY_HOME", Path.home() / ".steadfaste-fleet")) / "state" / "skill-reports"
+    state_dir = Path(os.environ.get("FLEET_DEPLOY_HOME", Path.home() / ".steadfaste-fleet")) / "state" / "skill-reports"
     reports = []
     if not state_dir.is_dir():
         return reports

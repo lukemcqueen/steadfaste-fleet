@@ -33,7 +33,7 @@ HOME = Path.home()
 STATE_DIR = HOME / ".steadfaste-fleet" / "state"
 HANDLER_STATE = STATE_DIR / "agent-message-state.json"
 CONFIG_FILE = HOME / "steadfaste-fleet" / ".env"
-CORTEX_REPO = HOME / "steadfaste-fleet"
+FLEET_REPO = HOME / "steadfaste-fleet"
 
 # Bus API connection (used on worker agents that can't query DB directly)
 BUS_URL = None
@@ -48,7 +48,7 @@ def _read_config(key: str) -> str:
             if line.startswith(f"{key}="):
                 return line.split("=", 1)[1].strip()
     # Fall back to .env
-    env_file = CORTEX_REPO / ".env"
+    env_file = FLEET_REPO / ".env"
     if env_file.exists():
         for line in env_file.read_text().splitlines():
             line = line.strip().strip("'\"")
@@ -86,7 +86,7 @@ def _bus_get(endpoint: str) -> dict:
         import sys
         sys.path.insert(0, str(HOME / ".steadfaste-fleet" / "scripts"))
         from lib.fleet_bus import _get_auth_header, _read_config as _bus_cfg
-        bus_url = _bus_cfg("CORTEX_BUS_URL") or os.environ.get("CORTEX_BUS_URL", "")
+        bus_url = _bus_cfg("FLEET_BUS_URL") or os.environ.get("FLEET_BUS_URL", "")
         if not bus_url:
             return {}
         scheme, creds = _get_auth_header()
@@ -234,7 +234,7 @@ def collect_agent() -> dict:
     result = {}
 
     # Git SHA from deployed code
-    sha = _run(["git", "-C", str(CORTEX_REPO), "rev-parse", "--short", "HEAD"])
+    sha = _run(["git", "-C", str(FLEET_REPO), "rev-parse", "--short", "HEAD"])
     if sha:
         result["git_sha"] = sha
     else:

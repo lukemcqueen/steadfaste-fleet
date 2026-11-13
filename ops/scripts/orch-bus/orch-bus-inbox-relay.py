@@ -152,9 +152,9 @@ def run_once() -> list[str]:
     cutoff = _failover_cutoff()
     if cutoff is None:
         return []  # no failover — silent
-    token = _conf("CORTEX_BUS_TOKEN")
+    token = _conf("FLEET_BUS_TOKEN")
     if not token:
-        return ["❌ orch-bus-inbox-relay: CORTEX_BUS_TOKEN missing — cannot relay"]
+        return ["❌ orch-bus-inbox-relay: FLEET_BUS_TOKEN missing — cannot relay"]
     margin_start = cutoff - timedelta(minutes=MARGIN_MINUTES)
     now = datetime.now(timezone.utc)
 

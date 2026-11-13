@@ -130,7 +130,7 @@ def main() -> int:
     p.add_argument("--state-db", default=str(DEFAULT_STATE_DB), help="state.db path")
     p.add_argument("--days", type=int, default=7, help="window in days (default 7)")
     p.add_argument("--target", type=float,
-                   default=float(os.environ.get("CORTEX_COST_DAILY_TARGET_USD", DEFAULT_TARGET_USD)),
+                   default=float(os.environ.get("FLEET_COST_DAILY_TARGET_USD", DEFAULT_TARGET_USD)),
                    help="fleet daily-average target in USD (default $10)")
     p.add_argument("--host", default=os.environ.get("AGENT_NAME", "this host"),
                    help="host label (default: $AGENT_NAME)")

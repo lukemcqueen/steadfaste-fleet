@@ -32,22 +32,22 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # (~/.steadfaste-fleet/scripts/), where git rev-parse fails and ../../.. lands
 # on /home (regression 2026-08-05: pipeline deploy step failed with
 # "fix-blocked-ips.py not found at a /home/<user>/... path").
-CORTEX_REPO="${CORTEX_REPO:-}"
-if [ -z "$CORTEX_REPO" ] || [ ! -f "$CORTEX_REPO/ops/install/deploy/nginx/fix-blocked-ips.py" ]; then
-  CORTEX_REPO="$(cd "$SCRIPT_DIR" && git rev-parse --show-toplevel 2>/dev/null || true)"
+FLEET_REPO="${FLEET_REPO:-}"
+if [ -z "$FLEET_REPO" ] || [ ! -f "$FLEET_REPO/ops/install/deploy/nginx/fix-blocked-ips.py" ]; then
+  FLEET_REPO="$(cd "$SCRIPT_DIR" && git rev-parse --show-toplevel 2>/dev/null || true)"
 fi
-if [ -z "$CORTEX_REPO" ] || [ ! -f "$CORTEX_REPO/ops/install/deploy/nginx/fix-blocked-ips.py" ]; then
-  CORTEX_REPO="$(cd "$SCRIPT_DIR/../../.." && pwd 2>/dev/null || true)"
+if [ -z "$FLEET_REPO" ] || [ ! -f "$FLEET_REPO/ops/install/deploy/nginx/fix-blocked-ips.py" ]; then
+  FLEET_REPO="$(cd "$SCRIPT_DIR/../../.." && pwd 2>/dev/null || true)"
 fi
-if [ -z "$CORTEX_REPO" ] || [ ! -f "$CORTEX_REPO/ops/install/deploy/nginx/fix-blocked-ips.py" ]; then
-  CORTEX_REPO="${HOME}/steadfaste-fleet"
+if [ -z "$FLEET_REPO" ] || [ ! -f "$FLEET_REPO/ops/install/deploy/nginx/fix-blocked-ips.py" ]; then
+  FLEET_REPO="${HOME}/steadfaste-fleet"
 fi
 
 # P1-A hardening (2026-07-31): prefer the root-owned immutable deployed copy
 # at /usr/local/sbin. Fall back to the repo copy ONLY for --check (read-only).
 FIX_SCRIPT="/usr/local/sbin/fix-blocked-ips.py"
 if [ ! -f "$FIX_SCRIPT" ]; then
-  FIX_SCRIPT="${CORTEX_REPO}/ops/install/deploy/nginx/fix-blocked-ips.py"
+  FIX_SCRIPT="${FLEET_REPO}/ops/install/deploy/nginx/fix-blocked-ips.py"
   echo "[deploy-blocked-ips] ⚠ using repo copy — deploy the root-owned copy:" >&2
   echo "[deploy-blocked-ips]   sudo bash ~/steadfaste-fleet/ops/install/deploy/nginx/deploy-fix-blocked-ips.sh" >&2
 fi
@@ -64,9 +64,9 @@ CHECK_ONLY="${1:-}"
 
 # --repo <path>: pass the resolved repo root explicitly. REQUIRED when the
 # target script runs under sudo — sudo's env_reset sets HOME=/root and
-# blocks HOME/CORTEX_REPO env overrides, so the Python repo_dir() $HOME
+# blocks HOME/FLEET_REPO env overrides, so the Python repo_dir() $HOME
 # fallback silently misses on Linux. argv is the only channel sudo allows.
-REPO_ARG="--repo ${CORTEX_REPO}"
+REPO_ARG="--repo ${FLEET_REPO}"
 
 if [ "$CHECK_ONLY" = "--check" ]; then
   log "── Check only ──"

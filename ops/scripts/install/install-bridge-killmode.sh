@@ -121,7 +121,7 @@ SHIM
   _run() { # <reload_rc> -> sets out, rc
     rc=0
     out="$(HOME="$home" PATH="$bin:$PATH" \
-           CORTEX_DEPLOY_HOME="$deploy" REPO_DIR="$tmp/no-repo" \
+           FLEET_DEPLOY_HOME="$deploy" REPO_DIR="$tmp/no-repo" \
            FAKE_UNITS_DIR="$units" FAKE_SYSTEMCTL_LOG="$log" \
            FAKE_RELOAD_RC="$1" bash "$0" 2>&1)" || rc=$?
   }
@@ -200,7 +200,7 @@ if [[ "${1:-}" == "--self-test" ]]; then
 fi
 
 HOME_DIR="${HOME:?}"
-CORTEX_DEPLOY_HOME="${CORTEX_DEPLOY_HOME:-${HOME_DIR}/.steadfaste-fleet}"
+FLEET_DEPLOY_HOME="${FLEET_DEPLOY_HOME:-${HOME_DIR}/.steadfaste-fleet}"
 REPO_DIR="${REPO_DIR:-${HOME_DIR}/steadfaste-fleet}"
 UNITS_DIR="${HOME_DIR}/.config/systemd/user"
 
@@ -219,7 +219,7 @@ if [[ ${#bridge_units[@]} -eq 0 ]]; then
   exit 0
 fi
 
-GEN="${CORTEX_DEPLOY_HOME}/scripts/fleet-bus-bridge-generate.py"
+GEN="${FLEET_DEPLOY_HOME}/scripts/fleet-bus-bridge-generate.py"
 [[ -f "$GEN" ]] || GEN="${REPO_DIR}/ops/scripts/fleet-bus-bridge-generate.py"
 if [[ ! -f "$GEN" ]]; then
   echo "install-bridge-killmode: ${#bridge_units[@]} bridge unit(s) present but no fleet-bus-bridge-generate.py — cannot repair" >&2

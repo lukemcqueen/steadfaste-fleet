@@ -21,7 +21,7 @@ set -euo pipefail
 # Sources os-config.sh for agent-type detection (hostname+home-dir
 # authoritative) + check_agent_type helper. IS_ORCHESTRATOR env/.env
 # values grant no orch powers — os-config never promotes from env.
-# os-config.sh deploys to ${CORTEX_DEPLOY_HOME}/scripts/install/ while this
+# os-config.sh deploys to ${FLEET_DEPLOY_HOME}/scripts/install/ while this
 # script deploys flat to scripts/ — resolve from either location.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" )" && pwd)"
 OS_CONFIG=""
@@ -38,9 +38,9 @@ fi
 source "$OS_CONFIG"
 # .env is sourced for cron config values (model, provider) — NOT for role.
 # Role comes exclusively from os-config.sh's hostname+home-dir detection.
-CORTEX_ENV="${REPO_DIR:-${HOME}/steadfaste-fleet}/.env"
-if [[ -f "$CORTEX_ENV" ]]; then
-  set -a; source "$CORTEX_ENV"; set +a
+FLEET_ENV="${REPO_DIR:-${HOME}/steadfaste-fleet}/.env"
+if [[ -f "$FLEET_ENV" ]]; then
+  set -a; source "$FLEET_ENV"; set +a
 fi
 # Self-audit: refuse if not orchestrator
 check_agent_type "orchestrator" "${BASH_SOURCE[0]}" || {
@@ -248,7 +248,7 @@ create_cron() {
 
   if $exists && $FORCE && [[ -n "$HERMES_CMD" ]]; then
     local job_id _tmp
-    _tmp="${CORTEX_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/state/_cron_find.py"
+    _tmp="${FLEET_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/state/_cron_find.py"
     mkdir -p "$(dirname "$_tmp")"
     cat > "$_tmp" << 'PYEOF'
 import json, sys
@@ -444,7 +444,7 @@ create_cron "orch-health-report-saturday" "0 11,17 * * 6" \
 
 # Weekly fleet cost report (story c579ef95 [cost/3]) — per-cron spend from the
 # host's own state.db/audit log, delivered to Telegram. Exits 1 when the measured
-# daily average exceeds CORTEX_COST_DAILY_TARGET_USD (default $10) so the breach
+# daily average exceeds FLEET_COST_DAILY_TARGET_USD (default $10) so the breach
 # is machine-visible; see the script docstring for why that is deliberate.
 create_cron "orch-weekly-cost-report" "0 9 * * 1" \
   "orch-weekly-cost-report.py" \

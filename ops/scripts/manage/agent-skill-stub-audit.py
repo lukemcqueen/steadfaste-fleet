@@ -26,7 +26,7 @@ from pathlib import Path
 
 HOME = Path.home()
 HERMES_SKILLS = HOME / ".hermes" / "skills"
-CORTEX_SKILLS = HOME / ".steadfaste-fleet" / "skills"
+FLEET_SKILLS = HOME / ".steadfaste-fleet" / "skills"
 STATE_DIR = HOME / ".steadfaste-fleet" / "state"
 
 # Agent identity — env → agent.env → .env. NEVER hostname: a machine name
@@ -122,7 +122,7 @@ def scan_state_cache() -> dict:
 def main():
     send = "--send" in sys.argv
     found = {}
-    for d in (HERMES_SKILLS, CORTEX_SKILLS):
+    for d in (HERMES_SKILLS, FLEET_SKILLS):
         found.update(scan_skills_dir(d))
     found.update(scan_state_cache())
 

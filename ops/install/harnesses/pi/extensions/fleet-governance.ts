@@ -46,8 +46,8 @@
  * INSTALL (user scope, so every pi project gets it):
  *   bash ~/steadfaste-fleet/ops/scripts/install/install-pi-integration.sh
  * ENV: CORTEX_SESSION_REPO pins the governed repo when pi's cwd is not it;
- *      CORTEX_GOVERNANCE_CLI overrides the loop-gov.py path;
- *      CORTEX_GOVERNANCE_PYTHON overrides the interpreter (macOS: a Homebrew
+ *      FLEET_GOVERNANCE_CLI overrides the loop-gov.py path;
+ *      FLEET_GOVERNANCE_PYTHON overrides the interpreter (macOS: a Homebrew
  *      python3 is often not on pi's PATH).
  */
 
@@ -59,23 +59,23 @@ import { promisify } from "node:util";
 const run = promisify(execFile);
 
 const CLI =
-  process.env.CORTEX_GOVERNANCE_CLI ??
+  process.env.FLEET_GOVERNANCE_CLI ??
   `${process.env.HOME}/.steadfaste-fleet/scripts/loop-gov.py`;
 
 /** macOS: `python3` may not be on pi's PATH (Homebrew lives in /opt/homebrew/bin
  *  on Apple Silicon, /usr/local/bin on Intel) and a GUI-launched pi sees a
  *  narrower PATH than a shell. Overridable rather than assumed. */
-const PYTHON = process.env.CORTEX_GOVERNANCE_PYTHON ?? "python3";
+const PYTHON = process.env.FLEET_GOVERNANCE_PYTHON ?? "python3";
 
 // ── diagnostics: the cortex log, NEVER pi's stderr ──────────────────────────
 // In pi the harness's stderr IS the prompt area, so a stray line scribbles over
 // what the user is typing. Same convention as fleet-context.ts / loop-gov-mcp.py:
 // bounded by rotation, and never able to break the gate.
 const LOG_PATH =
-  process.env.CORTEX_GOVERNANCE_LOG ??
+  process.env.FLEET_GOVERNANCE_LOG ??
   `${process.env.HOME ?? ""}/.steadfaste-fleet/logs/pi-governance.log`;
-const LOG_MAX_BYTES = Number(process.env.CORTEX_GOVERNANCE_LOG_MAX_BYTES ?? 1_048_576);
-const DEBUG = process.env.CORTEX_GOVERNANCE_DEBUG === "1";
+const LOG_MAX_BYTES = Number(process.env.FLEET_GOVERNANCE_LOG_MAX_BYTES ?? 1_048_576);
+const DEBUG = process.env.FLEET_GOVERNANCE_DEBUG === "1";
 
 function appendBounded(message: string) {
   try {

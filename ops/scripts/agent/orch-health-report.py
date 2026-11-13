@@ -36,7 +36,7 @@ from pathlib import Path
 from typing import Optional
 
 HOME = Path.home()
-CORTEX_ENV = HOME / "steadfaste-fleet" / ".env"
+FLEET_ENV = HOME / "steadfaste-fleet" / ".env"
 
 # Ensure lib.fleet_bus is importable (same pattern as orch-clean-health-queue.py)
 try:
@@ -150,14 +150,14 @@ def _get_agents() -> list[dict]:
     # Fallback: Moses health URL from .env, then localhost
     if not any(a["key"] == "moses" for a in agents):
         import os
-        moses_url = os.environ.get("CORTEX_HEALTH_URL", "")
-        if not moses_url and CORTEX_ENV.exists():
-            for line in CORTEX_ENV.read_text().splitlines():
+        moses_url = os.environ.get("FLEET_HEALTH_URL", "")
+        if not moses_url and FLEET_ENV.exists():
+            for line in FLEET_ENV.read_text().splitlines():
                 line = line.strip()
                 if not line or line.startswith("#") or "=" not in line:
                     continue
                 k, v = line.split("=", 1)
-                if k.strip() == "CORTEX_HEALTH_URL":
+                if k.strip() == "FLEET_HEALTH_URL":
                     moses_url = v.strip().strip("'\"")
                     break
         if not moses_url:

@@ -46,9 +46,9 @@ declared_python() {
   # Callers read this instead of re-deriving a path, so there is one place to be wrong rather
   # than seven: on 2026-10-13 seven scripts each needed their own clean-env probe because the
   # agent session exported a foreign site-packages AND put a 3.14 tools python ahead of /usr/bin.
-  [[ -n "${CORTEX_PYTHON:-}" ]] && printf '%s\n' "${CORTEX_PYTHON}"
-  local f="${CORTEX_ENV_FILE:-${HOME}/.steadfaste-fleet/agent.env}"
-  [[ -f "$f" ]] && sed -n 's/^CORTEX_PYTHON=//p' "$f" | head -1
+  [[ -n "${FLEET_PYTHON:-}" ]] && printf '%s\n' "${FLEET_PYTHON}"
+  local f="${FLEET_ENV_FILE:-${HOME}/.steadfaste-fleet/agent.env}"
+  [[ -f "$f" ]] && sed -n 's/^FLEET_PYTHON=//p' "$f" | head -1
 }
 
 candidates() {
@@ -108,9 +108,9 @@ done < <(candidates)
   echo "  Checked:${tried}"
   _decl="$(declared_python | head -1)"
   if [[ -n "$_decl" ]]; then
-    echo "  Declared CORTEX_PYTHON: ${_decl}"
+    echo "  Declared FLEET_PYTHON: ${_decl}"
     echo "    it cannot import '${module}' — a declaration is a promise. Fix it, or unset"
-    echo "    CORTEX_PYTHON in ~/.steadfaste-fleet/agent.env to fall back to the built-in order."
+    echo "    FLEET_PYTHON in ~/.steadfaste-fleet/agent.env to fall back to the built-in order."
   fi
   echo "  Fix one of:"
   echo "    - install ${module} for one of them        (e.g. python3 -m pip install ${module})"

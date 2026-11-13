@@ -38,19 +38,19 @@ _remove_pipe_marker() { rm -f "$_PIPE_MARKER"; }
 trap '_remove_pipe_marker' EXIT
 
 # ── Guard: abort any stale git operations before proceeding ──
-if git -C "${CORTEX_REPO:-${HOME}/steadfaste-fleet}" rev-parse --git-dir &>/dev/null; then
-  if git -C "${CORTEX_REPO:-${HOME}/steadfaste-fleet}" rebase --show-current &>/dev/null 2>&1; then
+if git -C "${FLEET_REPO:-${HOME}/steadfaste-fleet}" rev-parse --git-dir &>/dev/null; then
+  if git -C "${FLEET_REPO:-${HOME}/steadfaste-fleet}" rebase --show-current &>/dev/null 2>&1; then
     echo "[$(ts) nginx-threat-pipeline] ⚠ Stale rebase detected — aborting"
-    git -C "${CORTEX_REPO:-${HOME}/steadfaste-fleet}" rebase --abort 2>/dev/null || true
+    git -C "${FLEET_REPO:-${HOME}/steadfaste-fleet}" rebase --abort 2>/dev/null || true
   fi
   # Clear any unfinished merge/revert/cherry-pick state
-  git -C "${CORTEX_REPO:-${HOME}/steadfaste-fleet}" cherry-pick --quit 2>/dev/null || true
-  git -C "${CORTEX_REPO:-${HOME}/steadfaste-fleet}" merge --quit 2>/dev/null || true
+  git -C "${FLEET_REPO:-${HOME}/steadfaste-fleet}" cherry-pick --quit 2>/dev/null || true
+  git -C "${FLEET_REPO:-${HOME}/steadfaste-fleet}" merge --quit 2>/dev/null || true
 fi
 
-CORTEX_REPO="${CORTEX_REPO:-${HOME}/steadfaste-fleet}"
-SCANNER="${CORTEX_REPO}/ops/scripts/manage/nginx-security-scanner.sh"
-SUBMIT_FILE="${CORTEX_REPO}/ops/install/deploy/nginx/blocked_ips.submit"
+FLEET_REPO="${FLEET_REPO:-${HOME}/steadfaste-fleet}"
+SCANNER="${FLEET_REPO}/ops/scripts/manage/nginx-security-scanner.sh"
+SUBMIT_FILE="${FLEET_REPO}/ops/install/deploy/nginx/blocked_ips.submit"
 
 # ── Process agent-submitted IPs before scanning ──
 if [ -f "$SUBMIT_FILE" ]; then
@@ -62,14 +62,14 @@ if [ -f "$SUBMIT_FILE" ]; then
     NEW_FROM_SUBMIT=""
     while IFS= read -r ip; do
       [ -z "$ip" ] && continue
-      if ! grep -qF "$ip" "${CORTEX_REPO}/ops/install/deploy/nginx/blocked_ips.add" 2>/dev/null; then
+      if ! grep -qF "$ip" "${FLEET_REPO}/ops/install/deploy/nginx/blocked_ips.add" 2>/dev/null; then
         NEW_FROM_SUBMIT+="${ip}"$'\n'
       fi
     done <<< "$VALID_IPS"
     SUBMIT_COUNT=$(echo "$NEW_FROM_SUBMIT" | grep -c '[0-9]' 2>/dev/null || true)
     SUBMIT_COUNT=$((SUBMIT_COUNT + 0))
     if [ "$SUBMIT_COUNT" -gt 0 ]; then
-      echo "$NEW_FROM_SUBMIT" >> "${CORTEX_REPO}/ops/install/deploy/nginx/blocked_ips.add"
+      echo "$NEW_FROM_SUBMIT" >> "${FLEET_REPO}/ops/install/deploy/nginx/blocked_ips.add"
       NEW_IPS=true
       PIPELINE_OUTPUT+="[$(ts) nginx-threat-pipeline] ✓ ${SUBMIT_COUNT} agent-submitted IPs merged from blocked_ips.submit"$'\n'
     fi
@@ -88,12 +88,12 @@ for cmd in timeout gtimeout; do
 done
 
 # DEPLOY_SCRIPT: minimal — just deploy blocked IPs
-CORTEX_REPO="${CORTEX_REPO:-${HOME}/steadfaste-fleet}"
-CORTEX_DEPLOY_HOME="${CORTEX_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}"
+FLEET_REPO="${FLEET_REPO:-${HOME}/steadfaste-fleet}"
+FLEET_DEPLOY_HOME="${FLEET_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}"
 DEPLOY_SCRIPT=""
-DEPLOY_BLOCKED="${CORTEX_DEPLOY_HOME}/scripts/deploy-blocked-ips.sh"
+DEPLOY_BLOCKED="${FLEET_DEPLOY_HOME}/scripts/deploy-blocked-ips.sh"
 if [ ! -x "$DEPLOY_BLOCKED" ]; then
-  DEPLOY_BLOCKED="${CORTEX_REPO}/ops/scripts/manage/deploy-blocked-ips.sh"
+  DEPLOY_BLOCKED="${FLEET_REPO}/ops/scripts/manage/deploy-blocked-ips.sh"
 fi
 if [ -x "$DEPLOY_BLOCKED" ]; then
   DEPLOY_SCRIPT="$DEPLOY_BLOCKED"
@@ -112,7 +112,7 @@ done
 F2B_INSTALLED=false
 command -v fail2ban-client &>/dev/null && F2B_INSTALLED=true
 
-mkdir -p "${CORTEX_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/state" "${CORTEX_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/logs"
+mkdir -p "${FLEET_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/state" "${FLEET_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/logs"
 
 log()  { echo "[$(ts) nginx-threat-pipeline] $*" >&2; }
 error(){ echo "[$(ts) nginx-threat-pipeline] ✗ $*" >&2; }
@@ -157,27 +157,27 @@ fi
 if [ -n "$F2B_LOG" ]; then
   if [ -n "$TIMEOUT_CMD" ]; then
     F2B_TIMEOUT_RESULT=$($TIMEOUT_CMD 20 bash -c '
-      F2B_LOG="$1"; CORTEX_REPO="$2"
+      F2B_LOG="$1"; FLEET_REPO="$2"
       grep -i "Ban" "$F2B_LOG" 2>/dev/null | \
         grep -oP '\'"'"'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+'\'"'"' | sort -u | \
         while IFS= read -r ip; do
           [ -z "$ip" ] && continue
-          grep -qF "$ip" "${CORTEX_REPO}/ops/install/deploy/nginx/blocked_ips.add" 2>/dev/null && continue
+          grep -qF "$ip" "${FLEET_REPO}/ops/install/deploy/nginx/blocked_ips.add" 2>/dev/null && continue
           echo "$ip"
         done
-    ' _ "$F2B_LOG" "$CORTEX_REPO") || true
+    ' _ "$F2B_LOG" "$FLEET_REPO") || true
   else
     # no timeout available, run without it
     F2B_TIMEOUT_RESULT=$(bash -c '
-      F2B_LOG="$1"; CORTEX_REPO="$2"
+      F2B_LOG="$1"; FLEET_REPO="$2"
       grep -i "Ban" "$F2B_LOG" 2>/dev/null | \
         grep -oP '\'"'"'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+'\'"'"' | sort -u | \
         while IFS= read -r ip; do
           [ -z "$ip" ] && continue
-          grep -qF "$ip" "${CORTEX_REPO}/ops/install/deploy/nginx/blocked_ips.add" 2>/dev/null && continue
+          grep -qF "$ip" "${FLEET_REPO}/ops/install/deploy/nginx/blocked_ips.add" 2>/dev/null && continue
           echo "$ip"
         done
-    ' _ "$F2B_LOG" "$CORTEX_REPO") || true
+    ' _ "$F2B_LOG" "$FLEET_REPO") || true
   fi
   NEW_F2B_IPS="$F2B_TIMEOUT_RESULT"
 
@@ -240,8 +240,8 @@ if [ -n "$F2B_LOG" ]; then
     NEW_IPS=true
     log "  ${F2B_COUNT} new fail2ban-banned IPs"
     # Ensure directory exists before appending
-    mkdir -p "${CORTEX_REPO}/ops/install/deploy/nginx"
-    echo "$NEW_F2B_IPS" >> "${CORTEX_REPO}/ops/install/deploy/nginx/blocked_ips.add"
+    mkdir -p "${FLEET_REPO}/ops/install/deploy/nginx"
+    echo "$NEW_F2B_IPS" >> "${FLEET_REPO}/ops/install/deploy/nginx/blocked_ips.add"
   fi
 elif $F2B_INSTALLED; then
   log "  fail2ban installed but no log file found — skipping"
@@ -267,11 +267,11 @@ fi
 
 # ── Step 4: Commit & push ──
 log "── Step 4: Commit ──"
-if [ ! -d "$CORTEX_REPO" ]; then
-  error "fleet repo not found at ${CORTEX_REPO} — skipping commit"
+if [ ! -d "$FLEET_REPO" ]; then
+  error "fleet repo not found at ${FLEET_REPO} — skipping commit"
 else
-  cd "$CORTEX_REPO"
-  BLOCKED_FILE="${CORTEX_REPO}/ops/install/deploy/nginx/blocked_ips.add"
+  cd "$FLEET_REPO"
+  BLOCKED_FILE="${FLEET_REPO}/ops/install/deploy/nginx/blocked_ips.add"
   if [ ! -f "$BLOCKED_FILE" ]; then
     log "  No blocked_ips.add file — nothing to commit"
   elif ! git ls-files --error-unmatch ops/install/deploy/nginx/blocked_ips.add &>/dev/null; then

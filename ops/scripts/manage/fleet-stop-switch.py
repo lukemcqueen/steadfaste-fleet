@@ -30,7 +30,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 HOME = Path.home()
-CORTEX_REPO = HOME / "steadfaste-fleet"
+FLEET_REPO = HOME / "steadfaste-fleet"
 STATE_DIR = HOME / ".steadfaste-fleet" / "state"
 
 
@@ -38,7 +38,7 @@ def get_fleet_agents() -> dict:
     """Read agent registry and return agent map."""
     registry_paths = [
         STATE_DIR / "agent-registry.json",
-        CORTEX_REPO / "ops" / "install" / "deploy" / "agent-registry.json.example",
+        FLEET_REPO / "ops" / "install" / "deploy" / "agent-registry.json.example",
     ]
     for p in registry_paths:
         if p.exists():
@@ -52,7 +52,7 @@ def send_bus_message(agent: str, subject: str, body: dict) -> int:
     """Send a bus message to an agent via fleet send."""
     body_json = json.dumps(body)
     cmd = [
-        sys.executable, str(CORTEX_REPO / "ops/scripts/fleet/fleet.py"),
+        sys.executable, str(FLEET_REPO / "ops/scripts/fleet/fleet.py"),
         "send", agent, subject,
         "--json", body_json,
     ]
@@ -66,7 +66,7 @@ def record_outerloop_evidence(reason: str, target: str, dry_run: bool = False) -
         return "dry-run-evidence-id"
 
     cmd = [
-        sys.executable, str(CORTEX_REPO / "ops/scripts/manage/outerloop.py"),
+        sys.executable, str(FLEET_REPO / "ops/scripts/manage/outerloop.py"),
         "evidence", "package",
         "--run-id", f"kill-{uuid.uuid4().hex[:8]}",
         "--description", f"Kill switch: {reason}",
@@ -89,7 +89,7 @@ def issue_kill_verdict(evidence_id: str, reason: str, agent: str, dry_run: bool 
         return True
 
     cmd = [
-        sys.executable, str(CORTEX_REPO / "ops/scripts/manage/outerloop.py"),
+        sys.executable, str(FLEET_REPO / "ops/scripts/manage/outerloop.py"),
         "verdict", "issue",
         "--evidence-id", evidence_id,
         "--decision", "block",
@@ -107,7 +107,7 @@ def create_escalation(evidence_id: str, reason: str, agent: str, severity: str =
         return True
 
     cmd = [
-        sys.executable, str(CORTEX_REPO / "ops/scripts/manage/escalate-to-human.py"),
+        sys.executable, str(FLEET_REPO / "ops/scripts/manage/escalate-to-human.py"),
         "--evidence-id", evidence_id,
         "--severity", severity,
     ]

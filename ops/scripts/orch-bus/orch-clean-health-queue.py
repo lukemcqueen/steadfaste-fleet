@@ -6,7 +6,7 @@ no_agent watchdog pattern:
   Text output  → delivered (count of cleaned pings)
 
 Runs every 10 minutes via cron. Uses fleet_bus library for proper
-auth (Basic/Bearer) and bus URL resolution (CORTEX_BUS_URL with
+auth (Basic/Bearer) and bus URL resolution (FLEET_BUS_URL with
 fallback). Reads/archives up to 50 messages per tick.
 
 While draining, persists each agent's latest health vector + timestamp to
@@ -23,7 +23,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-REPO_VAR = os.environ.get("CORTEX_REPO", "")
+REPO_VAR = os.environ.get("FLEET_REPO", "")
 REPO = Path(REPO_VAR) if REPO_VAR else Path()
 if not REPO.is_dir() or not REPO_VAR:
     for c in [Path.home() / "steadfaste-fleet", Path.home() / "src" / "steadfaste-fleet"]:

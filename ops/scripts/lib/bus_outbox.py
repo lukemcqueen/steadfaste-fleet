@@ -37,8 +37,8 @@ Design (enterprise-grade):
     moves the file to bus-retry/quarantine/ — it stops retrying forever.
   - Concurrency: the sweep holds an flock; cron and manual sweeps can
     never race.
-  - Config via env: CORTEX_BUS_RETRY_DIR overrides the default dir
-    (tests + non-default installs); CORTEX_BUS_NO_OUTBOX=1 disables
+  - Config via env: FLEET_BUS_RETRY_DIR overrides the default dir
+    (tests + non-default installs); FLEET_BUS_NO_OUTBOX=1 disables
     the fallback in bus_send (hard-fail to None).
 """
 import fcntl

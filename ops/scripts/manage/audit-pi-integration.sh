@@ -27,8 +27,8 @@ PI_DIR="${PI_DIR:-$HOME/.pi/agent}"
 SETTINGS="$PI_DIR/settings.json"
 MCP_JSON="$PI_DIR/mcp.json"
 AGENT_ENV="$HOME/.steadfaste-fleet/agent.env"
-DEPLOY="${CORTEX_DEPLOY_HOME:-$HOME/.steadfaste-fleet}"
-MANIFEST="${CORTEX_SKILLS_MANIFEST:-}"
+DEPLOY="${FLEET_DEPLOY_HOME:-$HOME/.steadfaste-fleet}"
+MANIFEST="${FLEET_SKILLS_MANIFEST:-}"
 
 _fail=0
 _line() {  # _line <layer> <PASS|FAIL|NA> <text>
@@ -206,7 +206,7 @@ else
   else
     # The curated list comes from the skills MANIFEST (`always:`), never hardcoded here.
     WANT=""
-    for m in "$MANIFEST" "$HOME/.steadfaste-fleet/skills.yaml" "${CORTEX_REPO:-$HOME/steadfaste-fleet}/skills.yaml"; do
+    for m in "$MANIFEST" "$HOME/.steadfaste-fleet/skills.yaml" "${FLEET_REPO:-$HOME/steadfaste-fleet}/skills.yaml"; do
       [[ -n "$m" && -f "$m" ]] || continue
       WANT="$(awk '/^always:/{f=1;next} /^[a-z]/{f=0} f && /- name:/{sub(/.*- name:[ ]*/,""); print}' "$m")"
       break
@@ -276,7 +276,7 @@ fi
 # ── Layer 3: session/memory extension ──
 EXT_OK=0
 for c in "$DEPLOY/harnesses/pi/extensions/fleet-context.ts" \
-         "${CORTEX_REPO:-$HOME/steadfaste-fleet}/ops/install/harnesses/pi/extensions/fleet-context.ts"; do
+         "${FLEET_REPO:-$HOME/steadfaste-fleet}/ops/install/harnesses/pi/extensions/fleet-context.ts"; do
   [[ -f "$c" ]] && EXT_OK=1 && break
 done
 if [[ "$EXT_OK" == "1" ]]; then

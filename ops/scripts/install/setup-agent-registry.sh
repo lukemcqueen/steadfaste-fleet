@@ -6,16 +6,16 @@
 #
 # Usage:
 #   Interactive:  bash setup-agent-registry.sh
-#   Auto (env):   CORTEX_DOMAIN=mydomain.com CORTEX_HEALTH_PORT=13007 \
+#   Auto (env):   FLEET_DOMAIN=mydomain.com FLEET_HEALTH_PORT=13007 \
 #                   ESTHER_DOMAIN=other.com ESTHER_HEALTH_PORT=13007 \
 #                   ... bash setup-agent-registry.sh
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CORTEX_HOME="${CORTEX_HOME:-$HOME/steadfaste-fleet}"
+FLEET_HOME="${FLEET_HOME:-$HOME/steadfaste-fleet}"
 STATE_DIR="$HOME/.steadfaste-fleet/state"
-TEMPLATE="$CORTEX_HOME/ops/install/deploy/agent-registry.template.json"
+TEMPLATE="$FLEET_HOME/ops/install/deploy/agent-registry.template.json"
 TARGET="$STATE_DIR/agent-registry.json"
 LOCAL_OVERRIDE="$HOME/.steadfaste-fleet/state/agent-registry.local.json"
 
@@ -56,7 +56,7 @@ target_path = Path("$TARGET")
 data = json.loads(template_path.read_text())
 
 # Per-agent env var mapping
-# Template uses {{CORTEX_DOMAIN}} etc. — env vars match these names
+# Template uses {{FLEET_DOMAIN}} etc. — env vars match these names
 PREFIX_MAP = {
     "moses":  "CORTEX",
     "esther": "ESTHER",

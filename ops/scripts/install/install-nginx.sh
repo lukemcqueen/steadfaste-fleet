@@ -19,11 +19,11 @@ install_nginx() {
   fi
 
   echo "  Installing nginx…"
-  if [[ "$CORTEX_OS" == "macos" ]]; then
+  if [[ "$FLEET_OS" == "macos" ]]; then
     brew install nginx
-  elif [[ "$CORTEX_OS" == "linux" ]]; then
+  elif [[ "$FLEET_OS" == "linux" ]]; then
     $PKG_INSTALL nginx
-  elif [[ "$CORTEX_OS" == "windows" ]]; then
+  elif [[ "$FLEET_OS" == "windows" ]]; then
     $PKG_INSTALL nginx
   fi
   info "nginx installed"
@@ -37,11 +37,11 @@ configure_nginx() {
   local config_file
   local nginx_conf
 
-  if [[ "$CORTEX_OS" == "macos" ]]; then
+  if [[ "$FLEET_OS" == "macos" ]]; then
     config_file="${NGINX_CONFIG_DIR}/hermes-services.conf"
     nginx_conf="${NGINX_CONFIG_DIR}/../nginx.conf"
     mkdir -p "$NGINX_CONFIG_DIR"
-  elif [[ "$CORTEX_OS" == "linux" ]]; then
+  elif [[ "$FLEET_OS" == "linux" ]]; then
     config_file="${NGINX_CONFIG_DIR}/hermes-services.conf"
     nginx_conf="${NGINX_CONFIG_DIR}/nginx.conf"
     mkdir -p "$NGINX_CONFIG_DIR"
@@ -130,15 +130,15 @@ NGINXCONF
 start_nginx() {
   if command -v nginx &>/dev/null; then
     if pgrep -x nginx > /dev/null; then
-      if [[ "$CORTEX_OS" == "macos" ]]; then
+      if [[ "$FLEET_OS" == "macos" ]]; then
         brew services restart nginx 2>&1 | tail -2
-      elif [[ "$CORTEX_OS" == "linux" ]]; then
+      elif [[ "$FLEET_OS" == "linux" ]]; then
         sudo systemctl restart nginx
       fi
     else
-      if [[ "$CORTEX_OS" == "macos" ]]; then
+      if [[ "$FLEET_OS" == "macos" ]]; then
         brew services start nginx 2>&1 | tail -2
-      elif [[ "$CORTEX_OS" == "linux" ]]; then
+      elif [[ "$FLEET_OS" == "linux" ]]; then
         sudo systemctl start nginx
       fi
     fi

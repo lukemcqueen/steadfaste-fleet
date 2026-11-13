@@ -22,8 +22,8 @@ Usage:
 
 Config (gateway.yaml):
     secret: <hmac-signing-secret>      # signs inbound (agents verify)
-    bus_url: <bus base>                # or env CORTEX_BUS_URL
-    bus_auth: agent:pass               # or env CORTEX_BUS_AUTH
+    bus_url: <bus base>                # or env FLEET_BUS_URL
+    bus_auth: agent:pass               # or env FLEET_BUS_AUTH
     bots:
       - token_ref: TELEGRAM_BOT_TOKEN_1
         channel: telegram
@@ -382,10 +382,10 @@ def main() -> int:
         return 2
     data = json.loads(cfg_path.read_text())
 
-    bus_url = data.get("bus_url") or os.environ.get("CORTEX_BUS_URL", "")
-    bus_token = os.environ.get("CORTEX_BUS_TOKEN", "")
-    bus_auth = (data.get("bus_auth") or os.environ.get("CORTEX_BUS_AUTH", "")
-                or os.environ.get("CORTEX_BASIC_AUTH", ""))
+    bus_url = data.get("bus_url") or os.environ.get("FLEET_BUS_URL", "")
+    bus_token = os.environ.get("FLEET_BUS_TOKEN", "")
+    bus_auth = (data.get("bus_auth") or os.environ.get("FLEET_BUS_AUTH", "")
+                or os.environ.get("FLEET_BASIC_AUTH", ""))
     if not bus_url or not (bus_token or bus_auth):
         print("error: bus_url + bus_token/bus_auth required", file=sys.stderr)
         return 2

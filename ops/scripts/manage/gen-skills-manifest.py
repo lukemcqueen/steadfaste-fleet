@@ -51,7 +51,7 @@ def _find_repo() -> Path:
     Deployed: ~/.steadfaste-fleet/scripts/gen-skills-manifest.py  (3 levels down)
     Walk up until a dir containing skills/ + docs/ is found; fall back to env.
     """
-    env = os.environ.get("CORTEX_REPO")
+    env = os.environ.get("FLEET_REPO")
     if env and (Path(env) / "skills").is_dir():
         return Path(env)
     p = Path(__file__).resolve().parent

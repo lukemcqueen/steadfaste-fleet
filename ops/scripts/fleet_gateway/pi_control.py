@@ -116,7 +116,7 @@ def _rpc(base_argv: list, command: dict, *, deadline_s: float = 120.0) -> dict:
                 tail = _stderr_tail(proc)
                 print(f"pi-control: pi did not answer within {deadline_s:.0f}s"
                       + (f" — stderr: {tail}" if tail else ""), file=sys.stderr)
-                if os.environ.get("CORTEX_PI_CONTROL_DEBUG"):
+                if os.environ.get("FLEET_PI_CONTROL_DEBUG"):
                     _debug_state(proc)
                 raise SystemExit(COULD_NOT_VERIFY)
             ready, _, _ = select.select([out], [], [], min(remaining, 0.5))
@@ -199,7 +199,7 @@ def _stderr_tail(proc, limit: int = 400) -> str:
 
 
 def _debug_state(proc) -> None:
-    """Diagnostics for a stuck command (CORTEX_PI_CONTROL_DEBUG=1): who is still there.
+    """Diagnostics for a stuck command (FLEET_PI_CONTROL_DEBUG=1): who is still there.
 
     Answers the only question that matters when pi goes quiet: is the process gone
     (a lingering child holding the pipe) or alive and silent (pi is stuck)? The two

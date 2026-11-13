@@ -31,7 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # repo: lib/ in
 from lib.fleet_bus import bus_list_queues
 
 HOME = Path.home()
-CORTEX_REPO = HOME / "steadfaste-fleet"
+FLEET_REPO = HOME / "steadfaste-fleet"
 REGISTRY_PATH = HOME / ".steadfaste-fleet" / "state" / "agent-registry.json"
 DISPATCH_LOG = HOME / ".steadfaste-fleet" / "state" / "fleet-update-state.json"
 
@@ -51,12 +51,12 @@ def main():
     # 1. Git state
     try:
         r = subprocess.run(
-            ["git", "-C", str(CORTEX_REPO), "status", "--porcelain"],
+            ["git", "-C", str(FLEET_REPO), "status", "--porcelain"],
             capture_output=True, text=True, timeout=10
         )
         git_clean = r.stdout.strip() == ""
         git_sha = subprocess.run(
-            ["git", "-C", str(CORTEX_REPO), "rev-parse", "--short", "HEAD"],
+            ["git", "-C", str(FLEET_REPO), "rev-parse", "--short", "HEAD"],
             capture_output=True, text=True, timeout=5
         ).stdout.strip()
         checks.append(check("Git clean", git_clean, f"on {git_sha}" if git_clean else f"uncommitted: {r.stdout.strip()[:60]}"))
@@ -105,7 +105,7 @@ def main():
     # 5. Doctor passes on this machine
     try:
         r = subprocess.run(
-            [sys.executable, str(CORTEX_REPO / "ops" / "scripts" / "manage" / "fleet-doctor.py"), "--json"],
+            [sys.executable, str(FLEET_REPO / "ops" / "scripts" / "manage" / "fleet-doctor.py"), "--json"],
             capture_output=True, text=True, timeout=30
         )
         if r.returncode == 0 and r.stdout.strip():

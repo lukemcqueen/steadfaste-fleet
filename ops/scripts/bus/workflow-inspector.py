@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.expanduser("~/steadfaste-fleet/core"))
 # ── DB connection ──────────────────────────────────────────────────
 
 def _load_env():
-    """Load CORTEX_BUS_PG_* from ~/steadfaste-fleet/.env into os.environ."""
+    """Load FLEET_BUS_PG_* from ~/steadfaste-fleet/.env into os.environ."""
     env_path = Path(os.path.expanduser("~/steadfaste-fleet/.env"))
     if env_path.exists():
         for line in env_path.read_text().splitlines():
@@ -31,17 +31,17 @@ def _load_env():
             if line and not line.startswith("#") and "=" in line:
                 k, v = line.split("=", 1)
                 v = v.strip().strip("'\"")
-                if k.startswith("CORTEX_BUS_PG"):
+                if k.startswith("FLEET_BUS_PG"):
                     os.environ.setdefault(k, v)
 
 
 _load_env()
 
-PG_HOST = os.environ.get("CORTEX_BUS_PG_HOST", "127.0.0.1")
-PG_PORT = os.environ.get("CORTEX_BUS_PG_PORT", "15432")
-PG_DB = os.environ.get("CORTEX_BUS_PG_DB", "mycortex")
-PG_USER = os.environ.get("CORTEX_BUS_PG_USER", "mycortex")
-PG_PASS = os.environ.get("CORTEX_BUS_PG_PASS", "mycortex")
+PG_HOST = os.environ.get("FLEET_BUS_PG_HOST", "127.0.0.1")
+PG_PORT = os.environ.get("FLEET_BUS_PG_PORT", "15432")
+PG_DB = os.environ.get("FLEET_BUS_PG_DB", "mycortex")
+PG_USER = os.environ.get("FLEET_BUS_PG_USER", "mycortex")
+PG_PASS = os.environ.get("FLEET_BUS_PG_PASS", "mycortex")
 
 
 def conn():

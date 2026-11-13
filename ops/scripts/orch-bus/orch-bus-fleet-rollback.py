@@ -32,7 +32,7 @@ from datetime import datetime, timezone
 HOME = Path.home()
 HERMES_STATE = HOME / ".steadfaste-fleet" / "state"
 DISPATCH_LOG = HERMES_STATE / "fleet-update-state.json"
-CORTEX_REPO = HOME / "steadfaste-fleet"
+FLEET_REPO = HOME / "steadfaste-fleet"
 
 
 def log(msg: str):

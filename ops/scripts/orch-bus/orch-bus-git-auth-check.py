@@ -31,7 +31,7 @@ from lib.fleet_bus import bus_send, bus_read
 HOME = Path.home()
 HERMES_STATE = HOME / ".steadfaste-fleet" / "state"
 REGISTRY_PATH = HERMES_STATE / "agent-registry.json"
-CORTEX_REPO = HOME / "steadfaste-fleet"
+FLEET_REPO = HOME / "steadfaste-fleet"
 
 
 def is_canonical_remote(remote_url: str) -> bool:
@@ -70,7 +70,7 @@ def check_local_git_auth() -> dict:
     try:
         # Check remote URL
         r = subprocess.run(
-            ["git", "-C", str(CORTEX_REPO), "remote", "get-url", "origin"],
+            ["git", "-C", str(FLEET_REPO), "remote", "get-url", "origin"],
             capture_output=True, text=True, timeout=5
         )
         remote_url = r.stdout.strip()
@@ -83,7 +83,7 @@ def check_local_git_auth() -> dict:
     try:
         # Verify auth: git ls-remote returns 0 on success
         r = subprocess.run(
-            ["git", "-C", str(CORTEX_REPO), "ls-remote", "origin", "HEAD"],
+            ["git", "-C", str(FLEET_REPO), "ls-remote", "origin", "HEAD"],
             capture_output=True, text=True, timeout=15
         )
         auth_ok = r.returncode == 0 and r.stdout.strip() != ""

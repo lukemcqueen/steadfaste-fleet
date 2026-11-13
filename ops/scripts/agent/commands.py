@@ -24,9 +24,9 @@ from typing import Any, Callable
 
 # ── Paths ──
 HOME = Path.home()
-CORTEX_REPO = HOME / "steadfaste-fleet"
-CORTEX_UPDATE = CORTEX_REPO / "ops" / "scripts" / "fleet-update.sh"
-DOCTOR_PATH = CORTEX_REPO / "ops" / "scripts" / "manage" / "fleet-doctor.py"
+FLEET_REPO = HOME / "steadfaste-fleet"
+FLEET_UPDATE = FLEET_REPO / "ops" / "scripts" / "fleet-update.sh"
+DOCTOR_PATH = FLEET_REPO / "ops" / "scripts" / "manage" / "fleet-doctor.py"
 SCRIPTS_DIR = HOME / ".steadfaste-fleet" / "scripts"
 COLLECTOR_SCRIPT = SCRIPTS_DIR / "agent-learning-collector.py"
 STATE_DIR = HOME / ".steadfaste-fleet" / "state"
@@ -173,7 +173,7 @@ def _run_cortex_update() -> dict:
     log("Pulling latest code ...")
     try:
         pull = subprocess.run(
-            ["git", "-C", str(CORTEX_REPO), "pull", "origin", "main"],
+            ["git", "-C", str(FLEET_REPO), "pull", "origin", "main"],
             capture_output=True, text=True, timeout=60
         )
         if pull.returncode != 0:
@@ -190,7 +190,7 @@ def _run_cortex_update() -> dict:
     log("Running fleet-update.sh ...")
     try:
         r = subprocess.run(
-            ["bash", str(CORTEX_UPDATE)],
+            ["bash", str(FLEET_UPDATE)],
             # 300s — matches the UPDATE_REQUEST handler bound (agent-message-handler.py
             # run_cortex_update). 120s was too tight for a full pull+deploy+doctor on
             # slower hosts: titus fleet-update TIMED OUT after 120s (2026-08-11) with
@@ -233,14 +233,14 @@ def handle_update(msg_body: dict, msg_raw: dict) -> dict:
 
     log(f"Processing UPDATE_REQUEST: SHA={target_sha}")
 
-    before = _git_sha(CORTEX_REPO)
+    before = _git_sha(FLEET_REPO)
 
     update_result = _run_cortex_update()
     if not update_result["success"]:
         log("First attempt failed, retrying once...")
         update_result = _run_cortex_update()
 
-    after = _git_sha(CORTEX_REPO)
+    after = _git_sha(FLEET_REPO)
     doctor = _run_doctor() if run_doctor_flag else {}
     doctor_fail = doctor.get("summary", {}).get("fail", 0) if doctor else 0
 
@@ -272,11 +272,11 @@ def handle_rollback(msg_body: dict, msg_raw: dict) -> dict:
     reason = request.get("reason", "No reason given")
 
     log(f"Processing ROLLBACK_REQUEST: → {target_sha[:12]} ({reason})")
-    before = _git_sha(CORTEX_REPO)
+    before = _git_sha(FLEET_REPO)
 
-    checkout = _run(["git", "-C", str(CORTEX_REPO), "checkout", target_sha], timeout=30)
+    checkout = _run(["git", "-C", str(FLEET_REPO), "checkout", target_sha], timeout=30)
     checkout_ok = checkout["success"]
-    after = _git_sha(CORTEX_REPO)
+    after = _git_sha(FLEET_REPO)
     doctor = _run_doctor()
 
     return {
@@ -305,7 +305,7 @@ def handle_git_auth(msg_body: dict, msg_raw: dict) -> dict:
         return {"authenticated": False, "remote_url": "", "error": "git not found", "checks": checks}
 
     # remote URL
-    r = _run(["git", "-C", str(CORTEX_REPO), "remote", "get-url", "origin"], timeout=5)
+    r = _run(["git", "-C", str(FLEET_REPO), "remote", "get-url", "origin"], timeout=5)
     remote_url = r["stdout"].strip() if r["success"] else ""
     # Owner-agnostic canonical match (2026-11-03 rename): accept the repo under its
     # legacy name (steadfaste-fleet) or its renamed name (steadfaste-fleet), https/ssh.
@@ -317,7 +317,7 @@ def handle_git_auth(msg_body: dict, msg_raw: dict) -> dict:
     checks.append({"name": "remote URL", "pass": _canon or (bool(expected_url) and expected_url in _u), "detail": remote_url})
 
     # ls-remote
-    r = _run(["git", "-C", str(CORTEX_REPO), "ls-remote", "origin", "HEAD"], timeout=15)
+    r = _run(["git", "-C", str(FLEET_REPO), "ls-remote", "origin", "HEAD"], timeout=15)
     auth_ok = r["success"] and r["stdout"].strip() != ""
     checks.append({"name": "ls-remote", "pass": auth_ok, "detail": r["stdout"].strip()[:40] if auth_ok else r["stderr"][:200]})
 
@@ -379,7 +379,7 @@ def handle_fix(msg_body: dict, msg_raw: dict) -> dict:
     fixes = {
         "reinstall-crons": {
             "description": "Reinstall cron definitions from install-crons.sh",
-            "run": lambda: _run(["bash", str(CORTEX_REPO / "ops" / "scripts" / "install-crons.sh")], timeout=30),
+            "run": lambda: _run(["bash", str(FLEET_REPO / "ops" / "scripts" / "install-crons.sh")], timeout=30),
         },
         "reset-collector-state": {
             "description": "Delete collector state file to force fresh collection",
@@ -446,7 +446,7 @@ def handle_diagnostic(msg_body: dict, msg_raw: dict) -> dict:
 
     log(f"DIAGNOSTIC_REQUEST from {msg_body.get('from', '?')}: check={check or 'all'}")
 
-    script = CORTEX_REPO / "ops" / "scripts" / "agent" / "agent-diagnostic.py"
+    script = FLEET_REPO / "ops" / "scripts" / "agent" / "agent-diagnostic.py"
     cmd = [sys.executable, str(script)]
     if check:
         cmd += ["--check", check]
@@ -524,8 +524,8 @@ def handle_status(msg_body: dict, msg_raw: dict) -> dict:
 
     # Git status
     result["git"] = {
-        "sha": _git_sha(CORTEX_REPO),
-        "clean": _run(["git", "-C", str(CORTEX_REPO), "status", "--porcelain"], timeout=5)["stdout"].strip() == "",
+        "sha": _git_sha(FLEET_REPO),
+        "clean": _run(["git", "-C", str(FLEET_REPO), "status", "--porcelain"], timeout=5)["stdout"].strip() == "",
     }
 
     # Doctor summary

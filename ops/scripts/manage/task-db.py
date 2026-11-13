@@ -1664,15 +1664,15 @@ def cmd_prune(older_than: str):
 
 def _deploy_home() -> Path:
     """The DEPLOYED tree's root — what fleet-update.sh syncs into."""
-    return Path(os.environ.get("CORTEX_DEPLOY_HOME")
+    return Path(os.environ.get("FLEET_DEPLOY_HOME")
                 or (Path.home() / ".steadfaste-fleet"))
 
 
 def _repo_checkout() -> Path:
-    """The source checkout. An UNSET CORTEX_REPO must still yield an ABSOLUTE
-    path: `Path(os.environ.get("CORTEX_REPO", ""))` is the relative path
+    """The source checkout. An UNSET FLEET_REPO must still yield an ABSOLUTE
+    path: `Path(os.environ.get("FLEET_REPO", ""))` is the relative path
     'ops/...' and resolves against the process's cwd (backlog 72b2c69b)."""
-    return Path(os.environ.get("CORTEX_REPO")
+    return Path(os.environ.get("FLEET_REPO")
                 or (Path.home() / "steadfaste-fleet"))
 
 
@@ -1680,7 +1680,7 @@ def _migrate_candidates() -> list[Path]:
     """Where the DDL runner may be found, IN PREFERENCE ORDER.
 
     The DEPLOYED tree comes first, and that order is load-bearing rather than
-    cosmetic: `fleet-update.sh:3298` applies `${CORTEX_DEPLOY_HOME}/services/
+    cosmetic: `fleet-update.sh:3298` applies `${FLEET_DEPLOY_HOME}/services/
     tasks/migrate.py`, and `fleet-update.sh:446` states the contract — "the
     register map IS the deploy. migrate.py discovers migrations by FILE — the
     repo applying cleanly proves nothing about any other host." A repo working

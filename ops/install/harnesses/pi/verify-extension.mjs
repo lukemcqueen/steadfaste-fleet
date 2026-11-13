@@ -16,7 +16,7 @@
  *     `turn_end` (the checkpoint trigger) against a throwaway CLI and asserts on
  *     what the extension actually asked the store to do.
  *
- * Hermetic: CORTEX_CONTEXT_CLI points at a temp stub, so the real store is never
+ * Hermetic: FLEET_CONTEXT_CLI points at a temp stub, so the real store is never
  * touched and no checkpoint is written.
  *
  *   node ops/install/harnesses/pi/verify-extension.mjs
@@ -84,13 +84,13 @@ const callsLog = path.join(tmp, "calls.jsonl");
 const stubCli = path.join(tmp, "stub-cli.py");
 fs.writeFileSync(stubCli, `import json, os, sys
 tool, args = sys.argv[1], json.loads(sys.argv[2])
-with open(os.environ["CORTEX_STUB_LOG"], "a") as fh:
+with open(os.environ["FLEET_STUB_LOG"], "a") as fh:
     fh.write(json.dumps({"tool": tool, "args": args}) + "\\n")
 print("MARKER-CHILD-NOISE: stub wrote to stderr", file=sys.stderr)
-if os.environ.get("CORTEX_STUB_FAIL") == "1":
+if os.environ.get("FLEET_STUB_FAIL") == "1":
     sys.exit(3)
 if tool == "session_restore":
-    if os.environ.get("CORTEX_STUB_EMPTY_RESTORE") == "1":
+    if os.environ.get("FLEET_STUB_EMPTY_RESTORE") == "1":
         print(json.dumps({"restored": None}))
     else:
         print(json.dumps({"restored": {"done": ["MARKER-DONE"], "pending": ["MARKER-PENDING"],
@@ -98,21 +98,21 @@ if tool == "session_restore":
 else:
     print(json.dumps({"ok": True, "tool": tool}))
 `);
-process.env.CORTEX_CONTEXT_CLI = stubCli;
-process.env.CORTEX_CONTEXT_PYTHON = process.env.CORTEX_CONTEXT_PYTHON || "python3";
-process.env.CORTEX_STUB_LOG = callsLog;
+process.env.FLEET_CONTEXT_CLI = stubCli;
+process.env.FLEET_CONTEXT_PYTHON = process.env.FLEET_CONTEXT_PYTHON || "python3";
+process.env.FLEET_STUB_LOG = callsLog;
 
 // ── a stub GOVERNANCE CLI, for the session id the evidence must be keyed to ──
-// The extension reads CORTEX_GOVERNANCE_CLI at MODULE LOAD, so it is set before
+// The extension reads FLEET_GOVERNANCE_CLI at MODULE LOAD, so it is set before
 // the import below. The stub reads its mode from the environment at RUN time, so
 // the failure modes (missing key, malformed output, non-zero exit) are exercised
 // in one process instead of three.
 const govStub = path.join(tmp, "stub-gov.py");
 const govLog = path.join(tmp, "gov-calls.jsonl");
 fs.writeFileSync(govStub, `import json, os, sys
-mode = os.environ.get("CORTEX_GOV_STUB_MODE", "ok")
+mode = os.environ.get("FLEET_GOV_STUB_MODE", "ok")
 tool = sys.argv[1] if len(sys.argv) > 1 else ""
-with open(os.environ["CORTEX_GOV_STUB_LOG"], "a") as fh:
+with open(os.environ["FLEET_GOV_STUB_LOG"], "a") as fh:
     fh.write(json.dumps({"tool": tool}) + "\\n")
 if mode == "fail":
     sys.stderr.write("governance unreachable\\n"); sys.exit(3)
@@ -125,8 +125,8 @@ if tool == "session_identity":
 else:
     print(json.dumps({"ok": True, "tool": tool}))
 `);
-process.env.CORTEX_GOVERNANCE_CLI = govStub;
-process.env.CORTEX_GOV_STUB_LOG = govLog;
+process.env.FLEET_GOVERNANCE_CLI = govStub;
+process.env.FLEET_GOV_STUB_LOG = govLog;
 
 // ── load the REAL extension through pi's loader ─────────────────────────────
 const createJiti = require(jitiPath).createJiti || require(jitiPath);
@@ -193,14 +193,14 @@ if (typeof hooks["before_agent_start"] === "function") {
 
   // A FRESH session (no snapshot) must STILL get the checklist — standing
   // context is exactly the case an on-demand skill load would miss.
-  process.env.CORTEX_STUB_EMPTY_RESTORE = "1";
+  process.env.FLEET_STUB_EMPTY_RESTORE = "1";
   let fresh;
   try {
     fresh = await hooks["before_agent_start"]({ systemPrompt: "BASE" });
   } catch (err) {
     note(false, `before_agent_start (fresh) threw: ${err}`);
   }
-  delete process.env.CORTEX_STUB_EMPTY_RESTORE;
+  delete process.env.FLEET_STUB_EMPTY_RESTORE;
   const freshPrompt = fresh?.systemPrompt ?? "";
   note(freshPrompt.includes("pre-ship checklist"),
        "a fresh session (no snapshot) still receives the pre-ship checklist");
@@ -335,7 +335,7 @@ if (typeof hooks["tool_result"] === "function") {
   //     A silently-invented key is the original bug; a thrown error would break the
   //     harness's tool call, which this extension must never do.
   for (const mode of ["fail", "badjson", "nokey"]) {
-    process.env.CORTEX_GOV_STUB_MODE = mode;
+    process.env.FLEET_GOV_STUB_MODE = mode;
     before = evts().length;
     let threw = "";
     try {
@@ -346,7 +346,7 @@ if (typeof hooks["tool_result"] === "function") {
     note(!threw, `governance CLI mode '${mode}': the handler does not throw (${threw || "no throw"})`);
     note(evts().length === before,
          `governance CLI mode '${mode}': NO evidence recorded under an invented key`);
-    process.env.CORTEX_GOV_STUB_MODE = "ok";
+    process.env.FLEET_GOV_STUB_MODE = "ok";
   }
 
   // The extension must have ASKED the shared implementation for the id rather

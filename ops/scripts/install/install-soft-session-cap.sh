@@ -36,7 +36,7 @@ set -euo pipefail
 
 HOME_DIR="${HOME:?}"
 HERMES_HOME="${HERMES_HOME:-${HOME_DIR}/.hermes}"
-CORTEX_DEPLOY_HOME="${CORTEX_DEPLOY_HOME:-${HOME_DIR}/.steadfaste-fleet}"
+FLEET_DEPLOY_HOME="${FLEET_DEPLOY_HOME:-${HOME_DIR}/.steadfaste-fleet}"
 
 # ── Resolve the intended cap ─────────────────────────────────
 # Priority: runtime env > ~/steadfaste-fleet/.env — the ONE canonical fleet env.

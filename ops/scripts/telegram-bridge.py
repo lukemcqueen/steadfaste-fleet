@@ -5,7 +5,7 @@ Design (Luke 2026-08-24): ONE bridge any agent can run — Hermes agents AND
 coding agents (Claude Code, Codex, OpenCode, Blackbox, Grok, ...). Each
 agent configures its OWN bot token + AGENT_NAME; the bridge maps:
 
-    Telegram update  →  POST {CORTEX_BUS_URL}/api/pgmq/send
+    Telegram update  →  POST {FLEET_BUS_URL}/api/pgmq/send
                         queue = inbox_<AGENT>   (same queue the fleet-bus
                         MCP reads — bus-identical inbox, any agent)
     bus reply        ←  POST /api/pgmq/read on telegram_out_<AGENT>
@@ -29,7 +29,7 @@ dedups crash redelivery; outbound archives only after sendMessage succeeds
 Usage (run under the agent's own env — NOT hermes's):
     AGENT_NAME=titusclaude \
     TELEGRAM_BOT_TOKEN=<own bot token> \
-    CORTEX_BUS_URL=... CORTEX_BUS_TOKEN=... \
+    FLEET_BUS_URL=... FLEET_BUS_TOKEN=... \
     python3 telegram-bridge.py [--state-dir ~/.<agent>/state]
 
 SECURITY (party finding, 2026-08-24): the Telegram bot token is an
@@ -377,10 +377,10 @@ def main() -> int:
 
     agent = os.environ.get("AGENT_NAME", "").strip()
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
-    bus_url = os.environ.get("CORTEX_BUS_URL", "").strip()
-    bus_token = os.environ.get("CORTEX_BUS_TOKEN", "").strip()
-    bus_auth = (os.environ.get("CORTEX_BUS_AUTH", "")
-                or os.environ.get("CORTEX_BASIC_AUTH", "")).strip()
+    bus_url = os.environ.get("FLEET_BUS_URL", "").strip()
+    bus_token = os.environ.get("FLEET_BUS_TOKEN", "").strip()
+    bus_auth = (os.environ.get("FLEET_BUS_AUTH", "")
+                or os.environ.get("FLEET_BASIC_AUTH", "")).strip()
 
     # Config-file fallback (same precedence as fleet-bus-mcp): env first,
     # then ~/steadfaste-fleet/.env for bus creds (the bridge runs
@@ -394,16 +394,16 @@ def main() -> int:
             k, v = (x.strip().strip("'\"").strip()
                     for x in line.split("=", 1))
             v = re.sub(r"\s+#.*$", "", v).strip()
-            if k == "CORTEX_BUS_URL" and not bus_url:
+            if k == "FLEET_BUS_URL" and not bus_url:
                 bus_url = v
-            elif k in ("CORTEX_BUS_TOKEN",) and not bus_token:
+            elif k in ("FLEET_BUS_TOKEN",) and not bus_token:
                 bus_token = v
-            elif k in ("CORTEX_BUS_AUTH", "CORTEX_BASIC_AUTH") and not bus_auth:
+            elif k in ("FLEET_BUS_AUTH", "FLEET_BASIC_AUTH") and not bus_auth:
                 bus_auth = v
 
     if not (agent and bot_token and bus_url and (bus_token or bus_auth)):
-        print("error: AGENT_NAME, TELEGRAM_BOT_TOKEN, CORTEX_BUS_URL, and "
-              "CORTEX_BUS_TOKEN or CORTEX_BUS_AUTH all required "
+        print("error: AGENT_NAME, TELEGRAM_BOT_TOKEN, FLEET_BUS_URL, and "
+              "FLEET_BUS_TOKEN or FLEET_BUS_AUTH all required "
               f"(bus_token={bool(bus_token)}, bus_auth={bool(bus_auth)})",
               file=sys.stderr)
         return 2

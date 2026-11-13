@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 fleet — Steadfaste Fleet CLI for humans. Talks to the Agent Bus over HTTP.
-Host-independent: reads CORTEX_BUS_URL / CORTEX_BUS_FALLBACK_URL from
+Host-independent: reads FLEET_BUS_URL / FLEET_BUS_FALLBACK_URL from
 .env (same as every fleet script), so it works identically on
 moses and esther hosts. No docker exec, no local-Postgres assumption.
 
@@ -27,10 +27,10 @@ moses and esther hosts. No docker exec, no local-Postgres assumption.
 Config: ~/steadfaste-fleet/.env (optional FLEET_AGENT; every field falls back)
   FLEET_AGENT=esther                        # your agent name (default)
 Bus config comes from ~/steadfaste-fleet/.env:
-  CORTEX_BUS_URL=https://…:13004           # active bus (Moses)
-  CORTEX_BUS_FALLBACK_URL=https://…:14004  # fallback bus (Esther)
-  CORTEX_BASIC_AUTH=user:pass              # nginx Basic auth
-  CORTEX_BUS_TOKEN=hbus_…                  # direct Bearer token
+  FLEET_BUS_URL=https://…:13004           # active bus (Moses)
+  FLEET_BUS_FALLBACK_URL=https://…:14004  # fallback bus (Esther)
+  FLEET_BASIC_AUTH=user:pass              # nginx Basic auth
+  FLEET_BUS_TOKEN=hbus_…                  # direct Bearer token
 """
 
 import argparse

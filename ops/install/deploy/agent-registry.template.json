@@ -23,7 +23,7 @@
       "accessible": true,
       "platform": "linux",
       "health_method": "http",
-      "health_url": "https://{{CORTEX_DOMAIN}}:{{CORTEX_HEALTH_PORT}}/health",
+      "health_url": "https://{{FLEET_DOMAIN}}:{{FLEET_HEALTH_PORT}}/health",
       "description": "Moses — primary orchestrator server. Fleet command, bus server, Postgres, skill lifecycle.",
       "inbox_user": "moses",
       "inbox_watch_schedule": "every 10m",

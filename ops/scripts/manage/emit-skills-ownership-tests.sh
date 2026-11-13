@@ -14,8 +14,8 @@ REPO="$(cd "${HERE}/../../.." && pwd)"   # manage -> scripts -> ops -> repo root
 # Interpreter: the fleet venv is the one that HAS pytest. Never fall back silently to a
 # python3 that cannot run the suite — that produced 'No module named pytest' reported as a
 # successful transcript once (2026-10-21), the very swallowed-error class under review.
-if [ -n "${CORTEX_PY:-}" ]; then
-  PY="$CORTEX_PY"
+if [ -n "${FLEET_PY:-}" ]; then
+  PY="$FLEET_PY"
 elif [ -x "${HOME}/.steadfaste-fleet/venv/bin/python3" ]; then
   PY="${HOME}/.steadfaste-fleet/venv/bin/python3"
 else
@@ -26,7 +26,7 @@ OUT="${1:-${REPO}/docs/evidence/skills-ownership-tests-$(date -u +%Y-%m-%d).txt}
 cd "$REPO" || exit 3
 
 if ! "$PY" -c "import pytest" >/dev/null 2>&1; then
-  echo "COULD NOT VERIFY: ${PY} cannot import pytest — set CORTEX_PY to one that can" >&2
+  echo "COULD NOT VERIFY: ${PY} cannot import pytest — set FLEET_PY to one that can" >&2
   exit 3
 fi
 

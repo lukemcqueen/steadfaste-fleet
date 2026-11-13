@@ -38,10 +38,10 @@
  *
  * ENV: CORTEX_SESSION_HARNESS / _REPO / _BRANCH / _KEY (else derived from git;
  *      the gateway pins _KEY per chat so separate chats never share a
- *      checkpoint), CORTEX_CONTEXT_CLI to override the CLI path,
- *      CORTEX_CONTEXT_LOG + CORTEX_CONTEXT_LOG_MAX_BYTES (routine trace sink,
+ *      checkpoint), FLEET_CONTEXT_CLI to override the CLI path,
+ *      FLEET_CONTEXT_LOG + FLEET_CONTEXT_LOG_MAX_BYTES (routine trace sink,
  *      bounded, defaults to ~/.steadfaste-fleet/logs/pi-context.log) and
- *      CORTEX_CONTEXT_DEBUG=1 to also echo the routine trace to stderr.
+ *      FLEET_CONTEXT_DEBUG=1 to also echo the routine trace to stderr.
  *
  * EVERY call is fail-open — but a failure is REPORTED on stderr (a silent
  * failure reads as "the agent had no memory", which is a different, wrong
@@ -56,7 +56,7 @@ import { promisify } from "node:util";
 const run = promisify(execFile);
 
 const CLI =
-  process.env.CORTEX_CONTEXT_CLI ??
+  process.env.FLEET_CONTEXT_CLI ??
   `${process.env.HOME}/.steadfaste-fleet/scripts/fleet-context.py`;
 
 /**
@@ -66,7 +66,7 @@ const CLI =
  * the write gate follows: one implementation, asked, never re-derived.
  */
 const GOV_CLI =
-  process.env.CORTEX_GOVERNANCE_CLI ??
+  process.env.FLEET_GOVERNANCE_CLI ??
   `${process.env.HOME}/.steadfaste-fleet/scripts/loop-gov.py`;
 
 /**
@@ -74,9 +74,9 @@ const GOV_CLI =
  * Homebrew python is at /opt/homebrew/bin on Apple Silicon, /usr/local/bin on
  * Intel), and a GUI-launched Pi sees a narrower PATH than your shell. Override
  * explicitly rather than assuming:
- *   export CORTEX_CONTEXT_PYTHON=/opt/homebrew/bin/python3
+ *   export FLEET_CONTEXT_PYTHON=/opt/homebrew/bin/python3
  */
-const PYTHON = process.env.CORTEX_CONTEXT_PYTHON ?? "python3";
+const PYTHON = process.env.FLEET_CONTEXT_PYTHON ?? "python3";
 
 async function cortex(tool: string, args: Record<string, unknown> = {}): Promise<string> {
   try {
@@ -92,7 +92,7 @@ async function cortex(tool: string, args: Record<string, unknown> = {}): Promise
     void stderr;
     return (stdout ?? "").trim();
   } catch (err) {
-    fail(`CORTEX_FAIL ${tool}: ${String(err)}\n`);
+    fail(`FLEET_FAIL ${tool}: ${String(err)}\n`);
     return "";
   }
 }
@@ -139,13 +139,13 @@ type Restored = {
 //
 // Failures stay LOUD on stderr: a silent memory failure reads as "the agent had no
 // memory", which is a different and wrong conclusion. They are recorded in the log too,
-// because stderr is ephemeral. CORTEX_CONTEXT_DEBUG=1 additionally echoes the routine
+// because stderr is ephemeral. FLEET_CONTEXT_DEBUG=1 additionally echoes the routine
 // trace to stderr for live debugging.
 const LOG_PATH =
-  process.env.CORTEX_CONTEXT_LOG ??
+  process.env.FLEET_CONTEXT_LOG ??
   `${process.env.HOME ?? ""}/.steadfaste-fleet/logs/pi-context.log`;
-const LOG_MAX_BYTES = Number(process.env.CORTEX_CONTEXT_LOG_MAX_BYTES ?? 1_048_576);
-const DEBUG = process.env.CORTEX_CONTEXT_DEBUG === "1";
+const LOG_MAX_BYTES = Number(process.env.FLEET_CONTEXT_LOG_MAX_BYTES ?? 1_048_576);
+const DEBUG = process.env.FLEET_CONTEXT_DEBUG === "1";
 
 /**
  * The pre-ship checklist, injected into EVERY Pi session's standing context at
@@ -228,14 +228,14 @@ async function gateSessionKey(): Promise<string> {
       ? parsed.effective_session_id.trim()
       : "";
     if (!key) {
-      fail("CORTEX_GOV_SESSION no effective_session_id in the CLI's answer\n");
+      fail("FLEET_GOV_SESSION no effective_session_id in the CLI's answer\n");
     }
     return key;
   } catch (err) {
     // Missing CLI, a non-zero exit, a timeout, or malformed JSON all land here.
     // They are the SAME outcome for this writer — no key, so no evidence — and
     // they are reported with the reason rather than swallowed.
-    fail(`CORTEX_GOV_SESSION unavailable (${String(err).split("\n")[0]})\n`);
+    fail(`FLEET_GOV_SESSION unavailable (${String(err).split("\n")[0]})\n`);
     return "";
   }
 }
@@ -270,7 +270,7 @@ export default function (pi: any) {
     const snap = parse<Restored>(await cortex("session_restore", {}), { restored: null }).restored;
     let resume = "";
     if (!snap) {
-      note("CORTEX_RESUME none\n");
+      note("FLEET_RESUME none\n");
     } else {
       const line = (label: string, items?: string[]) =>
         items && items.length ? `${label}: ${items.join("; ")}` : "";
@@ -281,7 +281,7 @@ export default function (pi: any) {
         line("Decided", snap.decisions),
         snap.notes ? `Notes: ${snap.notes}` : "",
       ].filter(Boolean);
-      note(`CORTEX_RESUME ${snap.session_key ?? ""} facts=${parts.length}\n`);
+      note(`FLEET_RESUME ${snap.session_key ?? ""} facts=${parts.length}\n`);
       if (parts.length) {
         // Only inject the resume block when there is something recorded — but the
         // CHECKLIST block below is injected ALWAYS (see PRESHIP_CHECKLIST).
@@ -306,7 +306,7 @@ export default function (pi: any) {
     if (!done.length && !notes) {
       // Never write a silently-empty checkpoint, and never hide why.
       note(
-        `CORTEX_CHECKPOINT_EMPTY turn=${event?.turnIndex} ` +
+        `FLEET_CHECKPOINT_EMPTY turn=${event?.turnIndex} ` +
         `keys=${Object.keys(event ?? {}).join(",")}\n`);
       return;
     }
@@ -363,8 +363,8 @@ export default function (pi: any) {
     const sessionKey = await gateSessionKey();
     if (!sessionKey) {
       fail(
-        `CORTEX_TOOL_EVENT ${toolName} NOT RECORDED — could not resolve the ` +
-          `governance session id (see the CORTEX_GOV_SESSION line above); the ` +
+        `FLEET_TOOL_EVENT ${toolName} NOT RECORDED — could not resolve the ` +
+          `governance session id (see the FLEET_GOV_SESSION line above); the ` +
           `reflexion gate will report this skill as NOT-LOADED.\n`
       );
       return;
@@ -374,8 +374,8 @@ export default function (pi: any) {
       content: input,
       session_key: sessionKey,
     });
-    if (raw) note(`CORTEX_TOOL_EVENT ${toolName} recorded\n`);
-    else fail(`CORTEX_TOOL_EVENT ${toolName} FAILED\n`);
+    if (raw) note(`FLEET_TOOL_EVENT ${toolName} recorded\n`);
+    else fail(`FLEET_TOOL_EVENT ${toolName} FAILED\n`);
   });
 
   // ── NO registerTool CALLS HERE, DELIBERATELY ─────────────────────

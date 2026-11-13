@@ -95,7 +95,7 @@ def load_governance():
     # Mark this process as the CLI client. The server picks its reviewer wait budget by
     # CALLER: 240s under the 300s MCP client, 600s here, where the caller waits on the
     # process. Latency measurements for this host: docs/evidence/review-bounded/.
-    os.environ.setdefault("CORTEX_LOOP_GOV_CLIENT", "cli")
+    os.environ.setdefault("FLEET_LOOP_GOV_CLIENT", "cli")
     path = _server_path()
     if path is None:
         print("loop-gov: the governance server module was not found "

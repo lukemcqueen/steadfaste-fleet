@@ -13,20 +13,20 @@
 #  no_agent-safe: silent exit (0) when nothing new to report.
 #
 #  Requires (from ~/steadfaste-fleet/.env):
-#    CORTEX_BUS_URL      — Moses Agent Bus URL
-#    CORTEX_BUS_TOKEN    — Bearer token for bus auth
+#    FLEET_BUS_URL      — Moses Agent Bus URL
+#    FLEET_BUS_TOKEN    — Bearer token for bus auth
 #
 #  Deployed to agents via fleet-update.sh.
 # ─────────────────────────────────────────────────────────────
 set -euo pipefail
 
-REPO_DIR="${CORTEX_REPO:-$HOME/steadfaste-fleet}"
+REPO_DIR="${FLEET_REPO:-$HOME/steadfaste-fleet}"
 HERMES_SKILLS_DIR="$HOME/.hermes/skills"
-CORTEX_SKILLS_DIR="${CORTEX_DEPLOY_HOME:-$HOME/.steadfaste-fleet}/skills"
+FLEET_SKILLS_DIR="${FLEET_DEPLOY_HOME:-$HOME/.steadfaste-fleet}/skills"
 REPO_SKILLS_DIR="$REPO_DIR/.steadfaste-fleet/skills"
 # Also check bundled Hermes Agent skills (not truly "custom")
 HERMES_BUNDLED_SKILLS_DIR="$HOME/.hermes/hermes-agent/skills"
-STATE_DIR="${CORTEX_DEPLOY_HOME:-$HOME/.steadfaste-fleet}/state"
+STATE_DIR="${FLEET_DEPLOY_HOME:-$HOME/.steadfaste-fleet}/state"
 MANIFEST_FILE="$STATE_DIR/skills-manifest.json"
 
 # ── Source config ───────────────────────────────────────────
@@ -55,7 +55,7 @@ export AGENT_NAME
 mkdir -p "$STATE_DIR"
 
 # Export vars for Python subprocess
-export STATE_DIR HERMES_SKILLS_DIR CORTEX_SKILLS_DIR REPO_SKILLS_DIR HERMES_BUNDLED_SKILLS_DIR
+export STATE_DIR HERMES_SKILLS_DIR FLEET_SKILLS_DIR REPO_SKILLS_DIR HERMES_BUNDLED_SKILLS_DIR
 
 python3 << 'PYEOF'
 import json, os, time
@@ -63,7 +63,7 @@ from pathlib import Path
 
 state_dir = Path(os.environ["STATE_DIR"])
 hermes_skills = Path(os.environ["HERMES_SKILLS_DIR"])
-cortex_skills = Path(os.environ["CORTEX_SKILLS_DIR"])
+cortex_skills = Path(os.environ["FLEET_SKILLS_DIR"])
 repo_skills = Path(os.environ["REPO_SKILLS_DIR"])
 bundled_skills = Path(os.environ.get("HERMES_BUNDLED_SKILLS_DIR", ""))
 manifest_file = state_dir / "skills-manifest.json"
@@ -217,10 +217,10 @@ if [[ "$TOTAL" -eq 0 ]]; then
 fi
 
 # ── Send to Moses inbox via PGMQ Agent Bus ────────────────────
-BUS_URL="${CORTEX_BUS_URL:-${CORTEX_BUS_FALLBACK_URL:-${CORTEX_INBOX_URL:-}}}"
+BUS_URL="${FLEET_BUS_URL:-${FLEET_BUS_FALLBACK_URL:-${FLEET_INBOX_URL:-}}}"
 if [[ -n "$BUS_URL" ]]; then
   # Export vars for Python subprocess
-  export STATE_DIR CORTEX_BUS_TOKEN CORTEX_BASIC_AUTH CORTEX_BUS_AUTH
+  export STATE_DIR FLEET_BUS_TOKEN FLEET_BASIC_AUTH FLEET_BUS_AUTH
 
   python3 << 'PYEOF'
 import json, os, sys, urllib.request, urllib.error, base64, time
@@ -229,15 +229,15 @@ from pathlib import Path
 state_dir = Path(os.environ["STATE_DIR"])
 manifest_file = state_dir / "skills-manifest.json"
 contents_dir = state_dir / "skill-contents"
-bus_url = (os.environ.get("CORTEX_BUS_URL", "") or os.environ.get("CORTEX_BUS_FALLBACK_URL", "") or os.environ.get("CORTEX_INBOX_URL", "")).rstrip("/")
+bus_url = (os.environ.get("FLEET_BUS_URL", "") or os.environ.get("FLEET_BUS_FALLBACK_URL", "") or os.environ.get("FLEET_INBOX_URL", "")).rstrip("/")
 
 # Auth: localhost → Bearer, remote → Basic
 host = bus_url.split("://")[-1].split("/")[0].split(":")[0]
 if host in ("127.0.0.1", "localhost", "::1"):
-    token = os.environ.get("CORTEX_BUS_TOKEN", "")
+    token = os.environ.get("FLEET_BUS_TOKEN", "")
     auth_header = f"Bearer {token}" if token else ""
 else:
-    auth_creds = os.environ.get("CORTEX_BASIC_AUTH", "") or os.environ.get("CORTEX_BUS_AUTH", "")
+    auth_creds = os.environ.get("FLEET_BASIC_AUTH", "") or os.environ.get("FLEET_BUS_AUTH", "")
     if auth_creds and ":" in auth_creds:
         encoded = base64.b64encode(auth_creds.encode()).decode()
         auth_header = f"Basic {encoded}"

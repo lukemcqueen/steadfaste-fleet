@@ -6,9 +6,9 @@ Usage:
 
 Environment variables:
   AGENT_NAME             — Agent name (required; never hostname)
-  CORTEX_AGENT_NAME      — Fallback for AGENT_NAME
-  CORTEX_DOMAIN          — Domain for the A2A endpoint (default: "localhost")
-  CORTEX_A2A_PORT        — Port for the A2A endpoint (default: "14004")
+  FLEET_AGENT_NAME      — Fallback for AGENT_NAME
+  FLEET_DOMAIN          — Domain for the A2A endpoint (default: "localhost")
+  FLEET_A2A_PORT        — Port for the A2A endpoint (default: "14004")
   AGENT_DESCRIPTION      — Agent description (optional, auto-generated if blank)
 """
 import argparse
@@ -29,17 +29,17 @@ def get_env(name: str, fallback: str, *alternatives: str) -> str:
 
 def generate_card() -> dict:
     """Build the A2A agent card from environment and known defaults."""
-    # Agent identity — AGENT_NAME → CORTEX_AGENT_NAME → FAIL LOUDLY. Never a
+    # Agent identity — AGENT_NAME → FLEET_AGENT_NAME → FAIL LOUDLY. Never a
     # generic placeholder: an unnamed agent card is a misconfiguration
     # (Luke directive 2026-08-14).
-    agent_name = get_env("AGENT_NAME", "", "CORTEX_AGENT_NAME")
+    agent_name = get_env("AGENT_NAME", "", "FLEET_AGENT_NAME")
     if not agent_name or agent_name == "unknown":
-        print("❌ AGENT_NAME not configured — set AGENT_NAME= (or CORTEX_AGENT_NAME=) "
+        print("❌ AGENT_NAME not configured — set AGENT_NAME= (or FLEET_AGENT_NAME=) "
               "in the environment / ~/.steadfaste-fleet/agent.env / ~/steadfaste-fleet/.env",
               file=sys.stderr)
         sys.exit(1)
-    domain = os.environ.get("CORTEX_DOMAIN", "localhost")
-    port = os.environ.get("CORTEX_A2A_PORT", "14004")
+    domain = os.environ.get("FLEET_DOMAIN", "localhost")
+    port = os.environ.get("FLEET_A2A_PORT", "14004")
 
     # Build a description based on the agent name
     description = os.environ.get(

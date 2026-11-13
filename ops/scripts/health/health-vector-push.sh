@@ -29,10 +29,10 @@ load_var() {
   echo ""
 }
 
-CORTEX_BUS_URL="$(load_var CORTEX_BUS_URL)"
-CORTEX_BUS_FALLBACK_URL="$(load_var CORTEX_BUS_FALLBACK_URL)"
-CORTEX_BUS_TOKEN="$(load_var CORTEX_BUS_TOKEN)"
-CORTEX_BASIC_AUTH="$(load_var CORTEX_BASIC_AUTH)"
+FLEET_BUS_URL="$(load_var FLEET_BUS_URL)"
+FLEET_BUS_FALLBACK_URL="$(load_var FLEET_BUS_FALLBACK_URL)"
+FLEET_BUS_TOKEN="$(load_var FLEET_BUS_TOKEN)"
+FLEET_BASIC_AUTH="$(load_var FLEET_BASIC_AUTH)"
 AGENT_NAME="${AGENT_NAME:-$(load_var AGENT_NAME)}"
 # NEVER fall back to a hardcoded/other agent or hostname — a missing
 # identity must fail loudly, not impersonate another agent (Luke
@@ -43,9 +43,9 @@ if [[ -z "$AGENT_NAME" || "$AGENT_NAME" == "unknown" ]]; then
 fi
 
 # ── Resolve URL: primary, then fallback, then fail ──
-BUS_URL="${CORTEX_BUS_URL:-${CORTEX_BUS_FALLBACK_URL:-}}"
+BUS_URL="${FLEET_BUS_URL:-${FLEET_BUS_FALLBACK_URL:-}}"
 if [[ -z "$BUS_URL" ]]; then
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] CORTEX_BUS_URL not set — cannot push health" >> "$ERROR_LOG"
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] FLEET_BUS_URL not set — cannot push health" >> "$ERROR_LOG"
   exit 1
 fi
 
@@ -57,9 +57,9 @@ is_local() {
 
 AUTH_ARGS=()
 if is_local "$BUS_URL"; then
-  [[ -n "$CORTEX_BUS_TOKEN" ]] && AUTH_ARGS=(-H "Authorization: Bearer $CORTEX_BUS_TOKEN")
+  [[ -n "$FLEET_BUS_TOKEN" ]] && AUTH_ARGS=(-H "Authorization: Bearer $FLEET_BUS_TOKEN")
 else
-  [[ -n "$CORTEX_BASIC_AUTH" ]] && AUTH_ARGS=(-u "$CORTEX_BASIC_AUTH")
+  [[ -n "$FLEET_BASIC_AUTH" ]] && AUTH_ARGS=(-u "$FLEET_BASIC_AUTH")
 fi
 
 # Endpoint

@@ -13,11 +13,11 @@
 # Installs: Ollama · Bun · mycortex · Langfuse† · Fleet Dashboard† ·
 #      nginx† · Brain directory structure · Hermes plugins ·
 #      Web Cache · Offline Knowledge (kiwix ZIM) · Skills
-# † Server profile only (CORTEX_PROFILE=server). Laptop profile
-#  (CORTEX_PROFILE=laptop) skips Docker-dependent services.
+# † Server profile only (FLEET_PROFILE=server). Laptop profile
+#  (FLEET_PROFILE=laptop) skips Docker-dependent services.
 #
 # Platforms: macOS (native) · Linux (systemd) · Windows (scheduled tasks)
-# Set CORTEX_OS to override auto-detection: darwin, linux, windows
+# Set FLEET_OS to override auto-detection: darwin, linux, windows
 # Launchd services · Cron jobs (via agent)
 #
 # Idempotent — safe to re-run. Skips already-installed steps.
@@ -242,47 +242,47 @@ fi
 header "PREREQUISITES"
 
 # Profile: 'core' = minimum (default), 'laptop' = no Docker, 'server' = full stack
-: "${CORTEX_PROFILE:=core}"
+: "${FLEET_PROFILE:=core}"
 
-if [[ "$CORTEX_PROFILE" == "core" ]]; then
+if [[ "$FLEET_PROFILE" == "core" ]]; then
  info "Profile: core (minimal — loop-governance, Ollama, brain, skills)"
-elif [[ "$CORTEX_PROFILE" == "laptop" ]]; then
+elif [[ "$FLEET_PROFILE" == "laptop" ]]; then
  info "Profile: laptop (lean — no Docker services)"
-elif [[ "$CORTEX_PROFILE" == "server" ]]; then
+elif [[ "$FLEET_PROFILE" == "server" ]]; then
  info "Profile: server (full stack — Langfuse, Dashboard, nginx)"
 else
- info "Profile: ${CORTEX_PROFILE}"
+ info "Profile: ${FLEET_PROFILE}"
 fi
 
 # User info
-CORTEX_USER="${CORTEX_USER:-$USER}"
-CORTEX_HOME="${CORTEX_HOME:-$HOME}"
-BRAIN_DIR="${CORTEX_HOME}/brain"
-CORTEX_DEPLOY_HOME="${CORTEX_DEPLOY_HOME:-${CORTEX_HOME}/.steadfaste-fleet}"
+FLEET_USER="${FLEET_USER:-$USER}"
+FLEET_HOME="${FLEET_HOME:-$HOME}"
+BRAIN_DIR="${FLEET_HOME}/brain"
+FLEET_DEPLOY_HOME="${FLEET_DEPLOY_HOME:-${FLEET_HOME}/.steadfaste-fleet}"
 
 # SCRIPT_DIR is already set at the top of the script
 
 # Brain sources — default is 'default' + optionally more
-if [[ -z "${CORTEX_SOURCES:-}" ]]; then
+if [[ -z "${FLEET_SOURCES:-}" ]]; then
  # Single-user default
- CORTEX_SOURCES="default"
- info "Brain sources: ${CORTEX_SOURCES}"
- info " To add more sources (e.g. for multi-person), set CORTEX_SOURCES before running:"
- info "  export CORTEX_SOURCES='luke,amy,shared,default'"
+ FLEET_SOURCES="default"
+ info "Brain sources: ${FLEET_SOURCES}"
+ info " To add more sources (e.g. for multi-person), set FLEET_SOURCES before running:"
+ info "  export FLEET_SOURCES='luke,amy,shared,default'"
 fi
 
-IFS=',' read -ra SOURCES <<< "$CORTEX_SOURCES"
+IFS=',' read -ra SOURCES <<< "$FLEET_SOURCES"
 TOTAL_STEPS=27
 STEP=0
 
 # Ensure Hermes is installed
-if ! command -v hermes &>/dev/null && [[ ! -x "${CORTEX_DEPLOY_HOME}/hermes-agent/venv/bin/hermes" ]]; then
+if ! command -v hermes &>/dev/null && [[ ! -x "${FLEET_DEPLOY_HOME}/hermes-agent/venv/bin/hermes" ]]; then
  warn "Hermes Agent not found. Install it first: https://hermes-agent.nousresearch.com/docs"
  warn "The script will install everything else, but you'll need Hermes for the final agent-side setup."
 fi
 
 # Ensure package manager
-if [[ "$CORTEX_OS" == "macos" ]] && ! command -v brew &>/dev/null; then
+if [[ "$FLEET_OS" == "macos" ]] && ! command -v brew &>/dev/null; then
  step "Installing Homebrew…"
  curl -fsSL --retry 3 --retry-delay 5 https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh -o /tmp/homebrew-install.sh
  /bin/bash /tmp/homebrew-install.sh
@@ -326,14 +326,14 @@ if command -v ss &>/dev/null; then
   warn " This means any device on your LAN can access your LLM server."
   warn " Fixing by setting OLLAMA_HOST=127.0.0.1 in the service config…"
   # Fix: stop and restart with localhost-only binding
-  if [[ "$CORTEX_OS" == "macos" ]]; then
+  if [[ "$FLEET_OS" == "macos" ]]; then
    launchctl unload "$HOME/Library/LaunchAgents/${OLLAMA_SERVICE_NAME:-com.ollama.serve}.plist" 2>/dev/null || true
    write_service "${OLLAMA_SERVICE_NAME:-com.ollama.serve}" \
     "$(command -v ollama) serve" \
     "$HOME" \
     "PATH=/usr/local/bin:/usr/bin:/bin HOME=${HOME} OLLAMA_HOST=127.0.0.1"
    launchctl load "$HOME/Library/LaunchAgents/${OLLAMA_SERVICE_NAME:-com.ollama.serve}.plist" 2>/dev/null || true
-  elif [[ "$CORTEX_OS" == "linux" ]]; then
+  elif [[ "$FLEET_OS" == "linux" ]]; then
    mkdir -p "$HOME/.config/systemd/user"
    cat > "$HOME/.config/systemd/user/ollama.service" <<OLLAMDEOF
 [Unit]
@@ -365,7 +365,7 @@ elif command -v lsof &>/dev/null; then
  if lsof -iTCP:11434 -sTCP:LISTEN -P -n 2>/dev/null | grep -qE "\*:11434|0\.0\.0\.0"; then
   warn "⚠ OLLAMA IS EXPOSED TO YOUR NETWORK! Fixing…"
   # Same fix logic as above
-  if [[ "$CORTEX_OS" == "macos" ]]; then
+  if [[ "$FLEET_OS" == "macos" ]]; then
    launchctl unload "$HOME/Library/LaunchAgents/${OLLAMA_SERVICE_NAME:-com.ollama.serve}.plist" 2>/dev/null || true
    write_service "${OLLAMA_SERVICE_NAME:-com.ollama.serve}" \
     "$(command -v ollama) serve" \
@@ -401,20 +401,20 @@ ok
 #    still detect it (offline_knowledge fallback path).
 # ─────────────────────────────────────────────────────────────
 step "Installing Bun"
-if command -v bun &>/dev/null || [[ -x "${CORTEX_HOME}/.bun/bin/bun" ]]; then
+if command -v bun &>/dev/null || [[ -x "${FLEET_HOME}/.bun/bin/bun" ]]; then
  skip "already installed — $(bun --version 2>/dev/null || echo 'bun found')"
 else
  curl -fsSL --retry 3 --retry-delay 5 https://bun.sh/install -o /tmp/bun-install.sh
  bash /tmp/bun-install.sh
  rm -f /tmp/bun-install.sh
  # Ensure bun is in PATH for subsequent steps
- export PATH="${CORTEX_HOME}/.bun/bin:$PATH"
+ export PATH="${FLEET_HOME}/.bun/bin:$PATH"
  ok
 fi
 
 # Ensure bun is in PATH
 if ! command -v bun &>/dev/null; then
- export PATH="${CORTEX_HOME}/.bun/bin:$PATH"
+ export PATH="${FLEET_HOME}/.bun/bin:$PATH"
 fi
 
 # ─────────────────────────────────────────────────────────────
@@ -427,7 +427,7 @@ fi
 # ── mycortex Postgres container ─────────────────────────────
 # Dedicated steadfaste-fleet-owned Postgres (NOT the langfuse stack).
 step "Starting mycortex-postgres (knowledge brain index)"
-MYCORTEX_COMPOSE_DIR="${CORTEX_DEPLOY_HOME}"
+MYCORTEX_COMPOSE_DIR="${FLEET_DEPLOY_HOME}"
 if docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^mycortex-postgres$'; then
  skip "mycortex-postgres already running"
 else
@@ -450,7 +450,7 @@ fi
 
 # ── Apply mycortex schema migrations ────────────────────────
 step "Applying mycortex schema migrations"
-MYCORTEX_CLI="${CORTEX_DEPLOY_HOME}/scripts/mycortex"
+MYCORTEX_CLI="${FLEET_DEPLOY_HOME}/scripts/mycortex"
 if [[ -x "$MYCORTEX_CLI" ]]; then
  if "$MYCORTEX_CLI" doctor --json 2>/dev/null | grep -q '"ok": true'; then
   skip "mycortex schema up to date"
@@ -465,8 +465,8 @@ fi
 
 # ── Ensure bun is in PATH via ~/.local/bin (legacy brain no longer installed) ──
 step "Adding bun symlink to ~/.local/bin/"
-LOCAL_BIN="${CORTEX_HOME}/.local/bin"
-BUN_BIN="${CORTEX_HOME}/.bun/bin"
+LOCAL_BIN="${FLEET_HOME}/.local/bin"
+BUN_BIN="${FLEET_HOME}/.bun/bin"
 if [[ -d "$BUN_BIN" ]]; then
  mkdir -p "$LOCAL_BIN"
  for _tool in bun; do
@@ -597,7 +597,7 @@ ok
 # ─────────────────────────────────────────────────────────────
 step "Configuring mycortex sources"
 
-MYCORTEX_CLI="${CORTEX_DEPLOY_HOME}/scripts/mycortex"
+MYCORTEX_CLI="${FLEET_DEPLOY_HOME}/scripts/mycortex"
 if [[ ! -x "$MYCORTEX_CLI" ]]; then
  warn "mycortex CLI not found at ${MYCORTEX_CLI} — sources configured on first fleet-update"
 else
@@ -646,7 +646,7 @@ fi
 # ─────────────────────────────────────────────────────────────
 step "Installing mycortex Hermes plugin (/brain command)"
 
-PLUGIN_DIR="${CORTEX_DEPLOY_HOME}/plugins/mycortex-command"
+PLUGIN_DIR="${FLEET_DEPLOY_HOME}/plugins/mycortex-command"
 if [[ -f "${PLUGIN_DIR}/__init__.py" ]]; then
  skip "plugin already installed"
 else
@@ -654,9 +654,9 @@ else
 
  # Copy the versioned plugin from the repo (source of truth).
  # legacy brain command is DEAD — decommissioned 2026-08-02; mycortex replaces it.
- if [[ -f "${CORTEX_HOME}/steadfaste-fleet/plugins/mycortex-command/__init__.py" ]]; then
-  cp "${CORTEX_HOME}/steadfaste-fleet/plugins/mycortex-command/__init__.py" "${PLUGIN_DIR}/__init__.py"
-  cp "${CORTEX_HOME}/steadfaste-fleet/plugins/mycortex-command/plugin.yaml" "${PLUGIN_DIR}/plugin.yaml"
+ if [[ -f "${FLEET_HOME}/steadfaste-fleet/plugins/mycortex-command/__init__.py" ]]; then
+  cp "${FLEET_HOME}/steadfaste-fleet/plugins/mycortex-command/__init__.py" "${PLUGIN_DIR}/__init__.py"
+  cp "${FLEET_HOME}/steadfaste-fleet/plugins/mycortex-command/plugin.yaml" "${PLUGIN_DIR}/plugin.yaml"
   info " Plugin copied from repo"
  else
   warn "Repo plugin not found — run fleet-update.sh to deploy mycortex-command"
@@ -671,7 +671,7 @@ fi
 # 8. Hermes Scripts (heartbeat, memory-to-brain)
 # ─────────────────────────────────────────────────────────────
 step "Installing Hermes utility scripts"
-SCRIPTS_DIR="${CORTEX_DEPLOY_HOME}/scripts"
+SCRIPTS_DIR="${FLEET_DEPLOY_HOME}/scripts"
 mkdir -p "$SCRIPTS_DIR"
 
 # ── heartbeat.py ──────────────────────────────────────────
@@ -1400,14 +1400,14 @@ BUDGET
 fi
 
 # ── fleet-profile.sh ─────────────────────────────────────
-CORTEX_PROFILE_PATH="${SCRIPTS_DIR}/fleet-profile.sh"
-if [[ -f "$CORTEX_PROFILE_PATH" ]]; then
+FLEET_PROFILE_PATH="${SCRIPTS_DIR}/fleet-profile.sh"
+if [[ -f "$FLEET_PROFILE_PATH" ]]; then
  skip "fleet-profile.sh already exists"
 else
- cp "$(_scripts)/install/fleet-profile.sh" "$CORTEX_PROFILE_PATH" 2>/dev/null || \
+ cp "$(_scripts)/install/fleet-profile.sh" "$FLEET_PROFILE_PATH" 2>/dev/null || \
   warn "fleet-profile.sh not available (only from repo)"
- if [[ -f "$CORTEX_PROFILE_PATH" ]]; then
-  chmod +x "$CORTEX_PROFILE_PATH"
+ if [[ -f "$FLEET_PROFILE_PATH" ]]; then
+  chmod +x "$FLEET_PROFILE_PATH"
   info " Installed fleet-profile.sh"
  fi
 fi
@@ -1426,40 +1426,40 @@ else
 fi
 
 # ── fleet-health.sh ───────────────────────────────────────
-CORTEX_HEALTH_PATH="${SCRIPTS_DIR}/fleet-health.sh"
-if [[ -f "$CORTEX_HEALTH_PATH" ]]; then
+FLEET_HEALTH_PATH="${SCRIPTS_DIR}/fleet-health.sh"
+if [[ -f "$FLEET_HEALTH_PATH" ]]; then
  skip "fleet-health.sh already exists"
 else
- cp "$(_scripts)/manage/fleet-health.sh" "$CORTEX_HEALTH_PATH" 2>/dev/null || \
+ cp "$(_scripts)/manage/fleet-health.sh" "$FLEET_HEALTH_PATH" 2>/dev/null || \
   warn "fleet-health.sh not available (only from repo)"
- if [[ -f "$CORTEX_HEALTH_PATH" ]]; then
-  chmod +x "$CORTEX_HEALTH_PATH"
+ if [[ -f "$FLEET_HEALTH_PATH" ]]; then
+  chmod +x "$FLEET_HEALTH_PATH"
   info " Installed fleet-health.sh"
  fi
 fi
 
 # ── fleet-setup-langfuse.sh ───────────────────────────────
-CORTEX_LANGFUSE_PATH="${SCRIPTS_DIR}/fleet-setup-langfuse.sh"
-if [[ -f "$CORTEX_LANGFUSE_PATH" ]]; then
+FLEET_LANGFUSE_PATH="${SCRIPTS_DIR}/fleet-setup-langfuse.sh"
+if [[ -f "$FLEET_LANGFUSE_PATH" ]]; then
  skip "fleet-setup-langfuse.sh already exists"
 else
- cp "$(_scripts)/install/fleet-setup-langfuse.sh" "$CORTEX_LANGFUSE_PATH" 2>/dev/null || \
+ cp "$(_scripts)/install/fleet-setup-langfuse.sh" "$FLEET_LANGFUSE_PATH" 2>/dev/null || \
   warn "fleet-setup-langfuse.sh not available (only from repo)"
- if [[ -f "$CORTEX_LANGFUSE_PATH" ]]; then
-  chmod +x "$CORTEX_LANGFUSE_PATH"
+ if [[ -f "$FLEET_LANGFUSE_PATH" ]]; then
+  chmod +x "$FLEET_LANGFUSE_PATH"
   info " Installed fleet-setup-langfuse.sh"
  fi
 fi
 
 # ── fleet-update.sh ───────────────────────────────────────
-CORTEX_UPDATE_PATH="${SCRIPTS_DIR}/fleet-update.sh"
-if [[ -f "$CORTEX_UPDATE_PATH" ]]; then
+FLEET_UPDATE_PATH="${SCRIPTS_DIR}/fleet-update.sh"
+if [[ -f "$FLEET_UPDATE_PATH" ]]; then
  skip "fleet-update.sh already exists"
 else
- cp "$(_scripts)/fleet-update.sh" "$CORTEX_UPDATE_PATH" 2>/dev/null || \
+ cp "$(_scripts)/fleet-update.sh" "$FLEET_UPDATE_PATH" 2>/dev/null || \
   warn "fleet-update.sh not available (only from repo)"
- if [[ -f "$CORTEX_UPDATE_PATH" ]]; then
-  chmod +x "$CORTEX_UPDATE_PATH"
+ if [[ -f "$FLEET_UPDATE_PATH" ]]; then
+  chmod +x "$FLEET_UPDATE_PATH"
   info " Installed fleet-update.sh"
  fi
 fi
@@ -1491,7 +1491,7 @@ fi
 
 # ── Eval Harness Scripts ───────────────────────────────────────
 # Create evals directory structure
-EVALS_DIR="${CORTEX_DEPLOY_HOME}/evals"
+EVALS_DIR="${FLEET_DEPLOY_HOME}/evals"
 mkdir -p "$EVALS_DIR/traces" "$EVALS_DIR/reports"
 info " Created evals directory structure"
 
@@ -1554,7 +1554,7 @@ HERMES_CRONS_SCRIPT="${SCRIPTS_DIR}/install-crons.sh"
 if [[ -f "$HERMES_CRONS_SCRIPT" ]]; then
  step "Creating essential Hermes cron jobs (auto-remediation, health, memory sync…)"
  # Verify Hermes is installed first
- if ! command -v hermes &>/dev/null && [[ ! -x "${CORTEX_DEPLOY_HOME}/hermes-agent/venv/bin/hermes" ]]; then
+ if ! command -v hermes &>/dev/null && [[ ! -x "${FLEET_DEPLOY_HOME}/hermes-agent/venv/bin/hermes" ]]; then
   warn "Hermes Agent not found — cron jobs cannot be created"
   warn " Install Hermes Agent first: https://hermes-agent.nousresearch.com/docs"
   warn " Then run: bash ${HERMES_CRONS_SCRIPT}"
@@ -1625,7 +1625,7 @@ fi
 
 # Seed memory scoring rubric
 SEED_MEMORY_README="${SCRIPT_DIR}/docs/templates/memory-readme.seed.md"
-MEMORY_DOC_DIR="${CORTEX_DEPLOY_HOME}/memory"
+MEMORY_DOC_DIR="${FLEET_DEPLOY_HOME}/memory"
 if [[ -f "$SEED_MEMORY_README" ]] && [[ ! -f "${MEMORY_DOC_DIR}/README.md" ]]; then
  mkdir -p "$MEMORY_DOC_DIR"
  cp "$SEED_MEMORY_README" "${MEMORY_DOC_DIR}/README.md"
@@ -1642,7 +1642,7 @@ ok
 # ─────────────────────────────────────────────────────────────
 step "Installing Hermes skills from repo"
 SKILLS_REPO="${SCRIPT_DIR}/../skills"
-HERMES_SKILLS="${CORTEX_DEPLOY_HOME}/skills"
+HERMES_SKILLS="${FLEET_DEPLOY_HOME}/skills"
 if [[ -d "$SKILLS_REPO" ]]; then
  count=0
  while IFS= read -r -d '' skill_file; do
@@ -1691,8 +1691,8 @@ fi
 # ─────────────────────────────────────────────────────────────
 # 12c. Post-Merge Hook — Auto-deploy after git pull
 # ─────────────────────────────────────────────────────────────
-POST_MERGE_SRC="${CORTEX_REPO_DIR}/ops/install/hooks/post-merge"
-POST_MERGE_DST="${CORTEX_REPO_DIR}/.git/hooks/post-merge"
+POST_MERGE_SRC="${FLEET_REPO_DIR}/ops/install/hooks/post-merge"
+POST_MERGE_DST="${FLEET_REPO_DIR}/.git/hooks/post-merge"
 if [[ -f "$POST_MERGE_SRC" ]]; then
  step "Installing post-merge hook (auto fleet-update after git pull)…"
  cp "$POST_MERGE_SRC" "$POST_MERGE_DST"
@@ -1760,8 +1760,8 @@ ok
 # ─────────────────────────────────────────────────────────────
 step "Installing Web Cache (semantic web result cache)"
 WEB_CACHE_REPO="${SCRIPT_DIR}/../ops/web-cache"
-WEB_CACHE_DEST="${CORTEX_DEPLOY_HOME}/web-cache"
-HERMES_BIN="${CORTEX_DEPLOY_HOME}/bin"
+WEB_CACHE_DEST="${FLEET_DEPLOY_HOME}/web-cache"
+HERMES_BIN="${FLEET_DEPLOY_HOME}/bin"
 if [[ -d "$WEB_CACHE_REPO" ]]; then
  mkdir -p "$WEB_CACHE_DEST" "$HERMES_BIN"
  # Copy the Python tool
@@ -1794,11 +1794,11 @@ ok
 # ─────────────────────────────────────────────────────────────
 # 12. Langfuse — LLM Observability (Docker Compose)
 # ─────────────────────────────────────────────────────────────
-if [[ "$CORTEX_PROFILE" == "server" ]]; then
+if [[ "$FLEET_PROFILE" == "server" ]]; then
 step "Installing Langfuse (LLM observability)"
 
-LANGFUSE_DIR="${CORTEX_HOME}/langfuse"
-LANGFUSE_COMPOSE="${CORTEX_HOME}/langfuse/docker-compose.yml"
+LANGFUSE_DIR="${FLEET_HOME}/langfuse"
+LANGFUSE_COMPOSE="${FLEET_HOME}/langfuse/docker-compose.yml"
 
 if [[ -d "$LANGFUSE_DIR" ]] && docker ps --format '{{.Names}}' 2>/dev/null | grep -q "langfuse"; then
  skip "Langfuse already running"
@@ -1851,10 +1851,10 @@ ENVFILE
  cd - > /dev/null
 
  # Wire Hermes Agent with Langfuse integration
- CORTEX_LANGFUSE_PATH="${SCRIPTS_DIR}/fleet-setup-langfuse.sh"
- if [[ -f "$CORTEX_LANGFUSE_PATH" ]]; then
+ FLEET_LANGFUSE_PATH="${SCRIPTS_DIR}/fleet-setup-langfuse.sh"
+ if [[ -f "$FLEET_LANGFUSE_PATH" ]]; then
   info " Wiring Hermes Agent with Langfuse integration..."
-  bash "$CORTEX_LANGFUSE_PATH" 2>&1 | sed 's/^/  /'
+  bash "$FLEET_LANGFUSE_PATH" 2>&1 | sed 's/^/  /'
   info " Hermes Agent integration complete"
  else
   warn " fleet-setup-langfuse.sh not available for Hermes integration"
@@ -1866,8 +1866,8 @@ fi
 # ─────────────────────────────────────────────────────────────
 step "Installing Fleet Dashboard"
 
-DASHBOARD_DEST="${CORTEX_DEPLOY_HOME}/dashboard"
-DASHBOARD_PLIST="${CORTEX_HOME}/Library/LaunchAgents/com.hermes.fleet-dashboard.plist"
+DASHBOARD_DEST="${FLEET_DEPLOY_HOME}/dashboard"
+DASHBOARD_PLIST="${FLEET_HOME}/Library/LaunchAgents/com.hermes.fleet-dashboard.plist"
 
 if [[ -f "$DASHBOARD_DEST/server.py" ]]; then
  skip "Fleet Dashboard already installed"
@@ -1896,11 +1896,11 @@ else
  fi
 
  # Install service (launchd on macOS, systemd on Linux)
- if [[ "$CORTEX_OS" == "macos" ]]; then
-  DASHBOARD_PLIST="${CORTEX_HOME}/Library/LaunchAgents/com.hermes.fleet-dashboard.plist"
+ if [[ "$FLEET_OS" == "macos" ]]; then
+  DASHBOARD_PLIST="${FLEET_HOME}/Library/LaunchAgents/com.hermes.fleet-dashboard.plist"
   if [[ ! -f "$DASHBOARD_PLIST" ]]; then
    # Update paths in plist for current user
-   sed "s|CORTEX_HOME|${CORTEX_HOME}|g" "${REPO_DASHBOARD}/com.hermes.fleet-dashboard.plist" > "$DASHBOARD_PLIST" 2>/dev/null || \
+   sed "s|FLEET_HOME|${FLEET_HOME}|g" "${REPO_DASHBOARD}/com.hermes.fleet-dashboard.plist" > "$DASHBOARD_PLIST" 2>/dev/null || \
    cat > "$DASHBOARD_PLIST" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -1927,9 +1927,9 @@ else
     <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
   </dict>
   <key>StandardOutPath</key>
-  <string>${CORTEX_DEPLOY_HOME}/logs/fleet-dashboard.log</string>
+  <string>${FLEET_DEPLOY_HOME}/logs/fleet-dashboard.log</string>
   <key>StandardErrorPath</key>
-  <string>${CORTEX_DEPLOY_HOME}/logs/fleet-dashboard.log</string>
+  <string>${FLEET_DEPLOY_HOME}/logs/fleet-dashboard.log</string>
 </dict>
 </plist>
 PLIST
@@ -1944,7 +1944,7 @@ PLIST
    warn "Failed to load dashboard launchd service"
   fi
 
- elif [[ "$CORTEX_OS" == "linux" ]]; then
+ elif [[ "$FLEET_OS" == "linux" ]]; then
   DASHBOARD_SERVICE_DIR="${HOME}/.config/systemd/user"
   DASHBOARD_SERVICE="${DASHBOARD_SERVICE_DIR}/steadfaste-fleet-dashboard.service"
   mkdir -p "$DASHBOARD_SERVICE_DIR"
@@ -1961,8 +1961,8 @@ WorkingDirectory=${DASHBOARD_DEST}
 Restart=always
 RestartSec=5
 Environment=PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
-StandardOutput=append:${CORTEX_DEPLOY_HOME}/logs/fleet-dashboard.log
-StandardError=append:${CORTEX_DEPLOY_HOME}/logs/fleet-dashboard.log
+StandardOutput=append:${FLEET_DEPLOY_HOME}/logs/fleet-dashboard.log
+StandardError=append:${FLEET_DEPLOY_HOME}/logs/fleet-dashboard.log
 
 [Install]
 WantedBy=default.target
@@ -1980,15 +1980,15 @@ SYSTEMDEOF
  fi
 fi
 
-if [[ "$CORTEX_OS" == "macos" ]]; then
+if [[ "$FLEET_OS" == "macos" ]]; then
  # Install Docker Desktop launchd agent (auto-start on login)
- DOCKER_PLIST="${CORTEX_HOME}/Library/LaunchAgents/com.docker.docker.plist"
+ DOCKER_PLIST="${FLEET_HOME}/Library/LaunchAgents/com.docker.docker.plist"
  if launchctl list com.docker.docker &>/dev/null 2>&1; then
   info " Docker launch agent already loaded"
  elif [[ ! -f "$DOCKER_PLIST" ]]; then
   DOCKER_TEMPLATE="${SCRIPT_DIR}/docs/templates/com.docker.docker.plist"
   if [[ -f "$DOCKER_TEMPLATE" ]]; then
-   sed "s|CORTEX_HOME|${CORTEX_HOME}|g" "$DOCKER_TEMPLATE" > "$DOCKER_PLIST"
+   sed "s|FLEET_HOME|${FLEET_HOME}|g" "$DOCKER_TEMPLATE" > "$DOCKER_PLIST"
   else
    cat > "$DOCKER_PLIST" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -2007,9 +2007,9 @@ if [[ "$CORTEX_OS" == "macos" ]]; then
   <key>KeepAlive</key>
   <false/>
   <key>StandardOutPath</key>
-  <string>${CORTEX_HOME}/.steadfaste-fleet/logs/docker-launch.log</string>
+  <string>${FLEET_HOME}/.steadfaste-fleet/logs/docker-launch.log</string>
   <key>StandardErrorPath</key>
-  <string>${CORTEX_HOME}/.steadfaste-fleet/logs/docker-launch.log</string>
+  <string>${FLEET_HOME}/.steadfaste-fleet/logs/docker-launch.log</string>
 </dict>
 </plist>
 PLIST
@@ -2025,12 +2025,12 @@ PLIST
  # legacy macOS com.hermes.health-server launchd agent has no repo source
  # and is no longer installed. Do NOT re-add it — it caused duplicate-unit
  # crash loops on upgraded hosts that still had the old unit.
- HEALTH_PLIST="${CORTEX_HOME}/Library/LaunchAgents/com.hermes.health-server.plist"
+ HEALTH_PLIST="${FLEET_HOME}/Library/LaunchAgents/com.hermes.health-server.plist"
  if launchctl list com.hermes.health-server &>/dev/null 2>&1; then
    info " Legacy com.hermes.health-server agent still loaded — remove manually:"
    info "   launchctl bootout gui/$(id -u)/com.hermes.health-server && rm -f \"$HEALTH_PLIST\""
  fi
-elif [[ "$CORTEX_OS" == "linux" ]]; then
+elif [[ "$FLEET_OS" == "linux" ]]; then
 # Health server is now installed as a systemd user service from the
 # canonical template docs/templates/health-vector.service. The legacy
 # com.hermes.health-server.service name was removed (2026-08-05) — it
@@ -2056,7 +2056,7 @@ fi
 step "Installing offline knowledge tools (cache cascade + ZIM viewer)"
 
 OFFLINE_REPO="${SCRIPT_DIR}/../ops/offline"
-OFFLINE_DEST="${CORTEX_DEPLOY_HOME}/offline"
+OFFLINE_DEST="${FLEET_DEPLOY_HOME}/offline"
 
 if [[ -d "$OFFLINE_REPO" ]]; then
  mkdir -p "$OFFLINE_DEST" "$HERMES_BIN"
@@ -2141,7 +2141,7 @@ fi
 # ─────────────────────────────────────────────────────────────
 # 14. nginx — Reverse proxy for Langfuse + Dashboard
 # ─────────────────────────────────────────────────────────────
-if [[ "$CORTEX_PROFILE" == "server" ]]; then
+if [[ "$FLEET_PROFILE" == "server" ]]; then
 step "Installing nginx reverse proxy"
 bash "$(_scripts)/install/install-nginx.sh"
 ok
@@ -2154,7 +2154,7 @@ fi
 # ─────────────────────────────────────────────────────────────
 step "Enabling mycortex-command plugin in Hermes config"
 
-HERMES_CONFIG="${CORTEX_DEPLOY_HOME}/config.yaml"
+HERMES_CONFIG="${FLEET_DEPLOY_HOME}/config.yaml"
 if [[ -f "$HERMES_CONFIG" ]]; then
  # Check if plugin is already enabled (new name or legacy brain command)
  if grep -q "mycortex-command" "$HERMES_CONFIG" 2>/dev/null; then
@@ -2192,12 +2192,12 @@ if [[ -f "$HERMES_CONFIG" ]]; then
 fi
 
 # State database
-if [[ -f "${CORTEX_DEPLOY_HOME}/state.db" ]]; then
- chmod 600 "${CORTEX_DEPLOY_HOME}/state.db" 2>/dev/null && info " Locked state.db"
+if [[ -f "${FLEET_DEPLOY_HOME}/state.db" ]]; then
+ chmod 600 "${FLEET_DEPLOY_HOME}/state.db" 2>/dev/null && info " Locked state.db"
 fi
 
 # Any .env files in home or brain dirs
-find "${CORTEX_HOME}" -maxdepth 2 -name ".env" -o -name ".env.*" 2>/dev/null | while read -r envfile; do
+find "${FLEET_HOME}" -maxdepth 2 -name ".env" -o -name ".env.*" 2>/dev/null | while read -r envfile; do
  chmod 600 "$envfile" 2>/dev/null || true
 done
 info " All .env files locked down"
@@ -2232,7 +2232,7 @@ printf "\n${BOLD}✅ System components installed${RESET}\n"
 printf " ${GREEN}•${RESET} Ollama      — LLM server (embedding: nomic-embed-text:v1.5)\n"
 printf " ${GREEN}•${RESET} Bun       — JS runtime\n"
 printf " ${GREEN}•${RESET} mycortex   — Knowledge brain (mycortex-postgres + pgvector)\n"
-if [[ "$CORTEX_PROFILE" == "server" ]]; then
+if [[ "$FLEET_PROFILE" == "server" ]]; then
 printf " ${GREEN}•${RESET} Langfuse     — LLM observability (Docker, port 3000)\n"
 printf " ${GREEN}•${RESET} Fleet Dashboard — Flask companion app (port 8901)\n"
 printf " ${GREEN}•${RESET} nginx      — Reverse proxy (ports 13001-13002)\\n"
@@ -2257,7 +2257,7 @@ printf " ${GREEN}•${RESET} Offline Knowledge → cascade cache + kiwix ZIM con
 printf " ${GREEN}•${RESET} Launchd services:\n"
 printf "          com.ollama.serve\n"
 printf "          agent-mycortex-sync (cron, every 15 min)\n"
-if [[ "$CORTEX_PROFILE" == "server" ]]; then
+if [[ "$FLEET_PROFILE" == "server" ]]; then
 printf "          com.docker.docker\n"
 printf "          com.hermes.fleet-dashboard\n"
 printf "          homebrew.mxcl.nginx\n"
@@ -2328,7 +2328,7 @@ PROMPT
 printf "${RESET}${BOLD}${CYAN}───────────────────────────────────────────────────${RESET}\n"
 
 printf "\n${BOLD}📚 Quick Reference${RESET}\n"
-if [[ "$CORTEX_PROFILE" == "server" ]]; then
+if [[ "$FLEET_PROFILE" == "server" ]]; then
 printf " ${GREEN}•${RESET} Langfuse:    http://localhost:3000 (nginx: :13002)\\n"
 printf " ${GREEN}•${RESET} Fleet Dashboard: http://localhost:8901 (nginx: :13001)\n"
 printf " ${GREEN}•${RESET} 🔒 Security:   Read docs/SECURITY.md for firewall + hardening\n"
@@ -2340,7 +2340,7 @@ printf " ${GREEN}•${RESET} /brain query   — search your knowledge brain\n"
 printf " ${GREEN}•${RESET} Offline query:  offline_knowledge query \"question\"\n"
 printf " ${GREEN}•${RESET} Download ZIM:  prep-offline\n"
 printf " ${GREEN}•${RESET} Brain dirs:   %s\n" "${BRAIN_DIR}"
-printf " ${GREEN}•${RESET} Logs:      %s/logs/\n" "${CORTEX_DEPLOY_HOME}"
+printf " ${GREEN}•${RESET} Logs:      %s/logs/\n" "${FLEET_DEPLOY_HOME}"
 printf " ${GREEN}•${RESET} Scripts:     %s/scripts/\n" "${SCRIPTS_DIR}"
 
 printf "\n${BOLD}🐚 For daily use in shell:${RESET}\n"
@@ -2399,7 +2399,7 @@ printf "\n${GREEN}${BOLD}Steadfaste Fleet v${VERSION} installed. Enjoy! 🧠${RE
 # Clear the EXIT trap and clean up remote temp dir
 
 # Auto-run cortex doctor after install
-DOCTOR_PATH="${CORTEX_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/scripts/fleet-doctor.py"
+DOCTOR_PATH="${FLEET_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/scripts/fleet-doctor.py"
 if command -v python3 &>/dev/null && [ -f "$DOCTOR_PATH" ]; then
  echo ""
  echo "━━━ Running post-install health check ━━━"

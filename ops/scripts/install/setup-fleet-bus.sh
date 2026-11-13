@@ -14,7 +14,7 @@
 #
 # Requires:
 #  - Hermes CLI (hermes cron create)
-#  - ~/steadfaste-fleet/.env with CORTEX_INBOX_AUTH
+#  - ~/steadfaste-fleet/.env with FLEET_INBOX_AUTH
 #  - curl (for API calls)
 #  - Pulled steadfaste-fleet (for bus-watch.sh)
 #
@@ -59,7 +59,7 @@ if [ -z "$AGENT" ]; then
  esac
 fi
 
-INBOX_URL="${CORTEX_BUS_URL:-${CORTEX_BUS_FALLBACK_URL:-${CORTEX_INBOX_URL:-https://your-domain.com:13004}}}"
+INBOX_URL="${FLEET_BUS_URL:-${FLEET_BUS_FALLBACK_URL:-${FLEET_INBOX_URL:-https://your-domain.com:13004}}}"
 
 echo ""
 echo -e "${BOLD}━━━ Agent Bus Pipeline Setup ━━━${RESET}"
@@ -102,7 +102,7 @@ AUTH_OK=false
 if [ -f "$AUTH_FILE" ]; then
  # shellcheck disable=SC1090
  source "$AUTH_FILE" 2>/dev/null || true
- TEST_AUTH="${CORTEX_INBOX_AUTH:-}"
+ TEST_AUTH="${FLEET_INBOX_AUTH:-}"
  if [ -n "$TEST_AUTH" ]; then
   AUTH_OK=true
  fi
@@ -110,8 +110,8 @@ fi
 if ! $AUTH_OK; then
  warn "No auth credentials found in ~/steadfaste-fleet/.env"
  warn "Create it with:"
- echo "  CORTEX_INBOX_URL=\"https://your-domain.com:13004\""
- echo "  CORTEX_INBOX_AUTH=\"user:pass\""
+ echo "  FLEET_INBOX_URL=\"https://your-domain.com:13004\""
+ echo "  FLEET_INBOX_AUTH=\"user:pass\""
  echo "  AGENT_NAME=\"${AGENT}\""
 fi
 
@@ -119,7 +119,7 @@ fi
 echo -n " Testing inbox API connectivity... "
 if $AUTH_OK; then
  API_OK=$(curl -sf --max-time 10 \
-  -u "$CORTEX_BASIC_AUTH" \
+  -u "$FLEET_BASIC_AUTH" \
   "${INBOX_URL}/health" \
   >/dev/null 2>&1 && echo "true" || echo "false")
 else
@@ -188,7 +188,7 @@ For each unread message:
 1. Fetch the full message via the inbox API:
   \`\`\`bash
   source ~/steadfaste-fleet/.env
-  curl -s -u \"\$CORTEX_BASIC_AUTH\" \\
+  curl -s -u \"\$FLEET_BASIC_AUTH\" \\
    \"${INBOX_URL}/api/pgmq/read\" -d '{\"queue\":\"inbox_${AGENT}\",\"vt\":30}'
   \`\`\`
 

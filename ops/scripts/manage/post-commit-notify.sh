@@ -7,7 +7,7 @@
 #  via the agent inbox API.
 #
 #  Uses the SAME config loading pattern as inbox-mcp.py:
-#    1. CORTEX_INBOX_* environment variables
+#    1. FLEET_INBOX_* environment variables
 #    2. ~/steadfaste-fleet/.env (KEY=VALUE format, parsed line-by-line)
 #    3. URL fallback chain: primary → fallback → third → localhost:8903
 #
@@ -56,10 +56,10 @@ fi
 # Note: Python-style inline comment stripping (value%%\#*) must use
 # CLEAN pattern syntax — no backslash-escaped characters that bash
 # misinterprets inside double-quoted patterns with #-containing URLs.
-INBOX_URL="${CORTEX_BUS_FALLBACK_URL:-${CORTEX_INBOX_URL:-}}"
-INBOX_FALLBACK_URL="${CORTEX_INBOX_FALLBACK_URL:-}"
-INBOX_THIRD_URL="${CORTEX_INBOX_THIRD_URL:-}"
-INBOX_AUTH="${CORTEX_BUS_AUTH:-${CORTEX_INBOX_AUTH:-}}"
+INBOX_URL="${FLEET_BUS_FALLBACK_URL:-${FLEET_INBOX_URL:-}}"
+INBOX_FALLBACK_URL="${FLEET_INBOX_FALLBACK_URL:-}"
+INBOX_THIRD_URL="${FLEET_INBOX_THIRD_URL:-}"
+INBOX_AUTH="${FLEET_BUS_AUTH:-${FLEET_INBOX_AUTH:-}}"
 AGENT_NAME="${AGENT_NAME:-}"
 
 # Parse config file line-by-line using process substitution to avoid subshell
@@ -78,16 +78,16 @@ while IFS='=' read -r key value || [ -n "$key" ]; do
     value="${value%\"}"; value="${value#\"}"
 
     case "$key" in
-      CORTEX_BUS_FALLBACK_URL|CORTEX_INBOX_URL|MOSES_INBOX_URL)
+      FLEET_BUS_FALLBACK_URL|FLEET_INBOX_URL|MOSES_INBOX_URL)
         [ -z "$INBOX_URL" ] && INBOX_URL="$value"
         ;;
-      CORTEX_BUS_FALLBACK_URL_FALLBACK|CORTEX_INBOX_FALLBACK_URL|MOSES_INBOX_FALLBACK_URL)
+      FLEET_BUS_FALLBACK_URL_FALLBACK|FLEET_INBOX_FALLBACK_URL|MOSES_INBOX_FALLBACK_URL)
         [ -z "$INBOX_FALLBACK_URL" ] && INBOX_FALLBACK_URL="$value"
         ;;
-      CORTEX_BUS_FALLBACK_URL_THIRD|CORTEX_INBOX_THIRD_URL|MOSES_INBOX_THIRD_URL)
+      FLEET_BUS_FALLBACK_URL_THIRD|FLEET_INBOX_THIRD_URL|MOSES_INBOX_THIRD_URL)
         [ -z "$INBOX_THIRD_URL" ] && INBOX_THIRD_URL="$value"
         ;;
-      CORTEX_BUS_AUTH|CORTEX_INBOX_AUTH|MOSES_INBOX_AUTH)
+      FLEET_BUS_AUTH|FLEET_INBOX_AUTH|MOSES_INBOX_AUTH)
         [ -z "$INBOX_AUTH" ] && INBOX_AUTH="$value"
         ;;
       AGENT_NAME)

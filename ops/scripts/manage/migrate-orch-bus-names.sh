@@ -18,8 +18,8 @@
 
 set -euo pipefail
 
-REPO="${CORTEX_REPO:-$HOME/steadfaste-fleet}"
-CORTEX_HOME="${CORTEX_DEPLOY_HOME:-$HOME/.steadfaste-fleet}"
+REPO="${FLEET_REPO:-$HOME/steadfaste-fleet}"
+FLEET_HOME="${FLEET_DEPLOY_HOME:-$HOME/.steadfaste-fleet}"
 HERMES_SCRIPTS="$HOME/.hermes/scripts"
 
 # Files to clean up: old source path → new source path (for verification)
@@ -79,7 +79,7 @@ done
 echo ""
 echo "🧹 Removing stale deployed copies (orphans)..."
 for name in "${STALE_NAMES[@]}"; do
-    for dir in "$CORTEX_HOME/scripts" "$HERMES_SCRIPTS"; do
+    for dir in "$FLEET_HOME/scripts" "$HERMES_SCRIPTS"; do
         path="$dir/$name"
         if [ -f "$path" ]; then
             echo "  Removing $path..."
@@ -93,7 +93,7 @@ echo ""
 echo "🧹 Removing stale register-renamed deploy copies (old bus-* → now orch-bus-*)..."
 for name in "${REGISTER_RENAMED[@]}"; do
     orch_name="${name/#bus-/orch-bus-}"
-    for dir in "$CORTEX_HOME/scripts" "$HERMES_SCRIPTS"; do
+    for dir in "$FLEET_HOME/scripts" "$HERMES_SCRIPTS"; do
         old_path="$dir/$name"
         new_path="$dir/$orch_name"
         if [ -f "$old_path" ] && [ -f "$new_path" ]; then

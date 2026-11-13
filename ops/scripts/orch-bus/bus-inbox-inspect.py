@@ -2,7 +2,7 @@
 """bus-inbox-inspect.py — re-runnable Agent Bus inbox-tick inspection.
 
 Emits a JSON transcript to stdout covering, for BOTH the local bus
-(127.0.0.1:8903) and the primary/peer bus (CORTEX_BUS_URL):
+(127.0.0.1:8903) and the primary/peer bus (FLEET_BUS_URL):
   - every queue with depth/processing flags (non-empty or DLQ)
   - DLQ depth for every *_dlq queue
   - contents of inbox_<agent>, inbox_orchestrator, out_<agent>, inbox_health_check
@@ -61,9 +61,9 @@ def _read_config(key: str) -> str:
 
 def _load_config() -> tuple[str, str, str]:
     """(primary_bus_url, bearer_token, basic_auth) from env → ~/steadfaste-fleet/.env."""
-    url = _read_config("CORTEX_BUS_URL") or LOCAL_URL
-    token = _read_config("CORTEX_BUS_TOKEN")
-    basic = _read_config("CORTEX_BASIC_AUTH") or _read_config("CORTEX_BUS_AUTH")
+    url = _read_config("FLEET_BUS_URL") or LOCAL_URL
+    token = _read_config("FLEET_BUS_TOKEN")
+    basic = _read_config("FLEET_BASIC_AUTH") or _read_config("FLEET_BUS_AUTH")
     return url, token, basic
 
 

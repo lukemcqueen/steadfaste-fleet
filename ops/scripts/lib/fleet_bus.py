@@ -3,8 +3,8 @@
 fleet_bus.py — Shared bus interaction library for fleet scripts.
 
 Provides send/read/archive/list_queues functions using the Agent Bus HTTP API.
-Bus URL is read from .env (CORTEX_BUS_URL); when
-CORTEX_BUS_FALLBACK_URL is set, sends automatically retry the fallback bus
+Bus URL is read from .env (FLEET_BUS_URL); when
+FLEET_BUS_FALLBACK_URL is set, sends automatically retry the fallback bus
 per-call when the primary is unreachable (failover path, since 2026-08-04).
 Config file location: ~/steadfaste-fleet/.env (the ONE canonical fleet env)
 
@@ -62,21 +62,21 @@ def _read_config(key: str) -> str:
     return os.environ.get(key, "")
 
 
-BUS_URL = os.environ.get("CORTEX_BUS_URL", "") or _read_config("CORTEX_BUS_URL")
-BUS_FALLBACK_URL = os.environ.get("CORTEX_BUS_FALLBACK_URL", "") or _read_config("CORTEX_BUS_FALLBACK_URL")
-raw_auth = os.environ.get("CORTEX_BUS_AUTH", "") or _read_config("CORTEX_BASIC_AUTH")
-raw_token = os.environ.get("CORTEX_BUS_TOKEN", "") or _read_config("CORTEX_BUS_TOKEN")
+BUS_URL = os.environ.get("FLEET_BUS_URL", "") or _read_config("FLEET_BUS_URL")
+BUS_FALLBACK_URL = os.environ.get("FLEET_BUS_FALLBACK_URL", "") or _read_config("FLEET_BUS_FALLBACK_URL")
+raw_auth = os.environ.get("FLEET_BUS_AUTH", "") or _read_config("FLEET_BASIC_AUTH")
+raw_token = os.environ.get("FLEET_BUS_TOKEN", "") or _read_config("FLEET_BUS_TOKEN")
 
-# Support both CORTEX_BASIC_AUTH and CORTEX_BUS_AUTH key names
+# Support both FLEET_BASIC_AUTH and FLEET_BUS_AUTH key names
 if not raw_auth:
-    raw_auth = _read_config("CORTEX_BUS_AUTH")
+    raw_auth = _read_config("FLEET_BUS_AUTH")
 
-CORTEX_BUS_AUTH = raw_auth
-CORTEX_BUS_TOKEN = raw_token
+FLEET_BUS_AUTH = raw_auth
+FLEET_BUS_TOKEN = raw_token
 
 if not BUS_URL:
     raise RuntimeError(
-        "CORTEX_BUS_URL not configured. Set in .env or CORTEX_BUS_URL env var. "
+        "FLEET_BUS_URL not configured. Set in .env or FLEET_BUS_URL env var. "
         f"(checked: {CONFIG_FILE})"
     )
 
@@ -94,10 +94,10 @@ class BusPermanentError(Exception):
 
 def _get_auth_header() -> tuple[str, str]:
     """Return (scheme, credentials) for Authorization header."""
-    if CORTEX_BUS_TOKEN:
-        return ("Bearer", CORTEX_BUS_TOKEN)
-    if CORTEX_BUS_AUTH:
-        basic = base64.b64encode(CORTEX_BUS_AUTH.encode()).decode()
+    if FLEET_BUS_TOKEN:
+        return ("Bearer", FLEET_BUS_TOKEN)
+    if FLEET_BUS_AUTH:
+        basic = base64.b64encode(FLEET_BUS_AUTH.encode()).decode()
         return ("Basic", basic)
     return ("Basic", "")
 
@@ -124,15 +124,15 @@ def _bus_post(endpoint: str, payload: dict, fallback: bool = False) -> dict:
             # US-001: 4xx = PERMANENT rejection — fail fast, no retry.
             # Only 401/403 get the Basic-auth fallback (auth downshift, not
             # a message problem); all other 4xx raise BusPermanentError.
-            if 400 <= e.code < 500 and not (e.code in (401, 403) and scheme == "Bearer" and CORTEX_BUS_AUTH):
+            if 400 <= e.code < 500 and not (e.code in (401, 403) and scheme == "Bearer" and FLEET_BUS_AUTH):
                 raise BusPermanentError(f"Bus permanently rejected request (HTTP {e.code}): {e}") from e
             logging.getLogger("fleet_bus").debug("HTTPError %d for Bearer auth — trying Basic fallback", e.code)
             if (
                 e.code in (401, 403)
                 and scheme == "Bearer"
-                and CORTEX_BUS_AUTH
+                and FLEET_BUS_AUTH
             ):
-                basic_creds = base64.b64encode(CORTEX_BUS_AUTH.encode()).decode()
+                basic_creds = base64.b64encode(FLEET_BUS_AUTH.encode()).decode()
                 try:
                     req2 = Request(url, data=data, headers={
                         "Content-Type": "application/json",
@@ -187,7 +187,7 @@ def bus_send(queue: str, message_body: dict) -> dict | None:
     {"queued": true, "outbox_file": <path>} — a truthy value, so existing
     callers that treat truthy as success keep working and the message is
     NOT lost. The agent-bus-retry-sweep cron re-sends it with backoff.
-    Set CORTEX_BUS_NO_OUTBOX=1 to disable (hard-fail to None).
+    Set FLEET_BUS_NO_OUTBOX=1 to disable (hard-fail to None).
     """
     try:
         # ── Test-traffic discipline guard (2026-09-07) ──
@@ -239,7 +239,7 @@ def bus_send(queue: str, message_body: dict) -> dict | None:
         return {"queued": False, "permanent": True, "error": str(e)}
     except (ConnectionError, OSError, json.JSONDecodeError) as e:
         logging.getLogger("fleet_bus").warning("bus_send failed: %s", e)
-        if os.environ.get("CORTEX_BUS_NO_OUTBOX") == "1":
+        if os.environ.get("FLEET_BUS_NO_OUTBOX") == "1":
             return None
         try:
             try:
@@ -397,7 +397,7 @@ def _bus_get(endpoint: str, fallback: bool = False) -> dict:
     """GET to bus API with Bearer→Basic auth fallback (mirrors _bus_post).
 
     Tries the primary URL with the configured auth scheme; on 401/403 with
-    Bearer and a CORTEX_BASIC_AUTH available, retries with Basic (nginx
+    Bearer and a FLEET_BASIC_AUTH available, retries with Basic (nginx
     validates Basic auth and sets X-Forwarded-User — Bearer is ignored
     through the proxy). When fallback=True, uses BUS_FALLBACK_URL instead.
     """
@@ -416,8 +416,8 @@ def _bus_get(endpoint: str, fallback: bool = False) -> dict:
     try:
         return _try(scheme, creds)
     except HTTPError as e:
-        if e.code in (401, 403) and scheme == "Bearer" and CORTEX_BUS_AUTH:
-            basic_creds = base64.b64encode(CORTEX_BUS_AUTH.encode()).decode()
+        if e.code in (401, 403) and scheme == "Bearer" and FLEET_BUS_AUTH:
+            basic_creds = base64.b64encode(FLEET_BUS_AUTH.encode()).decode()
             try:
                 return _try("Basic", basic_creds)
             except (HTTPError, URLError, OSError, json.JSONDecodeError) as basic_err:
@@ -526,9 +526,9 @@ def bus_health() -> dict:
         try:
             return _try(base_url, scheme, creds)
         except HTTPError as e:
-            if e.code in (401, 403) and scheme == "Bearer" and CORTEX_BUS_AUTH:
+            if e.code in (401, 403) and scheme == "Bearer" and FLEET_BUS_AUTH:
                 # Mirror _bus_post: Bearer token may be stale — fall back to Basic auth
-                basic_creds = base64.b64encode(CORTEX_BUS_AUTH.encode()).decode()
+                basic_creds = base64.b64encode(FLEET_BUS_AUTH.encode()).decode()
                 try:
                     return _try(base_url, "Basic", basic_creds)
                 except (HTTPError, URLError, OSError, json.JSONDecodeError) as basic_err:

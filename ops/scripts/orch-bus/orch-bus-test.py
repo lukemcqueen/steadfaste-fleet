@@ -6,8 +6,8 @@ Tests all endpoints, auth, permissions, error handling, and edge cases.
 Returns non-zero exit code if any test fails.
 
 Usage:
-    CORTEX_BUS_PG_HOST=127.0.0.1 CORTEX_BUS_PG_PORT=15432 \
-    CORTEX_BUS_PG_USER=mycortex CORTEX_BUS_PG_PASS=... \
+    FLEET_BUS_PG_HOST=127.0.0.1 FLEET_BUS_PG_PORT=15432 \
+    FLEET_BUS_PG_USER=mycortex FLEET_BUS_PG_PASS=... \
     python3 test_orch_bus.py
 """
 
@@ -18,12 +18,12 @@ import uuid
 import urllib.request
 import urllib.error
 
-BASE_URL = os.environ.get("CORTEX_BUS_TEST_URL", "http://127.0.0.1:8906")
+BASE_URL = os.environ.get("FLEET_BUS_TEST_URL", "http://127.0.0.1:8906")
 # Tokens MUST come from env — never hardcode credentials in repo.
 TOKENS = {
-    "moses": os.environ.get("CORTEX_BUS_TOKEN_MOSES", ""),
-    "esther": os.environ.get("CORTEX_BUS_TOKEN_ESTHER", ""),
-    "joseph": os.environ.get("CORTEX_BUS_TOKEN_JOSEPH", ""),
+    "moses": os.environ.get("FLEET_BUS_TOKEN_MOSES", ""),
+    "esther": os.environ.get("FLEET_BUS_TOKEN_ESTHER", ""),
+    "joseph": os.environ.get("FLEET_BUS_TOKEN_JOSEPH", ""),
 }
 
 PASS = 0

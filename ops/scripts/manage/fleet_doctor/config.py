@@ -23,40 +23,40 @@ HOME = Path.home()
 IS_MAC = sys.platform == "darwin"
 IS_LINUX = sys.platform == "linux"
 HERMES_HOME = Path(os.environ.get("HERMES_HOME", HOME / ".hermes"))
-CORTEX_HOME = Path(os.environ.get("HERMES_CORTEX_HOME", HOME / ".steadfaste-fleet"))
+FLEET_HOME = Path(os.environ.get("HERMES_CORTEX_HOME", HOME / ".steadfaste-fleet"))
 JOBS_FILE = HERMES_HOME / "cron" / "jobs.json"
-CORTEX_ENV = HOME / "steadfaste-fleet" / ".env"
+FLEET_ENV = HOME / "steadfaste-fleet" / ".env"
 LEGACY_MODELS_ENV = HERMES_HOME / "models.env"
 CONFIG_FILE = HERMES_HOME / "config.yaml"
 
 # ── fleet repo discovery ───────────────────────────────────────
-CORTEX_REPO = Path(fleet_env_get("REPO") or "")
-if not CORTEX_REPO.is_dir() or not (CORTEX_REPO / "AGENTS.md").exists():
+FLEET_REPO = Path(fleet_env_get("REPO") or "")
+if not FLEET_REPO.is_dir() or not (FLEET_REPO / "AGENTS.md").exists():
     for candidate in [HOME / "steadfaste-fleet", HOME / "src" / "steadfaste-fleet"]:
         if candidate.is_dir() and (candidate / "AGENTS.md").exists():
-            CORTEX_REPO = candidate
+            FLEET_REPO = candidate
             break
 # Normalize to an absolute path. When the env var is unset and the doctor
 # runs from the repo cwd, Path("") stays relative "." — then the
-# repo_dir == CORTEX_REPO exclusion in check_dev_repo_agents compares an
+# repo_dir == FLEET_REPO exclusion in check_dev_repo_agents compares an
 # absolute path against a relative one, never matches, and the fleet repo
 # itself gets flagged as a stale dev repo (2026-08-10).
-CORTEX_REPO = CORTEX_REPO.resolve()
+FLEET_REPO = FLEET_REPO.resolve()
 
-SCRIPTS_SRC = CORTEX_REPO / "ops" / "scripts"
+SCRIPTS_SRC = FLEET_REPO / "ops" / "scripts"
 INSTALL_CRONS = SCRIPTS_SRC / "install-crons.sh"
-CORTEX_UPDATE = SCRIPTS_SRC / "fleet-update.sh"
+FLEET_UPDATE = SCRIPTS_SRC / "fleet-update.sh"
 INSTALL_ORCH_CRONS = SCRIPTS_SRC / "install" / "install-orch-crons.sh"
 INSTALL_DREAM_CRONS = SCRIPTS_SRC / "install" / "install-dream-crons.sh"
 # Marker created by install-dream-crons.sh when the optional dream layer is
 # installed; removed on --uninstall. The doctor only EXPECTS dream crons when
 # this marker exists — optional layer, conditional expectation (Luke 2026-08-06).
-DREAM_LAYER_MARKER = CORTEX_HOME / "state" / "dream-layer-installed"
-INSTALL_SCRIPT = CORTEX_REPO / "ops" / "install" / "install.sh"
+DREAM_LAYER_MARKER = FLEET_HOME / "state" / "dream-layer-installed"
+INSTALL_SCRIPT = FLEET_REPO / "ops" / "install" / "install.sh"
 INSTALL_OLLAMA = SCRIPTS_SRC / "install" / "install-ollama.sh"
 INSTALL_SCORE_HOOK = SCRIPTS_SRC / "install" / "install-score-hook.sh"
 SYMLINK_AUDIT = SCRIPTS_SRC / "manage" / "symlink-audit.sh"
-MCP_SERVERS_DIR = CORTEX_REPO / "mcp-servers"
+MCP_SERVERS_DIR = FLEET_REPO / "mcp-servers"
 
 # ── Passthrough ─────────────────────────────────────────────────
 CURL = os.environ.get("CURL_BIN", "curl")
@@ -85,14 +85,14 @@ def resolve_external_base() -> str:
     try:
         for _line in _env_file.read_text().splitlines():
             _line = _line.strip()
-            if _line.startswith("CORTEX_DOCTOR_BASE="):
+            if _line.startswith("FLEET_DOCTOR_BASE="):
                 _val = _line.split("=", 1)[1].strip().strip('"').strip("'")
                 if _val:
                     return _val.rstrip("/")
     except (FileNotFoundError, OSError):
         pass  # expected — silently handled
 
-    for env_key in ("CORTEX_BUS_URL", "CORTEX_BUS_FALLBACK_URL"):
+    for env_key in ("FLEET_BUS_URL", "FLEET_BUS_FALLBACK_URL"):
         url = os.environ.get(env_key, "")
         if url:
             from urllib.parse import urlparse
@@ -109,7 +109,7 @@ def resolve_external_base() -> str:
                     continue
                 k, v = (x.strip().strip("'\"").strip() for x in line.split("=", 1))
                 v = re.sub(r"\s+#.*$", "", v).strip()
-                if k in ("CORTEX_BUS_URL", "CORTEX_BUS_FALLBACK_URL") and v:
+                if k in ("FLEET_BUS_URL", "FLEET_BUS_FALLBACK_URL") and v:
                     from urllib.parse import urlparse
                     parsed = urlparse(v)
                     if parsed.scheme and parsed.hostname:
@@ -126,7 +126,7 @@ _PORT_PREFIX = "13"
 try:
     for _line in _PORT_PREFIX_ENV.read_text().split("\n"):
         _line = _line.strip()
-        if _line.startswith("CORTEX_NGINX_PORT_PREFIX="):
+        if _line.startswith("FLEET_NGINX_PORT_PREFIX="):
             _val = _line.split("=", 1)[1].strip().strip('"').strip("'")
             if _val:
                 _PORT_PREFIX = _val
@@ -179,8 +179,8 @@ CORE_FOOTPRINT = [
 ]
 
 # ── Bus alert config paths ──────────────────────────────────────
-REPO_OWNERS_PATH = CORTEX_HOME / "config" / "repo-owners.yaml"
-REPO_OWNERS_TEMPLATE = CORTEX_REPO / "docs" / "templates" / "repo-owners.yaml"
+REPO_OWNERS_PATH = FLEET_HOME / "config" / "repo-owners.yaml"
+REPO_OWNERS_TEMPLATE = FLEET_REPO / "docs" / "templates" / "repo-owners.yaml"
 BUS_CONFIG_PATHS = [
     HOME / "steadfaste-fleet" / ".env",
 ]
@@ -279,7 +279,7 @@ def find_script_consumers(roots=None):
     """Scan the repo's script-bearing trees for .env variable names.
 
     RECURSIVE, and over every tree a consumer can live in. The previous version iterated
-    `CORTEX_REPO/ops/scripts` NON-recursively, while the real consumers sit in
+    `FLEET_REPO/ops/scripts` NON-recursively, while the real consumers sit in
     `ops/scripts/manage/`, `ops/offline/`, `ops/web-cache/` and `mcp-servers/` — so the doctor
     reported three HEALTHY model variables (JUDGE_MODEL, EMBEDDING_MODEL, CODING_MODEL) as
     "defined but zero consumer scripts reference it" (measured 2026-10-14). A check that cannot
@@ -289,7 +289,7 @@ def find_script_consumers(roots=None):
     already counted, and a test that mentions a variable name does not READ it.
     """
     if roots is None:
-        roots = [CORTEX_REPO / "ops", CORTEX_REPO / "core", CORTEX_REPO / "mcp-servers"]
+        roots = [FLEET_REPO / "ops", FLEET_REPO / "core", FLEET_REPO / "mcp-servers"]
     known_vars = ["JUDGE_MODEL", "EMBEDDING_MODEL", "CODING_MODEL", "CREATIVE_MODEL"]
     consumers = {v: [] for v in known_vars}
     skip_dirs = {"__pycache__", ".git", "node_modules", "docs", "evidence", "fixtures",

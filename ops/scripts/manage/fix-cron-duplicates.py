@@ -27,7 +27,7 @@ import sys
 from pathlib import Path
 
 HOME = Path.home()
-REPO = Path(os.environ.get("CORTEX_REPO", HOME / "steadfaste-fleet"))
+REPO = Path(os.environ.get("FLEET_REPO", HOME / "steadfaste-fleet"))
 CRON_JOBS = HOME / ".hermes" / "cron" / "jobs.json"
 INSTALL_CRONS = REPO / "ops" / "scripts" / "install-crons.sh"
 INSTALL_ORCH_CRONS = REPO / "ops" / "scripts" / "install" / "install-orch-crons.sh"

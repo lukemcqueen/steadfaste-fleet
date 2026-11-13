@@ -20,12 +20,12 @@ from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.error import URLError
 
-CORTEX_HOME = Path(os.environ.get("CORTEX_DEPLOY_HOME", Path.home() / ".steadfaste-fleet"))
-TRACKER_DB = CORTEX_HOME / "data" / "message-tracker.json"
-BUS_URL = os.environ.get("CORTEX_BUS_URL", "http://127.0.0.1:8903")
+FLEET_HOME = Path(os.environ.get("FLEET_DEPLOY_HOME", Path.home() / ".steadfaste-fleet"))
+TRACKER_DB = FLEET_HOME / "data" / "message-tracker.json"
+BUS_URL = os.environ.get("FLEET_BUS_URL", "http://127.0.0.1:8903")
 BUS_FALLBACK_URL = os.environ.get(
-    "CORTEX_BUS_FALLBACK_URL",
-    os.environ.get("CORTEX_BUS_FALLBACK_URL", ""),
+    "FLEET_BUS_FALLBACK_URL",
+    os.environ.get("FLEET_BUS_FALLBACK_URL", ""),
 )
 CONFIG_FILE = Path.home() / "steadfaste-fleet" / ".env"
 
@@ -43,19 +43,19 @@ def _get_auth_header() -> tuple[str, str]:
     """Return (scheme, credentials) for bus auth.
     
     Tries in order:
-      1. Bearer token from CORTEX_BUS_TOKEN (env or config)
-      2. Basic auth from CORTEX_BASIC_AUTH (env or config)
+      1. Bearer token from FLEET_BUS_TOKEN (env or config)
+      2. Basic auth from FLEET_BASIC_AUTH (env or config)
     
     Returns (scheme, value) where scheme is 'Bearer' or 'Basic'.
     Falls back to ('Basic', '') if nothing configured.
     """
     import base64
     
-    token = os.environ.get("CORTEX_BUS_TOKEN", "") or _read_config("CORTEX_BUS_TOKEN")
+    token = os.environ.get("FLEET_BUS_TOKEN", "") or _read_config("FLEET_BUS_TOKEN")
     if token:
         return ("Bearer", token)
     
-    basic = os.environ.get("CORTEX_BASIC_AUTH", "") or _read_config("CORTEX_BASIC_AUTH")
+    basic = os.environ.get("FLEET_BASIC_AUTH", "") or _read_config("FLEET_BASIC_AUTH")
     if basic:
         encoded = base64.b64encode(basic.encode()).decode()
         return ("Basic", encoded)

@@ -25,7 +25,7 @@ info()  { echo -e "${CYAN}ℹ${RESET} $*"; }
 
 # ── Config ──────────────────────────────────────────────────
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")
-CORTEX_UPDATE="${REPO_ROOT}/ops/scripts/fleet-update.sh"
+FLEET_UPDATE="${REPO_ROOT}/ops/scripts/fleet-update.sh"
 
 # Get staged files (no deletions, no binary/lock)
 STAGED=$(git diff --cached --name-only --diff-filter=ACMR \
@@ -93,7 +93,7 @@ for f in $STAGED; do
   case "$f" in
     *.sh|*.py)
       if grep -q '/etc/nginx/' "$f" 2>/dev/null; then
-        if ! grep -q 'brew_dir\|NGINX_BREW_DIR\|NGINX_DIR\|os-config\|CORTEX_OS\|IS_MAC\|IS_LINUX' "$f" 2>/dev/null; then
+        if ! grep -q 'brew_dir\|NGINX_BREW_DIR\|NGINX_DIR\|os-config\|FLEET_OS\|IS_MAC\|IS_LINUX' "$f" 2>/dev/null; then
           warn "$f uses /etc/nginx/ but lacks brew_dir/os-config.sh — macOS incompatible"
           HAS_ISSUES=1
         else
@@ -101,7 +101,7 @@ for f in $STAGED; do
         fi
       fi
       if grep -q '/opt/homebrew/etc/nginx' "$f" 2>/dev/null; then
-        if ! grep -q 'CORTEX_OS\|IS_MAC\|uname\|Darwin' "$f" 2>/dev/null; then
+        if ! grep -q 'FLEET_OS\|IS_MAC\|uname\|Darwin' "$f" 2>/dev/null; then
           warn "$f uses /opt/homebrew path but no OS guard — Linux incompatible"
           HAS_ISSUES=1
         else
@@ -119,16 +119,16 @@ done
 # plus ops/scripts/quality/evidence-*.sh). Warning about those on every edit they receive
 # trains the reader to ignore the warning — and an ignored warning is how a genuinely
 # missed registration gets missed. An ADDED file is the case this check exists for.
-if [[ -f "$CORTEX_UPDATE" ]]; then
+if [[ -f "$FLEET_UPDATE" ]]; then
   ADDED_FILES="$(git diff --cached --name-only --diff-filter=A 2>/dev/null || true)"
   for f in $ADDED_FILES; do
     # Skip files not in deploy/ or ops/scripts/
     case "$f" in
       deploy/*|ops/scripts/*)
         basename_f=$(basename "$f")
-        if ! grep -q "$basename_f" "$CORTEX_UPDATE" 2>/dev/null; then
+        if ! grep -q "$basename_f" "$FLEET_UPDATE" 2>/dev/null; then
           warn "NEW file $f is not registered in fleet-update.sh register() —"
-          info "  Add: register \"$f\" \"\${CORTEX_DEPLOY_HOME}/scripts/$(basename $f)\""
+          info "  Add: register \"$f\" \"\${FLEET_DEPLOY_HOME}/scripts/$(basename $f)\""
           info "  Or state why it is checkout-only (a run-scoped evidence tool needs no entry)."
           HAS_ISSUES=1
         fi

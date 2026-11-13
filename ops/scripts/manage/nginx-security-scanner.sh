@@ -26,13 +26,13 @@
 # ─────────────────────────────────────────────────────────────
 set -euo pipefail
 
-CORTEX_REPO="${CORTEX_REPO:-${HOME}/steadfaste-fleet}"
-BLOCKED_IPS="${CORTEX_REPO}/ops/install/deploy/nginx/blocked_ips.add"
+FLEET_REPO="${FLEET_REPO:-${HOME}/steadfaste-fleet}"
+BLOCKED_IPS="${FLEET_REPO}/ops/install/deploy/nginx/blocked_ips.add"
 # Use deploy-blocked-ips.sh for minimal-root deploy
 HERMES_HOME="${HERMES_HOME:-${HOME}/.hermes}"
 DEPLOY_SCRIPT="${HERMES_HOME}/scripts/deploy-blocked-ips.sh"
 if [ ! -x "$DEPLOY_SCRIPT" ]; then
-  DEPLOY_SCRIPT="${CORTEX_REPO}/ops/scripts/manage/deploy-blocked-ips.sh"
+  DEPLOY_SCRIPT="${FLEET_REPO}/ops/scripts/manage/deploy-blocked-ips.sh"
 fi
 STATE_FILE="${HOME}/.steadfaste-fleet/state/nginx-scanner-lastrun"
 

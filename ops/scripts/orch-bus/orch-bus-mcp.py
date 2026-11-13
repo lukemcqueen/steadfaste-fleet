@@ -2,7 +2,7 @@
 """
 Agent Bus MCP Server — send, read, and watch messages via the Agent Bus.
 
-Reads CORTEX_INBOX_URL, CORTEX_INBOX_AUTH, and AGENT_NAME from:
+Reads FLEET_INBOX_URL, FLEET_INBOX_AUTH, and AGENT_NAME from:
   1. Environment variables
   2. ~/steadfaste-fleet/.env (key=value format)
 
@@ -60,8 +60,8 @@ CONFIG_FILES = [
     Path.home() / ".hermes" / ".env",
 ]
 
-inbox_url = os.environ.get("CORTEX_INBOX_URL", "")
-inbox_auth = os.environ.get("CORTEX_INBOX_AUTH", "")
+inbox_url = os.environ.get("FLEET_INBOX_URL", "")
+inbox_auth = os.environ.get("FLEET_INBOX_AUTH", "")
 agent_name = os.environ.get("AGENT_NAME", "")
 
 for CONFIG_FILE in CONFIG_FILES:
@@ -75,24 +75,24 @@ for CONFIG_FILE in CONFIG_FILES:
                     k, v = line.split("=", 1)
                     k = k.strip()
                     v = v.strip().strip("'\"")
-                    if k == "CORTEX_INBOX_URL" and not inbox_url:
+                    if k == "FLEET_INBOX_URL" and not inbox_url:
                         inbox_url = v
-                    elif k == "CORTEX_INBOX_AUTH" and not inbox_auth:
+                    elif k == "FLEET_INBOX_AUTH" and not inbox_auth:
                         inbox_auth = v
                     elif k == "AGENT_NAME" and not agent_name:
                         agent_name = v
         except Exception as e:
             log.warning(f"Failed to read {CONFIG_FILE}: {e}")
 
-# Derive base URL: strip trailing path from the configured CORTEX_BUS_URL
+# Derive base URL: strip trailing path from the configured FLEET_BUS_URL
 if inbox_url:
     BASE_URL = re.sub(r"/(send|api/pgmq/.*)$", "", inbox_url)
     IS_LOCAL_FALLBACK = False
 else:
     BASE_URL = "http://localhost:8903"
     IS_LOCAL_FALLBACK = True
-    log.warning("❗ CORTEX_INBOX_URL not configured — routing to %s (local only). "
-                "Set CORTEX_INBOX_URL in ~/steadfaste-fleet/.env for external agents.",
+    log.warning("❗ FLEET_INBOX_URL not configured — routing to %s (local only). "
+                "Set FLEET_INBOX_URL in ~/steadfaste-fleet/.env for external agents.",
                 BASE_URL)
 
 # Build auth header if credentials available
@@ -320,7 +320,7 @@ def _inbox_read(args: dict) -> CallToolResult:
         return CallToolResult(content=[TextContent(type="text",
             text="Read failed (HTTP 401 Unauthorized). Configure credentials:\n"
                  "  nano ~/steadfaste-fleet/.env\n"
-                 "  Set: CORTEX_INBOX_AUTH=user:pass")])
+                 "  Set: FLEET_INBOX_AUTH=user:pass")])
     else:
         return CallToolResult(content=[TextContent(type="text", text=f"Read failed (HTTP {status}): {resp_body}")])
 
@@ -336,7 +336,7 @@ def _inbox_watch(args: dict) -> CallToolResult:
     if status != 200:
         if status == 401:
             return CallToolResult(content=[TextContent(type="text",
-                text="Watch failed (HTTP 401). Configure CORTEX_INBOX_AUTH in ~/steadfaste-fleet/.env")])
+                text="Watch failed (HTTP 401). Configure FLEET_INBOX_AUTH in ~/steadfaste-fleet/.env")])
         return CallToolResult(content=[TextContent(type="text", text=f"Watch failed (HTTP {status}): {resp_body}")])
 
     try:

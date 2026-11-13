@@ -12,7 +12,7 @@
 # Usage:  bash ops/scripts/manage/emit-skills-ownership-evidence.sh > docs/evidence/skills-ownership-<date>.txt
 set -uo pipefail
 
-PY="${CORTEX_PY:-python3}"
+PY="${FLEET_PY:-python3}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OWNER="${HERE}/migrate-skills-ownership.py"
 PUBLISHER="${HERE}/publish-agent-skills.py"

@@ -279,7 +279,7 @@ sys.exit(1)
   if $exists && { $FORCE || ${_do_edit:-false}; } && [[ -n "$HERMES_CMD" ]]; then
     # Find job_id by name from jobs.json directly
     local job_id _tmp
-    _tmp="${CORTEX_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/state/_cron_find.py"
+    _tmp="${FLEET_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/state/_cron_find.py"
     mkdir -p "$(dirname "$_tmp")"
     cat > "$_tmp" << 'PYEOF'
 import json, sys
@@ -396,7 +396,7 @@ PYEOF
 # per-cron model switch in the manifest is never reverted by a re-install.
 pin_cron_model() {
   local name="$1" model="$2" provider="$3" reasoning_effort="$4"
-  local _mf="${CORTEX_REPO:-$HOME/steadfaste-fleet}/ops/install/cron-manifest.yaml"
+  local _mf="${FLEET_REPO:-$HOME/steadfaste-fleet}/ops/install/cron-manifest.yaml"
   # Env chain is the single control point (2026-09-09): when LLM_CRON_MODEL/
   # LLM_CRON_PROVIDER are set, manifest model/provider pins are IGNORED so an
   # upstream manifest sync can never re-pin crons to a dead model again
@@ -1181,7 +1181,7 @@ printf "${CYAN}  9. Skill Collection Pipeline${RESET}\n"
 
 # Collect custom skills every 6h — scans skills dirs, reports to the orchestrator inbox
 #  (Restored: send-skill-report — rewritten to use /api/pgmq/send with Bearer/Basic auth.
-#  Now resolves CORTEX_BUS_URL → CORTEX_BUS_FALLBACK_URL, supports Basic auth for nginx proxy.
+#  Now resolves FLEET_BUS_URL → FLEET_BUS_FALLBACK_URL, supports Basic auth for nginx proxy.
 #  Fixed: was using deprecated /api/send endpoint. See ops/scripts/manage/send-skill-report.py)
 #  Agent inbox migrated to Agent Bus (PGMQ). Collect-agent-skills.sh
 #  Note: agent-collect-skills.sh script still on disk for manual debugging,

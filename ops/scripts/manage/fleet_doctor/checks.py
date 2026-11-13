@@ -33,11 +33,11 @@ from .config import (
   HOME,
   IS_MAC,
   IS_LINUX,
-  CORTEX_REPO,
-  CORTEX_HOME,
+  FLEET_REPO,
+  FLEET_HOME,
   HERMES_HOME,
   JOBS_FILE,
-  CORTEX_ENV,
+  FLEET_ENV,
   LEGACY_MODELS_ENV,
   CONFIG_FILE,
   INSTALL_CRONS,
@@ -66,13 +66,13 @@ ORPHAN_REAPER_TAG = "[orphan-reaper]"
 
 
 # The ONE canonical fleet env (gitignored). Module-level so tests can
-# redirect it: monkeypatch.setattr(checks, "CORTEX_ENV_FILE", tmp_path / ".env").
-CORTEX_ENV_FILE = Path.home() / "steadfaste-fleet" / ".env"
+# redirect it: monkeypatch.setattr(checks, "FLEET_ENV_FILE", tmp_path / ".env").
+FLEET_ENV_FILE = Path.home() / "steadfaste-fleet" / ".env"
 
 
 def _read_config_from_bus_conf(key: str) -> str:
   """Read a value from .env by key. Returns '' if not found."""
-  conf_path = CORTEX_ENV_FILE
+  conf_path = FLEET_ENV_FILE
   if not conf_path.exists():
     return ""
   try:
@@ -94,7 +94,7 @@ def _deploy_map() -> dict:
   a non-orchestrator host because they do not deploy there).
   """
   out: dict = {}
-  cortex_update = CORTEX_REPO / "ops" / "scripts" / "fleet-update.sh"
+  cortex_update = FLEET_REPO / "ops" / "scripts" / "fleet-update.sh"
   if not cortex_update.exists():
     return out
   for line in cortex_update.read_text(errors="replace").splitlines():
@@ -106,7 +106,7 @@ def _deploy_map() -> dict:
       continue
     if s.startswith("register_orch ") and AGENT_ROLE != "orchestrator":
       continue
-    dest = (m.group(2).replace("${CORTEX_DEPLOY_HOME}", str(CORTEX_HOME))
+    dest = (m.group(2).replace("${FLEET_DEPLOY_HOME}", str(FLEET_HOME))
                       .replace("${HOME}", str(Path.home())))
     out[m.group(1)] = Path(dest)
   return out
@@ -137,31 +137,31 @@ def _stripped_md5(data: bytes) -> str:
 
 def check_repo(res: "Results") -> None:
   """1. Repo integrity: on main, clean, up to date."""
-  if not CORTEX_REPO.is_dir():
+  if not FLEET_REPO.is_dir():
     res.add(
-      "Repo exists", "FAIL", f"Not found at {CORTEX_REPO}",
-      "Set CORTEX_REPO env var or clone to ~/steadfaste-fleet",
+      "Repo exists", "FAIL", f"Not found at {FLEET_REPO}",
+      "Set FLEET_REPO env var or clone to ~/steadfaste-fleet",
     )
     return
-  if not (CORTEX_REPO / ".git").is_dir():
+  if not (FLEET_REPO / ".git").is_dir():
     res.add("Repo git", "FAIL", "Not a git repository", "Run: git init or git clone")
     return
 
-  branch = run_bg(["git", "-C", str(CORTEX_REPO), "rev-parse", "--abbrev-ref", "HEAD"])
+  branch = run_bg(["git", "-C", str(FLEET_REPO), "rev-parse", "--abbrev-ref", "HEAD"])
   if branch == "main":
     res.add("Repo branch", "PASS", f"on '{branch}'")
   else:
     res.add("Repo branch", "WARN", f"on '{branch}' not 'main'", "Run: git checkout main")
 
-  status = run_bg(["git", "-C", str(CORTEX_REPO), "status", "--porcelain"])
+  status = run_bg(["git", "-C", str(FLEET_REPO), "status", "--porcelain"])
   if not status:
     res.add("Repo clean", "PASS")
   else:
     lines = status.count("\n") + 1
     res.add("Repo clean", "WARN", f"{lines} uncommitted change(s)", "Run: git status to review")
 
-  run(["git", "-C", str(CORTEX_REPO), "fetch", "origin", "--quiet"], timeout=15)
-  behind = run_bg(["git", "-C", str(CORTEX_REPO), "rev-list", "--count", "HEAD..origin/main"])
+  run(["git", "-C", str(FLEET_REPO), "fetch", "origin", "--quiet"], timeout=15)
+  behind = run_bg(["git", "-C", str(FLEET_REPO), "rev-list", "--count", "HEAD..origin/main"])
   if behind and behind != "0":
     res.add("Repo sync", "WARN", f"{behind} commit(s) behind origin/main", "REQUIRED: git pull --rebase")
   else:
@@ -177,12 +177,12 @@ def check_repo(res: "Results") -> None:
   # Fail-closed is UNCHANGED: a deploy-map file whose deployed copy differs (or is
   # missing) still FAILs, and the failing files are NAMED. A revision that cannot
   # be resolved is reported as could-not-verify, never as a pass.
-  update_commit_file = CORTEX_HOME / "state" / "update-commit"
+  update_commit_file = FLEET_HOME / "state" / "update-commit"
   if update_commit_file.exists():
     deployed_commit = update_commit_file.read_text().strip()
-    head_commit = run_bg(["git", "-C", str(CORTEX_REPO), "rev-parse", "HEAD"])
+    head_commit = run_bg(["git", "-C", str(FLEET_REPO), "rev-parse", "HEAD"])
     if deployed_commit and head_commit and deployed_commit != head_commit:
-      resolvable = run_bg(["git", "-C", str(CORTEX_REPO), "rev-parse", "--verify", "--quiet",
+      resolvable = run_bg(["git", "-C", str(FLEET_REPO), "rev-parse", "--verify", "--quiet",
                            deployed_commit + "^{commit}"])
       if not resolvable:
         res.add("Deploy sync", "WARN",
@@ -190,7 +190,7 @@ def check_repo(res: "Results") -> None:
             f"could not verify what changed since it",
             "Run: fleet-update.sh")
       else:
-        changed = run_bg(["git", "-C", str(CORTEX_REPO), "diff", "--name-only",
+        changed = run_bg(["git", "-C", str(FLEET_REPO), "diff", "--name-only",
                           f"{deployed_commit}..HEAD"]) or ""
         dmap = _deploy_map()
         not_deployed = []
@@ -200,7 +200,7 @@ def check_repo(res: "Results") -> None:
           if dest is None:
             continue                      # not a deployed artifact (docs/evidence/tests)
           checked += 1
-          src_text = run_bg(["git", "-C", str(CORTEX_REPO), "show", f"HEAD:{rel}"])
+          src_text = run_bg(["git", "-C", str(FLEET_REPO), "show", f"HEAD:{rel}"])
           if not src_text:
             not_deployed.append(f"{rel} (unreadable at HEAD)")
             continue
@@ -259,14 +259,14 @@ def check_deployed_gate_smoke(res: "Results") -> None:
   try:
     import json as _json
     import subprocess as _sp
-    verifier = CORTEX_HOME / "scripts" / "adversarial-verify.py"
+    verifier = FLEET_HOME / "scripts" / "adversarial-verify.py"
     if not verifier.exists():
       res.add("Deployed gate smoke", "INFO",
               "adversarial-verify.py not deployed — nothing to smoke-test")
       return
     # Run the deployed verifier against a malformed-TOON fixture; if the
     # lib path is broken, the TOON check silently no-ops → 0 findings.
-    tmp_fixture = CORTEX_HOME / "state" / ".gate-smoke-toon.py"
+    tmp_fixture = FLEET_HOME / "state" / ".gate-smoke-toon.py"
     tmp_fixture.parent.mkdir(parents=True, exist_ok=True)
     tmp_fixture.write_text(
         "tasks[2]{id,title}:\n  T-1,a\n  T-2,b\n", encoding="utf-8")
@@ -317,8 +317,8 @@ def check_adversarial_review(res: "Results") -> None:
         close refuses with "reviewer unavailable" — fail loudly, correctly, but
         the operator must be able to see and fix it).
   """
-  template = CORTEX_HOME / "templates" / "adversarial-reviewer-prompt.md"
-  repo_template = CORTEX_REPO / "docs" / "templates" / "adversarial-reviewer-prompt.md"
+  template = FLEET_HOME / "templates" / "adversarial-reviewer-prompt.md"
+  repo_template = FLEET_REPO / "docs" / "templates" / "adversarial-reviewer-prompt.md"
 
   # (a) Template present and carries the reviewer marker.
   t = template if template.exists() else repo_template
@@ -344,9 +344,9 @@ def check_adversarial_review(res: "Results") -> None:
   # → WARN with the interpreter remedy; real import errors stay FAIL.
   try:
     import importlib.util as _ilu
-    mcp = CORTEX_HOME / "tools" / "loop-governance" / "loop-gov-mcp.py"
+    mcp = FLEET_HOME / "tools" / "loop-governance" / "loop-gov-mcp.py"
     if not mcp.exists():
-      mcp = CORTEX_REPO / "mcp-servers" / "loop-gov-mcp.py"
+      mcp = FLEET_REPO / "mcp-servers" / "loop-gov-mcp.py"
     spec = _ilu.spec_from_file_location("loop_gov_doctor_probe", mcp)
     mod = _ilu.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -603,7 +603,7 @@ def _score_cycle_consumers(search_roots=None):
   consumer.
   """
   if search_roots is None:
-    search_roots = [CORTEX_HOME / "scripts", CORTEX_REPO / "ops", CORTEX_REPO / "core"]
+    search_roots = [FLEET_HOME / "scripts", FLEET_REPO / "ops", FLEET_REPO / "core"]
   found = []
   for root in search_roots:
     root = Path(root)
@@ -668,14 +668,14 @@ def _is_cortex_worktree(repo_dir):
     return False
   target = text.split(":", 1)[1].strip()
   try:
-    return Path(target).resolve().is_relative_to((CORTEX_REPO / ".git").resolve())
+    return Path(target).resolve().is_relative_to((FLEET_REPO / ".git").resolve())
   except (OSError, ValueError):
     return False
 
 
 def check_dev_repo_agents(res: "Results") -> None:
   """1b. Development repos: check each project-level git repo has an AGENTS.md."""
-  if not CORTEX_REPO.is_dir():
+  if not FLEET_REPO.is_dir():
     return
 
   try:
@@ -719,7 +719,7 @@ def check_dev_repo_agents(res: "Results") -> None:
       continue
     repo_dir = Path(path).parent.resolve()
     skip = any(str(repo_dir).startswith(str(excl)) for excl in EXCLUDED)
-    if skip or repo_dir == CORTEX_REPO:
+    if skip or repo_dir == FLEET_REPO:
       continue
     if not _is_git_repo(repo_dir):
       # A bare `.git` DIRECTORY with nothing in it is not a repository. Counting it produced a
@@ -758,7 +758,7 @@ def check_dev_repo_agents(res: "Results") -> None:
     if "<!-- Hermes fleet efficiency block" not in content:
       res.add(f"AGENTS.md efficiency ({repo.name})", "WARN",
           "dev repo AGENTS.md missing fleet session-efficiency block",
-          f"Run: python3 {CORTEX_HOME}/scripts/apply-repo-efficiency.py {repo} --commit")
+          f"Run: python3 {FLEET_HOME}/scripts/apply-repo-efficiency.py {repo} --commit")
 
 
   unverified = []
@@ -808,7 +808,7 @@ def check_dev_repo_claude(res: "Results") -> None:
   if not claude_configured:
     return
 
-  if not CORTEX_REPO.is_dir():
+  if not FLEET_REPO.is_dir():
     return
 
   try:
@@ -842,7 +842,7 @@ def check_dev_repo_claude(res: "Results") -> None:
       continue
     repo_dir = Path(path).parent.resolve()
     skip = any(str(repo_dir).startswith(str(excl)) for excl in EXCLUDED)
-    if skip or repo_dir == CORTEX_REPO:
+    if skip or repo_dir == FLEET_REPO:
       continue
     # Only repos that are active (have commits) matter — skip empty repos.
     git_log = run_bg(["git", "-C", str(repo_dir), "log", "-1", "--oneline"])
@@ -890,7 +890,7 @@ def check_restart_pending(res):
   (Extracted from the removed check_soul_sync — SOUL.md is Hermes-owned
   and the fleet no longer manages it; this signal is unrelated and stays.)
   """
-  marker = CORTEX_HOME / "state" / "restart-pending"
+  marker = FLEET_HOME / "state" / "restart-pending"
   try:
     if marker.exists() and "updated:" in marker.read_text(encoding="utf-8", errors="replace"):
       res.add("Restart pending", "WARN",
@@ -910,7 +910,7 @@ def check_user_template(res):
   than the live file, the template changed and the agent should review theirs.
   Warn-only; the fix is a manual review of the new template, not a copy.
   """
-  template = CORTEX_REPO / "docs" / "templates" / "USER.seed.md"
+  template = FLEET_REPO / "docs" / "templates" / "USER.seed.md"
   live = Path.home() / ".hermes" / "memories" / "USER.md"
   if not template.exists():
     res.add("USER.md template", "INFO", "template not found at docs/templates/USER.seed.md",
@@ -937,8 +937,8 @@ def check_user_template(res):
 
 def check_skills(res):
   """2. Skills manifest: skills.yaml exists, valid YAML, has required always skills."""
-  skills_yaml = CORTEX_HOME / "skills.yaml"
-  template_yaml = CORTEX_REPO / "skills.yaml"
+  skills_yaml = FLEET_HOME / "skills.yaml"
+  template_yaml = FLEET_REPO / "skills.yaml"
 
   if not skills_yaml.exists():
     res.add("Skills manifest", "FAIL", f"Not found at {skills_yaml}",
@@ -1046,7 +1046,7 @@ def check_skills(res):
     if found:
       continue
     # Check repo skills with category subdirectory search
-    repo_skills = CORTEX_REPO / "skills"
+    repo_skills = FLEET_REPO / "skills"
     found_repo = False
     if repo_skills.is_dir():
       for cat_dir in repo_skills.iterdir():
@@ -1134,7 +1134,7 @@ def _check_changed_script_execution(res):
   import datetime as _dt
   import subprocess as _sp
   try:
-    repo = str(CORTEX_REPO)
+    repo = str(FLEET_REPO)
     since = _dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(days=CHANGED_SCRIPT_WINDOW_DAYS)
     out = _sp.run(
         ["git", "-C", repo, "log", f"--since={since.isoformat()}",
@@ -1390,7 +1390,7 @@ def _check_manifest_drift(res):
     _manifest_candidates = [
         Path(__file__).resolve().parent / "cron_manifest.py",           # scripts/fleet_doctor/
         Path(__file__).resolve().parent.parent / "manage" / "cron_manifest.py",  # scripts/manage/
-        CORTEX_REPO / "ops" / "scripts" / "manage" / "cron_manifest.py",
+        FLEET_REPO / "ops" / "scripts" / "manage" / "cron_manifest.py",
     ]
     _spec = None
     for _cand in _manifest_candidates:
@@ -1580,8 +1580,8 @@ def check_scripts(res):
     return
 
   jobs = data.get("jobs", []) if isinstance(data, dict) else data
-  script_dirs = [HERMES_HOME / "scripts", CORTEX_HOME / "scripts", HOME / ".local" / "bin"]
-  repo_scripts = CORTEX_REPO / "ops" / "scripts"
+  script_dirs = [HERMES_HOME / "scripts", FLEET_HOME / "scripts", HOME / ".local" / "bin"]
+  repo_scripts = FLEET_REPO / "ops" / "scripts"
   import hashlib as _hl
   missing = []
   mismatched = []
@@ -1672,7 +1672,7 @@ def check_cron_runtime_scripts(res):
   ~/.steadfaste-fleet/scripts, OR both resolve to the same directory.
   """
   runtime = HERMES_HOME / "scripts"
-  deploy = CORTEX_HOME / "scripts"
+  deploy = FLEET_HOME / "scripts"
 
   try:
     runtime_resolved = runtime.resolve()
@@ -1732,12 +1732,12 @@ def _check_bus_e2e(res):
     if bus_url:
       res.add("Bus config (URL)", "PASS", f"BUS_URL set")
     else:
-      res.add("Bus config (URL)", "FAIL", "BUS_URL not set", "Set CORTEX_BUS_URL in .env")
+      res.add("Bus config (URL)", "FAIL", "BUS_URL not set", "Set FLEET_BUS_URL in .env")
     if fallback_url:
       res.add("Bus config (fallback)", "PASS", f"FALLBACK_URL set")
     else:
       res.add("Bus config (fallback)", "WARN", "No FALLBACK_URL configured",
-          "Add CORTEX_BUS_FALLBACK_URL in .env for resilience")
+          "Add FLEET_BUS_FALLBACK_URL in .env for resilience")
   except Exception:
     return # fleet_bus not importable — bus checks handled by earlier import guard
 
@@ -1750,7 +1750,7 @@ def _check_bus_e2e(res):
     else:
       res.add("Bus health", "WARN", f"Status: {status}")
   except Exception as e:
-    res.add("Bus health", "FAIL", str(e), "Check CORTEX_BUS_URL in .env")
+    res.add("Bus health", "FAIL", str(e), "Check FLEET_BUS_URL in .env")
     return
 
   # ── 3. Self round-trip: send → read → archive ──
@@ -1767,7 +1767,7 @@ def _check_bus_e2e(res):
       return
   except Exception as e:
     res.add("Bus self (send)", "FAIL", str(e),
-        "Check: curl -u user:pass CORTEX_BUS_URL/api/pgmq/send")
+        "Check: curl -u user:pass FLEET_BUS_URL/api/pgmq/send")
     return
 
   # Read back OUR probe. A concurrent real message (peer EXEC_RESULT etc.)
@@ -1848,17 +1848,17 @@ def _check_bus_e2e(res):
   try:
     import urllib.error
     import urllib.request
-    from lib.fleet_bus import BUS_URL, CORTEX_BUS_TOKEN, CORTEX_BUS_AUTH
+    from lib.fleet_bus import BUS_URL, FLEET_BUS_TOKEN, FLEET_BUS_AUTH
     bus_url = BUS_URL
     # Try Bearer if token available, then fall back to Basic auth on 401/403.
     # The orchestrator bus accepts Basic (.env); a stale Bearer
     # token in .env must not mask the check as SKIP (2026-08-10).
     import base64
     attempts = []
-    if CORTEX_BUS_TOKEN:
-      attempts.append(("Bearer", CORTEX_BUS_TOKEN))
-    if CORTEX_BUS_AUTH:
-      attempts.append(("Basic", base64.b64encode(CORTEX_BUS_AUTH.encode()).decode()))
+    if FLEET_BUS_TOKEN:
+      attempts.append(("Bearer", FLEET_BUS_TOKEN))
+    if FLEET_BUS_AUTH:
+      attempts.append(("Basic", base64.b64encode(FLEET_BUS_AUTH.encode()).decode()))
     resp = None
     q_info = None
     for scheme, creds in attempts:
@@ -1902,15 +1902,15 @@ def _check_bus_e2e(res):
     import urllib.error
     import urllib.request
     from datetime import datetime, timezone
-    from lib.fleet_bus import BUS_URL, CORTEX_BUS_TOKEN, CORTEX_BUS_AUTH
+    from lib.fleet_bus import BUS_URL, FLEET_BUS_TOKEN, FLEET_BUS_AUTH
 
     agents = _known_agent_names()
 
     attempts = []
-    if CORTEX_BUS_TOKEN:
-      attempts.append(("Bearer", CORTEX_BUS_TOKEN))
-    if CORTEX_BUS_AUTH:
-      attempts.append(("Basic", base64.b64encode(CORTEX_BUS_AUTH.encode()).decode()))
+    if FLEET_BUS_TOKEN:
+      attempts.append(("Bearer", FLEET_BUS_TOKEN))
+    if FLEET_BUS_AUTH:
+      attempts.append(("Basic", base64.b64encode(FLEET_BUS_AUTH.encode()).decode()))
 
     if not agents or not attempts:
       res.add("Bus delivery age", "SKIP",
@@ -1984,7 +1984,7 @@ def _check_bus_e2e(res):
 
   # ── 5. Handler script check ──
   # Verify the handler script exists at the expected path (will be what processes EXEC)
-  handler_path = CORTEX_HOME / "scripts" / "agent-message-handler.py"
+  handler_path = FLEET_HOME / "scripts" / "agent-message-handler.py"
   if handler_path.is_file():
     handler_size = os.path.getsize(handler_path)
     res.add("Bus handler", "PASS",
@@ -2003,7 +2003,7 @@ def _known_agent_names() -> list:
   """
   names = []
   try:
-    registry_path = CORTEX_HOME / "state" / "agent-registry.json"
+    registry_path = FLEET_HOME / "state" / "agent-registry.json"
     if registry_path.is_file():
       reg = json.loads(registry_path.read_text())
       # Shape: {"version":…, "agents": {name: {name, role, host, …}}}
@@ -2031,8 +2031,8 @@ def _env_file_value(key: str) -> str:
   (~/steadfaste-fleet/.env), then the legacy ~/.steadfaste-fleet/steadfaste-fleet.env.
   The deploy dir (~/.steadfaste-fleet) holds no .env — it is a deployed path.
   """
-  for path in (CORTEX_ENV_FILE,
-               CORTEX_HOME / "steadfaste-fleet.env"):
+  for path in (FLEET_ENV_FILE,
+               FLEET_HOME / "steadfaste-fleet.env"):
     try:
       if not path.is_file():
         continue
@@ -2213,7 +2213,7 @@ def _check_self_stale(res):
   try:
     # This script's deployed path vs repo source path
     deployed = Path(__file__).resolve()
-    repo_source = CORTEX_REPO / "ops" / "scripts" / "manage" / "fleet_doctor" / "checks.py"
+    repo_source = FLEET_REPO / "ops" / "scripts" / "manage" / "fleet_doctor" / "checks.py"
 
     if not repo_source.is_file():
       res.add("Doctor self", "SKIP", "Cannot find repo source to compare versions")
@@ -2315,8 +2315,8 @@ def check_services(res):
             if v and "127.0.0.1" not in v:
               return v
       return ""
-    bus_url = _get_conf("CORTEX_BUS_URL")
-    bus_fallback = _get_conf("CORTEX_BUS_FALLBACK_URL")
+    bus_url = _get_conf("FLEET_BUS_URL")
+    bus_fallback = _get_conf("FLEET_BUS_FALLBACK_URL")
     if bus_url or bus_fallback:
       parts = []
       if bus_url:
@@ -2328,7 +2328,7 @@ def check_services(res):
     else:
       res.add("Agent Bus (direct)", "FAIL",
           "No bus URLs configured",
-          "Set CORTEX_BUS_URL (and CORTEX_BUS_FALLBACK_URL) in .env")
+          "Set FLEET_BUS_URL (and FLEET_BUS_FALLBACK_URL) in .env")
 
   _check_bus_e2e(res)
 
@@ -2585,7 +2585,7 @@ def check_system(res):
 
 def check_config(res):
   """6. Config consistency: steadfaste-fleet.env var cross-reference."""
-  env_path = CORTEX_ENV if CORTEX_ENV.exists() else LEGACY_MODELS_ENV
+  env_path = FLEET_ENV if FLEET_ENV.exists() else LEGACY_MODELS_ENV
   if not env_path.exists():
     res.add("Config (steadfaste-fleet.env)", "WARN", "Not found",
         "Create ~/steadfaste-fleet/.env with env vars")
@@ -2741,7 +2741,7 @@ def check_nginx(res):
         label = "SSL cert" if "key" not in m.group(0) else "SSL key"
         res.add(f"Nginx {label}", "FAIL",
             f"not found at '{raw}'",
-            "Renew cert: sudo certbot renew OR set CORTEX_SSL_CERT_PATH env var")
+            "Renew cert: sudo certbot renew OR set FLEET_SSL_CERT_PATH env var")
 
   if "__SSL_CERT__" not in text and cert_found > 0 and cert_missing == 0:
     res.add("Nginx SSL certs", "PASS", f"{len(seen_certs)} cert path(s) resolve")
@@ -2828,8 +2828,8 @@ def _check_enforcer_immutability(res, plugin_dir, hooks_dir):
     hooks_dir / "post-commit",
     hooks_dir / "post-push",
     hooks_dir / "post-merge",
-    CORTEX_HOME / "tools/loop-governance/loop-gov-mcp.py",
-    CORTEX_HOME / "scripts/hermes-plugin-lock",
+    FLEET_HOME / "tools/loop-governance/loop-gov-mcp.py",
+    FLEET_HOME / "scripts/hermes-plugin-lock",
   ]
   # P1-A hardening (2026-07-31): the hooks DIRECTORY itself must be immutable
   # (symlink-swap guard — hooks/pre-commit is a symlink; without dir +i an
@@ -2927,8 +2927,8 @@ def _check_fix_blocked_ips_root_copy(res):
   root_path = Path("/usr/local/sbin/fix-blocked-ips.py")
   if _is_macos:
     root_path = Path("/usr/local/bin/fix-blocked-ips.py")
-  src = CORTEX_REPO / "ops" / "install" / "deploy" / "nginx" / "fix-blocked-ips.py"
-  install_hint = (f"Run: sudo bash {CORTEX_REPO}/ops/install/deploy/nginx/"
+  src = FLEET_REPO / "ops" / "install" / "deploy" / "nginx" / "fix-blocked-ips.py"
+  install_hint = (f"Run: sudo bash {FLEET_REPO}/ops/install/deploy/nginx/"
                   f"deploy-fix-blocked-ips.sh")
 
   if not src.exists():
@@ -2987,13 +2987,13 @@ def _check_fix_blocked_ips_root_copy(res):
 def check_governance(res):
   """7. Governance system: plugin, pre-commit hook, MCP servers, lock files, score-cycle."""
   config_text = read_file(CONFIG_FILE)
-  state_dir = CORTEX_HOME / "state"
-  hooks_dir = CORTEX_HOME / "hooks"
+  state_dir = FLEET_HOME / "state"
+  hooks_dir = FLEET_HOME / "hooks"
   global_hooks_path = run_bg(["git", "config", "--global", "core.hooksPath"], timeout=5)
 
   # ── Governance plugin ──
   plugin_dir = HERMES_HOME / "plugins" / "governance-enforcer"
-  plugin_src = CORTEX_REPO / "plugins" / "governance-enforcer"
+  plugin_src = FLEET_REPO / "plugins" / "governance-enforcer"
   plugin_enabled = "governance-enforcer" in config_text and "enabled" in config_text
 
   # ── Legacy enforcer plugin check (2026-08-05) ──
@@ -3098,7 +3098,7 @@ def check_governance(res):
   # no DeepSeek entry exists. ABSENCE IS A PASS — the entry is host-optional and the installer
   # never creates it, so a host without one is not a fault, and a check that failed there would
   # be noise that teaches readers to ignore it.
-  _ds_installer = CORTEX_REPO / "ops" / "scripts" / "install" / "install-pi-mcp.sh"
+  _ds_installer = FLEET_REPO / "ops" / "scripts" / "install" / "install-pi-mcp.sh"
   if not _ds_installer.is_file():
     res.add("DeepSeek MCP tool name", "WARN",
         f"COULD NOT VERIFY: {_ds_installer} is missing",
@@ -3158,7 +3158,7 @@ def check_governance(res):
   #
   # The canonical value is READ FROM THE REVIEWER'S OWN SOURCE rather than restated here —
   # a second hardcoded copy is where a check and the code it checks drift apart.
-  _rv_source = CORTEX_REPO / "mcp-servers" / "loop-gov-mcp.py"
+  _rv_source = FLEET_REPO / "mcp-servers" / "loop-gov-mcp.py"
   try:
     # Explicit None check: relying on AttributeError from `.group()` to mean "pattern absent"
     # is the same failure shape as the gates this session has been fixing — it works, but the
@@ -3179,7 +3179,7 @@ def check_governance(res):
     def _reviewer_env(_name):
       """The value the REVIEWER resolves for `_name`, and its source.
 
-      Mirrors loop-gov-mcp.py's `_env_value` order — process env, then CORTEX_ENV_FILE, then
+      Mirrors loop-gov-mcp.py's `_env_value` order — process env, then FLEET_ENV_FILE, then
       ~/steadfaste-fleet/.env, then the deploy root, then the legacy ~/.hermes/.env. Kept in ONE
       small function on purpose: the order is duplicated from the server, so it must be
       readable at a glance and cheap to re-check.
@@ -3242,7 +3242,7 @@ def check_governance(res):
   try:
     import importlib.util as _ilu_mw
     _mw_spec = _ilu_mw.spec_from_file_location(
-        "mcp_wiring_for_doctor", CORTEX_REPO / "ops" / "scripts" / "manage" / "mcp_wiring.py")
+        "mcp_wiring_for_doctor", FLEET_REPO / "ops" / "scripts" / "manage" / "mcp_wiring.py")
     _mw = _ilu_mw.module_from_spec(_mw_spec)
     _mw_spec.loader.exec_module(_mw)
   except Exception as _mw_err:        # a broken audit must not kill the doctor…
@@ -3300,7 +3300,7 @@ def check_governance(res):
   # whether it landed. `--check` is read-only: it reports the registration, it adds none.
   pi_dir = HOME / ".pi" / "agent"
   if (pi_dir / "bin" / "pi").exists() or pi_dir.is_dir():
-    pi_check = CORTEX_HOME / "scripts" / "install-pi-integration.sh"
+    pi_check = FLEET_HOME / "scripts" / "install-pi-integration.sh"
     if not pi_check.exists():
       res.add("Pi integration", "WARN",
               f"Pi is installed but {pi_check} was not deployed — the adapter cannot be wired",
@@ -3322,7 +3322,7 @@ def check_governance(res):
           res.add("Pi integration", "WARN", _pi_last,
                   "Run: bash ~/.steadfaste-fleet/scripts/install-pi-integration.sh   (then re-check)")
 
-  # ── The declared fleet interpreter (CORTEX_PYTHON) ──
+  # ── The declared fleet interpreter (FLEET_PYTHON) ──
   # ONE name for "the fleet python", provisioned per host by the deploy. Reported as a host fact:
   # the point of declaring it is that a WRONG one is visible in one place instead of seven (every
   # caller that used to re-derive a path). It is probed WITHOUT an inherited PYTHONPATH, because a
@@ -3331,15 +3331,15 @@ def check_governance(res):
   _agent_env_file = HOME / ".steadfaste-fleet" / "agent.env"
   if not declared_py and _agent_env_file.is_file():
     for _line in _agent_env_file.read_text(errors="replace").splitlines():
-      if _line.startswith("CORTEX_PYTHON="):
+      if _line.startswith("FLEET_PYTHON="):
         declared_py = _line.split("=", 1)[1].strip()
         break
   if not declared_py:
-    res.add("Fleet python", "WARN", "no CORTEX_PYTHON declared — the built-in order applies",
+    res.add("Fleet python", "WARN", "no FLEET_PYTHON declared — the built-in order applies",
             "Run fleet-update.sh: it declares the fleet venv in ~/.steadfaste-fleet/agent.env")
   elif not Path(declared_py).expanduser().exists():
-    res.add("Fleet python", "FAIL", f"CORTEX_PYTHON points at nothing: {declared_py}",
-            "Fix CORTEX_PYTHON in ~/.steadfaste-fleet/agent.env, or run fleet-update.sh "
+    res.add("Fleet python", "FAIL", f"FLEET_PYTHON points at nothing: {declared_py}",
+            "Fix FLEET_PYTHON in ~/.steadfaste-fleet/agent.env, or run fleet-update.sh "
             "(it creates and fills an absent fleet venv)")
   else:
     try:
@@ -3351,7 +3351,7 @@ def check_governance(res):
       _ok = False
     res.add("Fleet python", "PASS" if _ok else "WARN",
             f"{declared_py} {'imports yaml + mcp' if _ok else 'cannot import yaml/mcp'}",
-            "" if _ok else f"Repair: {CORTEX_HOME}/scripts/fix-fleet-venv.py")
+            "" if _ok else f"Repair: {FLEET_HOME}/scripts/fix-fleet-venv.py")
 
   # ── Pre-commit hook ──
   expected_hook_path = hooks_dir / "pre-commit"
@@ -3404,7 +3404,7 @@ def check_governance(res):
 
   # ── Post-commit hook ──
   expected_post_commit = hooks_dir / "post-commit"
-  expected_post_commit_src = CORTEX_HOME / "scripts" / "post-commit-audit"
+  expected_post_commit_src = FLEET_HOME / "scripts" / "post-commit-audit"
   if not expected_post_commit.exists():
     res.add("Post-commit hook", "FAIL", "not installed",
         "Install: ln -sf ~/.steadfaste-fleet/scripts/post-commit-audit ~/.steadfaste-fleet/hooks/post-commit")
@@ -3436,7 +3436,7 @@ def check_governance(res):
   score_paths = [
     HOME / ".local" / "bin" / "score-cycle",
     Path("/usr/local/bin/score-cycle"),
-    CORTEX_HOME / "scripts" / "score-cycle",
+    FLEET_HOME / "scripts" / "score-cycle",
   ]
   found_score = None
   for p in score_paths:
@@ -3548,7 +3548,7 @@ def check_governance(res):
   _check_fix_blocked_ips_root_copy(res)
 
   # ── Governance bypass coverage ──
-  enforcer_path = CORTEX_REPO / "plugins" / "governance-enforcer" / "__init__.py"
+  enforcer_path = FLEET_REPO / "plugins" / "governance-enforcer" / "__init__.py"
   if enforcer_path.exists():
     enforcer_src = enforcer_path.read_text()
     # CR2 (2026-11-09): the classification TABLES live in the write-class
@@ -3556,7 +3556,7 @@ def check_governance(res):
     # the bypass-closure markers split by ownership: tool-set + hook-behaviour
     # markers stay on the enforcer; the command-pattern markers are checked
     # against the CONTRACT they actually live in.
-    contract_path = CORTEX_REPO / "ops" / "services" / "fleet-governance" / "write_class.py"
+    contract_path = FLEET_REPO / "ops" / "services" / "fleet-governance" / "write_class.py"
     contract_src = contract_path.read_text() if contract_path.exists() else ""
     checks = [
       ("WRITE_TOOLS includes execute_code", '"execute_code"' in enforcer_src),
@@ -3613,14 +3613,14 @@ def check_governance(res):
   # ── Git hooks verification ──
   # When core.hooksPath is set globally, git ignores .git/hooks/ entirely.
   # Any files or symlinks there are misleading dead weight — flag for removal.
-  # Only the deployed hooks at CORTEX_HOME/hooks/ are active.
+  # Only the deployed hooks at FLEET_HOME/hooks/ are active.
   hooks_via_global = bool(global_hooks_path.rstrip("/") == expected_hooks_path)
-  repo_hooks_dir = CORTEX_REPO / ".git" / "hooks"
-  deployed_hooks_dir = CORTEX_HOME / "hooks"
+  repo_hooks_dir = FLEET_REPO / ".git" / "hooks"
+  deployed_hooks_dir = FLEET_HOME / "hooks"
   for hook_name in ("pre-commit", "pre-push", "post-commit", "post-merge", "post-push"):
     deployed_hook = deployed_hooks_dir / hook_name
     git_hook = repo_hooks_dir / hook_name
-    repo_source = CORTEX_REPO / ".steadfaste-fleet" / "hooks" / hook_name
+    repo_source = FLEET_REPO / ".steadfaste-fleet" / "hooks" / hook_name
 
     # Check 1: deployed hook exists
     if not deployed_hook.exists():
@@ -3685,7 +3685,7 @@ def check_governance(res):
   # ever removed. Scan for them and flag for removal.
   managed_hooks = {"pre-commit", "pre-push", "post-commit", "post-merge"}
   search_dirs = [
-    CORTEX_REPO.resolve(),
+    FLEET_REPO.resolve(),
   ]
   # Also scan home-level .git dirs for other repos that might have hooks
   for d in HOME.iterdir():
@@ -3742,7 +3742,7 @@ def check_governance(res):
   # moved on without scoring it (observed 2026-08-05: 3 pinned-hooks-dogfood
   # cycles sat PENDING while later tasks ran). The current task's cycle
   # (active lock exists) is expected mid-session and reported as INFO.
-  _loop_db = CORTEX_HOME / "data" / "loop-governance.db"
+  _loop_db = FLEET_HOME / "data" / "loop-governance.db"
   _pending_count = 0
   if _loop_db.exists():
     try:
@@ -3755,7 +3755,7 @@ def check_governance(res):
       # Only terminal-state locks (completed/cancelled) are treated as
       # inactive, matching the task state machine.
       _active_tasks = set()
-      _state_dir = CORTEX_HOME / "state"
+      _state_dir = FLEET_HOME / "state"
       _terminal_states = {"completed", "cancelled"}
       _lock_errors = 0
       if _state_dir.is_dir():
@@ -3867,8 +3867,8 @@ def check_hook_drift(res):
     """
     import hashlib as _hl
 
-    HOOKS_DIR = CORTEX_HOME / "hooks"
-    REPO_HOOKS = CORTEX_REPO / "ops" / "scripts"
+    HOOKS_DIR = FLEET_HOME / "hooks"
+    REPO_HOOKS = FLEET_REPO / "ops" / "scripts"
     if not HOOKS_DIR.is_dir():
         res.add("Hook content drift", "SKIP", "hooks directory not found")
         return
@@ -4176,7 +4176,7 @@ def check_pinned_hooks_fresh(res):
                 continue
             if "Git " not in head or "hook" not in head:
                 continue  # foreign hook — preserved by design
-            deployed_src = CORTEX_HOME / "scripts" / repo_name
+            deployed_src = FLEET_HOME / "scripts" / repo_name
             if not deployed_src.exists():
                 continue
             file_md5 = _content_md5(hook_file)
@@ -4249,7 +4249,7 @@ def check_stale_deploys(res):
       continue
     src = m.group(1)
     dest_str = m.group(2)
-    dest_str = dest_str.replace("${CORTEX_DEPLOY_HOME}", str(deploy_home))
+    dest_str = dest_str.replace("${FLEET_DEPLOY_HOME}", str(deploy_home))
     dest_str = dest_str.replace("${HOME}", str(Path.home()))
     dest = Path(dest_str)
 
@@ -4330,11 +4330,11 @@ def check_install_sh_refs(res):
     return
   src = INSTALL_SCRIPT.read_text(errors="replace")
   helpers = {
-    "_scripts": CORTEX_REPO / "ops" / "scripts",
-    "_offline": CORTEX_REPO / "ops" / "offline",
-    "_core_gov": CORTEX_REPO / "core" / "governance",
-    "_deploy": CORTEX_REPO / "ops" / "install" / "deploy",
-    "_dashboard": CORTEX_REPO / "ops" / "services" / "dashboard",
+    "_scripts": FLEET_REPO / "ops" / "scripts",
+    "_offline": FLEET_REPO / "ops" / "offline",
+    "_core_gov": FLEET_REPO / "core" / "governance",
+    "_deploy": FLEET_REPO / "ops" / "install" / "deploy",
+    "_dashboard": FLEET_REPO / "ops" / "services" / "dashboard",
   }
   stale = []
   for helper, base in helpers.items():
@@ -4348,7 +4348,7 @@ def check_install_sh_refs(res):
         stale.append(f"{helper}/{rel} (line {line_no})")
   if stale:
     try:
-      rel_install = str(INSTALL_SCRIPT.relative_to(CORTEX_REPO))
+      rel_install = str(INSTALL_SCRIPT.relative_to(FLEET_REPO))
     except ValueError:
       rel_install = str(INSTALL_SCRIPT)
     res.add("Install refs", "WARN",
@@ -4370,7 +4370,7 @@ def check_stale_skills(res):
   Orphans are flagged as WARN. Missing skills (repo has them, deployed doesn't)
   are flagged as INFO with remediation hint.
   """
-  repo_skills = CORTEX_REPO / "skills"
+  repo_skills = FLEET_REPO / "skills"
   deployed_skills = HERMES_HOME / "skills"
   hermes_agent_dir = HERMES_HOME / "hermes-agent"
 
@@ -4478,8 +4478,8 @@ def check_deploy_checksums(res):
   """
   import hashlib as _hl
 
-  repo_dir = CORTEX_REPO
-  deploy_home = CORTEX_HOME
+  repo_dir = FLEET_REPO
+  deploy_home = FLEET_HOME
   if not repo_dir.is_dir():
     return
 
@@ -4583,7 +4583,7 @@ def check_deploy_checksums(res):
         continue
       src_rel = m.group(1)
       dest_str = m.group(2)
-      dest_str = dest_str.replace("${CORTEX_DEPLOY_HOME}", str(deploy_home))
+      dest_str = dest_str.replace("${FLEET_DEPLOY_HOME}", str(deploy_home))
       dest_str = dest_str.replace("${HOME}", str(HOME))
       src_path = repo_dir / src_rel
       dest_path = Path(dest_str)
@@ -4843,7 +4843,7 @@ def check_skills_loadable(res):
     to the items the checker owns, and a plugin dump is fixed at its plugin, not
     here.
     """
-    skills_dir = CORTEX_REPO / "skills"
+    skills_dir = FLEET_REPO / "skills"
     try:
         import yaml as yaml_mod
     except ImportError:
@@ -4905,7 +4905,7 @@ def check_skills_loadable(res):
 
 def check_skills_version(res):
     """Check that all repo skills have a version field in frontmatter."""
-    SKILLS_DIR = CORTEX_REPO / "skills"
+    SKILLS_DIR = FLEET_REPO / "skills"
     if not SKILLS_DIR.is_dir():
         return
     no_version = []
@@ -4914,14 +4914,14 @@ def check_skills_version(res):
         try:
             content = skill_md.read_text()
         except (OSError, UnicodeDecodeError) as e:
-            unreadable.append(f"{skill_md.relative_to(CORTEX_REPO)} ({type(e).__name__})")
+            unreadable.append(f"{skill_md.relative_to(FLEET_REPO)} ({type(e).__name__})")
             continue
         if not re.search(r'^version:\s+\S', content, re.MULTILINE):
             name = "unknown"
             m = re.search(r'^name:\s+(.+)$', content, re.MULTILINE)
             if m:
                 name = m.group(1).strip()
-            rel_path = skill_md.relative_to(CORTEX_REPO)
+            rel_path = skill_md.relative_to(FLEET_REPO)
             no_version.append((name, str(rel_path)))
     if unreadable:
         res.add("Skill version", "WARN",
@@ -4947,7 +4947,7 @@ def check_skill_fences(res):
     skill_view dumps (9a9efa91) with odd fence counts. An odd fence count
     corrupts rendering for every agent that loads the skill.
     """
-    SKILLS_DIR = CORTEX_REPO / "skills"
+    SKILLS_DIR = FLEET_REPO / "skills"
     if not SKILLS_DIR.is_dir():
         return
     unbalanced = []
@@ -4956,11 +4956,11 @@ def check_skill_fences(res):
         try:
             content = skill_md.read_text()
         except (OSError, UnicodeDecodeError) as e:
-            unreadable.append(f"{skill_md.relative_to(CORTEX_REPO)} ({type(e).__name__})")
+            unreadable.append(f"{skill_md.relative_to(FLEET_REPO)} ({type(e).__name__})")
             continue
         n = sum(1 for line in content.splitlines() if line.lstrip().startswith("```"))
         if n % 2 != 0:
-            rel = skill_md.relative_to(CORTEX_REPO)
+            rel = skill_md.relative_to(FLEET_REPO)
             unbalanced.append((n, str(rel)))
     if unreadable:
         res.add("Skill fences", "WARN",
@@ -4991,7 +4991,7 @@ def check_skill_stubs(res):
     with --send on each source agent, then restore the returned content into
     skills/ and re-run fleet-update.
     """
-    SKILLS_DIR = CORTEX_REPO / "skills"
+    SKILLS_DIR = FLEET_REPO / "skills"
     if not SKILLS_DIR.is_dir():
         return
     stubs = []
@@ -5000,7 +5000,7 @@ def check_skill_stubs(res):
         try:
             content = skill_md.read_text()
         except (OSError, UnicodeDecodeError) as e:
-            unreadable.append(f"{skill_md.relative_to(CORTEX_REPO)} ({type(e).__name__})")
+            unreadable.append(f"{skill_md.relative_to(FLEET_REPO)} ({type(e).__name__})")
             continue
         # Stubs are ~1KB. The size guard applies to BOTH markers — a full
         # doc that merely quotes 'Full content (truncated)' (e.g. the
@@ -5009,7 +5009,7 @@ def check_skill_stubs(res):
             "Full content (truncated)" in content
             or "--- End skill ---" in content
         ):
-            rel = skill_md.relative_to(CORTEX_REPO)
+            rel = skill_md.relative_to(FLEET_REPO)
             stubs.append((skill_md.stat().st_size, str(rel)))
     if unreadable:
         res.add("Skill stubs", "WARN",
@@ -5036,7 +5036,7 @@ def check_task_db(res):
     complete+archive it. Catches the F-04 class — a CLI that prints valid
     JSON while writes silently no-op (the old todo-db.py rc=0 bug).
     """
-    task_script = CORTEX_HOME / "scripts" / "task-db.py"
+    task_script = FLEET_HOME / "scripts" / "task-db.py"
     if not task_script.is_file():
         res.add("Task DB script", "FAIL",
             f"Not found at {task_script}",
@@ -5048,7 +5048,7 @@ def check_task_db(res):
     # from a cron/agent cwd that need not be a git repo — an unresolvable repo
     # returns [] by design, which would read as "database unreachable".
     out = run_bg(["python3", str(task_script), "pending",
-                  "--repo", CORTEX_REPO.name], timeout=15)
+                  "--repo", FLEET_REPO.name], timeout=15)
     if not out:
         res.add("Task DB connectivity", "FAIL",
             "task-db.py pending returned no output",
@@ -5073,7 +5073,7 @@ def check_task_db(res):
     probe = f"doctor-probe {uuid.uuid4().hex[:8]}"
     add_out = run_bg(["python3", str(task_script), "add", probe,
                       "--source", "doctor-probe",
-                      "--repo", CORTEX_REPO.name], timeout=20)
+                      "--repo", FLEET_REPO.name], timeout=20)
     if not add_out or "added" not in add_out.lower():
         res.add("Task DB write-probe", "FAIL",
             f"task-db.py add did not confirm: {add_out[:200] or '(no output)'}",
@@ -5082,7 +5082,7 @@ def check_task_db(res):
 
     # Read the probe back — same explicit repo as the add above.
     list_out = run_bg(["python3", str(task_script), "list", "--status", "pending",
-                       "--repo", CORTEX_REPO.name], timeout=20)
+                       "--repo", FLEET_REPO.name], timeout=20)
     probe_id = None
     for line in (list_out or "").splitlines():
         if probe in line:
@@ -5113,7 +5113,7 @@ def check_task_lifecycle_v2(res):
     loudly so a host silently degraded to v1 semantics is never mistaken for
     a healthy v2 deployment.
     """
-    task_script = CORTEX_HOME / "scripts" / "task-db.py"
+    task_script = FLEET_HOME / "scripts" / "task-db.py"
     if not task_script.is_file():
         return  # check_task_db already FAILs on the missing script
 
@@ -5277,7 +5277,7 @@ def check_skill_drift(res):
     Skills without a repo counterpart (Hermes defaults) are skipped.
     """
     deploy_skills = HOME / ".hermes" / "skills"
-    repo_skills = CORTEX_REPO / "skills"
+    repo_skills = FLEET_REPO / "skills"
     if not deploy_skills.is_dir() or not repo_skills.is_dir():
         return
 
@@ -5359,7 +5359,7 @@ def check_mem_plugins(res):
   config_text = read_file(CONFIG_FILE)
   for plugin in ("mycortex-mem", "prompt-guard"):
     plugin_dir = HERMES_HOME / "plugins" / plugin
-    plugin_src = CORTEX_REPO / "plugins" / plugin
+    plugin_src = FLEET_REPO / "plugins" / plugin
     if plugin_dir.exists() and (plugin_dir / "__init__.py").exists():
       res.add(f"{plugin} plugin", "PASS", f"installed at ~/.hermes/plugins/{plugin}")
       deployed_init = plugin_dir / "__init__.py"
@@ -5411,7 +5411,7 @@ def check_nginx_dir_purity(res):
     identifiable by their [Definition]/failregex markers — any conf in the
     nginx dir carrying them is misplaced and must be moved.
     """
-    nginx_dir = CORTEX_REPO / "ops" / "install" / "deploy" / "nginx"
+    nginx_dir = FLEET_REPO / "ops" / "install" / "deploy" / "nginx"
     if not nginx_dir.is_dir():
         res.add("Nginx dir purity", "INFO", "nginx deploy dir missing — nothing to scan")
         return
@@ -5592,13 +5592,13 @@ def _restraint_resolves(restraint) -> tuple:
         return (False, f"doctor check {name!r} not defined in checks.py")
 
     if kind == "hook":
-        for base in (CORTEX_REPO / "ops" / "scripts", CORTEX_HOME / "hooks", HERMES_HOME / "hooks"):
+        for base in (FLEET_REPO / "ops" / "scripts", FLEET_HOME / "hooks", HERMES_HOME / "hooks"):
             if (base / name).exists():
                 return (True, f"hook {name!r}")
         return (False, f"hook {name!r} not found")
 
     if kind == "skill":
-        for base in (CORTEX_REPO / "skills", HERMES_HOME / "skills"):
+        for base in (FLEET_REPO / "skills", HERMES_HOME / "skills"):
             if (base / name).is_dir():
                 return (True, f"skill {name!r}")
             if base.is_dir():
@@ -5631,7 +5631,7 @@ def check_restraint_registry(res: "Results") -> None:
     walks docs/guardrail-registry.json and FAILs any class whose `restraint`
     does not resolve to a real artifact on disk (doctor/hook/skill/enforcer).
     """
-    registry = CORTEX_REPO / "docs" / "guardrail-registry.json"
+    registry = FLEET_REPO / "docs" / "guardrail-registry.json"
     if not registry.exists():
         res.add("Restraint registry", "WARN",
                 "guardrail-registry.json not found — restraint presence unchecked",
@@ -5806,8 +5806,8 @@ def check_fleet_env(res: "Results") -> None:
     fleet-bus.conf that is not the sanctioned symlink.
     """
     canon = HOME / "steadfaste-fleet" / ".env"
-    deploy_env = CORTEX_HOME / ".env"
-    legacy = CORTEX_HOME / "fleet-bus.conf"
+    deploy_env = FLEET_HOME / ".env"
+    legacy = FLEET_HOME / "fleet-bus.conf"
 
     if not canon.exists() and not legacy.exists() and not deploy_env.exists():
         res.add("fleet env", "SKIP", "no fleet env on this host (not installed)")
@@ -5989,7 +5989,7 @@ def check_orphan_cycle_resolution(res) -> None:
      legitimately holds a new lock and the old close stays true; session identity
      is what makes the test decisive rather than noisy.
   """
-  db = CORTEX_HOME / "data" / "loop-governance.db"
+  db = FLEET_HOME / "data" / "loop-governance.db"
   if not db.exists():
     res.add("Orphan-cycle resolution", "INFO",
             f"no governance DB at {db} — nothing to corroborate")
@@ -6022,7 +6022,7 @@ def check_orphan_cycle_resolution(res) -> None:
   # possibly mid-write → skip it, never guess at its contents.
   _terminal = {"completed", "cancelled"}
   live: dict[str, set[str]] = {}
-  for lf in sorted((CORTEX_HOME / "state").glob(".governance-*.json")):
+  for lf in sorted((FLEET_HOME / "state").glob(".governance-*.json")):
     try:
       d = json.loads(lf.read_text())
     except (OSError, ValueError):
@@ -6078,7 +6078,7 @@ def check_repo_local_cortex_dir(res):
   The .gitignore rules that once hid this path are gone on purpose: unignored, a
   recurrence also shows up as untracked, which is how it was caught.
   """
-  stray = CORTEX_REPO / ".steadfaste-fleet"
+  stray = FLEET_REPO / ".steadfaste-fleet"
   if not stray.exists():
     res.add("Repo-local .steadfaste-fleet", "PASS", "absent — correct for the fleet repo")
     return
@@ -6159,8 +6159,8 @@ def _harness_cli():
   """
   # deployed: <deploy>/scripts/fleet is the launcher FILE; repo: the launcher is
   # ops/scripts/fleet/bin/fleet (ops/scripts/fleet itself is the package directory).
-  return next((c for c in (CORTEX_HOME / "scripts" / "fleet",
-                           CORTEX_REPO / "ops" / "scripts" / "fleet" / "bin" / "fleet")
+  return next((c for c in (FLEET_HOME / "scripts" / "fleet",
+                           FLEET_REPO / "ops" / "scripts" / "fleet" / "bin" / "fleet")
                if c.is_file()), None)
 
 
@@ -6314,7 +6314,7 @@ def check_harness_doc_conflicts(res):
   # pre-migration-token literals below, the enforcer's legacy-URL detection,
   # migration tools, docs/older + docs/evidence history) live elsewhere and
   # must not be swept — see docs/rename-followups-steadfaste-fleet.md.
-  repo_files = [CORTEX_REPO / "CLAUDE.md", CORTEX_REPO / ".mcp.json"]
+  repo_files = [FLEET_REPO / "CLAUDE.md", FLEET_REPO / ".mcp.json"]
   host_files = [
     HOME / ".claude" / "CLAUDE.md",
     HOME / ".claude" / "settings.json",

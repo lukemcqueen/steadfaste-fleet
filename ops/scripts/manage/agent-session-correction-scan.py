@@ -340,15 +340,15 @@ def load_bus_config() -> tuple[str, str, str]:
     pattern). Falls back to env vars, then defaults; returns agent_name which
     is 'moses' on the orchestrator host (no self-forward).
     """
-    bus_url = os.environ.get("CORTEX_BUS_URL", _os.path.join("http:", "", "127.0.0.1:13004"))
-    auth = os.environ.get("CORTEX_BASIC_AUTH", "")
+    bus_url = os.environ.get("FLEET_BUS_URL", _os.path.join("http:", "", "127.0.0.1:13004"))
+    auth = os.environ.get("FLEET_BASIC_AUTH", "")
     agent_name = os.environ.get("AGENT_NAME", "")
     if BUS_CONF.exists():
         for line in BUS_CONF.read_text().splitlines():
             line = line.strip()
-            if line.startswith("CORTEX_BUS_URL="):
+            if line.startswith("FLEET_BUS_URL="):
                 bus_url = line.split("=", 1)[1].strip().strip("\"'")
-            elif line.startswith("CORTEX_BASIC_AUTH="):
+            elif line.startswith("FLEET_BASIC_AUTH="):
                 auth = line.split("=", 1)[1].strip().strip("\"'")
             elif line.startswith("AGENT_NAME="):
                 agent_name = line.split("=", 1)[1].strip().strip("\"'")
@@ -367,7 +367,7 @@ def forward_to_orchestrator(result: dict) -> None:
     if agent_name.lower() in ("moses", "esther", ""):
         return  # orchestrator host — no self-forward
     if not auth:
-        print("ℹ️  No CORTEX_BASIC_AUTH — skipping forward to orchestrator.", file=sys.stderr)
+        print("ℹ️  No FLEET_BASIC_AUTH — skipping forward to orchestrator.", file=sys.stderr)
         return
     recid = result.get("recidivism_categories", {})
     summary = {

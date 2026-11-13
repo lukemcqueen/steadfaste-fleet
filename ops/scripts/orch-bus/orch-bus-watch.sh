@@ -39,7 +39,7 @@ fi
 
 # ── Config ─────────────────────────────────────────────────
 # Bus API base URL (PGMQ endpoints: /api/pgmq/queues, /api/pgmq/read)
-BUS_URL="${CORTEX_BUS_URL:-https://your-domain.com:13004}"
+BUS_URL="${FLEET_BUS_URL:-https://your-domain.com:13004}"
 AUTH=""
 
 # Try loading auth from config file — check new name first, fall back to old
@@ -55,7 +55,7 @@ if [ -f "$AUTH_FILE" ]; then
   source "$AUTH_FILE" 2>/dev/null || true
 fi
 # Support multiple auth var names (CORTEX_ preferred, old MOSES_ fallback)
-AUTH="${INBOX_AUTH:-${CORTEX_INBOX_AUTH:-${MOSES_INBOX_AUTH:-}}}"
+AUTH="${INBOX_AUTH:-${FLEET_INBOX_AUTH:-${MOSES_INBOX_AUTH:-}}}"
 
 # ── Poll queue depth via bus API ────────────────────────────
 URL="${BUS_URL}/api/pgmq/queues"

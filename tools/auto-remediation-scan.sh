@@ -3,23 +3,23 @@
 # remediate-scan governance close-out. Read-only: never writes state.
 # Usage: bash tools/auto-remediation-scan.sh
 set -euo pipefail
-CORTEX_REPO="${CORTEX_REPO:-$HOME/steadfaste-fleet}"
+FLEET_REPO="${FLEET_REPO:-$HOME/steadfaste-fleet}"
 JOBS_FILE="${JOBS_FILE:-$HOME/.hermes/cron/jobs.json}"
 SENSOR_SCRIPT="${SENSOR_SCRIPT:-$HOME/.steadfaste-fleet/scripts/agent-remediation-sensor.py}"
 FAIL=0
 
 echo "== FENCE BALANCE =="
-if [ ! -d "$CORTEX_REPO/skills" ]; then
-  echo "ERROR: skills dir not found at $CORTEX_REPO/skills"; FAIL=1
+if [ ! -d "$FLEET_REPO/skills" ]; then
+  echo "ERROR: skills dir not found at $FLEET_REPO/skills"; FAIL=1
 else
-  FILES=$(find "$CORTEX_REPO/skills" -name 'SKILL.md' | wc -l | tr -d ' ')
+  FILES=$(find "$FLEET_REPO/skills" -name 'SKILL.md' | wc -l | tr -d ' ')
   UNBAL=0
   while read -r f; do
     n=$(grep -c '^```' "$f" || true)
     if [ $((n % 2)) -ne 0 ]; then
       echo "  UNBALANCED: $f ($n fences)"; UNBAL=1; FAIL=1
     fi
-  done < <(find "$CORTEX_REPO/skills" -name 'SKILL.md')
+  done < <(find "$FLEET_REPO/skills" -name 'SKILL.md')
   echo "FILES_SCANNED=$FILES UNBALANCED_TOTAL=$UNBAL"
 fi
 
