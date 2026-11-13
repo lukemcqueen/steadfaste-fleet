@@ -13,4 +13,14 @@
 set -uo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-exec python3 "${REPO}/ops/scripts/manage/pii-gate-evidence.py" "$@"
+
+# pii-gate-evidence.py shells out to `sys.executable -m pytest`. Bare `python3`
+# (the agent runtime on the cron PATH) has no pytest — measured 2026-11-13,
+# where the run printed "(no output)" for the suite row. Resolve a pytest-capable
+# interpreter (fleet venv first), fail closed if absent.
+PY="${EVIDENCE_PY:-$(bash "${REPO}/ops/scripts/lib/python-with-module.sh" --print pytest)}"
+if [ -z "${PY}" ] || [ ! -x "${PY}" ]; then
+  echo "COULD NOT VERIFY — no interpreter on this host can import pytest" >&2
+  exit 3
+fi
+exec "${PY}" "${REPO}/ops/scripts/manage/pii-gate-evidence.py" "$@"

@@ -492,8 +492,10 @@ def test_the_committed_transcript_records_the_numbers_this_file_claims():
 
 # The revision BEFORE this change, pinned by SHA — never 'HEAD': the fix lands
 # in the same change as this test, so HEAD would resolve to the FIXED module and
-# the comparison would be a tautology.
-_PRE_UUID_FIX_REV = "4764289b"
+# the comparison would be a tautology. bd719004 "stop the PII gate refusing
+# canonical UUIDs as phone numbers" is the fix; cb984616 is its parent, whose
+# regex reproduces 5/5 of the UUID false positives (measured 2026-11-13).
+_PRE_UUID_FIX_REV = "cb984616"
 
 
 def test_the_uuid_false_positive_existed_before_this_change():
@@ -504,6 +506,14 @@ def test_the_uuid_false_positive_existed_before_this_change():
             f"could not extract {_PRE_UUID_FIX_REV} — the before/after cannot be "
             "verified here, so this is NOT a pass"
         )
+
+    # The pre-fix module's path constants (repo/skills dirs) point at their
+    # 2026-10-17 values, which don't match the current checkout, so the gate's
+    # shared-surface classification would skip the phone scan entirely and the
+    # comparison would be vacuous. This test targets the UUID-vs-phone NARROWING
+    # (the change under test), not path classification — force the shared
+    # surface so the pre-fix phone check actually runs.
+    prev._is_shared_surface_path = lambda _p: True
 
     def prev_gate(text: str) -> bool:
         args = {"path": str(_REPO / "docs" / "test.md"), "content": text}

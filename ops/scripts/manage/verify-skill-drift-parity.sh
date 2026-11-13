@@ -39,7 +39,16 @@ MIN_DOCTOR_LINES=100
 fail() { echo "FAIL: $*"; rc=1; }
 
 echo "== C1: fleet-doctor ran, and reports no skill drift for THESE skills =="
-doctor_raw="$(python3 ops/scripts/manage/fleet-doctor.py --quiet 2>&1)"
+# fleet-doctor.py's import graph pulls a heavy third-party stack (reportlab,
+# sphinx, numpy, docutils) — lazy imports, so bare `python3` usually works,
+# but the interpreter choice decides whether it does. Resolve by CAPABILITY
+# (fleet venv has yaml/mcp/pytest), fail closed if absent.
+DOCTOR_PY="$(bash "${REPO:-$PWD}/ops/scripts/lib/python-with-module.sh" --print yaml)"
+if [ -z "${DOCTOR_PY}" ] || [ ! -x "${DOCTOR_PY}" ]; then
+  echo "COULD NOT VERIFY — no interpreter can import the doctor's dependency stack" >&2
+  exit 3
+fi
+doctor_raw="$("${DOCTOR_PY}" ops/scripts/manage/fleet-doctor.py --quiet 2>&1)"
 doctor_rc=$?
 doctor_lines="$(printf '%s' "$doctor_raw" | grep -cE '^[[:space:]]*(✅|⚠️|❌|➖)' || true)"
 if [ "$doctor_lines" -lt "$MIN_DOCTOR_LINES" ]; then

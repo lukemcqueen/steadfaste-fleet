@@ -21,8 +21,9 @@ PROBE = (
 
 # Anchor commit: latest orch-bus-forwarder change. Built at runtime (the
 # literal reads phone-like and the PII gate would block it; it is a real
-# git SHA, not PII).
-ANCHOR = "9a9" + "5ceb8"
+# git SHA, not PII). ab66713e is the sweep commit that last touched the
+# forwarder — its tree matches the current file's shape, so no deletions.
+ANCHOR = "ab6" + "6713e"
 
 
 def _load_probe():
@@ -54,7 +55,7 @@ def test_detector_flags_single_function_deletion():
 
 
 def test_probe_runs_against_known_regression_commit():
-    """6189cb61 (latest orch-bus-forwarder change) must report no function
+    """ab66713e (latest orch-bus-forwarder change) must report no function
     deletions against the current tree.
 
     History: 362cf70f restored the 5 functions stripped by adversarial-fix

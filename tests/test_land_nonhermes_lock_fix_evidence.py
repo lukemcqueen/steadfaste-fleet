@@ -28,7 +28,7 @@ WARNING_SOURCES = (
     "Repo clean",
     "AGENTS.md efficiency",
     "Stale deploy",
-    "fleet-deployment-sync",
+    "cortex-deployment-sync",
     "cron-job-management",
     "fleet-commands",
     "governance-closeout",

@@ -78,7 +78,7 @@ except Exception:  # noqa: BLE001 — fail-safe fallback if fleet_lib absent
     DEFAULT_MODEL = "deepseek/deepseek-v4-pro-0813"
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-_ENV_CANDIDATES = [
+_ENV_FILE_PATHS = [
     os.path.expanduser("~/.steadfaste-fleet/.env"),
     os.path.join(_REPO_ROOT, ".env"),
 ]
@@ -111,7 +111,7 @@ def _read_key_from(path: str) -> str:
 # store (~/.steadfaste-fleet/.env), then a repo-local .env as a last resort.
 API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 if not API_KEY:
-    for _candidate in _ENV_CANDIDATES:
+    for _candidate in _ENV_FILE_PATHS:
         if os.path.isfile(_candidate):
             API_KEY = _read_key_from(_candidate)
             if API_KEY:

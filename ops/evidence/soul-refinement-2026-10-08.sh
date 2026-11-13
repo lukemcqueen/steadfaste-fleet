@@ -22,8 +22,18 @@ echo "HEAD=$(git rev-parse HEAD)"
 echo "origin/main=$(git rev-parse origin/main)"
 
 hr "1. adversarial A2 gate — the two changed skill files"
+# adversarial-verify.py's import graph pulls reportlab (and its transitive
+# deps: rlbidi, rlextra, hyphens, sphinx, annotationlib) — bare `python3`
+# (the agent runtime on the cron PATH) cannot import those. Resolve by
+# CAPABILITY, fail closed if absent. Measured 2026-11-13 (reportlab ->
+# ~/.hermes/hermes-agent/venv/bin/python3).
+AV_PY="$(bash "${REPO}/ops/scripts/lib/python-with-module.sh" --print reportlab)"
+if [ -z "${AV_PY}" ] || [ ! -x "${AV_PY}" ]; then
+  echo "COULD NOT VERIFY — no interpreter can import reportlab (needed by adversarial-verify.py)" >&2
+  exit 3
+fi
 for f in skills/devops/orch-skill-lifecycle/SKILL.md skills/devops/psql-automation/SKILL.md; do
-  python3 ops/scripts/quality/adversarial-verify.py --file "$f" --level A2 --gate \
+  "${AV_PY}" ops/scripts/quality/adversarial-verify.py --file "$f" --level A2 --gate \
     > /tmp/adv.out 2>&1
   rc=$?
   chk "A2 gate $f" 0 "$rc"
