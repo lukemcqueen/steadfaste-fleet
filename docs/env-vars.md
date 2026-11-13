@@ -1,21 +1,13 @@
 # Steadfaste Fleet — Environment Variable Reference
 
-**Naming (2026-11-13; the migration COMPLETED 2026-11-13):** `FLEET_*` is the
-only spelling. The `CORTEX_*` → `FLEET_*` sweep is done and the transition layer
-it needed is GONE: the dual-read fallback in `ops/scripts/fleet_lib/env.py`, the
-shell mirror `ops/scripts/lib/fleet-env-compat.sh`, and the `FLEET_DEPLOY_HOME`
-dual-export bridge have all been removed. `fleet_env.get("X")` resolves `FLEET_X`
-then the default — nothing else. A host still carrying the retired spelling is
-converted in place on its next deploy by `consolidate-env.sh`, which also FAILs
-`--check` if any `CORTEX_` line survives in `.env`.
-Covered by `tests/test_fleet_env_resolution.py::test_legacy_env_spelling_is_ignored`
-(a `CORTEX_<name>` is NOT read; `FLEET_` wins when both are set) and by
-`tests/test-consolidate-env.sh` (Case 1 converts a surviving `CORTEX_` spelling to
-`FLEET_*`; Case 4 asserts `--check` exits 1 and names a surviving retired name).
-The env family is `FLEET_*` only since release 2. The Hermes harness injects
-`FLEET_SESSION_*` (session identity) and `FLEET_DEPLOY_HOME` directly — already
-FLEET-spelled. There is no legacy spelling and no fallback; a surviving
-`CORTEX_*` token anywhere is a regression.
+**Naming convention (records the `CORTEX_*` → `FLEET_*` sweep, 2026-11-13):** this
+reference uses `FLEET_*` names. Sweep and host-cleanup record:
+`docs/runbooks/cortex-to-fleet-env-sweep.md`. The consolidation behaviour (a
+surviving retired name converted on deploy; `consolidate-env.sh --check` exits 1
+naming it) is asserted by the committed `tests/test-consolidate-env.sh` (Cases 1
+& 4). The harness injects `FLEET_SESSION_*` (session identity) and
+`FLEET_DEPLOY_HOME`, whose names are recorded below. Resolver read-behaviour is
+asserted by that resolver's own tests in this range, not restated here.
 Per-host verification and cleanup: `docs/runbooks/cortex-to-fleet-env-sweep.md`.
 
 All env variables used across the nginx deploy pipeline
