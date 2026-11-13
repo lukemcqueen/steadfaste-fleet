@@ -28,7 +28,7 @@ behavioral_principles:
  - After the `src/` → `ops/` repo migration (July 2026), many deployed scripts retained stale `src/` paths. When fixing a script that references `src/scripts/` or `src/loop-governance/`, check if the file moved to `ops/scripts/` or `runtime/loop-governance/`. The old `src/` tree was completely removed. Grep for `src/` references in any script you patch as a matter of course.
  - Bus on 8903, health-vector on 8905. Never conflate them. The bus ExecStart must use the Hermes venv python (has uvicorn), not /usr/bin/python3.
  - Name the bus service file fleet-bus.service — the doctor checks for exactly that name.
- - Verify bus setup at three layers: (1) systemctl is-active fleet-bus.service, (2) curl :8903/health returns backend pgmq, (3) nginx upstream cortex_bus_backend matches :8903. A running process on a port is not enough.
+ - Verify bus setup at three layers: (1) systemctl is-active fleet-bus.service, (2) curl :8903/health returns backend pgmq, (3) nginx upstream fleet_bus_backend matches :8903. A running process on a port is not enough.
  - After fleet-update , check ~/.hermes/scripts/ for symlinks that point outside the scripts dir. Cron's no_agent runtime rejects symlinks. Replace with real `cp` copies.
  - no_agent cron scripts don't inherit Hermes env vars. If a script needs CORTEX_BUS_TOKEN or CORTEX_BUS_URL, ensure they're set in `~/steadfaste-fleet/.env` — the ONE canonical fleet env (there is no deploy-dir `.env`; `~/.hermes/.env` is Hermes-owned and never merged).
  - After running install-orch-crons.sh, always check for stale old-name duplicate crons (bus-* vs orch-bus-*) and remove them. The installer doesn't auto-uninstall renamed crons.
