@@ -83,8 +83,15 @@ class Reviewer:
         return self.verdicts.get(path, _clean())
 
 
-def _drive(mod, blobs, reviewer, *, cap=12, budget=60.0, fresh=True):
-    """Run the per-blob pass with an injected reviewer over a throwaway store."""
+def _drive(mod, blobs, reviewer, *, cap=12, budget=60.0, fresh=True, rules_rev="test-rules"):
+    """Run the per-blob pass with an injected reviewer over a throwaway store.
+
+    rules_rev is fixed (2026-10-20 design): a stored verdict is admissible only
+    under the CURRENT rules revision, and an EMPTY revision admits nothing — so
+    without a non-empty rev every verdict is invalidated on the next pass and
+    the cache tests (calls == 0) can never hold. A test that wants to exercise
+    invalidation passes a DIFFERENT rev.
+    """
     conn = mod._db()
     return mod._review_uncovered_blobs(
         blobs,
@@ -93,6 +100,7 @@ def _drive(mod, blobs, reviewer, *, cap=12, budget=60.0, fresh=True):
         cap=cap,
         budget_s=budget,
         conn=conn,
+        rules_rev=rules_rev,
     )
 
 
@@ -122,13 +130,21 @@ def test_one_non_clean_blob_makes_the_range_not_clean(tmp_path):
     assert res["remaining"] == [], res
     assert res["blocking"], "a MEDIUM finding must surface as blocking: %s" % res
 
-    # and the clean blobs still cached work is kept: only the failing blob is re-asked
+    # and the clean blobs still cached work is kept: a recorded non-clean blob is
+    # NOT re-asked (identical content cannot produce a different verdict — it stays
+    # in `remaining` so the close still refuses until the content changes or the
+    # operator overrides), and the CLEAN blobs are not re-reviewed either.
     rev.calls.clear()
     again = _drive(mod, blobs, rev)
-    assert rev.calls == ["sha-b"], (
-        "a re-close must re-ask ONLY the blob that failed, not re-review the range: "
+    assert rev.calls == [], (
+        "a re-close must not re-review blobs that already carry a verdict: "
         f"{rev.calls} / {again}"
     )
+    assert again["remaining"] == ["sha-b"], (
+        "the unchanged failing blob stays uncovered so the close refuses: "
+        f"{again}"
+    )
+    assert again["already_judged"] == ["sha-b"], again
 
 
 def test_a_low_finding_annotates_and_does_not_block(tmp_path):

@@ -26,29 +26,53 @@ from pathlib import Path
 import pytest
 
 # ── Point at hermetic homes BEFORE importing the doctor module ──
+# The env must be set before config.py resolves FLEET_DEPLOY_HOME (import time),
+# but writing os.environ at MODULE LEVEL leaked into every later test in the
+# session: pytest imports all modules during collection, so the temp home stayed
+# set for unrelated tests (fleet_bus_bridge's _SCRIPTS_DIR, purge's STATE_DIR).
+# Set + reload inside a MODULE fixture instead, and restore at teardown.
 _TMP = tempfile.mkdtemp(prefix="doctor-pending-test-")
-os.environ["FLEET_DEPLOY_HOME"] = _TMP
-os.environ["HERMES_HOME"] = os.path.join(_TMP, "hermes")
+_SAVED_ENV = {k: os.environ.get(k) for k in ("FLEET_DEPLOY_HOME", "HERMES_HOME")}
 
 # Ensure the repo's doctor module is importable
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "ops" / "scripts" / "manage"))
 
-# The doctor resolves FLEET_DEPLOY_HOME at module import time (config.py). If
-# another collected test imported the doctor first, the cached module holds
-# the REAL home — this test's env override would silently not apply, and a
-# live session lock (e.g. an active governance cycle) would leak into the
-# hermetic assertion. Force a fresh resolve: reload config + checks after
-# setting the env vars (2026-08-24: full-suite run exposed this isolation
-# bug — test_terminal_lock_is_leak read the real home's lock).
-import fleet_doctor.config as _cfg  # noqa: E402
-importlib.reload(_cfg)
+from fleet_doctor.results import Results  # noqa: E402  (env-independent)
 
-from fleet_doctor import checks  # noqa: E402
-from fleet_doctor.results import Results  # noqa: E402
 
-# checks.py imports FLEET_DEPLOY_HOME from config — reload it too so it sees the
-# temp home.
-importlib.reload(checks)
+def _resolve_doctor():
+    """Reload config + checks under the CURRENT env (a fresh resolve each time)."""
+    import fleet_doctor.config as _cfg
+    importlib.reload(_cfg)
+    from fleet_doctor import checks as _checks
+    importlib.reload(_checks)
+    return _checks
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _hermetic_doctor():
+    """Point the doctor at a temp home for THIS module, restore afterwards.
+
+    The doctor resolves FLEET_DEPLOY_HOME at module import time (config.py). If
+    another collected test imported the doctor first, the cached module holds
+    the REAL home — this test's env override would silently not apply, and a
+    live session lock (e.g. an active governance cycle) would leak into the
+    hermetic assertion. Force a fresh resolve after setting the env vars, and
+    re-resolve under the RESTORED env at teardown so later modules do not see
+    a temp-home doctor (2026-08-24 full-suite isolation bug; 2026-11-13
+    module-level leak fixed here).
+    """
+    global checks
+    os.environ["FLEET_DEPLOY_HOME"] = _TMP
+    os.environ["HERMES_HOME"] = os.path.join(_TMP, "hermes")
+    checks = _resolve_doctor()
+    yield
+    for _k, _v in _SAVED_ENV.items():
+        if _v is None:
+            os.environ.pop(_k, None)
+        else:
+            os.environ[_k] = _v
+    _resolve_doctor()  # put a clean-env doctor back in sys.modules
 
 
 @pytest.fixture()

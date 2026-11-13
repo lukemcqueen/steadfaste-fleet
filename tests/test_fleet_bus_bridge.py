@@ -138,25 +138,28 @@ def test_runner_executes_python_script_and_captures_stdout(tmp_path):
     assert not (tmp_path / "state" / "telegram-notify.json").exists()
 
 
-def test_runner_local_deliver_saves_not_sends(tmp_path):
+def test_runner_local_deliver_saves_not_sends(tmp_path, monkeypatch):
     r = _load("fleet-bus-bridge-run")
     # _deliver('local') must write the output file and NOT touch the messenger.
-    import os
-    os.environ["FLEET_DEPLOY_HOME"] = str(tmp_path)
+    monkeypatch.setenv("FLEET_DEPLOY_HOME", str(tmp_path))
+    saved_env = r._FLEET_ENV
     r._FLEET_ENV = tmp_path
-    r._deliver("internal output", "testjob", "local")
-    log = tmp_path / "cron-output" / "testjob.log"
-    assert log.read_text().strip() == "internal output"
+    try:
+        r._deliver("internal output", "testjob", "local")
+        log = tmp_path / "cron-output" / "testjob.log"
+        assert log.read_text().strip() == "internal output"
+    finally:
+        r._FLEET_ENV = saved_env
 
 
-def test_runner_default_deliver_is_telegram(tmp_path):
+def test_runner_default_deliver_is_telegram(tmp_path, monkeypatch):
     # Non-'local' deliver must route to the messenger code path (not the local
     # save). We assert the dispatch decision: _deliver with deliver='' reaches
     # the notify branch (which attempts the real messenger; gated by env token
     # presence in the deployed lib, so we mock the import).
     r = _load("fleet-bus-bridge-run")
-    import os
-    os.environ["FLEET_DEPLOY_HOME"] = str(tmp_path)
+    monkeypatch.setenv("FLEET_DEPLOY_HOME", str(tmp_path))
+    saved_env = r._FLEET_ENV
     r._FLEET_ENV = tmp_path
     calls = []
     def fake_notify(text, subject=""):
