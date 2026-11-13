@@ -59,6 +59,7 @@ if not AGENT_NAME:
 os.environ["AGENT_NAME"] = AGENT_NAME
 # Ensure lib.fleet_bus is importable
 from hermes_paths import ensure_scripts_path
+from fleet_lib.env import get as fleet_env_get  # CORTEX_* -> FLEET_* dual-read
 ensure_scripts_path()
 
 # State file to track processed correlation_ids for idempotency
@@ -256,7 +257,7 @@ def normalize_tracked_subject(subject: str) -> str:
 # silently losing UPDATE_RESULTs. The worker survives (start_new_session),
 # writes its result here, and the sweep (_send_pending_update_results) sends
 # it on a later tick.
-UPDATE_PENDING_DIR = Path(os.environ.get("CORTEX_DEPLOY_HOME", Path.home() / ".steadfaste-fleet")) / "state" / "pending-update-results"
+UPDATE_PENDING_DIR = Path(fleet_env_get("DEPLOY_HOME", Path.home() / ".steadfaste-fleet")) / "state" / "pending-update-results"
 UPDATE_RESULT_TIMEOUT_S = 1800  # worker must finish within 30 min or the sweep declares timeout
 
 # Deployed task-db.py path (repo path used when developing/deploying).
@@ -725,7 +726,7 @@ except Exception:
     }
     # Fall back to the default pending dir so the sweep can still send this
     # correlation id instead of leaving a stale .running marker.
-    out_dir = Path(os.environ.get("CORTEX_DEPLOY_HOME", Path.home() / ".steadfaste-fleet")) / "state" / "pending-update-results"
+    out_dir = Path(fleet_env_get("DEPLOY_HOME", Path.home() / ".steadfaste-fleet")) / "state" / "pending-update-results"
 result.setdefault("success", False)
 out_dir.mkdir(parents=True, exist_ok=True)
 (out_dir / (corr + ".json")).write_text(json.dumps(result))
@@ -1559,7 +1560,7 @@ def main():
           payload = body.get("body", {})
           if isinstance(payload, str):
             payload = json.loads(payload)
-          stage_dir = Path(os.environ.get("CORTEX_DEPLOY_HOME", Path.home() / ".steadfaste-fleet")) / "state" / "skill-stub-recovery"
+          stage_dir = Path(fleet_env_get("DEPLOY_HOME", Path.home() / ".steadfaste-fleet")) / "state" / "skill-stub-recovery"
           stage_dir.mkdir(parents=True, exist_ok=True)
           host = payload.get("hostname", body.get("from", "unknown"))
           part = payload.get("part", 0)
@@ -1654,7 +1655,7 @@ def main():
       # collector state frozen since 07-28).
       if subject.startswith(("Learning Report", "LEARNING_REPORT")):
         try:
-          stage_dir = Path(os.environ.get("CORTEX_DEPLOY_HOME", Path.home() / ".steadfaste-fleet")) / "state" / "learning-reports"
+          stage_dir = Path(fleet_env_get("DEPLOY_HOME", Path.home() / ".steadfaste-fleet")) / "state" / "learning-reports"
           stage_dir.mkdir(parents=True, exist_ok=True)
           src_agent = body.get("from", "unknown") if isinstance(body, dict) else "unknown"
           ts = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -1687,7 +1688,7 @@ def main():
       # parts 2-31 archived 2026-08-14 01:00-02:15, verified same day).
       if subject.startswith("Skill Report:"):
         try:
-          stage_dir = Path(os.environ.get("CORTEX_DEPLOY_HOME", Path.home() / ".steadfaste-fleet")) / "state" / "skill-reports"
+          stage_dir = Path(fleet_env_get("DEPLOY_HOME", Path.home() / ".steadfaste-fleet")) / "state" / "skill-reports"
           stage_dir.mkdir(parents=True, exist_ok=True)
           src_agent = body.get("from", "unknown") if isinstance(body, dict) else "unknown"
           ts = datetime.now().strftime("%Y%m%d-%H%M%S")

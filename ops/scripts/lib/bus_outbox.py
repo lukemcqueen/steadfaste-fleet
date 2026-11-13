@@ -52,6 +52,11 @@ import random
 from datetime import datetime, timezone
 from pathlib import Path
 
+_scripts_dir = Path(__file__).resolve().parents[1]
+if str(_scripts_dir) not in sys.path:
+    sys.path.insert(0, str(_scripts_dir))
+from fleet_lib.env import get as fleet_env_get  # CORTEX_* -> FLEET_* dual-read
+
 try:  # adversarial-ignore: error-swallow — dual-mode import fallback (lib. vs bare)
     from lib.fleet_bus import bus_peek, bus_send, bus_find_duplicate  # noqa: E402
 except ImportError:
@@ -67,7 +72,7 @@ def _resolved_bus_send(queue, body):
 
 
 DEFAULT_RETRY_DIR = Path.home() / ".steadfaste-fleet" / "bus-retry"
-RETRY_DIR = Path(os.environ.get("CORTEX_BUS_RETRY_DIR", DEFAULT_RETRY_DIR))
+RETRY_DIR = Path(fleet_env_get("BUS_RETRY_DIR", DEFAULT_RETRY_DIR))
 QUARANTINE_DIR = RETRY_DIR / "quarantine"
 LOCK_FILE = RETRY_DIR / ".sweep.lock"
 
