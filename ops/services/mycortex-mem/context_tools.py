@@ -71,13 +71,13 @@ def resolve_identity(args: dict) -> tuple[str, str, str]:
     Precedence is fixed here and reused by BOTH access layers and by the harness
     trigger, so a checkpoint written by one is restorable by the other.
     """
-    key = (args.get("session_key") or os.environ.get("FLEET_SESSION_KEY") or os.environ.get("FLEET_SESSION_KEY", "")).strip()
+    key = (args.get("session_key") or os.environ.get("FLEET_SESSION_KEY", "")).strip()
     if key:
         return (key, "", "")
-    harness = (args.get("harness") or os.environ.get("FLEET_SESSION_HARNESS") or os.environ.get("FLEET_SESSION_HARNESS")
+    harness = (args.get("harness") or os.environ.get("FLEET_SESSION_HARNESS")
                or os.environ.get("AGENT_NAME") or "unknown").strip()
-    repo = (args.get("repo") or os.environ.get("FLEET_SESSION_REPO") or os.environ.get("FLEET_SESSION_REPO") or "").strip()
-    branch = (args.get("branch") or os.environ.get("FLEET_SESSION_BRANCH") or os.environ.get("FLEET_SESSION_BRANCH") or "").strip()
+    repo = (args.get("repo") or os.environ.get("FLEET_SESSION_REPO") or "").strip()
+    branch = (args.get("branch") or os.environ.get("FLEET_SESSION_BRANCH") or "").strip()
     if not repo:
         top = git("rev-parse", "--show-toplevel")
         repo = Path(top).name if top else ""
