@@ -308,12 +308,23 @@ GOVERNANCE_REPO_PATH = HOME / "steadfaste-fleet" / "plugins" / "governance-enfor
 GOVERNANCE_DEPLOY_PATH = HOME / ".hermes" / "plugins" / "governance-enforcer" / "__init__.py"
 
 
-def _require_dogfood() -> Optional[str]:
+def _require_dogfood(session_repo: Optional[Path] = None) -> Optional[str]:
     """Check if deployed plugin matches repo source.
 
-    Returns None if everything matches (dogfood is up to date).
-    Returns an error string blocking the change if dogfood is needed.
+    Returns None if everything matches (dogfood is up to date) OR the session
+    is not governing the steadfaste-fleet repo. A non-fleet repo cannot act on
+    the fleet enforcer's deploy state, so a stale deploy on one host must not
+    freeze unrelated repos (scoped 2026-11-14, same rule as the pre-commit
+    hook's _DOGFOOD_TOPLEVEL guard, 2026-10-01).
+    Returns an error string blocking the change if dogfood is needed and the
+    session governs the fleet repo.
     """
+    # Scope guard: only the steadfaste-fleet repo owns this dogfood state. A
+    # session whose repo is None (unresolvable) is not confirmed to be the
+    # fleet repo, so it must not be frozen — the outage is a host whose
+    # enforcer state could not be confirmed.
+    if session_repo is None or session_repo.resolve() != (HOME / "steadfaste-fleet").resolve():
+        return None
     repo_file = GOVERNANCE_REPO_PATH
     deploy_file = GOVERNANCE_DEPLOY_PATH
 
@@ -4337,8 +4348,11 @@ def _begin_change(args: dict) -> CallToolResult:
     if ttl > 86400:
         return CallToolResult(content=[TextContent(type="text", text="Error: TTL cannot exceed 86400 seconds (24 hours)")])
 
-    # ── Dogfood gate ──
-    dogfood_msg = _require_dogfood()
+    # ── Dogfood gate (scoped 2026-11-14) ──
+    # Only a session governing the steadfaste-fleet repo must dogfood the fleet
+    # enforcer. Resolve the session repo and pass it; a non-fleet or unknown
+    # repo never blocks (mirrors the pre-commit hook's _DOGFOOD_TOPLEVEL guard).
+    dogfood_msg = _require_dogfood(_session_repo_path(args))
     if dogfood_msg:
         return CallToolResult(content=[TextContent(type="text", text=dogfood_msg)])
 

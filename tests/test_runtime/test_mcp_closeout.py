@@ -47,8 +47,9 @@ def isolated():
         mcp.CACHE_DB = tmp / "cache.db"
         mcp.GOVERNANCE_STATE_DIR = tmp / "state"
         mcp.FORCE_AUDIT_PATH = mcp.GOVERNANCE_STATE_DIR / "force-acquire-audit.json"
-        # Isolate from the real deployed-vs-repo dogfood check
-        mcp._require_dogfood = lambda: None
+        # Isolate from the real deployed-vs-repo dogfood check.
+        # Arg-tolerant: _begin_change now calls _require_dogfood(session_repo).
+        mcp._require_dogfood = lambda *a, **k: None
         # Isolate the complexity/adversarial review from the REAL repo:
         # give the sandbox its own tiny governed repo so the reviewer never
         # diffs this working tree (its 20-file mid-session diff made the

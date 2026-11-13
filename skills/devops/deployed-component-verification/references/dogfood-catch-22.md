@@ -41,6 +41,15 @@ The dogfood check has TWO locations:
 
 Both must pass before you can commit and start work.
 
+**MCP-gate scoping (2026-11-14):** both locations are now scoped to the
+steadfaste-fleet repo. The hook gained its `${HOME}/steadfaste-fleet` guard on
+2026-10-01; `_require_dogfood()` in loop-gov-mcp.py gained the same scoping on
+2026-11-14 (a fence-free stale enforcer on one host was freezing every agent in
+every repo — the MCP gate compared global enforcer paths unconditionally).
+`begin_change` resolves the session repo via `_session_repo_path(args)` and only
+fires the check when that repo is `~/steadfaste-fleet`; a non-fleet or unknown
+repo never blocks. Fleet-repo enforcement is unchanged.
+
 ## How It Manifests
 
 | Scenario | Direction | Typical cause |
