@@ -522,12 +522,46 @@ def test_reviewer_leaf_callers_accept_passed_timeout():
         _check("passed agent timeout is honored", agent_calls.get("timeout") == 4321,
                f"got {agent_calls.get('timeout')}")
 
-        # Agent env fallback: no string->cx crash.
+        # Agent env fallback: no string->cx crash, and the DRY-resolved model is
+        # injected into the child's env (so reviewer-agent-pi.sh honors the fleet
+        # single source instead of its own hardcoded literal).
         agent_calls.clear()
-        with key_patch, mock.patch.object(mcp.subprocess, "run", side_effect=fake_run):
-            mcp._call_reviewer_agent("review", author="someone-else")
-        _check("agent env-fallback callable without a string crash",
-               isinstance(agent_calls.get("timeout"), int), f"got {agent_calls.get('timeout')}")
+        # Hermetic: pin the process env to a distinct sentinel so the assertion
+        # cannot pass (or fail) by coincidence with a host .env value. Process
+        # env wins the precedence chain, so _reviewer_model() must return this.
+        SENTINEL_MODEL = "sentinel/reviewer-model-8272"
+        saved_arm = os.environ.get("ADVERSARIAL_REVIEWER_MODEL")
+        os.environ["ADVERSARIAL_REVIEWER_MODEL"] = SENTINEL_MODEL
+        os.environ["CORTEX_REVIEW_PROBE_MARKER"] = "keep-me"
+        try:
+            def fake_run_env(*args, **kwargs):  # noqa: D103
+                agent_calls["timeout"] = kwargs.get("timeout")
+                agent_calls["env"] = kwargs.get("env")
+                return mock.Mock(returncode=0, stdout='{"verdict":"CLEAN"}', stderr="")
+
+            with key_patch, mock.patch.object(mcp.subprocess, "run", side_effect=fake_run_env):
+                mcp._call_reviewer_agent("review", author="someone-else")
+            _check("agent env-fallback callable without a string crash",
+                   isinstance(agent_calls.get("timeout"), int), f"got {agent_calls.get('timeout')}")
+            child_env = agent_calls.get("env") or {}
+            # The injected model is the value _reviewer_model() resolves (the
+            # sentinel, since process env wins), NOT a host .env coincidence.
+            _check("agent child env carries the DRY reviewer model",
+                   child_env.get("ADVERSARIAL_REVIEWER_MODEL") == SENTINEL_MODEL,
+                   f"got {child_env.get('ADVERSARIAL_REVIEWER_MODEL')!r}")
+            # The child must inherit the parent env verbatim PLUS the override —
+            # a regression that replaced dict(os.environ) with a fresh dict
+            # would strip the agent CLI's PATH/credentials and break it.
+            _check("agent child env preserves the parent process env",
+                   child_env.get("CORTEX_REVIEW_PROBE_MARKER") == "keep-me"
+                   and child_env.get("PATH") == os.environ.get("PATH"),
+                   "parent env vars missing from child env")
+        finally:
+            if saved_arm is None:
+                os.environ.pop("ADVERSARIAL_REVIEWER_MODEL", None)
+            else:
+                os.environ["ADVERSARIAL_REVIEWER_MODEL"] = saved_arm
+            os.environ.pop("CORTEX_REVIEW_PROBE_MARKER", None)
     finally:
         for k, v in saved.items():
             if v is None:

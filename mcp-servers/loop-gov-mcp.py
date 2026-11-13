@@ -5911,8 +5911,18 @@ def _call_reviewer_agent(prompt: str, author: Optional[str] = None,
             f"refusing SELF-REVIEW: the review agent '{agent}' is this change's "
             f"author ('{author}') — an author cannot adversarially review its own work")
     timeout = timeout if timeout is not None else _reviewer_env_timeout("ADVERSARIAL_REVIEW_AGENT_TIMEOUT", 900)
+    # DRY (cycle 8272): the child (e.g. reviewer-agent-pi.sh) reads
+    # ADVERSARIAL_REVIEWER_MODEL from ITS process env, which the gate does not
+    # populate from the fleet env file. Without injection the script silently
+    # falls back to its own hardcoded literal and the DRY single-source
+    # promise breaks the moment REVIEWER_MODEL_DEFAULT changes. Resolve the
+    # model here (env -> fleet env file -> fleet_lib constant) and pass it
+    # explicitly so the agent backend honors the same source as the llm path.
+    child_env = dict(os.environ)
+    child_env["ADVERSARIAL_REVIEWER_MODEL"] = _reviewer_model()
     proc = subprocess.run(
         shlex.split(cmd), input=prompt, capture_output=True, text=True, timeout=timeout,
+        env=child_env,
     )
     if proc.returncode != 0:
         raise RuntimeError(

@@ -1,0 +1,96 @@
+pi reviewer-model DRY — end-to-end verification (cycle 8272) 2026-11-13
+=======================================================================
+Task: confirm the DRY reviewer-model change actually works through the pi
+agent backend (reviewer-agent-pi.sh), the "openrouter/ prefix" edge flagged
+in cycle 8265. Titus pi is bus-only (no SSH), so verification ran with the
+REAL pi 1.5.2 installed on moses (`~/.local/share/mise/shims/pi`).
+
+FINDING: the pi path was NOT DRY — it silently ignored the fleet env file.
+-------------------------------------------------------------------------
+* reviewer-agent-pi.sh resolves its model as
+    MODEL="${ADVERSARIAL_REVIEWER_MODEL:-deepseek/deepseek-v4-pro-0813}"
+  i.e. ONLY from its own process env, falling back to a hardcoded literal.
+* The close gate (_call_reviewer_agent in mcp-servers/loop-gov-mcp.py)
+  spawned the command via subprocess.run(shlex.split(cmd), ...) with NO
+  `env=` override, so the child inherited only the GATE's process env.
+* Measured (real runtime): the running gate process had NO
+  ADVERSARIAL_REVIEWER_MODEL in /proc/<pid>/environ, and the fleet env file
+  (~/.steadfaste-fleet/.env sets ADVERSARIAL_REVIEWER_MODEL=
+  "deepseek/deepseek-v4-pro-0813") was never visible to the script.
+* Consequence: the pi backend worked today only because all three sources
+  happened to equal deepseek/deepseek-v4-pro-0813. If REVIEWER_MODEL_DEFAULT
+  changed (the whole point of the DRY constant), the pi path would keep the
+  stale literal — the "changing the reviewer in one line" promise was false
+  for the agent backend. The `openrouter/` prefix itself was ALREADY correct
+  (pi accepts the bare deepseek/<model> id; default provider is openrouter).
+
+FIX (this cycle)
+----------------
+mcp-servers/loop-gov-mcp.py  _call_reviewer_agent now builds the child env
+    child_env = dict(os.environ)
+    child_env["ADVERSARIAL_REVIEWER_MODEL"] = _reviewer_model()
+  and passes env=child_env to subprocess.run. _reviewer_model() resolves
+  process-env -> fleet env file -> REVIEWER_MODEL_DEFAULT, so the pi script
+  now honors the SAME single source as the llm backend. The script's literal
+  is now truly a last fallback.
+
+REAL pi tests (moses, pi 1.5.2)
+-------------------------------
+1) pi auth check --provider openrouter                  -> "ready"
+2) Bare model id (what the script passes):
+   pi --model "deepseek/deepseek-v4-flash-0731" "Reply with exactly: READY"
+   -> returned "READY" (exit 0). Confirms the openrouter/ prefix removal is
+   correct: pi's default provider handles a bare vendor/model id.
+   (Non-blocking CORTEX_FAIL stderr lines = fleet-context.py not deployed on
+   moses; unrelated to the reviewer model.)
+3) Full reviewer script with the resolved model injected (cheap override):
+   printf '<review prompt>' | ADVERSARIAL_REVIEWER_MODEL=deepseek/deepseek-
+     v4-flash-0731 timeout 180 ~/.steadfaste-fleet/scripts/reviewer-agent-pi.sh
+   -> EXIT 0, valid JSON {"verdict":"FINDINGS","findings":[...]}. Satisfies
+   the gate's fail-closed "empty output / non-zero exit" contract.
+4) DRY chain through the gate module (real env files):
+   _reviewer_model() -> "deepseek/deepseek-v4-pro-0813" (reads .env);
+   child_env["ADVERSARIAL_REVIEWER_MODEL"] == that value.
+
+IMPORTANT runtime fact: the live gate executes the REPO working-tree copy
+~/steadfaste-fleet/mcp-servers/loop-gov-mcp.py (measured via ps), so the
+fix is live immediately on moses. The immutable deployed copy at
+~/.steadfaste-fleet/tools/loop-governance/loop-gov-mcp.py lacks the fix and
+is updated by fleet-update.sh — verified present, will pick up the fix on
+the next fleet update (matters on other hosts, incl. titus pi).
+
+GOVERNANCE / GATES
+------------------
+* begin_change cycle #8272 held throughout.
+* adversarial-verify A4 --gate: loop-gov-mcp.py GATE_PASSED (no crit/high),
+  tests/test_reviewer_backends.py GATE_PASSED. No findings in changed region.
+* Regression test added: test_reviewer_backends.py asserts the agent child
+  env carries ADVERSARIAL_REVIEWER_MODEL == mcp.REVIEWER_MODEL_DEFAULT. PASS.
+* Reviewer test suite: test_dry_reviewer_model rc=0, test_lock_review_split
+  rc=0, test_reviewer_tier_wiring rc=0, test_reviewer_model_default rc=0,
+  test_adversarial_review rc=0. test_reviewer_backends rc=1 with FOUR
+  pre-existing FAILs (confirmed identical on clean HEAD 56d219a9) that use
+  the stale env var name CORTEX_ENV_FILE while the code reads FLEET_ENV_FILE
+  — a separate pre-existing test-fixture mismatch, not caused by this change.
+* Deployed reviewer-agent-pi.sh (~/.steadfaste-fleet/scripts/) verified =
+  repo copy (only a deploy header comment differs).
+* INDEPENDENT ADVERSARIAL REVIEW (delegate_task, fresh session): found no
+  defect in the production change. Folding in its two test-hardening items:
+  (a) the assertion now pins a DISTINCT sentinel env value so it cannot pass
+  (or fail) by coincidence with a host .env value — process-env wins
+  precedence so _reviewer_model() must return the sentinel; (b) it now also
+  asserts the child env PRESERVES the parent process env (PATH + a probe
+  marker), so a regression that replaced dict(os.environ) with a fresh dict
+  would be caught. Verified all three assertions PASS after hardening.
+
+UNVERIFIED / NEXT
+-----------------
+* Cannot run a REAL pi review on titus directly (titus = inbox-only macOS,
+  no SSH; bus only). The fix is in shared mcp-servers/loop-gov-mcp.py that
+  fleet-update.sh deploys to every host, so titus picks it up on its next
+  fleet-update + MCP daemon restart. Verified the mechanism on moses with
+  real pi 1.5.2; behavior on titus is covered by the hermetic regression
+  test, not a live pi run on that host.
+* The 4 pre-existing test_reviewer_backends env-file FAILs (CORTEX_ENV_FILE
+  vs FLEET_ENV_FILE) are flagged here as a separate issue; not fixed here
+  (out of scope for the reviewer-model verification, and pre-existing).
