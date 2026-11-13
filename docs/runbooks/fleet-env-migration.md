@@ -126,11 +126,17 @@ The doctor reports:
 - Do **not** replace `~/.steadfaste-fleet/.env` with a real file — it must stay a symlink to the canonical env.
 - Do **not** recreate `fleet-bus.conf` — it is retired.
 
-> **Deliberately kept names (P3 scope):** `fleet-bus.conf` is the RETIRED
-> symlink name — it is the doctor check's subject and must stay spelled that
-> way (`consolidate-env.sh` retires it, `check_fleet_env` enforces its
-> absence; a surviving reference is the regression signal). Env var NAMES
-> (`CORTEX_BUS_URL`, `CORTEX_BUS_FALLBACK_URL`, …) are CORTEX_ env-name
-> tokens and are P4-deferred by the rename plan — only file/command/service
-> names are renamed in P3. The test file `tests/test_fleet_doctor_env.py`
-> keeps those subject tokens for the same reason.
+> **Deliberately kept names:** `fleet-bus.conf` is the RETIRED symlink name —
+> it is the doctor check's subject and must stay spelled that way
+> (`consolidate-env.sh` retires it, `check_fleet_env` enforces its absence; a
+> surviving reference is the regression signal). The test file
+> `tests/test_fleet_doctor_env.py` keeps those subject tokens for the same
+> reason.
+>
+> **Update 2026-11-13 — the env var NAMES are no longer deferred.** The
+> `CORTEX_*` → `FLEET_*` env-name sweep (plan P4) is IN PROGRESS: the dual-read
+> layer and dual-export bridge are deployed, and consumers migrate in small
+> batches per `docs/runbooks/cortex-to-fleet-env-sweep.md`. Do not rename an
+> env var from this runbook's perspective — follow THAT runbook's
+> classification (local/derived names safe; `.env` secrets, `CORTEX_SESSION_*`
+> and `HERMES_CORTEX_HOME` are phase 2 / external contracts).

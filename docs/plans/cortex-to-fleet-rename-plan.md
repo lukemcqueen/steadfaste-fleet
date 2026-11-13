@@ -444,11 +444,19 @@ The phase that must not break the deploy chain.
 the old name still works via the shim; `tests/test_repo_resource_paths.py` passes (it computes the
 register-map numbers).
 
-### P4 — Env vars `CORTEX_*` → `FLEET_*`, dual-read — ⏸️ **DEFERRED (operator Q3) — spec only**
+### P4 — Env vars `CORTEX_*` → `FLEET_*`, dual-read — 🚧 **IN PROGRESS (since 2026-11-13)**
 
-> **Not part of this sweep.** Kept as the specification for a follow-on release. **Nothing in P4
-> runs now**; the phase below is written so it can be executed intact later, with the same compat
-> discipline, once the names-only sweep (and the third `hermes-cortex*` skills sweep) have landed.
+> **Execution started 2026-11-13** (operator directed the env migration, then
+> "work each one by one"). Status: the dual-read layer is BUILT and deployed —
+> `ops/scripts/fleet_lib/env.py` (Python resolver), `ops/scripts/lib/fleet-env-compat.sh`
+> (shell mirror), and the `FLEET_DEPLOY_HOME` dual-export bridge in
+> `fleet-update.sh` (commit `b13ae4ae`/`6ed58ade`). Consumers migrate in small
+> batches (3–5 files per close) per
+> `docs/runbooks/cortex-to-fleet-env-sweep.md` — which carries the verified
+> coupling map and the classification (local names safe; `.env` secrets,
+> `CORTEX_SESSION_*`, `HERMES_CORTEX_HOME` deferred to phase 2 / external
+> contracts). Measured lesson: a provider-only or consumer-only rename empties
+> the other side (660 doctor warnings, 2026-11-13) — never split the bridge.
 >
 > - When executed, it follows §4.2's two-counter rule (§7 of the evidence) — the family counter
 >   drives the replacement, the identifier counter drives the inventory, and `CORTEX_*` reads stay

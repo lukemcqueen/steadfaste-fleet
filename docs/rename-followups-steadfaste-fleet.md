@@ -39,14 +39,23 @@ code; the brand lint's `RECORD_FILTER` exempts dated records, not these.
    checksums. The brand lint's `RECORD_FILTER` excludes exactly these.
 2. **Migration tools' functional literals** — see the STALE table above. The
    tools that perform/verify the migration must keep the old name literal.
-3. **`hermes-cortex-dashboard.service`** — the dashboard service keeps its name.
-4. **`cortex` short-name family** — a SEPARATE naming layer, NOT covered by the
-   `hc` sweep: `fleet-bus`, `cortex-dashboard`, `Fleet Dashboard` (the dashboard
-   component name), the whole `CORTEX_*` env-var family (`CORTEX_DEPLOY_HOME`,
-   `CORTEX_BUS_URL`, `CORTEX_BASIC_AUTH`, `CORTEX_SESSION_KEY`, `CORTEX_PROFILE`,
-   `CORTEX_OS`, `CORTEX_HOME`, …), `mycortex`, `fleet-deployment-sync` skill,
-   etc. Renaming `cortex` → `fleet` is a SECOND, larger sweep with its own
-   runtime-contract risks (service names, env vars, DB roles).
+3. **Dashboard unit** — SUPERSEDED 2026-11-13 (operator broadened the policy:
+   "the only keeps should be mycortex-related things"): the macOS launchd unit
+   `com.hermes.cortex-dashboard` → `com.hermes.fleet-dashboard`,
+   `cortex-dashboard.log` → `fleet-dashboard.log`, and the "Cortex Dashboard"
+   prose → "Fleet Dashboard" (commits `213654a0`/`e029d87c`). The systemd unit
+   FILENAME on Linux hosts is `hermes-fleet-dashboard.service`; the live
+   `hermes-cortex-dashboard.service` entry some hosts still show is a stale
+   not-found process from the pre-migration path, not a name to preserve.
+4. **`cortex` short-name family** — a SEPARATE naming layer from the `hc`
+   sweep, and **IN PROGRESS since 2026-11-13** under the broadened policy:
+   `fleet-bus`, `cortex-dashboard` → `fleet-dashboard`, "Fleet Dashboard", and
+   the `CORTEX_*` env-var family are migrating to `fleet`/`FLEET_*` per
+   `docs/runbooks/cortex-to-fleet-env-sweep.md` (classification + batch loop;
+   `.env` secrets, `CORTEX_SESSION_*` and `HERMES_CORTEX_HOME` are phase 2 /
+   external contracts). **`mycortex` remains a KEEP in every form.** Renaming
+   this layer has real runtime-contract risks (service names, env vars, DB
+   roles) — do NOT sweep it blindly; use the runbook.
 
 ## What changed on 2026-11-12 (the final hc sweep)
 

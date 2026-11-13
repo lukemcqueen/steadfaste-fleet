@@ -1,6 +1,15 @@
 # Steadfaste Fleet — Environment Variable Reference
 
-All `CORTEX_*` environment variables used across the nginx deploy pipeline
+**Naming (2026-11-13):** `FLEET_*` is the canonical spelling; `CORTEX_*` is the
+legacy spelling, kept alive by the deployed dual-read layer
+(`ops/scripts/fleet_lib/env.py` + `ops/scripts/lib/fleet-env-compat.sh` + the
+`FLEET_DEPLOY_HOME` dual-export bridge in `fleet-update.sh`) until release 2.
+New code reads `FLEET_*` (or uses `fleet_env.get`); migrating a reader is NOT
+find-and-replace — follow `docs/runbooks/cortex-to-fleet-env-sweep.md`.
+`CORTEX_SESSION_*` and `HERMES_CORTEX_HOME` are external contracts (set by the
+Hermes harness) and are not renamed from this repo.
+
+All env variables used across the nginx deploy pipeline
 and related scripts. New variables should be added here with all fields.
 
 ---
