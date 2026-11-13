@@ -2,7 +2,7 @@
 
 # MCP Server Lifecycle — Add / Remove / Decommission
 
-How to manage MCP servers in `mcp_servers:` on an installed Cortex host
+How to manage MCP servers in `mcp_servers:` on an installed Fleet host
 (2026-08-18, verified on luke-server).
 
 ## Never hand-edit `~/.hermes/config.yaml`

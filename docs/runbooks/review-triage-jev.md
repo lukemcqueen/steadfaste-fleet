@@ -218,14 +218,14 @@ Two rules that are not negotiable, both enforced in code:
 
 ## Where the gate reads its config (decoupled from Hermes)
 
-The gate is a cortex component, so it resolves its own configuration itself — it
+The gate is a fleet component, so it resolves its own configuration itself — it
 does **not** depend on Hermes, and it does not need Hermes to pass the values in:
 
 1. the **process** environment (wins, so an explicit export always overrides);
 2. `$CORTEX_ENV_FILE`, else `$CORTEX_REPO/.env` (default `~/steadfaste-fleet/.env`);
 3. the deploy root (`$CORTEX_DEPLOY_HOME/.env`);
 4. `~/.hermes/.env` — **last resort only**, kept so a host whose credential happens
-   to live there keeps working. It is not the source of truth for cortex config.
+   to live there keeps working. It is not the source of truth for fleet config.
 
 Two properties that matter operationally:
 

@@ -1,4 +1,4 @@
-# For the Pi agent: implement cortex memory + session
+# For the Pi agent: implement fleet memory + session
 
 **Audience: a Pi agent (or any coding agent) asked to give itself memory and
 session continuity.** Self-contained — follow it top to bottom. Hand-written;
@@ -107,7 +107,7 @@ debug the harness while the store is down.
    fleet-context session_restore '{}' | grep proof-
    ```
    Missing ⇒ your hook is not firing. The extension's routine markers go to the
-   cortex log (`~/.steadfaste-fleet/logs/pi-context.log`), not the visible stream — see §4.
+   fleet log (`~/.steadfaste-fleet/logs/pi-context.log`), not the visible stream — see §4.
 
 **d. Session-start injection:** start a SECOND session. The checkpoint must appear
 without being asked, and `CORTEX_RESUME <key> facts=N` is appended to
@@ -196,7 +196,7 @@ a wrong conclusion once already.
 ## 7. Driving pi from another process (a gateway, a cron, a control call)
 
 A prompt is not the only thing you may need to send, and the difference costs hours
-to rediscover. Measured 2026-10-08 while wiring pi into the cortex gateway
+to rediscover. Measured 2026-10-08 while wiring pi into the fleet gateway
 (`ops/scripts/fleet_gateway/pi_control.py` is the working adapter — read it).
 
 **Setting up the Telegram gateway on macOS?** The host-specific wiring (bot token,
@@ -267,7 +267,7 @@ Two rules, learned from Hermes:
 **Registered the same way as everything else here — one implementation, a thin
 per-harness way in.**
 
-- **Pi ≥ 0.99 (MCP client):** the five cortex servers register at user scope
+- **Pi ≥ 0.99 (MCP client):** the five fleet servers register at user scope
   in `~/.pi/agent/mcp.json`:
 
   ```bash
@@ -282,7 +282,7 @@ per-harness way in.**
   **Host-local add-ons are NOT part of that set.** Some hosts also register a server
   of their own (e.g. a DeepSeek adversarial-review server named `deepseek`);
   `install-pi-mcp.sh` neither installs nor removes it, and `audit-pi-integration.sh`
-  reports it as *present, NOT audited here* rather than applying the cortex identity
+  reports it as *present, NOT audited here* rather than applying the fleet identity
   rule to it. Registration shape, the interpreter trap and the verification for that
   one: [`ADDON-deepseek-mcp.md`](ADDON-deepseek-mcp.md).
 

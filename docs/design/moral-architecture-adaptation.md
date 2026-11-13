@@ -33,7 +33,7 @@ left in the "encouraged" tier.
 
 The report's seven layers, mapped to what Steadfaste Fleet actually has:
 
-| Report layer | Cortex component | What it guarantees | Note |
+| Report layer | Fleet component | What it guarantees | Note |
 |---|---|---|---|
 | **L0 Corpus** | *(external — the provider's model)* | nothing we control | Out of scope; we cannot retrain the model |
 | **L1 Objective** | *(external — RLHF/character of the provider model)* | disposition only | We tune via prompts, not weights |

@@ -1,4 +1,4 @@
-# Cortex Operations
+# Fleet Operations
 
 Installers, monitors, services, offline stack, and fleet management. This layer keeps the system running — health checks, recovery, cron orchestration, knowledge synchronization, and the offline-first infrastructure.
 

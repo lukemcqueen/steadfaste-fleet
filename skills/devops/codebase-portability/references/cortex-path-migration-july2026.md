@@ -1,4 +1,4 @@
-# Cortex Path Migration — July 2026: `src/` → `ops/`
+# Fleet Path Migration — July 2026: `src/` → `ops/`
 
 ## Migration Context
 

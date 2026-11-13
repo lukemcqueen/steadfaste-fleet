@@ -239,12 +239,12 @@ builds a scratch repo, installs the real hooks, and runs all eight paths
 (normal, --no-verify, rebase, cherry-pick, revert, merge, amend, amend
 --no-verify) asserting which must log and which must stay silent.
 
-## Rule 6: Hooks Run in EVERY Repo — Never Assume the Cortex Tree
+## Rule 6: Hooks Run in EVERY Repo — Never Assume the Fleet Tree
 
 `core.hooksPath ~/.steadfaste-fleet/hooks` is set **globally** — the pre-commit/
 pre-push hooks fire in every git repo on the host (client-repo-a, client-repo-b,
-client repos, any project without the cortex `ops/` tree). A hook that builds
-a path on `$REPO_ROOT` (the repo being committed IN) and assumes cortex
+client repos, any project without the fleet `ops/` tree). A hook that builds
+a path on `$REPO_ROOT` (the repo being committed IN) and assumes fleet
 layout breaks EVERY commit in those repos — even one-line test fixes.
 
 **Real regression (2026-08-04, Esther, commit `faa0e929`):** the adversarial
@@ -331,9 +331,9 @@ gate (Titus audit 2026-08-05: 9 repos, `grep -c adversarial = 0`). Two things
 are needed together, or the fix breaks commits:
 
 1. **Refresh the files**: `fleet-update.sh` `refresh_pinned_hook_files()`
-   copies the 4 cortex hooks (pre-commit-score, pre-push-pull,
+   copies the 4 fleet hooks (pre-commit-score, pre-push-pull,
    post-commit-audit, post-push-audit) from deployed source into the repo's
-   own hooks dir. ONLY files carrying the cortex banner (`Git <type> hook`,
+   own hooks dir. ONLY files carrying the fleet banner (`Git <type> hook`,
    ASCII match — locale-safe on macOS) are overwritten; foreign hooks (vllm
    pre-commit framework shim) are preserved. Missing hook files get the gate
    installed.
@@ -343,10 +343,10 @@ are needed together, or the fix breaks commits:
    That guard would block EVERY commit in a pinned repo (their hooksPath IS
    their own dir). The carve-out passes when the hooks dir carries any
    cortex-managed hook (governance IS running there); the tripwire still
-   fires when hooksPath points at a dir with no cortex hooks.
+   fires when hooksPath points at a dir with no fleet hooks.
 
 **Verify before shipping a pinned-hooks change (all three):**
-1. Scratch repo with stale cortex hook → after refresh, copy byte-matches
+1. Scratch repo with stale fleet hook → after refresh, copy byte-matches
    deployed and commit passes the hooksPath guard (fails later at the
    governance lock — that's fail-closed working)
 2. Repo with a FOREIGN hook → refresh skips it, hash unchanged
@@ -385,7 +385,7 @@ That is the mechanism that makes "clear cycles during cleanup, not later"
 unscored. The same applies to `fleet-dogfood.sh` — its verify step counts
 the same way.
 
-## Rule 11: Scope Shared-Hook Gates — Cortex Repo + Orchestrator Host Only
+## Rule 11: Scope Shared-Hook Gates — Fleet Repo + Orchestrator Host Only
 
 Two Luke corrections (2026-08-05) about gate blast radius. The pre-commit and
 pre-push hooks fire in EVERY repo on the host (Rule 6) — so any NEW gate added
@@ -397,7 +397,7 @@ to them must be doubly scoped or it will block innocent work in project repos:
    [[ "$_REPO_TOP" == "$CORTEX_REPO_TOP" ]]   # CORTEX_REPO_TOP=${HOME}/steadfaste-fleet
    ```
    Non-fleet repos (client-repo-a, client-repo-b, client-web-app, pinned repos,
-   ...) must NEVER run the steadfaste-fleet doctor — a failing cortex state must
+   ...) must NEVER run the steadfaste-fleet doctor — a failing fleet state must
    not block a client repo's push.
 2. **Orchestrator scope**: only orchestrator hosts run orchestrator-level
    gates. Reuse `_detect_orch()` (hostname moses|esther AND home
@@ -407,9 +407,9 @@ to them must be doubly scoped or it will block innocent work in project repos:
    non-orch hosts.
 
 **Scoping is not only for NEW gates — audit the EXISTING ones.** A gate written
-before the repo guard existed keeps firing in every repo, and one stale cortex
+before the repo guard existed keeps firing in every repo, and one stale fleet
 state then blocks ordinary commits in unrelated projects while telling the user
-to run a cortex deploy they have no reason to run. The failure mode is
+to run a fleet deploy they have no reason to run. The failure mode is
 structural and greppable: the gate sits ABOVE the `IS_CORTEX_REPO` assignment
 (`REPO_ROOT == ${HOME}/steadfaste-fleet`), so it is unscoped BY CONSTRUCTION.
 

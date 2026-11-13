@@ -71,13 +71,13 @@ The `begin_change()` MCP tool has a DOGFOOD check: if the deployed enforcer (`~/
 
 ---
 
-## 2a. Hooks Fire in Project Repos Too — Never Assume the Cortex Tree
+## 2a. Hooks Fire in Project Repos Too — Never Assume the Fleet Tree
 
 `core.hooksPath ~/.steadfaste-fleet/hooks` is global: the pre-commit/pre-push
 hooks run in EVERY git repo on the host, including project repos (client-alpha,
 client-works, and other client repos) that have no `ops/` tree and no `.steadfaste-fleet/`
 directory inside them. Any hook/enforcer path built on `$REPO_ROOT` (the repo
-being committed IN) and assuming cortex layout will break every commit there.
+being committed IN) and assuming fleet layout will break every commit there.
 
 **Regression 2026-08-04 (`faa0e929` → fix `72d6cdc3`):** the adversarial gate
 hard-resolved to `$REPO_ROOT/ops/scripts/quality/adversarial-verify.py` —

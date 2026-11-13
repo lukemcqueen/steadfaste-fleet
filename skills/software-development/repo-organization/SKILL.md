@@ -60,7 +60,7 @@ steadfaste-fleet/
 │   │   ├── orch-fleet-watchdog.py
 │   │   └── ...
 │   ├── agent-inbox/           # Inbox server (FastAPI)
-│   ├── dashboard/             # Cortex dashboard
+│   ├── dashboard/             # Fleet dashboard
 │   ├── loop-governance/       # TDD scoring + evaluation pipeline
 │   ├── mcp-servers/           # MCP server implementations
 │   ├── agent-registry.json    # Canonical agent list (who, where, accessible?)

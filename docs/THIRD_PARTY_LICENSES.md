@@ -98,7 +98,7 @@ third-party components are:
    binary is modified or redistributed. Steadfaste Fleet installs Bun as-is.
 
 None of these licenses impose obligations on the **source code** of Hermes
-Cortex itself, which remains MIT-licensed.
+Fleet itself, which remains MIT-licensed.
 
 ---
 

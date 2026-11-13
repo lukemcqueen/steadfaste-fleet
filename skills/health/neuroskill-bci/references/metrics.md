@@ -14,7 +14,7 @@ support in the desktop app), streaming at **256 Hz** (EEG) and **64 Hz** (PPG).
 ### Electrode Positions (International 10-20 System)
 | Channel | Electrode | Position | Primary Signals |
 |---------|-----------|----------|-----------------|
-| CH1 | TP9 | Left Mastoid | Auditory cortex, verbal memory, jaw-clench artifact |
+| CH1 | TP9 | Left Mastoid | Auditory fleet, verbal memory, jaw-clench artifact |
 | CH2 | AF7 | Left Prefrontal | Executive function, approach motivation, eye blinks |
 | CH3 | AF8 | Right Prefrontal | Emotional regulation, vigilance, eye blinks |
 | CH4 | TP10 | Right Mastoid | Prosody, spatial hearing, non-verbal cognition |

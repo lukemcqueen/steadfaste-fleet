@@ -10,7 +10,7 @@ platforms: [linux, macos]
 <!-- renamed from skills/devops/cortex-deployment-sync/SKILL.md in the cortex-to-fleet sweep; content predates the range (commit 353c3d54) -->
 
 
-# Cortex Deployment Sync
+# Fleet Deployment Sync
 
 **Class of task:** any "pull latest", "fleet update", "update from repo", or repo→runtime deployment operation on a Steadfaste Fleet machine. Also covers diagnosing why `fleet-update.sh` FAILED on specific files.
 
@@ -607,7 +607,7 @@ a reason to loop re-deploys. Read the doctor's OWN `Overall:` line for whether t
 actually failing before diagnosing a broken deploy.
 
 When a migration wants a path another installed system already owns — a peer
-`publish-agent-skills.py` making `~/.agents/skills` a symlink to the cortex defaults while the
+`publish-agent-skills.py` making `~/.agents/skills` a symlink to the fleet defaults while the
 host's omarchy desktop agent reads its own skills there — the tool REFUSES by design (a foreign
 tree at the target) and needs `--adopt-published`, which RENAMES the existing tree away. That
 flag displaces a live subsystem: it is an OPERATOR decision, never run it yourself. Report the
@@ -617,7 +617,7 @@ an error to clear.
 
 **When the operator DOES approve adoption, prove it is lossless BEFORE running it.** The
 foreign system's content is often already reachable through the target tree — on a host where
-omarchy's skills were already symlinked inside the cortex defaults (`~/.steadfaste-fleet/skills/omarchy`
+omarchy's skills were already symlinked inside the fleet defaults (`~/.steadfaste-fleet/skills/omarchy`
 → `/usr/share/omarchy/...`), adopting the publish pointer loses nothing because the pointer
 covers the foreign skills too. Verify in this order, then run `publish-agent-skills.py --adopt-published`:
 1. Confirm the foreign skills are ALREADY inside the target tree (symlink or copy) — then the

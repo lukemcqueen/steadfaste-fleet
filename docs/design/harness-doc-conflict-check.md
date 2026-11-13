@@ -62,7 +62,7 @@ harness file for them:
 
 - DOTTED paths (the runbook's discrimination rule — these must reach ZERO):
   `~/.hermes-cortex`, `.hermes-cortex/` (absolute + tilde forms), `~/hermes-cortex`.
-- Retired product name: `Hermes Cortex` (title-case). The four legacy
+- Retired product name: `Hermes Fleet` (title-case). The four legacy
   `hermes-cortex*` skill `name:` identifiers were RENAMED to `steadfaste-fleet*`
   on 2026-11-12, so there are no longer any deliberately-kept skill-name
   identifiers under the old name.

@@ -127,7 +127,7 @@ rule 6.
 `docs/design/fleet-memory-session-mcp.md` — same shape, the host-coupled
 registration is replaced by a process-independent surface.
 
-- **Hermes Agent → cortex/steadfaste (framework-level, in flight)**: the framework
+- **Hermes Agent → fleet/steadfaste (framework-level, in flight)**: the framework
 itself is being retired, so every Hermes-side extension point is an
 **owner-in-waiting** — a Hermes plugin under `plugins/`, a harness extension under
 `ops/install/harnesses/`, a core file re-patched on every `hermes update`. Fix them

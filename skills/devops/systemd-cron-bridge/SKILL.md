@@ -16,7 +16,7 @@ When a no_agent script cron must keep firing **even if the Hermes gateway / `cro
 
 ## Pieces
 
-- `fleet-bus-bridge-run.py` — the **delivery wrapper**. Runs the job's script standalone, delivers non-empty stdout. **empty stdout = silent** (the watchdog pattern is preserved). Source the cortex `.env` so tokens/models resolve.
+- `fleet-bus-bridge-run.py` — the **delivery wrapper**. Runs the job's script standalone, delivers non-empty stdout. **empty stdout = silent** (the watchdog pattern is preserved). Source the fleet `.env` so tokens/models resolve.
 - `fleet-bus-bridge-generate.py` — reads `~/.hermes/cron/jobs.json`, writes a user-scope systemd pair `~/.config/systemd/user/fleet-bridge-<job>.{service,timer}` per simple no_agent job, converting the cron expr to `OnCalendar`. Skips LLM/chained jobs and schedules it can't translate.
 
 ## `--deliver` routing (the load-bearing decision)

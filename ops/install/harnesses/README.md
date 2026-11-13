@@ -1,6 +1,6 @@
-# Harness integration — how any coding agent gets cortex memory + session
+# Harness integration — how any coding agent gets fleet memory + session
 
-This tree wires **coding-agent harnesses** to the cortex context store (memory +
+This tree wires **coding-agent harnesses** to the fleet context store (memory +
 session over one store, S2c). It is built to scale to ~100 harnesses without
 producing ~100 disagreeing documents.
 

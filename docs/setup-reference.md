@@ -18,7 +18,7 @@ to keep the root agent guidelines focused on general Steadfaste Fleet usage.
 | Tool | Min version | Used by (steadfaste-fleet function) | Install |
 |------|-------------|----------------------------------|---------|
 | `bash` | 4.0+ | `fleet-update.sh` (all deploy logic) | Linux: package manager · macOS: `brew install bash` |
-| `python3` | 3.10+ | Everything — `contact-orchestrator.sh`, `agent-message-handler.py`, doctor, all `.py` scripts | Cortex venv (`~/.steadfaste-fleet/venv/bin/python3`) or system |
+| `python3` | 3.10+ | Everything — `contact-orchestrator.sh`, `agent-message-handler.py`, doctor, all `.py` scripts | Fleet venv (`~/.steadfaste-fleet/venv/bin/python3`) or system |
 | `git` | any | Repo pull/push, hooks, `git show` in scripts | Linux: `apt install git` · macOS: `brew install git` |
 | `curl` | any | `contact-orchestrator.sh`, `lib.fleet_bus`, doctor HTTP checks, health pings | Linux/macOS: package manager (preinstalled on macOS) |
 | `jq` | — | **NOT required** — `contact-orchestrator.sh` uses `python3` for JSON (jq removed 2026-08-03). Only used ad-hoc in docs examples | `apt install jq` / `brew install jq` (optional, debugging only) |
@@ -53,7 +53,7 @@ to keep the root agent guidelines focused on general Steadfaste Fleet usage.
 ### Why
 
 Running duplicate services at both system and user scope causes port conflicts,
-auto-restart loops, and syslog noise. The Cortex installer (`install.sh`) and
+auto-restart loops, and syslog noise. The Fleet installer (`install.sh`) and
 all templates ship user-level units — system-level duplicates are **never**
 created by the repo's own tooling.
 
@@ -221,7 +221,7 @@ Steadfaste Fleet ships a **two-model stack** plus a unified env-var configuratio
 ### Single Env File (`~/steadfaste-fleet/.env`)
 
 All environment variables live in `~/steadfaste-fleet/.env` (hidden, gitignored).
-This is the single source of truth for Cortex. ⚠ `~/.hermes/.env` is Hermes Agent's own config and is never touched by Cortex.
+This is the single source of truth for Fleet. ⚠ `~/.hermes/.env` is Hermes Agent's own config and is never touched by Fleet.
 
 | Env var | Purpose | Default |
 |---------|---------|---------|

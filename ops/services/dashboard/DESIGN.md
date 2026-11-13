@@ -146,7 +146,7 @@ the goal: get the operator from confusion to clarity in under two seconds.
 The visual DNA is inspired by Linear's ultra-precise dark UI — near-black
 surfaces where structure emerges from barely-visible borders and text luminance
 steps. But where Linear's brand is near-achromatic (one indigo accent punctuating
-an otherwise greyscale system), Cortex uses a warmer slate palette
+an otherwise greyscale system), Fleet uses a warmer slate palette
 (`#111a21` card surfaces, `#0a0e17` canvas) with a deliberate indigo accent
 (`#6366f1`) for interactive elements and data emphasis. The warmth prevents
 the coldness of pure monochrome while maintaining engineering credibility.

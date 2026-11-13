@@ -91,7 +91,7 @@ Later sources override earlier ones on name collision.
 name: governance-enforcer
 description: "Enforces loop governance at the tool level"
 version: "1.0.0"
-author: Joseph (Hermes Cortex)
+author: Joseph (Hermes Fleet)
 ```
 
 ### `__init__.py` Contract

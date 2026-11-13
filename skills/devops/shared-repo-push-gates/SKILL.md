@@ -434,7 +434,7 @@ does not apply.
     the reviewer returned no usable content (`finish_reason=length`, `max_tokens=16000`): a
     reasoning model spent the whole output budget thinking. The documented knob is
     `REVIEWER_MAX_TOKENS`, read at CALL time (never at import), so raising it takes effect on
-    the retry with no restart: append `REVIEWER_MAX_TOKENS=<n>` to the cortex `.env`
+    the retry with no restart: append `REVIEWER_MAX_TOKENS=<n>` to the fleet `.env`
     (`$HOME/steadfaste-fleet/.env`, or `$CORTEX_ENV_FILE`; the reader also checks the deploy
     root and `~/.hermes/.env`). Ceiling is 128000 — a value above it is clamped and warned.
     Then call `end_change` again on the SAME session: the refused close leaves the lock FILE

@@ -1,9 +1,9 @@
 # Optional add-on: a host-local DeepSeek review MCP server (Pi)
 
 **Audience: a Pi agent (or any MCP client) that sees a `deepseek` entry in
-`~/.pi/agent/mcp.json` and wonders whether it is a cortex server.** It is not.
+`~/.pi/agent/mcp.json` and wonders whether it is a fleet server.** It is not.
 
-Kept in its own file on purpose: `../pi/IMPLEMENT.md` is the cortex wiring guide, and
+Kept in its own file on purpose: `../pi/IMPLEMENT.md` is the fleet wiring guide, and
 this is the opposite thing — a server the fleet neither installs nor audits, which an
 agent must be able to recognise as *not ours* rather than try to "repair" with
 `install-pi-mcp.sh`. Related: [`../../../docs/external/external-services.md`](../../../docs/external/external-services.md).
@@ -18,7 +18,7 @@ agent must be able to recognise as *not ours* rather than try to "repair" with
 | **What it does** | asks DeepSeek to attack a plan before it is built (adversarial review), over OpenRouter |
 | **Where its source lives** | the fleet OWNS a copy: `mcp-servers/deepseek-review-mcp.py` (deployed to `~/.steadfaste-fleet/scripts/deepseek-review-mcp.py`). The same server also lives in a product repo: `~/Developer/AI/steadfaste-s1-model/scripts/util/mcp_deepseek_server.py` — the pi registration may point at either copy. |
 | **Credential** | `OPENROUTER_API_KEY` — from the env, or a `./.env` beside the server |
-| **Registered in** | `~/.pi/agent/mcp.json`, one entry named `deepseek`, next to the five cortex entries |
+| **Registered in** | `~/.pi/agent/mcp.json`, one entry named `deepseek`, next to the five fleet entries |
 | **Default model** | `deepseek/deepseek-v4-pro-0813` (OpenRouter) — the cost-controlled canonical reviewer; never plain `v4-pro` or `chat-v3` |
 
 The review tool is named **`review`**. It was `review_experimental_plan` — narrower than what
@@ -37,12 +37,12 @@ entry is host-optional, so a host without it is not a fault. Only the tool NAME 
 the foreign entry itself is preserved, exactly as `--remove` preserves it.
 See [`../../../docs/external/mcp-deepseek-review.md`](../../../docs/external/mcp-deepseek-review.md).
 
-**NOT part of the cortex suite, and NOT installed by `install-pi-mcp.sh`.** Some hosts
+**NOT part of the fleet suite, and NOT installed by `install-pi-mcp.sh`.** Some hosts
 register it by hand; others do not. Neither state is a fault.
 
 ## Registration shape
 
-The same file the cortex servers use (Pi reads MCP servers from its own config):
+The same file the fleet servers use (Pi reads MCP servers from its own config):
 
 ```json
 {
@@ -101,11 +101,11 @@ path) is the migration's blast radius, not this addon's fault — see
 pi mcp list | grep deepseek      # expected: connected, with its 3 tools, named `review`
 ```
 
-- `install-pi-mcp.sh --remove` strips the **cortex** servers only: run against a
+- `install-pi-mcp.sh --remove` strips the **fleet** servers only: run against a
   scratch config holding a `deepseek` entry, the surviving set was
   `['deepseek', 'user-owned']` (measured 2026-10-12, rc=0). A host keeps it across
   re-runs of the installer.
-- `audit-pi-integration.sh` requires the five **cortex** servers by name and applies
+- `audit-pi-integration.sh` requires the five **fleet** servers by name and applies
   its `AGENT_NAME` identity rule **only to those**. A host-local entry like this one is
   reported as *present, NOT audited here*; its command and script are still checked
   (a broken path is a real defect). So a host WITHOUT it is a PASS, and a host WITH it

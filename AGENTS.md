@@ -84,7 +84,7 @@ Every session: read the skills manifest at `~/.steadfaste-fleet/skills.yaml` —
 21. **Identity host-derived, not env** — orchestrator = hostname (`moses`/`esther`) + home dir, never `AGENT_ID`/`AGENT_TYPE` (spoofable). Git authorship from `~/.steadfaste-fleet/agent.env` (per-host, gitignored); missing it blocks commit.
 22. **Cross-session tasks** — `task-db.py` (see `task-persistence` skill). v2 lifecycle: `update <id> --status in_progress` before `begin_change`; `switch <target>` to change active task; `--status completed` after `end_change`. Bus-created tasks (S4): transition by correlation on ISSUES/PROPOSAL/IMPROVEMENTS processing — `task-db.py update --by-correlation <corr> --status completed` (see `fleet-bus-automation` skill). Entry/completion events notify Telegram.
 23. **Only our repo** — `~/steadfaste-fleet/` ours; `~/.hermes/` not-in-repo → don't touch; `~/.steadfaste-fleet/state/*` + `~/.hermes/config.yaml` → live config.
-24. **Sharing filter** — new/substantive only; already-in-Hermes/cortex ❌; PII-only ❌.
+24. **Sharing filter** — new/substantive only; already-in-Hermes/fleet ❌; PII-only ❌.
 25. **Self-test gate** — `fleet send` refuses without `--self-tested`; no bare `pass`.
 26. **Skill stub guard** — fleet-update refuses to overwrite a full skill with a repo stub; doctor FAILs on stubs. Recovery: `agent-skill-stub-audit.py --send` → bus `skill-stub-recovery` → orchestrator → fleet-update. Never hand-fix from memory.
 27. **Gateway restart for enforcer changes** — running gateway may hold the old in-memory enforcer; verify `Plugin content`; restart from a separate shell (NOT inside the gateway — blocked).

@@ -298,7 +298,7 @@ python3 ops/scripts/manage/gateway-model-list.py --config ~/.steadfaste-fleet/ga
   the host has no models.
 - `--check` — the fleet sweep: reports blank entries, duplicates and a bad `page_size`, and
   exits 1. Use it to audit every host's block after an update.
-- Requirements on the host: **python3 only** — stdlib, no PyYAML, no Hermes, no cortex venv.
+- Requirements on the host: **python3 only** — stdlib, no PyYAML, no Hermes, no fleet venv.
 
 Worked example — **Titus** (`pi`, macOS):
 

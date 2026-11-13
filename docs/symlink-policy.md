@@ -4,7 +4,7 @@
 
 Steadfaste Fleet deploys runtime files (scripts, skills, state, data) to
 `~/.steadfaste-fleet/`. Hermes Agent reads its runtime files from `~/.hermes/`.
-To keep both working without duplicating files, Cortex directories that Hermes
+To keep both working without duplicating files, Fleet directories that Hermes
 Agent needs to find at `~/.hermes/` are **symlinked** from `~/.steadfaste-fleet/`.
 
 This document tells every agent which directories are symlinked and why,
@@ -50,11 +50,11 @@ or files at `~/.hermes/`. **Never replace these with symlinks to
 | `agent-name` | Agent identity name | Hermes agent identification |
 
 **Also DO NOT touch these in `~/.steadfaste-fleet/`:**
-- `~/.steadfaste-fleet/skills/` — Must be a **REAL directory**: Cortex OWNS the skill library.
+- `~/.steadfaste-fleet/skills/` — Must be a **REAL directory**: Fleet OWNS the skill library.
   `~/.hermes/skills/` must be a **symlink to it** (not a real directory). This is the REVERSE
   of the 2026-07-07 direction, deliberately (2026-10-21): the fleet is moving OFF the Hermes
-  agent, so Cortex must own the canonical store instead of borrowing the tree that Hermes
-  Agent's `skills_sync.py` manages. `fleet-update.sh` deploys the skills into the real cortex
+  agent, so Fleet must own the canonical store instead of borrowing the tree that Hermes
+  Agent's `skills_sync.py` manages. `fleet-update.sh` deploys the skills into the real fleet
   tree, then publishes the agent-visible view at `~/.agents/skills/` (the cross-client standard
   path read natively by Codex, Cursor, Copilot, OpenCode and Antigravity), so every harness
   reads the same bytes through a pointer. Invert per host with
@@ -63,10 +63,10 @@ or files at `~/.hermes/`. **Never replace these with symlinks to
 
 **Omarchy desktop coexistence (moses, 2026-10-21).** On a host running the Omarchy desktop,
 omarchy links its own agent skills (`omarchy`, `diagnose-crash`) into `~/.agents/skills` as a
-**real directory** — the same path the cortex publisher wants as its pointer. The two coexist
-cleanly because omarchy's skills are **already symlinked inside the cortex defaults tree**
+**real directory** — the same path the fleet publisher wants as its pointer. The two coexist
+cleanly because omarchy's skills are **already symlinked inside the fleet defaults tree**
 (`~/.steadfaste-fleet/skills/omarchy` → `/usr/share/omarchy/default/agents/skills/omarchy`), so
-publishing the pointer exposes both omarchy's skills AND the full cortex library through one
+publishing the pointer exposes both omarchy's skills AND the full fleet library through one
 path. The publish tool (`publish-agent-skills.py`) refuses to clobber a foreign real dir by
 design (exit 4, "DECISION REQUIRED") — the operator runs `--adopt-published`, which **preserves
 the occupied tree by rename** to `~/.agents/skills.pre-publish-<stamp>` (nothing deleted) and
@@ -77,7 +77,7 @@ path on update; the omarchy crash-watch consumer reads its skill via the absolut
 
 ---
 
-## ✅ Symlinked — Cortex Runtime
+## ✅ Symlinked — Fleet Runtime
 
 These are real directories at `~/.steadfaste-fleet/` with symlinks at `~/.hermes/`.
 Symlinks work because macOS/Linux resolve writes through the symlink
@@ -98,10 +98,10 @@ transparently — no data is lost.
 
 | Symlink | Content | Managed by | Size |
 |---------|---------|------------|------|
-| `state/` | Health, inbox, update tracking | Cortex crons + scripts | 352K |
+| `state/` | Health, inbox, update tracking | Fleet crons + scripts | 352K |
 | `data/` | Loop governance DB, session embeddings | loop-governance system | 7.5M |
 | `sessions/` | Session history archive | update-session-state.sh | 58M |
-| `dashboard/` | Cortex dashboard app | Dashboard server | 12M |
+| `dashboard/` | Fleet dashboard app | Dashboard server | 12M |
 | `health-server/` | Health vector server | health-vector.py | 504K |
 | `web-cache/` | Web cache for offline knowledge | web_cache.py | 20M |
 
@@ -140,7 +140,7 @@ transparently — no data is lost.
 │  (Each .env is independent —     ├── skills → ../.hermes/skills/ [SYMLINK]
 │   NOT symlinked.                  │
 │   ~/.hermes/.env = Agent only    Both point to same skills dir
-│   ~/steadfaste-fleet/.env = Cortex (Hermes manages ~/.hermes/skills/
+│   ~/steadfaste-fleet/.env = Fleet (Hermes manages ~/.hermes/skills/
 │   ~/steadfaste-fleet/.env = Repo)   via skills_sync.py, fleet-update
 │                                   deploys through the symlink)
 ```
@@ -189,7 +189,7 @@ ln -s ~/.steadfaste-fleet/scripts ~/.hermes/scripts
 ### Fresh install: create all symlinks
 
 ```bash
-# Cortex dirs → symlink from ~/.hermes/
+# Fleet dirs → symlink from ~/.hermes/
 for dir in scripts offline state data sessions memory memories \
            hooks mcp-servers dashboard health-server web-cache evals; do
   if [ -d ~/.hermes/$dir ] && [ ! -L ~/.hermes/$dir ]; then
@@ -208,7 +208,7 @@ for f in bible-reading-tracker.json titus-avatar.html; do
 done
 
 # CRITICAL (inverted 2026-10-21): the skills tree must be a REAL directory in
-# ~/.steadfaste-fleet/, and the ~/.hermes path a symlink TO it — Cortex owns the library.
+# ~/.steadfaste-fleet/, and the ~/.hermes path a symlink TO it — Fleet owns the library.
 # Do NOT do this by hand: the tool MOVES the real tree, links back, and verifies.
 #   python3 ops/scripts/manage/migrate-skills-ownership.py --check
 #   python3 ops/scripts/manage/migrate-skills-ownership.py
@@ -230,9 +230,9 @@ find ~/.hermes -maxdepth 1 -type l | while read link; do
   else echo "❌ BROKEN: $(basename $link)"; fi
 done
 
-# Verify the cortex tree is REAL and the harness paths POINT at it
+# Verify the fleet tree is REAL and the harness paths POINT at it
 ls -ld ~/.steadfaste-fleet/skills ~/.hermes/skills ~/.agents/skills
-# → drwx------ ... ~/.steadfaste-fleet/skills             (real — cortex owns it)
+# → drwx------ ... ~/.steadfaste-fleet/skills             (real — fleet owns it)
 # → ... ~/.hermes/skills -> ~/.steadfaste-fleet/skills    (Hermes pointer, transition)
 # → ... ~/.agents/skills -> ~/.steadfaste-fleet/skills    (agent-visible standard path)
 ```

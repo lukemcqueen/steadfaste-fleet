@@ -3,7 +3,7 @@
 **Date:** 2026-08-24 · **Author:** Esther · **Status:** Design v1
 **Supersedes:** claude-worker-integration.md (ChatGPT review — obsolete)
 **Core principle:** Hermes is **Executor Adapter #1** (reference implementation).
-Claude is Adapter #2. The abstraction is defined by what Cortex expects from
+Claude is Adapter #2. The abstraction is defined by what Fleet expects from
 any autonomous runtime — never around Hermes.
 
 ---
@@ -11,7 +11,7 @@ any autonomous runtime — never around Hermes.
 ## 1. The three layers (agent identity ≠ agent runtime)
 
 ```
-Cortex Agent        "Who am I?"
+Fleet Agent        "Who am I?"
                     Moses / Esther / Titus / TitusClaude / Joseph …
 
 Execution Profile   "What am I allowed/expected to do?"
@@ -22,7 +22,7 @@ Executor Adapter    "What software actually performs the work?"
                     HermesAdapter / ClaudeAdapter / CodexAdapter
 ```
 
-**The key shift:** Moses is a Cortex *role*, not a synonym for Hermes. Moses
+**The key shift:** Moses is a Fleet *role*, not a synonym for Hermes. Moses
 can run on Hermes today; a different role could run on Claude tomorrow.
 Changing `primary_executor` must NOT change identity, permissions, memory,
 bus routing, or governance.
@@ -58,7 +58,7 @@ class ExecutorAdapter(Protocol):
     def collect(self, handle: ExecutionHandle) -> ExecutionResult: ...
 ```
 
-### ExecutionRequest (what Cortex sends)
+### ExecutionRequest (what Fleet sends)
 
 ```json
 {
@@ -67,7 +67,7 @@ class ExecutorAdapter(Protocol):
   "profile": "coding",
   "capabilities_required": ["code.read", "code.write", "tests", "git"],
   "data_tier": "projects",
-  "context": {                  // built by Cortex, never the raw vault
+  "context": {                  // built by Fleet, never the raw vault
     "plan": "…",                // slice plan (orchestrator-written)
     "vault_context": "…",       // vault_build_context output (budgeted)
     "constraints": ["do not modify unrelated files", "run tests"]
@@ -103,7 +103,7 @@ PII-never-bleeds. The adapter layer must NOT bypass any of it:
 
 - **No `SKIP_SCORE`, no `--no-verify`, no bypass flags** — the adapter
   executes within the same governance rules as a Hermes agent.
-- **PII boundary (R0.7)**: `data_tier` is enforced at the *Cortex* boundary
+- **PII boundary (R0.7)**: `data_tier` is enforced at the *Fleet* boundary
   (context builder), not trusted to the adapter. The executor receives a
   budgeted context envelope. Clarification (Luke 2026-08-24): this is a
   **tier filter, not a per-executor ban** — Claude (or any executor) with
@@ -153,7 +153,7 @@ deterministic, testable, no LLM in the loop.
 ## 5. Adapter isolation — worktrees (unchanged, already documented)
 
 ```
-repo/                     # main checkout (Cortex/Hermes)
+repo/                     # main checkout (Fleet/Hermes)
 └── .worktrees/
     └── <executor>-<slice>/   # adapter works here
 ```
@@ -185,13 +185,13 @@ before Claude touches anything.
 
 ## 8. What moves behind adapters (gradually)
 
-Hermes-specific concepts that Cortex Core should NOT know:
+Hermes-specific concepts that Fleet Core should NOT know:
 - Hermes CLI flags (`hermes config set`, `hermes cron create`)
 - Hermes sessions / tool schemas / process lifecycle
 
-Cortex Core keeps (runtime-agnostic):
+Fleet Core keeps (runtime-agnostic):
 - identity (SOUL), policy (governance), task model, bus, brain, cost
-- the **enforcer** — enforcement is Cortex policy, applies to ALL adapters
+- the **enforcer** — enforcement is Fleet policy, applies to ALL adapters
 
 ## 9. Open questions for Luke
 
@@ -201,7 +201,7 @@ Cortex Core keeps (runtime-agnostic):
 2. **DeepSeek Claude-compat**: verify `claude` CLI → DeepSeek Anthropic
    endpoint honors sonnet→V4-Flash / opus→V4-Pro aliases (cost-critical).
 3. **Where does the adapter layer live**: `steadfaste-fleet` as the Execution
-   Controller repo (Cortex is becoming the control plane — Luke's earlier
+   Controller repo (Fleet is becoming the control plane — Luke's earlier
    "this should be an orchestrator" direction) — confirm.
 4. **Registry schema**: `executors.yaml` vs. bus capability cards — I
    recommend capability cards on the bus (already the agent-card pattern).
@@ -266,7 +266,7 @@ server = Server("executor", on_list_tools=list_tools, on_call_tool=call_tool)
 | `execution_cancel` | cancel a running execution | adapter `cancel()` |
 | `execution_collect` | gather ExecutionResult + evidence | adapter `collect()`; feeds `report_done()`/`verify_slice()` |
 
-**Every tool enforces Cortex policy at the server boundary** (same pattern
+**Every tool enforces Fleet policy at the server boundary** (same pattern
 as the enforcer):
 - `execution_request` with `data_tier: full` → refused for non-orchestrators
 - no governance lock open → refused (begin_change first)
@@ -318,7 +318,7 @@ methods, never rewrites.
 
 ### 10.6 What does NOT go into MCP
 
-- **The enforcer** — governance enforcement stays in the Cortex policy layer
+- **The enforcer** — governance enforcement stays in the Fleet policy layer
   (it gates the `executor` server from outside; the server doesn't re-implement
   enforcement).
 - **The brain/vault** — stays a separate MCP server (mycortex); the executor

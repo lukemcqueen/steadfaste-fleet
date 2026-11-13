@@ -269,7 +269,7 @@ Mirror `tests/test-bus-schema.sh` style:
   the container from `docker ps --format '{{.Names}}'` and the role shape from
   `grep -o 'prefix[a-z_]*'` on the source, then paste those into the psql
   verification; when a fix needs a literal, delete the offending character with
-  a lookahead (`s/myc (?=cortex)//g`) so the replacement cannot re-typo it.
+  a lookahead (`s/myc (?=fleet)//g`) so the replacement cannot re-typo it.
 - **A battery under `set -eu` dies WITHOUT a Summary when a bare fixture command
   fails** — the output ends mid-section and looks like a normal end, so the
   failing command is easy to miss. The failure is usually a fixture problem, not

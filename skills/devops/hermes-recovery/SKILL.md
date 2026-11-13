@@ -103,7 +103,7 @@ cp -a ~/backup-dir/mycortex-data ~/.legacy-brain
 cp -a ~/backup-dir/docker-volumes/pgdata ~/pgdata
 cp -a ~/backup-dir/docker-volumes/clickhouse-data ~/clickhouse-data
 
-# Cortex project files — clone from GitHub instead of restoring
+# Fleet project files — clone from GitHub instead of restoring
 # (see github-repo-management skill)
 ```
 

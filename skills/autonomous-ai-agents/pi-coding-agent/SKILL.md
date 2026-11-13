@@ -148,7 +148,7 @@ Exact type shapes, the probe commands, and the executable-guard recipe:
 `references/extension-tool-api.md`.
 - **Side channel** — report every decision on stderr as `JEV_EVENT` lines (and as session entries) so a run is auditable line-by-line (tool call, hook decision, Jev call, model, cost, context).
 
-## Cortex context (memory + session)
+## Fleet context (memory + session)
 
 **Pi >= 0.99 / 1.0 has an MCP client** (pi 1.0.0, reproduced: `pi mcp list` reports
 `fleet-context: connected, N tools`): it reads

@@ -63,7 +63,7 @@ Set up a host firewall. Default deny incoming, allow only needed ports.
 sudo ufw allow ssh                # port 22
 sudo ufw allow http               # port 80 (nginx)
 sudo ufw allow https              # port 443 (if applicable)
-# Add any Hermes/Cortex service ports exposed on all interfaces
+# Add any Hermes/Fleet service ports exposed on all interfaces
 for port in 13001 13002 13004 13007; do
   sudo ufw allow "$port"
 done

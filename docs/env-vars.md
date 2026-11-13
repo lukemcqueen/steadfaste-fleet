@@ -8,7 +8,7 @@ and related scripts. New variables should be added here with all fields.
 ## Env File
 
 The env file lives at `~/steadfaste-fleet/.env` (gitignored) — the single source of truth
-for all Cortex environment variables. It's auto-sourced by deploy scripts and `fleet-update.sh`.
+for all Fleet environment variables. It's auto-sourced by deploy scripts and `fleet-update.sh`.
 Every reference now points here. The deploy dir carries a **sanctioned back-compat symlink**,
 `~/.steadfaste-fleet/.env → ~/steadfaste-fleet/.env`, so legacy readers resolving the deploy-dir
 path keep working; the old `~/.steadfaste-fleet/fleet-bus.conf` name was retired 2026-10-17
@@ -111,7 +111,7 @@ names are the contract — never invent a new name without checking here first
 
 ### Hermes agent variables (`~/.hermes/.env`)
 
-Hermes-owned — never merged into the Cortex env.
+Hermes-owned — never merged into the Fleet env.
 
 | Variable | Purpose |
 |---|---|

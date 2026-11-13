@@ -156,10 +156,10 @@ repos on macOS, `grep -c adversarial = 0`).
 
 ### Fix (three parts + one critical addition)
 
-1. **`refresh_pinned_hook_files()`** — after pinning, copies the 4 cortex
+1. **`refresh_pinned_hook_files()`** — after pinning, copies the 4 fleet
    hooks (pre-commit-score, pre-push-pull, post-commit-audit, post-push-audit)
    from deployed source into the repo's own hooks dir. Only files carrying
-   the cortex banner (`Git <type> hook`, ASCII match for macOS locale
+   the fleet banner (`Git <type> hook`, ASCII match for macOS locale
    safety) are refreshed; **foreign hooks are preserved** (vllm pre-commit
    framework shim, bespoke deploy hooks). Missing hook files get the gate
    installed.
@@ -170,7 +170,7 @@ repos on macOS, `grep -c adversarial = 0`).
    `.git` dirs that must never be pinned.
 
 3. **Doctor check `Pinned hooks fresh`** (7c) — for every repo with a local
-   `core.hooksPath`, compares each cortex hook file against the deployed
+   `core.hooksPath`, compares each fleet hook file against the deployed
    source with `_content_md5()` (strips the SOURCE header). FAIL on drift
    with remediation hint `fleet-update.sh --force`. Foreign hooks skipped.
 
@@ -180,20 +180,20 @@ repos on macOS, `grep -c adversarial = 0`).
    their hooksPath points at their own dir — refreshing the full hooks into
    them would have blocked **every commit**. The guard now passes when the
    hooks dir carries any cortex-managed hook (governance IS running there);
-   it still fails closed when hooksPath points at a dir with no cortex hooks
+   it still fails closed when hooksPath points at a dir with no fleet hooks
    (the original bypass tripwire).
 
 ### Why the carve-out is safe
 
 The guard's own comment states its purpose: *"The REAL danger is when
 hooksPath points elsewhere entirely, meaning NO governance hooks run at
-all."* A pinned repo with refreshed cortex hooks HAS governance running —
+all."* A pinned repo with refreshed fleet hooks HAS governance running —
 the carve-out accepts exactly that state. A repo pointing hooksPath at an
-attacker-controlled dir with no cortex hooks still blocks.
+attacker-controlled dir with no fleet hooks still blocks.
 
 ### Verify (all three, done on Linux 2026-08-05)
 
-1. Scratch repo with stale cortex hook → refreshed to byte-match deployed,
+1. Scratch repo with stale fleet hook → refreshed to byte-match deployed,
    adversarial gate present (10 hits), commit passes the hooksPath guard
 2. Repo with foreign vllm shim → refresh skips it, hash unchanged
 3. Doctor: FAIL on stale (`36f9a960 != 13bbebff`) → refresh → PASS

@@ -50,7 +50,7 @@ double-gated with dry-run default), cyber-mux (tmux/herdr/WezTerm).
 
 All in github.com/kunchenguid/axi (catalog generated from catalog.yaml).
 
-## Adoption rules of thumb (from the 2026-08-24 Cortex distillation)
+## Adoption rules of thumb (from the 2026-08-24 Fleet distillation)
 
 - Machine protocol stays JSON; TOON is output-boundary only.
 - Agent-facing CLI stdout: TOON preferred for new scripts; retrofit

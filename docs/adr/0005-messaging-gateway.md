@@ -12,7 +12,7 @@ messaging apps on one fabric. The per-agent bridge approach hit the
 fundamental limit — Telegram allows one getUpdates poller per bot (409) —
 and could not scale to N bots or N messaging apps without N processes
 fighting. Luke's requirement: cover (1) Telegram via Hermes direct, (2)
-Telegram via cortex bus, (3) WhatsApp or other systems, (4) multiple bots
+Telegram via fleet bus, (3) WhatsApp or other systems, (4) multiple bots
 on one server via one bus — and the question: should normal agents have a
 bus that just runs the messaging apps?
 

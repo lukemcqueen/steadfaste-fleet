@@ -230,7 +230,7 @@ defaults to no-op.
 ## Survey Before Acting (user correction 2026-08-05)
 
 When the user reports a problem like this ("you never need my permission to update
-cortex" / "why are you blocked"), the FIRST action is a survey — not a fix attempt.
+fleet" / "why are you blocked"), the FIRST action is a survey — not a fix attempt.
 This session's sequence that got corrected:
 
 1. Diagnosed the two-gate model, found the shadow — good.

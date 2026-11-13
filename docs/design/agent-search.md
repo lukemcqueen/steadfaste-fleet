@@ -1,7 +1,7 @@
 # Agent search — one capability, two agent systems
 
 > **Status:** IMPLEMENTED (surfaces + cache + provider contract), WIRING PENDING.
-> **Audience:** whoever wires it into an agent system (cortex or steadfaste).
+> **Audience:** whoever wires it into an agent system (fleet or steadfaste).
 > **Implementation:** `tools/fleet-search/` (Rust, 21 tests, `cargo test`).
 
 ## The requirement
@@ -31,7 +31,7 @@ The requirement's table, kept here because it is the yardstick this design is me
 | crates.io | reachable |
 
 Two of these decided the shape. **Go would be a third language** in a fleet that already has Python
-(cortex) and Rust (steadfaste) — and it is not even installed, so the "lowest RAM" row would cost a
+(fleet) and Rust (steadfaste) — and it is not even installed, so the "lowest RAM" row would cost a
 toolchain on every host. And **the `sqlite3` CLI is absent**, which is why the cache is not a
 subprocess: a local cache that silently reports itself unavailable is indistinguishable from
 "nothing found", the worst failure mode this tool has.
@@ -133,7 +133,7 @@ than to a coding agent: one implementation, adapters with no semantics.
 ## Wiring into each system (the part that is NOT done)
 
 **steadfaste-fleet (Python).** Two adapters, both thin:
-- register the binary in `mcp_servers` so cortex agents get `web_search` / `web_fetch` /
+- register the binary in `mcp_servers` so fleet agents get `web_search` / `web_fetch` /
   `web_search_local` as ordinary MCP tools;
 - call the CLI from crons where a process per run is the natural shape.
 - The deploy must build and place the binary (`cargo build --release`), which needs a warm crate

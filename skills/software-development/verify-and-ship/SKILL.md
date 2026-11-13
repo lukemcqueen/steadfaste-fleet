@@ -190,6 +190,7 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   run it red-and-green, and re-review citing that committed test as the proof.
   A reviewer will accept 'asserted by test X, runnable with pytest' where it
   will never accept 'verified: offsets were compared'.
+- **A committed test alone is re-filed as unverified-claim unless a CAPTURED RUN ARTIFACT rides in the same range — and the ACCUSED file must itself change to point at the evidence.** Verdicts stay keyed to the blob's un-changed bytes forever, so adding a test elsewhere (or claiming it in the commit message) never clears the accused file: edit that file to reference the test, and commit `docs/evidence/<topic>-<date>.txt` carrying the exact command, output and exit code. For a script that iterates the whole environment (`env | sed` mirrors, prompt samplers), its hermetic test must CLEANSE its own test-scoped vars up front or the reviewer files an ambient-leak finding.
 - **The CLOSE gate is a per-blob reviewer with a limited window — pin the test's
   SUBJECT inside the test.** A test importing module internals from a file the
   close reviewer cannot see is filed FABRICATION; hardcoded expectations are

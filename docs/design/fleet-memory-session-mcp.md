@@ -1,4 +1,4 @@
-# Design — cortex context: memory + session over one shared tool surface (S2c)
+# Design — fleet context: memory + session over one shared tool surface (S2c)
 
 > **Status:** proposed v2. Answers Luke: *"we need Pi to have session stage and
 > mycortex memory. can steadfaste-fleet provide this as a service or mcp server?"*,
