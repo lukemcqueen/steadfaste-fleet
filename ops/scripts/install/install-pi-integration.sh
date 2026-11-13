@@ -62,9 +62,10 @@ fi
 PYTHON="${PYTHON:-$(command -v python3)}"
 AGENT_DIR="${PI_AGENT_DIR:-${HOME}/.pi/agent}"
 SETTINGS="${PI_SETTINGS_FILE:-${AGENT_DIR}/settings.json}"
-CURATED_DIR="${PI_FLEET_SKILLS_DIR:-${AGENT_DIR}/cortex-skills}"
-# The RETIRED per-skill farm dir. Kept only so a host that has one can be migrated;
-# nothing is registered here any more.
+# The RETIRED per-skill farm dir — kept under its HISTORICAL `cortex-skills`
+# name (a `fleet-skills` spelling does not exist) so a host that has one can be
+# migrated; nothing is registered here any more.
+CURATED_DIR="${PI_RETIRED_FARM_DIR:-${AGENT_DIR}/cortex-skills}"
 # The agent-visible skills tree, published by ops/scripts/manage/publish-agent-skills.py.
 # Cortex OWNS the library and ~/.hermes/skills is a POINTER to it, so no Pi path names a
 # Hermes directory. Pi 1.3's loader follows a symlinked root (measured in its own
