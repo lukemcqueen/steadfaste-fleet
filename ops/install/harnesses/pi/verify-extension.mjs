@@ -208,13 +208,13 @@ if (typeof hooks["before_agent_start"] === "function") {
        "…while an empty snapshot injects no resume block");
 
   // ── session identity: the extension must give the governance MCP child a
-  // UNIQUE, stable CORTEX_SESSION_KEY from Pi's own session id. Without it every
+  // UNIQUE, stable FLEET_SESSION_KEY from Pi's own session id. Without it every
   // Pi session in a repo shares the per-repo fallback id and one lock. Drive the
   // REAL handler with a ctx that exposes sessionManager.getSessionId() and assert
   // what it put in process.env — a grep could see the code; only running it
   // proves the value lands where the resolver reads it.
-  const savedKey = process.env.FLEET_SESSION_KEY || process.env.CORTEX_SESSION_KEY;
-  delete process.env.FLEET_SESSION_KEY; delete process.env.CORTEX_SESSION_KEY;
+  const savedKey = process.env.FLEET_SESSION_KEY;
+  delete process.env.FLEET_SESSION_KEY;
   try {
     await hooks["before_agent_start"]({ systemPrompt: "BASE" }, {
       sessionManager: { getSessionId: () => "fleet-pi-marker-session" },
@@ -222,10 +222,10 @@ if (typeof hooks["before_agent_start"] === "function") {
   } catch (err) {
     note(false, `before_agent_start (with ctx) threw: ${err}`);
   }
-  note((process.env.FLEET_SESSION_KEY || process.env.CORTEX_SESSION_KEY) === "fleet-pi-marker-session",
-       `before_agent_start sets CORTEX_SESSION_KEY from ctx.sessionManager.getSessionId() (got ${JSON.stringify(process.env.FLEET_SESSION_KEY || process.env.CORTEX_SESSION_KEY)})`);
+  note((process.env.FLEET_SESSION_KEY) === "fleet-pi-marker-session",
+       `before_agent_start sets FLEET_SESSION_KEY from ctx.sessionManager.getSessionId() (got ${JSON.stringify(process.env.FLEET_SESSION_KEY)})`);
   // Only-if-unset: an operator/gateway pin must win over the extension.
-  process.env.FLEET_SESSION_KEY = process.env.CORTEX_SESSION_KEY = "fleet-pi-pinned";
+  process.env.FLEET_SESSION_KEY = "fleet-pi-pinned";
   try {
     await hooks["before_agent_start"]({ systemPrompt: "BASE" }, {
       sessionManager: { getSessionId: () => "fleet-pi-marker-session" },
@@ -233,23 +233,23 @@ if (typeof hooks["before_agent_start"] === "function") {
   } catch (err) {
     note(false, `before_agent_start (pinned) threw: ${err}`);
   }
-  note((process.env.FLEET_SESSION_KEY || process.env.CORTEX_SESSION_KEY) === "fleet-pi-pinned",
+  note((process.env.FLEET_SESSION_KEY) === "fleet-pi-pinned",
        "an existing session key pin is NOT overwritten (only-if-unset)");
   if (savedKey === undefined) {
-    delete process.env.FLEET_SESSION_KEY; delete process.env.CORTEX_SESSION_KEY;
+    delete process.env.FLEET_SESSION_KEY;
   } else {
-    process.env.FLEET_SESSION_KEY = process.env.CORTEX_SESSION_KEY = savedKey;
+    process.env.FLEET_SESSION_KEY = savedKey;
   }
 
   // A ctx with no sessionManager (or a getSessionId that returns nothing) must
   // set nothing and not throw — the extension runs on every harness shape.
-  const beforeEmpty = process.env.FLEET_SESSION_KEY || process.env.CORTEX_SESSION_KEY;
+  const beforeEmpty = process.env.FLEET_SESSION_KEY;
   try {
     await hooks["before_agent_start"]({ systemPrompt: "BASE" }, {});
   } catch (err) {
     note(false, `before_agent_start (no sessionManager) threw: ${err}`);
   }
-  note((process.env.FLEET_SESSION_KEY || process.env.CORTEX_SESSION_KEY) === beforeEmpty,
+  note((process.env.FLEET_SESSION_KEY) === beforeEmpty,
        "a ctx without sessionManager sets nothing and does not throw");
 }
 
@@ -308,7 +308,7 @@ if (typeof hooks["tool_result"] === "function") {
     note(got[0].args?.content?.path === skillPath,
          `…carrying the read's own input (got ${JSON.stringify(got[0].args?.content?.path)})`);
     note(got[0].args?.session_key === "sess_test_govkey",
-         `…keyed to the session the GATE queries, not CORTEX_SESSION_KEY (got ${JSON.stringify(got[0].args?.session_key)})`);
+         `…keyed to the session the GATE queries, not FLEET_SESSION_KEY (got ${JSON.stringify(got[0].args?.session_key)})`);
   }
 
   // (b) a read of something that is NOT a skill must record nothing.

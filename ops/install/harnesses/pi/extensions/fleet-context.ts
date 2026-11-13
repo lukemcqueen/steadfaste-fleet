@@ -36,7 +36,7 @@
  *   pi -e extensions/fleet-context.ts --tools read,bash,edit,write
  *   (the memory/session tools are NOT listed in --tools: they arrive via MCP)
  *
- * ENV: CORTEX_SESSION_HARNESS / _REPO / _BRANCH / _KEY (else derived from git;
+ * ENV: FLEET_SESSION_HARNESS / _REPO / _BRANCH / _KEY (else derived from git;
  *      the gateway pins _KEY per chat so separate chats never share a
  *      checkpoint), FLEET_CONTEXT_CLI to override the CLI path,
  *      FLEET_CONTEXT_LOG + FLEET_CONTEXT_LOG_MAX_BYTES (routine trace sink,
@@ -206,7 +206,7 @@ const fail = (message: string) => {
  * implementation (`loop-gov.py session_identity` → loop-gov-mcp.py's predicate).
  *
  * The gate answers from the active lock's session id, so the writer must use that
- * same id. It is deliberately NOT read out of a file or out of CORTEX_SESSION_KEY:
+ * same id. It is deliberately NOT read out of a file or out of FLEET_SESSION_KEY:
  * either would be a second derivation of "which session is this", and a second
  * derivation is how the writer and the checker come to disagree — which is the
  * defect this replaces (every Pi commit was refused because the evidence landed
@@ -250,11 +250,11 @@ export default function (pi: any) {
     // inherited env, then re-adds it per command). The loop-governance MCP child
     // is spawned by Pi's MCP client with `{...process.env, ...mcp.json env}` and
     // mcp.json's env block carries only AGENT_NAME, so get_session_id() sees no
-    // CORTEX_SESSION_KEY / PI_SESSION_ID and falls through to the PER-REPO id
+    // FLEET_SESSION_KEY / PI_SESSION_ID and falls through to the PER-REPO id
     // (state/.session-<slug>.id) — ONE id shared by every Pi session in that
     // repo, so a new session "picks up" an existing session's lock. Measured:
     // with no env value the resolver answers ("per-repo", shared=True); with
-    // CORTEX_SESSION_KEY it answers ("env:CORTEX_SESSION_KEY", shared=False).
+    // FLEET_SESSION_KEY it answers ("env:FLEET_SESSION_KEY", shared=False).
     //
     // The fix is here because this is the harness adapter, and the session id IS
     // the unique, stable discriminator (stable across a Pi/MCP-child restart,
@@ -263,9 +263,9 @@ export default function (pi: any) {
     // env merge above. Only-if-unset: an operator/gateway pin (which already
     // sets it to the same session id) must win.
     const sessionId = ctx?.sessionManager?.getSessionId?.();
-    if (sessionId && !process.env.FLEET_SESSION_KEY && !process.env.CORTEX_SESSION_KEY) {
-      process.env.FLEET_SESSION_KEY = process.env.CORTEX_SESSION_KEY = String(sessionId);
-      note(`CORTEX_SESSION_KEY=${sessionId}\n`);
+    if (sessionId && !process.env.FLEET_SESSION_KEY) {
+      process.env.FLEET_SESSION_KEY = String(sessionId);
+      note(`FLEET_SESSION_KEY=${sessionId}\n`);
     }
     const snap = parse<Restored>(await cortex("session_restore", {}), { restored: null }).restored;
     let resume = "";
@@ -339,7 +339,7 @@ export default function (pi: any) {
   // never claim a `skill_view` that did not happen.
   //
   // The event is keyed to the session the GATE will query (`session_identity`),
-  // not to CORTEX_SESSION_KEY: the gate asks about the governance lock's session
+  // not to FLEET_SESSION_KEY: the gate asks about the governance lock's session
   // id, so a second key can only ever disagree with it.
   //
   // Only gate-relevant tool calls are recorded, not every call: the store is

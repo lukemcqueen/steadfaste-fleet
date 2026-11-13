@@ -131,8 +131,8 @@ while [[ "$REPO_DIR" != "/" && ! -f "$REPO_DIR/AGENTS.md" ]]; do
 done
 # If we hit / without finding AGENTS.md, try common repo locations
 if [[ "$REPO_DIR" == "/" ]]; then
-  # FLEET_REPO env var takes priority (legacy CORTEX_REPO still honoured)
-  FLEET_REPO="${FLEET_REPO:-${CORTEX_REPO:-}}"
+  # FLEET_REPO env var (set by agents) takes priority
+  FLEET_REPO="${FLEET_REPO:-}"
   if [[ -n "${FLEET_REPO:-}" && -f "$FLEET_REPO/AGENTS.md" ]]; then
     REPO_DIR="$FLEET_REPO"
   else
@@ -618,7 +618,6 @@ register "ops/scripts/lib/toon_parse.py"                 "${FLEET_DEPLOY_HOME}/s
 # nothing about a module, and the old silent fallback to a PyYAML-less python3 made the
 # daily regression gate fail every day. Used by orch-daily-regression-gate.sh.
 register "ops/scripts/lib/python-with-module.sh"          "${FLEET_DEPLOY_HOME}/scripts/lib/python-with-module.sh"
-register "ops/scripts/lib/fleet-env-compat.sh"            "${FLEET_DEPLOY_HOME}/scripts/lib/fleet-env-compat.sh"
 # The CREATE step that pytest resolution depends on: idempotent, verified by import, age-gated
 # through ops/scripts/health/check-package-age.py. A harness that names a command a peer host does
 # not have has only moved the gap (ADV-13116-1 / ADV-13253-1).

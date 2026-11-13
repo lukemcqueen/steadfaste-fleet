@@ -8,8 +8,8 @@ CORTEX_SESSION_* the harness sets (an explicit, documented legacy fallback).
 
 Migration history: the CORTEX_* -> FLEET_* migration (plan P4) used a dual-read
 fallback (FLEET first, then CORTEX with a loud deprecation warning) via this
-module and its shell twin `lib/fleet-env-compat.sh`. Both fallback layers were
-removed in release 2 once every consumer read FLEET_* and hosts' .env carried
+module. The fallback layer was removed in release 2 once every consumer read
+FLEET_* and hosts' .env carried
 FLEET_* (consolidate-env.sh converts the .env to FLEET-only).
 """
 

@@ -117,7 +117,7 @@ process.env.FLEET_GOVERNANCE_CLI = stubCli;
 process.env.FLEET_GOVERNANCE_PYTHON = process.env.FLEET_GOVERNANCE_PYTHON || "python3";
 process.env.FLEET_GOVERNANCE_LOG = path.join(tmp, "gov.log");
 process.env.GOV_STUB_LOG = callsLog;
-process.env.CORTEX_SESSION_REPO = "/tmp/fake-repo"; process.env.FLEET_SESSION_REPO = "/tmp/fake-repo"; // deterministic; no git needed
+process.env.FLEET_SESSION_REPO = "/tmp/fake-repo"; process.env.FLEET_SESSION_REPO = "/tmp/fake-repo"; // deterministic; no git needed
 delete process.env.FLEET_GOVERNANCE_DEBUG;
 
 const callCount = () => (fs.existsSync(callsLog)
@@ -309,22 +309,22 @@ note(r.blocked, "governance CLI missing => write BLOCKED (fail CLOSED, not a sil
 process.env.FLEET_GOVERNANCE_CLI = stubCli;
 
 // ── 9. no repo resolvable => fail CLOSED ──────────────────────────────────
-delete process.env.FLEET_SESSION_REPO; delete process.env.CORTEX_SESSION_REPO;
+delete process.env.FLEET_SESSION_REPO;
 const cwdBefore = process.cwd();
 const nonRepo = fs.mkdtempSync(path.join(os.tmpdir(), "not-a-repo-"));
 process.chdir(nonRepo);
 r = await call("write", { file_path: "/tmp/x.txt" });
 process.chdir(cwdBefore);
-note(r.blocked, "no repo + no CORTEX_SESSION_REPO => write BLOCKED (nothing to govern)");
+note(r.blocked, "no repo + no FLEET_SESSION_REPO => write BLOCKED (nothing to govern)");
 note(r.reason.includes("CANNOT DETERMINE THE REPO"), "the unresolved block says which one is missing");
-process.env.CORTEX_SESSION_REPO = "/tmp/fake-repo"; process.env.FLEET_SESSION_REPO = "/tmp/fake-repo";
+process.env.FLEET_SESSION_REPO = "/tmp/fake-repo"; process.env.FLEET_SESSION_REPO = "/tmp/fake-repo";
 
 // ── 9b. a call that NAMES a path inside a repo RESOLVES it (the args leg) ──
 // Measured on a macOS host (pi, titus, 2026-10-18): the gate consulted only the env var and
 // pi's own cwd, so a session launched outside the checkout was refused with "CANNOT DETERMINE
 // THE REPO" — a dead end, because the one command that would have proven the repo was itself
 // the write being blocked. The repo must be found from the CALL's own arguments.
-delete process.env.FLEET_SESSION_REPO; delete process.env.CORTEX_SESSION_REPO;
+delete process.env.FLEET_SESSION_REPO;
 // This verifier needs no real repo elsewhere (its CLI is stubbed), so the case makes its own.
 const argsRepo = fs.mkdtempSync(path.join(os.tmpdir(), "args-leg-repo-"));
 require("node:child_process").execFileSync("git", ["init", "-q", argsRepo]);
@@ -343,7 +343,7 @@ try { fs.rmSync(argsRepo, { recursive: true, force: true }); } catch { /* best e
 const fsRepo = fs.mkdtempSync(path.join(os.tmpdir(), "fs-walk-repo-"));
 fs.mkdirSync(path.join(fsRepo, ".git"));       // .git present, no git binary required
 const savedPath = process.env.PATH;
-delete process.env.FLEET_SESSION_REPO; delete process.env.CORTEX_SESSION_REPO;
+delete process.env.FLEET_SESSION_REPO;
 process.env.PATH = "/nonexistent-bin";          // git cannot be executed at all
 try {
   process.chdir(nonRepo);

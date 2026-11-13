@@ -45,7 +45,7 @@
  *
  * INSTALL (user scope, so every pi project gets it):
  *   bash ~/steadfaste-fleet/ops/scripts/install/install-pi-integration.sh
- * ENV: CORTEX_SESSION_REPO pins the governed repo when pi's cwd is not it;
+ * ENV: FLEET_SESSION_REPO pins the governed repo when pi's cwd is not it;
  *      FLEET_GOVERNANCE_CLI overrides the loop-gov.py path;
  *      FLEET_GOVERNANCE_PYTHON overrides the interpreter (macOS: a Homebrew
  *      python3 is often not on pi's PATH).
@@ -208,9 +208,9 @@ function sessionRepo(input?: any): string | null {
   repoDiagnostics = [];
   const fromArgs = repoFromToolInput(input);                       // 1. what THIS call touches
   if (fromArgs) return fromArgs;
-  const pinned = ((process.env.FLEET_SESSION_REPO || process.env.CORTEX_SESSION_REPO) ?? "").trim();   // 2. explicit pin
+  const pinned = (process.env.FLEET_SESSION_REPO ?? "").trim();   // 2. explicit pin
   if (pinned) {
-    repoDiagnostics.push(`CORTEX_SESSION_REPO=${pinned} (used as given, never checked)`);
+    repoDiagnostics.push(`FLEET_SESSION_REPO=${pinned} (used as given, never checked)`);
     return path.resolve(pinned);
   }
   const look = gitRootOf(process.cwd());                          // 3. pi's own cwd
@@ -531,9 +531,9 @@ function unresolvedMessage(diagnostics: string[] = []): string {
   return [
     "🛑 GOVERNANCE CANNOT DETERMINE THE REPO — refusing this write (fail CLOSED).",
     "",
-    "Pi is not in a git repo and CORTEX_SESSION_REPO is unset, so there is no",
+    "Pi is not in a git repo and FLEET_SESSION_REPO is unset, so there is no",
     "tree to govern. Run pi from inside the repo you are working in, or set",
-    "CORTEX_SESSION_REPO to its absolute path, then retry.",
+    "FLEET_SESSION_REPO to its absolute path, then retry.",
     "",
     "WHAT WAS TRIED (this part used to be swallowed, which made the refusal",
     "impossible to act on):",
@@ -543,7 +543,7 @@ function unresolvedMessage(diagnostics: string[] = []): string {
     "",
     "  A line ending in ENOENT means git is not on THIS PROCESS's PATH — the",
     "  folder may well be a repo. Give pi a PATH that includes git, or set",
-    "  CORTEX_SESSION_REPO to the checkout. Anything else quotes git's own words.",
+    "  FLEET_SESSION_REPO to the checkout. Anything else quotes git's own words.",
   ].join("\n");
 }
 
