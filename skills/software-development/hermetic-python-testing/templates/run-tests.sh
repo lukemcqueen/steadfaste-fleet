@@ -18,10 +18,10 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Interpreter by capability, not by path: a path is not a promise.
 PY=""
-if [ -n "${FLEET_PYTHON:-}" ] && "$FLEET_PYTHON" -c 'import pytest' 2>/dev/null; then
+if [ -n "${FLEET_PYTHON:-}" ] && env -u PYTHONPATH -u PYTHONHOME "$FLEET_PYTHON" -c 'import pytest' 2>/dev/null; then
   PY="$FLEET_PYTHON"
 elif [ -x "${HOME}/.steadfaste-fleet/venv/bin/python3" ] && \
-     "${HOME}/.steadfaste-fleet/venv/bin/python3" -c 'import pytest' 2>/dev/null; then
+     env -u PYTHONPATH -u PYTHONHOME "${HOME}/.steadfaste-fleet/venv/bin/python3" -c 'import pytest' 2>/dev/null; then
   PY="${HOME}/.steadfaste-fleet/venv/bin/python3"
 fi
 if [ -z "$PY" ]; then

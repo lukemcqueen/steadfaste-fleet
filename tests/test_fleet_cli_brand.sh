@@ -227,7 +227,7 @@ _b9_py=""
 for _cand in "${FLEET_PYTHON:-}" "$HOME/.steadfaste-fleet/venv/bin/python3" python3; do
   [ -n "$_cand" ] || continue
   command -v "$_cand" >/dev/null 2>&1 || continue
-  if "$_cand" -c 'import yaml' >/dev/null 2>&1; then _b9_py="$_cand"; break; fi
+  if env -u PYTHONPATH -u PYTHONHOME "$_cand" -c 'import yaml' >/dev/null 2>&1; then _b9_py="$_cand"; break; fi
 done
 if [ -z "$_b9_py" ]; then
   bad "B9 cannot verify: no interpreter with PyYAML (needed by generate-harnesses.py)"

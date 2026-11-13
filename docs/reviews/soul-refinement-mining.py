@@ -14,13 +14,16 @@ Writes nothing; prints JSON to stdout. Read-only against the sessions store.
 """
 
 import json
+import os
 import re
 import sqlite3
 import sys
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 
-STATE_DB = "file:~/.hermes/state.db?mode=ro"
+# sqlite URI filenames do NOT expand `~` (file:~/.hermes/state.db opens a
+# literal relative path `~`); expand the home first or connect fails.
+STATE_DB = "file:" + os.path.expanduser("~/.hermes/state.db") + "?mode=ro"
 KST = timezone(timedelta(hours=9))
 
 # Scaffolding that arrives as role='user' but carries no human instruction.

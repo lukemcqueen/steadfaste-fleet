@@ -191,8 +191,24 @@ def test_reviewer_timeout_clamped_below_client_ceiling():
     )
     huge = {"files": 99999, "lines": 500000, "always_review": False}
 
+    # Hermetic: this test asserts the MCP path, so the CLI-caller marker must be
+    # absent (it raises the ceiling to REVIEWER_TIMEOUT_CEILING_CLI, honouring a
+    # 300s default that the MCP path would clamp). Save every env var we touch and
+    # restore them, so the test neither inherits a leak nor leaves one.
+    _saved = {k: os.environ.get(k) for k in (
+        "FLEET_LOOP_GOV_CLIENT", "ADVERSARIAL_REVIEW_AGENT_TIMEOUT",
+        "ADVERSARIAL_REVIEW_TIMEOUT")}
+
+    def _restore():
+        for k, v in _saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
     # 1. No override: the shipped defaults must already fit -- both backends, with
     #    and without a measurement, and for a change of any size.
+    os.environ.pop("FLEET_LOOP_GOV_CLIENT", None)
     os.environ.pop("ADVERSARIAL_REVIEW_AGENT_TIMEOUT", None)
     os.environ.pop("ADVERSARIAL_REVIEW_TIMEOUT", None)
     for backend in ("llm", "agent"):
@@ -222,6 +238,7 @@ def test_reviewer_timeout_clamped_below_client_ceiling():
         )
     finally:
         os.environ.pop("ADVERSARIAL_REVIEW_TIMEOUT", None)
+    _restore()
 
 
 def test_both_reviewer_backends_route_through_the_clamp():

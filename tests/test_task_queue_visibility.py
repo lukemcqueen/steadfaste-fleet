@@ -182,6 +182,22 @@ def _strip_sql_comments(text: str) -> str:
     return "\n".join(re.sub(r"--.*$", "", line) for line in text.splitlines())
 
 
+def _transition_allowed_def() -> str:
+    """Comment-stripped text of the NEWEST migration that DEFINES transition_allowed.
+
+    Later migrations (e.g. v018) only CALL the function; the effective arms are the
+    last body that `CREATE OR REPLACE`s it. Scanned as a set, newest first, so the
+    parked arcs are held wherever they landed (v012 redefines the full body) and a
+    future migration that redefines them without the parked arc fails the guard.
+    """
+    for path in reversed(_migrations()):
+        text = path.read_text()
+        if re.search(r"FUNCTION\s+(tasks\.)?transition_allowed\s*\(", text, re.I):
+            return _strip_sql_comments(text)
+    raise AssertionError(
+        "no migration defines transition_allowed — parked rows cannot return to the pool")
+
+
 def test_a_parked_row_can_return_to_the_pull_pool():
     """`waiting`, `blocked` and `paused` are PARKED states, and none of them could
     transition to `pending`. So a parked slice could never re-enter the claim pool:
@@ -192,10 +208,9 @@ def test_a_parked_row_can_return_to_the_pull_pool():
     v010 fixed exactly this shape of omission for the in_progress arc; this pins the
     parked arcs so the same hole cannot reopen.
     """
-    newest = _migrations()[-1]
-    text = _strip_sql_comments(newest.read_text())
+    text = _transition_allowed_def()
     assert "transition_allowed" in text, (
-        f"{newest.name} does not touch transition_allowed — parked rows still cannot "
+        "the transition_allowed definition lost its parked rows — they still cannot "
         "return to pending, so they can never be claimed")
 
     # The arc itself: for each parked state, `pending` must be an allowed target.
@@ -214,7 +229,7 @@ def test_the_parked_arc_guard_would_notice_a_missing_arc():
     Both directions — the real file parses, and a file with the arc removed does not
     match. Without this the guard could pass by never matching anything.
     """
-    text = _strip_sql_comments(_migrations()[-1].read_text())
+    text = _transition_allowed_def()
     m = re.search(r"WHEN 'waiting' THEN\s*RETURN p_to IN \(([^)]*)\)", text,
                   re.I | re.S)
     assert m, "the real migration's waiting arm must parse"

@@ -3421,6 +3421,7 @@ main() {
   _fleet_venv_dir="${HOME}/.steadfaste-fleet/venv"
   _fleet_venv="${_fleet_venv_dir}/bin/python3"
   _venv_fixer="${FLEET_DEPLOY_HOME}/scripts/fix-fleet-venv.py"
+  _venv_just_created=0
   # CREATE it when absent (2026-10-13): nothing in this repo created that venv, so a host
   # could sit broken indefinitely while every launcher that execs it died with a generic
   # "No such file or directory". Touches only the venv path, deletes nothing, idempotent.
@@ -3429,6 +3430,7 @@ main() {
       warn "the fleet venv exists but has no usable bin/python3 — leaving it alone (a pruned or half-built venv needs a human look)"
     elif command -v python3 >/dev/null 2>&1 && python3 -m venv "$_fleet_venv_dir" >/dev/null 2>&1; then
       info "Created the fleet venv (it was absent): ${_fleet_venv_dir/$HOME/~}"
+      _venv_just_created=1
     else
       error "could not create the fleet venv at ${_fleet_venv_dir/$HOME/~} (python3 -m venv failed)"
     fi
@@ -3464,10 +3466,18 @@ main() {
       env -u PYTHONPATH -u PYTHONHOME "$_fleet_venv" -c "import ${_vm}" >/dev/null 2>&1 \
         || _venv_missing="${_venv_missing} ${_vm}"
     done
+    # A venv we JUST created is empty by construction (python3 -m venv installs
+    # nothing) — probing it for missing modules would report a false "cannot
+    # import" on a venv that is simply awaiting its declared set. That is the
+    # fixer's job on a host that ships it; a fresh empty venv is not a broken one.
     if [[ -n "$_venv_missing" ]]; then
-      error "fleet venv cannot import:${_venv_missing}  (${_fleet_venv/$HOME/~})"
-      info  "  Repair: uv pip install --python ${_fleet_venv/$HOME/~} 'pyyaml' 'mcp' 'psycopg[binary]'"
-      _DEFERRED_FAILURES+=("fleet venv modules:${_venv_missing}")
+      if [[ "$_venv_just_created" -eq 1 ]]; then
+        info "fresh fleet venv (just created) awaiting the declared requirements — will be filled by ${_venv_fixer/$HOME/~} on a host that ships it"
+      else
+        error "fleet venv cannot import:${_venv_missing}  (${_fleet_venv/$HOME/~})"
+        info  "  Repair: uv pip install --python ${_fleet_venv/$HOME/~} 'pyyaml' 'mcp' 'psycopg[binary]'"
+        _DEFERRED_FAILURES+=("fleet venv modules:${_venv_missing}")
+      fi
     fi
   fi
 

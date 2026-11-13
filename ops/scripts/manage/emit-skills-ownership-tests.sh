@@ -25,7 +25,7 @@ OUT="${1:-${REPO}/docs/evidence/skills-ownership-tests-$(date -u +%Y-%m-%d).txt}
 
 cd "$REPO" || exit 3
 
-if ! "$PY" -c "import pytest" >/dev/null 2>&1; then
+if ! env -u PYTHONPATH -u PYTHONHOME "$PY" -c "import pytest" >/dev/null 2>&1; then
   echo "COULD NOT VERIFY: ${PY} cannot import pytest — set FLEET_PY to one that can" >&2
   exit 3
 fi

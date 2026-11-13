@@ -35,3 +35,10 @@ fastapi>=0.100
 uvicorn>=0.23
 psycopg[binary]>=3.1
 pytest>=7.0
+# reportlab + pillow enable the daily sustainability briefing PDF
+# (ops/scripts/sustainability/gen_briefing.py build_pdf). Declared so the venv
+# fixer installs them on any host, instead of the PDF silently not building
+# because they only happened to exist in hermes-agent's venv. pillow is
+# reportlab's imaging dep (PIL.Image loads the `_imaging` C extension).
+reportlab>=4.0
+pillow>=10.0

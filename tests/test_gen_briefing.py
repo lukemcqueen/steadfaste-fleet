@@ -128,8 +128,11 @@ class TestBuilders(unittest.TestCase):
     def test_pdf_written_non_trivial(self):
         try:
             import reportlab  # noqa: F401
-        except ImportError:
-            self.skipTest("reportlab not installed")
+            from PIL import Image  # noqa: F401  (reportlab's imaging dep: PIL.Image
+            # loads the `_imaging` C extension at import, so this fails when the
+            # toolchain is present but broken — exactly the reason to skip, not fail)
+        except (ImportError, AttributeError):
+            self.skipTest("reportlab / PIL imaging not usable here")
         with tempfile.TemporaryDirectory() as td:
             out = Path(td) / "b.pdf"
             g.build_pdf(self._blocks(), str(out))

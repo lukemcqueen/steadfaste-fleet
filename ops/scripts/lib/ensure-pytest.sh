@@ -94,5 +94,5 @@ if imports_pytest; then
 fi
 
 echo "ensure-pytest: the install ran and ${PY} STILL cannot import pytest — not a pass." >&2
-echo "  Check the venv by hand: ${PY} -c 'import pytest'" >&2
+echo "  Check the venv by hand: import pytest under ${PY} (e.g. \`\"${PY}\" -m pytest --version\`)" >&2
 exit 1
