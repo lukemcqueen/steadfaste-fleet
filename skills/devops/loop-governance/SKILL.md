@@ -590,7 +590,7 @@ missing-evidence defect. The material now treats `docs/evidence/**` as documenta
 evidence small and structural: state the command, its own `rc`, the decisive lines, and a
 sha256; `ops/scripts/make-evidence.sh` writes exactly that shape and verifies it. It is
 POSIX-sh portable (Linux and macOS, `sha256sum` or `shasum -a 256`) and works in any repo,
-with or without Hermes or cortex — a Pi / Claude Code / plain-shell session can use it.
+with or without Hermes or fleet — a Pi / Claude Code / plain-shell session can use it.
 
 **A re-runnable verifier answers a provenance finding only if it proves its OWN claims.** One
 command that re-checks the whole change (deploy, tests, deployed-vs-repo, the adversarial

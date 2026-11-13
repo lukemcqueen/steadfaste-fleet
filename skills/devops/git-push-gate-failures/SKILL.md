@@ -9,7 +9,7 @@ related_skills: [shared-repo-push-gates, enforcement-change-safety, shell-script
 
 # Git Push Gate Failures
 
-Diagnosis patterns for blocked pushes in repos with the cortex governance
+Diagnosis patterns for blocked pushes in repos with the fleet governance
 hooks (pre-push-pull, doctor gate, dogfood). Most rejections are
 ENVIRONMENTAL — a stale deploy record, a hook false positive, or a shell
 exit-code trap — not a problem with your diff. Diagnose the gate first;

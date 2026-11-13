@@ -1074,9 +1074,9 @@ provable only from the installer stub's own log — source order is not evidence
 its services with** (`fleet-update.sh` registers every MCP server against it). The Hermes venv
 is a last resort: fleet tooling should not depend on the tree we are migrating away from.
 Ordering only breaks a *tie* — a candidate must still import the module to be chosen, so a
-module only the Hermes venv has keeps resolving. Measured on esther 2026-10-13: the cortex venv
+module only the Hermes venv has keeps resolving. Measured on esther 2026-10-13: the fleet venv
 imports yaml + mcp (and pytest once installed there); the Hermes venv imports all three; the
-Hermes *tools* python imports none. An undated "the cortex venv has no PyYAML" note lived in
+Hermes *tools* python imports none. An undated "the fleet venv has no PyYAML" note lived in
 this skill and in `tests/test_python_with_module.py`, and a deploy had reordered the two venvs
 the other way — a measurement with no date is a claim about the past, so re-measure before
 relying on one.

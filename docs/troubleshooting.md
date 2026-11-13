@@ -318,7 +318,7 @@ checksum sweep then FAILed on the healthy personalized state (inverted
 check).
 
 **Resolution:** Memory is Hermes-owned — `~/.hermes/memories/MEMORY.md` is
-read directly by Hermes and created on first memory write. Cortex no longer
+read directly by Hermes and created on first memory write. Fleet no longer
 seeds, registers, or checksums memory files at all (removed 2026-08-05):
 - `fleet-update.sh` has no register entry for memory files — and now
   **fails CLOSED** on any register target under `/memories/` or `~/.hermes/`

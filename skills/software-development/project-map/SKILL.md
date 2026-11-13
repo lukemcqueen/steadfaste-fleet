@@ -91,7 +91,7 @@ ran from the wrong directory — `cd` to the project root and re-run
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| `command not found: project-map` | Not installed / not on PATH | Reinstall via cortex installer, or run the module directly: `python3 ~/steadfaste-fleet/ops/scripts/project-map/project_map.py analyze` |
+| `command not found: project-map` | Not installed / not on PATH | Reinstall via fleet installer, or run the module directly: `python3 ~/steadfaste-fleet/ops/scripts/project-map/project_map.py analyze` |
 | `status` shows 0 files | Ran outside the project root | `cd <project-root>` and re-run `analyze` |
 | Map is stale (shows deleted files) | Structural changes since last run | Re-run `project-map analyze` — it overwrites the JSON in place; no rollback needed (the file is a generated cache) |
 

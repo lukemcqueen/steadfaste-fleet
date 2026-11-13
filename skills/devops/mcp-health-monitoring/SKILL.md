@@ -15,7 +15,7 @@ metadata:
 
 Detect and diagnose MCP server outages — the class that silently
 write-deadlocked the fleet on 2026-08-18 (mcp SDK 2.0 removed the decorator
-API; all three cortex servers crashed at import, sessions lost loop-governance
+API; all three fleet servers crashed at import, sessions lost loop-governance
 tools, and the enforcer blocked every write because the lock tool lived in the
 dead server). The core lesson: **an MCP outage that goes unnoticed is a fleet
 outage; the probe below catches the failure class in seconds.**

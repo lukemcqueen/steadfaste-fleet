@@ -81,7 +81,7 @@ grep -rn '<name>' ~/.steadfaste-fleet/scripts/install*.sh ~/steadfaste-fleet/ops
 
 | Path | Why |
 |------|-----|
-| `~/.hermes/hooks/post-commit` + `pre-commit` | Pre-migration copies of cortex git hooks (migration-2026-07-08 moved hooks to `~/.steadfaste-fleet/hooks/`). Agent ignores them (not hook dirs); git uses hooksPath → `~/.steadfaste-fleet/hooks`. But the DIRECTORY is agent infrastructure and files may be referenced manually — confirm with owner |
+| `~/.hermes/hooks/post-commit` + `pre-commit` | Pre-migration copies of fleet git hooks (migration-2026-07-08 moved hooks to `~/.steadfaste-fleet/hooks/`). Agent ignores them (not hook dirs); git uses hooksPath → `~/.steadfaste-fleet/hooks`. But the DIRECTORY is agent infrastructure and files may be referenced manually — confirm with owner |
 | `~/.hermes/state/worker-completed/*.done` | Live machinery reads them; old entries look stale but deleting can re-trigger steps in `agent-worker.py` |
 | `~/.hermes/config.yaml.bak.*` | Config backup — "never destroy what you cannot restore." 76 KB, trivial; keep unless disk-critical |
 | `post-commit-notify.sh` wiring | Deployed (registered in fleet-update.sh) but NOT the active post-commit hook (that's `post-commit-audit` via symlink). State files are stale, but the script may be intended to be wired — flag, don't delete |
@@ -145,9 +145,9 @@ hermes profile list        # the duplicate-credential warning must be gone
 ## Pitfalls (learned the hard way)
 
 - **Renamed crons keep old state filenames.** `bus-audit-watchdog` → `orch-bus-audit-watchdog` but the script still writes `~/.hermes/state/bus-audit-watchdog.*`. Grep the SCRIPT, not the cron name.
-- **`state-snapshots/` is not orphaned** — it's the agent's pre-update rollback. No cortex script references it; the AGENT does.
+- **`state-snapshots/` is not orphaned** — it's the agent's pre-update rollback. No fleet script references it; the AGENT does.
 - **`~/.hermes/hooks/` ≠ git hooks** — it's the agent's event-hook dir. Git hooks live under `~/.steadfaste-fleet/hooks/` (core.hooksPath).
-- **Grep the agent source, not just cortex** — the false-stale items all had agent-side consumers.
+- **Grep the agent source, not just fleet** — the false-stale items all had agent-side consumers.
 - **Never delete while the gateway is writing** — `state.db` needs WAL checkpoint first if copied; never deleted.
 - **A profile directory shows up in none of the four greps — and still blocks the host.**
   Verify it STRUCTURALLY (missing `config.yaml`, file-less `memories/`+`sessions/`, no

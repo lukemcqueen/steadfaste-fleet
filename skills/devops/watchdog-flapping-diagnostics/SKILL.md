@@ -112,7 +112,7 @@ non-200/401/403 as **down**, so one throttled probe = false "unreachable".
   names `<conf>`, `ls sites-enabled/` links the server block, `systemctl is-active nginx` is
   active) — those prove it is IN the config, not that it is LOADED.
 - **Compare /etc/nginx against the repo nginx template FIRST**
-  (`ops/install/deploy/nginx/` for a cortex install). A drifted/stale deploy can
+  (`ops/install/deploy/nginx/` for a fleet install). A drifted/stale deploy can
   carry tighter limits than the source, and a routine `fleet-update --force` will
   NOT refresh it unless the nginx deploy step actually runs. Diff deployed vs repo
   before assuming the running limits are intentional.

@@ -126,7 +126,7 @@ Full detail + examples: `references/axi-ten-principles.md`.
 ## Support Files
 
 - `references/axi-ten-principles.md` — full distilled principles with TOON
-  examples + the Cortex status-quo table (which surfaces already conform).
+  examples + the Fleet status-quo table (which surfaces already conform).
 - `references/delegated-design-review.md` — recipe for running elicit +
   6-role party via delegated pro-model subagents when the user is absent.
 

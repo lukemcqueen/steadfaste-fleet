@@ -1,7 +1,7 @@
 # LLM Cron Model & Fallback Chain — 2026-08-31 Trace
 
-Full worked example of reconfiguring the LLM-cron model chain on a Hermes
-Cortex fleet host. Complements `deploy-load-verification` SKILL.md
+Full worked example of reconfiguring the LLM-cron model chain on a
+Steadfaste Fleet host. Complements `deploy-load-verification` SKILL.md
 (Deploy ≠ Durable section).
 
 ## The request
@@ -117,13 +117,13 @@ EOF
   (daily pull) + `fleet-update.sh` deploy → their crons DO get repinned on
   next install-crons run (manifest wins).
 - BUT config.yaml `fallback_providers` is per-host **operator-owned** — it is
-  not written by any cortex script (the env-driven writer was removed 2026-09-09),
+  not written by any fleet script (the env-driven writer was removed 2026-09-09),
   so each host's chain must be set locally via `hermes config set
   fallback_providers`. Peers keep their own chains until set there.
 - API keys are secrets: `OPENCODE_ZEN_API_KEY` must be added per-host to
   `~/.hermes/.env`; cannot propagate.
 - Propagation = document the intended chain in a shared doc + set it per-host;
-  there is intentionally no cortex auto-writer (that was the clobber bug).
+  there is intentionally no fleet auto-writer (that was the clobber bug).
 
 ## Governance notes hit during this change
 

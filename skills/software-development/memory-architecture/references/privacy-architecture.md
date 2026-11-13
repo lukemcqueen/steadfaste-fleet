@@ -20,7 +20,7 @@ GITIGNORE_TEMPLATE="${SCRIPT_DIR}/docs/templates/gitignore.brain"
 ```
 Iterates over `$SOURCES`, skips if .gitignore already exists, otherwise copies from template or writes inline fallback.
 
-### Step 9 — Hermes Memory (no cortex seed, since 2026-08-05)
+### Step 9 — Hermes Memory (no fleet seed, since 2026-08-05)
 ```bash
 # REMOVED: seeding MEMORY.md/USER.md into a cortex-side memories dir.
 ```

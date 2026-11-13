@@ -39,8 +39,8 @@ If a file only exists in `~/.hermes/` and not in the repo: **do not touch it.**
 `~/.hermes/.env` is the **Hermes runtime env** (provider API keys, Telegram token, terminal/browser settings). It is load-bearing and path-anchored, so a request to "consolidate / move .env into steadfaste-fleet" is a boundary violation, not a refactor. Refuse it by surveying, not by complying:
 
 1. **Hermes hardcodes the path.** The upstream loader resolves the env file as `HERMES_HOME/.env` (`hermes_cli/env_loader.py`, `cli.py`). Relocating it breaks every gateway/cron startup. There is no config to repoint it.
-2. **steadfaste-fleet is a public MIT repo.** The file holds real keys; moving or committing secrets there is a PII/secret leak. A gitignored `~/steadfaste-fleet/.env` exists only for cortex vars, and the secret-leak/pre-commit detectors enforce the separation.
-3. **The split is already canonical.** Cortex vars live in `~/steadfaste-fleet/.env` (gitignored, mode 600, symlinked from the legacy `~/.steadfaste-fleet/fleet-bus.conf`); the runtime env stays where Hermes reads it. `~/.steadfaste-fleet/.env` as a deploy-dir file must NOT exist.
+2. **steadfaste-fleet is a public MIT repo.** The file holds real keys; moving or committing secrets there is a PII/secret leak. A gitignored `~/steadfaste-fleet/.env` exists only for fleet vars, and the secret-leak/pre-commit detectors enforce the separation.
+3. **The split is already canonical.** Fleet vars live in `~/steadfaste-fleet/.env` (gitignored, mode 600, symlinked from the legacy `~/.steadfaste-fleet/fleet-bus.conf`); the runtime env stays where Hermes reads it. `~/.steadfaste-fleet/.env` as a deploy-dir file must NOT exist.
 
 Before concluding "move", run the survey: `find ~/.hermes -maxdepth 3 -name '.env*'` (excluding `hermes-agent/` and venv `environments/`) will show only `.env`, `.env.lock` (0-byte lock), and `.env.bak-*` backups — none is a second config to consolidate. Offer the safe equivalent instead: versioning the **key schema** as a `.env.example`, never the secret values.
 

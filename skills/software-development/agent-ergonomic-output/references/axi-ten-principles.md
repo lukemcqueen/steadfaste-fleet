@@ -88,7 +88,7 @@ loads for a probe.
 
 ---
 
-## Cortex status quo (as of 2026-08-24)
+## Fleet status quo (as of 2026-08-24)
 
 | Surface | Already conforms | Gaps |
 |---|---|---|
@@ -103,7 +103,7 @@ Real violation example (task-db.py `pending`): raw JSON with 10+ fields per
 item — id, content, agent_name, status, session_id, priority, project, repo,
 scope, kind — and no totals. Textbook P2+P4 target.
 
-## The "TOON-lite" convention (adopted for Cortex)
+## The "TOON-lite" convention (adopted for Fleet)
 
 `name[N]{fields}:` header line + one CSV row per item + a `count: N of
 TOTAL` line. JSON stays inside scripts and in machine protocols (bus, MCP).

@@ -1,7 +1,7 @@
 # Inline menus (buttons) for a gateway command
 
 How a slash command returns a tappable picker instead of a free-text argument. Read the live
-code before trusting any name below — these are the cortex gateway's, and the authoritative
+code before trusting any name below — these are the fleet gateway's, and the authoritative
 config key names live in its own example file, not here.
 
 ## Where it lives

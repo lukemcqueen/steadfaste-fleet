@@ -138,7 +138,7 @@ Sent by each agent after processing UPDATE_REQUEST.
   "git_sha_before": "4ef429e",
   "git_sha_after": "d2bb495",
   "version": "2.0.0",
-  "update_output": "✓ 8 file(s) updated\n✓ All 4 cortex services managed by systemd (active)",
+  "update_output": "✓ 8 file(s) updated\n✓ All 4 fleet services managed by systemd (active)",
   "doctor": {
    "healthy": true,
    "pass": 39,
