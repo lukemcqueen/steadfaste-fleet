@@ -131,9 +131,10 @@ while [[ "$REPO_DIR" != "/" && ! -f "$REPO_DIR/AGENTS.md" ]]; do
 done
 # If we hit / without finding AGENTS.md, try common repo locations
 if [[ "$REPO_DIR" == "/" ]]; then
-  # CORTEX_REPO env var (set by agents) takes priority
-  if [[ -n "${CORTEX_REPO:-}" && -f "$CORTEX_REPO/AGENTS.md" ]]; then
-    REPO_DIR="$CORTEX_REPO"
+  # FLEET_REPO env var takes priority (legacy CORTEX_REPO still honoured)
+  FLEET_REPO="${FLEET_REPO:-${CORTEX_REPO:-}}"
+  if [[ -n "${FLEET_REPO:-}" && -f "$FLEET_REPO/AGENTS.md" ]]; then
+    REPO_DIR="$FLEET_REPO"
   else
     for candidate in \
       "$HOME/steadfaste-fleet" \
@@ -2122,7 +2123,7 @@ deploy_nginx_configs() {
     -e "s|__NGINX_BREW_DIR__|${brew_dir}|g" \
     -e "s|__NGINX_LOG_DIR__|${log_dir}|g" \
     -e "s|__HTPASSWD_FILE__|${htpasswd}|g" \
-    -e "s|__CORTEX_HOME__|${FLEET_HOME}|g" \
+    -e "s|__FLEET_HOME__|${FLEET_HOME}|g" \
     -e "s|__SSL_CERT__|${ssl_cert:-__SSL_CERT__}|g" \
     -e "s|__SSL_CERT_KEY__|${ssl_key:-__SSL_CERT_KEY__}|g" \
     -e "/listen[[:space:]]/s|127\\.0\\.0\\.1:13\\([0-9][0-9][0-9]\\)|127.0.0.1:${port_prefix}\\1|g" \

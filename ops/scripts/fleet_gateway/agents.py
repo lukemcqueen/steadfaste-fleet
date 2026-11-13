@@ -592,7 +592,7 @@ class CommandBackend:
         harness/repo/branch from its cwd when nothing is set, and the gateway's
         cwd is a deploy dir outside any git repo — so the resolution collapses and
         every chat lands on ONE session key. Declaring
-        `env: {"CORTEX_SESSION_KEY": "{session_id}"}` makes each chat its own.
+        `env: {"FLEET_SESSION_KEY": "{session_id}"}` makes each chat its own.
         """
         if not self.spec.env:
             return None

@@ -32,15 +32,15 @@ if [[ "$ACTUAL_HOOKS_RESOLVED" != "$EXPECTED_HOOKS" ]]; then
     # points core.hooksPath at a repo's OWN .git/hooks, and fleet-update
     # refreshes the cortex hook FILES there. Accept when the hooks dir
     # carries a cortex-managed hook; otherwise fail closed.
-    _CORTEX_HOOK_PRESENT=""
+    _FLEET_HOOK_PRESENT=""
     for _hook_name in pre-commit pre-push; do
         if [[ -f "${ACTUAL_HOOKS_RESOLVED}/${_hook_name}" ]] && \
            grep -q "Git .* hook" "${ACTUAL_HOOKS_RESOLVED}/${_hook_name}" 2>/dev/null; then
-            _CORTEX_HOOK_PRESENT=1
+            _FLEET_HOOK_PRESENT=1
             break
         fi
     done
-    if [[ -z "$_CORTEX_HOOK_PRESENT" ]]; then
+    if [[ -z "$_FLEET_HOOK_PRESENT" ]]; then
         echo ""
         echo "❌  Push blocked: core.hooksPath points to '${ACTUAL_HOOKS_RESOLVED}' instead of '${EXPECTED_HOOKS}'"
         echo "    Governance hooks are NOT installed for this repo."
@@ -79,14 +79,14 @@ done
 # "Push blocked: no active governance lock" on a scratch non-HC repo).
 # Safety gates (syntax, no-verify audit, behind-check) still run in
 # every repo. Rule 11 pattern: ${HOME}/steadfaste-fleet comparison.
-CORTEX_REPO_TOP="${HOME}/steadfaste-fleet"
+FLEET_REPO_TOP="${HOME}/steadfaste-fleet"
 _REPO_TOP=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
 # Overridable so the receipt gate can be exercised by a runnable test against a
 # controlled state dir (tests/test_review_receipt_gate.py). Not a bypass: an
 # empty or unknown dir yields NO lock, which blocks harder, and a dir with a lock
 # still has to satisfy the receipt gate.
 GOVERNANCE_STATE_DIR="${GOVERNANCE_STATE_DIR:-${HOME}/.steadfaste-fleet/state}"
-GOVERNANCE_STATE_REPO="$CORTEX_REPO_TOP"
+GOVERNANCE_STATE_REPO="$FLEET_REPO_TOP"
 REPO_SLUG=$(basename "$(git rev-parse --show-toplevel 2>/dev/null || echo 'generic')" 2>/dev/null || echo 'generic')
 LOCK_FOUND=0
 if [[ -d "$GOVERNANCE_STATE_DIR" ]]; then
@@ -108,7 +108,7 @@ except Exception:
   done
 fi
 
-if [[ "$LOCK_FOUND" -eq 0 && "$_REPO_TOP" == "$CORTEX_REPO_TOP" ]]; then
+if [[ "$LOCK_FOUND" -eq 0 && "$_REPO_TOP" == "$FLEET_REPO_TOP" ]]; then
   # ── Sanctioned pipeline push exception ──────────────────
   # The nginx-threat-pipeline (no_agent cron) commits with messages
   # 'auto: ... [pipeline]' touching only the blocklist allowlist, and
@@ -142,7 +142,7 @@ fi
 # CLEAN, and it is bound to the reviewed CONTENT (reviewed_blobs), so a commit made
 # after the close stops covering it. Same rule file as the receipt gate below — one
 # implementation, so the two can never disagree about what "covered" means.
-if [[ "$LOCK_FOUND" -eq 0 && "$_REPO_TOP" == "$CORTEX_REPO_TOP" ]]; then
+if [[ "$LOCK_FOUND" -eq 0 && "$_REPO_TOP" == "$FLEET_REPO_TOP" ]]; then
   _RC_TIP=$(git rev-parse HEAD 2>/dev/null || echo "")
   _RC_BASE=$(git merge-base origin/main HEAD 2>/dev/null || true)
   if [[ -z "$_RC_BASE" ]]; then
@@ -168,7 +168,7 @@ if [[ "$LOCK_FOUND" -eq 0 && "$_REPO_TOP" == "$CORTEX_REPO_TOP" ]]; then
   esac
 fi
 
-if [[ "$LOCK_FOUND" -eq 0 && "$_REPO_TOP" == "$CORTEX_REPO_TOP" ]]; then
+if [[ "$LOCK_FOUND" -eq 0 && "$_REPO_TOP" == "$FLEET_REPO_TOP" ]]; then
   echo ""
   echo "❌  Push blocked: no active governance lock for this repository."
   echo "    No bypass flags available — call begin_change() before making changes, then push."
@@ -190,7 +190,7 @@ fi
 # paths listed in ops/scripts/lib/always-review-paths.txt — enforcement,
 # governance, the hooks themselves — do.
 ALWAYS_REVIEW_LIST="$_REPO_TOP/ops/scripts/lib/always-review-paths.txt"
-if [[ "$_REPO_TOP" == "$CORTEX_REPO_TOP" && -f "$ALWAYS_REVIEW_LIST" ]]; then
+if [[ "$_REPO_TOP" == "$FLEET_REPO_TOP" && -f "$ALWAYS_REVIEW_LIST" ]]; then
   _TIP=$(git rev-parse HEAD 2>/dev/null || echo "")
   _BASE=$(git merge-base origin/main HEAD 2>/dev/null || true)
   [[ -n "$_BASE" ]] || _BASE=$(git rev-list --max-parents=0 HEAD 2>/dev/null | tail -1)
@@ -472,8 +472,8 @@ _detect_orch() {
 }
 
 DOCTOR_BLOCKED=0
-CORTEX_DOCTOR="${HOME}/steadfaste-fleet/ops/scripts/manage/fleet-doctor.py"
-if [[ "$_REPO_TOP" == "$CORTEX_REPO_TOP" ]] && _detect_orch && [[ -f "$CORTEX_DOCTOR" ]]; then
+FLEET_DOCTOR="${HOME}/steadfaste-fleet/ops/scripts/manage/fleet-doctor.py"
+if [[ "$_REPO_TOP" == "$FLEET_REPO_TOP" ]] && _detect_orch && [[ -f "$FLEET_DOCTOR" ]]; then
   DOCTOR_OUTPUT=$(cd "${HOME}/steadfaste-fleet/ops/scripts/manage" && python3 fleet-doctor.py --quiet 2>&1 || true)
   # Real failure = any ❌ check line that is NOT the "Overall: FAILING"
   # summary line (counted via its own ❌). Matches on the ❌ marker, not
@@ -511,7 +511,7 @@ fi
 #     — a non-HC push redeploys nothing. (Luke correction 2026-08-05.)
 #   - Only DOCS are exempt (*.md, docs/) — no deployed state changes.
 #   - Orchestrator hosts only (moses/esther).
-if [[ "$_REPO_TOP" == "$CORTEX_REPO_TOP" ]] && _detect_orch && [[ -n "$CHANGED_FILES" ]]; then
+if [[ "$_REPO_TOP" == "$FLEET_REPO_TOP" ]] && _detect_orch && [[ -n "$CHANGED_FILES" ]]; then
   _DOGFOOD_RELEVANT=0
   while IFS= read -r cf; do
     case "$cf" in

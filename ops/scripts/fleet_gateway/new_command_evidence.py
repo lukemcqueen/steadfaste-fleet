@@ -61,7 +61,7 @@ def _pi(backend, inbound, session_id, prompt):
     """Run the REAL agent through the PRODUCT's own argv + env builders.
 
     Using `_argv`/`_child_env` rather than hand-built ones is the point, not a
-    shortcut. The gateway pins session identity through `CORTEX_SESSION_KEY`; a
+    shortcut. The gateway pins session identity through `FLEET_SESSION_KEY`; a
     harness that hand-builds the argv and omits that env makes every session share
     ONE checkpoint, which reads as "/new leaks memory" when the product is fine.
     That exact mistake produced a false failure here once.

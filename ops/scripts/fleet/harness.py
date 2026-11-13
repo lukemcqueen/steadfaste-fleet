@@ -325,7 +325,7 @@ def cmd_install(reg: dict, name: str, target: Path) -> int:
         if envs:
             print("\nSession identity (else derived from git, which is usually right):")
             for e in envs:
-                val = "pi" if e == "CORTEX_SESSION_HARNESS" else "<value>"
+                val = "pi" if e == "FLEET_SESSION_HARNESS" else "<value>"
                 print(f"  export {e}={val}")
 
     if h.get("verify"):

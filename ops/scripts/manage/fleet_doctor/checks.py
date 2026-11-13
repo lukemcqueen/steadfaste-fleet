@@ -2673,7 +2673,7 @@ def check_nginx(res):
 
   placeholders = [
     "__HTPASSWD_FILE__", "__NGINX_CONFIG_DIR__", "__NGINX_LOG_DIR__",
-    "__CORTEX_HOME__", "__SSL_CERT__", "__SSL_CERT_KEY__",
+    "__FLEET_HOME__", "__SSL_CERT__", "__SSL_CERT_KEY__",
   ]
   found_placeholders = [p for p in placeholders if p in text]
   if found_placeholders:

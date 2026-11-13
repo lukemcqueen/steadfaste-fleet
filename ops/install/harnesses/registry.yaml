@@ -33,9 +33,9 @@ defaults:
   trigger: ~/.steadfaste-fleet/scripts/session-autocheckpoint.py
   impl: ops/services/mycortex-mem/context_tools.py
   env:
-    - CORTEX_SESSION_HARNESS
-    - CORTEX_SESSION_REPO
-    - CORTEX_SESSION_BRANCH
+    - FLEET_SESSION_HARNESS
+    - FLEET_SESSION_REPO
+    - FLEET_SESSION_BRANCH
   # macOS: the interpreter may not be on Pi's PATH (Homebrew python lives at
   # /opt/homebrew/bin on Apple Silicon, /usr/local/bin on Intel) — override it.
   env_optional:

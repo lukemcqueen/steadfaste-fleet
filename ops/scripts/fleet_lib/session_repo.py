@@ -20,7 +20,7 @@ docs/troubleshooting.md) so task scoping and lock identity agree:
                                           THIS session (Hermes; injected into
                                           mcp__tasks__* calls like it already is
                                           for mcp__loop_governance__*)
-  3. `CORTEX_SESSION_REPO` env         -> the documented per-harness lever
+  3. `FLEET_SESSION_REPO` env         -> the documented per-harness lever
                                           (absolute path, or a bare repo name)
   4. the process's own cwd git repo    -> a harness that spawns one MCP child per
                                           session inside the session's project
@@ -43,7 +43,7 @@ from typing import Optional
 # Same identifier allowlist the task store enforces on its `repo` column.
 NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 
-SESSION_REPO_ENV = "CORTEX_SESSION_REPO"
+SESSION_REPO_ENV = "FLEET_SESSION_REPO"
 
 #: Explicit, documented opt-in for a fleet-wide (unscoped) query. Never a default.
 FLEET_ALL = "ALL"

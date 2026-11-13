@@ -183,7 +183,7 @@ for src in "${FLEET_REPO}/ops/install/deploy/nginx/hermes-zone-defs.conf" "${FLE
         -e "s|__NGINX_CONFIG_DIR__|${NGINX_CONFIG_DIR}|g" \
         -e "s|__NGINX_LOG_DIR__|${NGINX_LOG_DIR}|g" \
         -e "s|__HTPASSWD_FILE__|${NGINX_HTPASSWD}|g" \
-        -e "s|__CORTEX_HOME__|${CORTEX_HOME}|g" \
+        -e "s|__FLEET_HOME__|${FLEET_HOME}|g" \
         -e "s|__SSL_CERT__|${ssl_cert:-__SSL_CERT__}|g" \
         -e "s|__SSL_CERT_KEY__|${ssl_key:-__SSL_CERT_KEY__}|g" \
         -e "/listen[[:space:]]/s|127\\.0\\.0\\.1:13\\([0-9][0-9][0-9]\\)|127.0.0.1:${port_prefix}\\1|g" \

@@ -40,9 +40,9 @@
 #
 #  ── Why args, not env vars ─────────────────────────────────
 #  sudoers on this host has env_reset with NO env_keep/SETENV —
-#  `sudo CORTEX_UPDATE=1 cmd` is rejected by sudo itself. Command-line
+#  `sudo FLEET_UPDATE=1 cmd` is rejected by sudo itself. Command-line
 #  args pass through sudoers command matching, so the token must be
-#  an argument. Verified: `sudo -n CORTEX_UPDATE=1 …` → "sorry, you
+#  an argument. Verified: `sudo -n FLEET_UPDATE=1 …` → "sorry, you
 #  are not allowed to set the following environment variables".
 #
 #  ── Audit ──────────────────────────────────────────────────

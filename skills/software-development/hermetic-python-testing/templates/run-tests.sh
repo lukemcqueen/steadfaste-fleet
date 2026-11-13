@@ -18,8 +18,8 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Interpreter by capability, not by path: a path is not a promise.
 PY=""
-if [ -n "${CORTEX_PYTHON:-}" ] && "$CORTEX_PYTHON" -c 'import pytest' 2>/dev/null; then
-  PY="$CORTEX_PYTHON"
+if [ -n "${FLEET_PYTHON:-}" ] && "$FLEET_PYTHON" -c 'import pytest' 2>/dev/null; then
+  PY="$FLEET_PYTHON"
 elif [ -x "${HOME}/.steadfaste-fleet/venv/bin/python3" ] && \
      "${HOME}/.steadfaste-fleet/venv/bin/python3" -c 'import pytest' 2>/dev/null; then
   PY="${HOME}/.steadfaste-fleet/venv/bin/python3"

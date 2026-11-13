@@ -360,7 +360,7 @@ def get_session_id(args: dict | None = None) -> str:
        for Hermes: the MCP server is one shared process for all Hermes
        sessions, and the shared marker files below are clobbered by concurrent
        sessions.
-    0e. The CALLER'S OWN ENVIRONMENT (2026-10-27) — ``CORTEX_SESSION_KEY`` then
+    0e. The CALLER'S OWN ENVIRONMENT (2026-10-27) — ``FLEET_SESSION_KEY`` then
        ``PI_SESSION_ID``, namespaced into ``sess_<source>_<value>``. One MCP
        child serves one session, so an env-provided value is a correct
        discriminator AND is stable across a child restart. This is the step
@@ -488,7 +488,7 @@ def _derive_slug(args: dict | None = None, session_repo: Optional[Path] = None) 
         if injected and (HOME / injected / ".git").exists():
             return injected
     # Priority 0c (2026-10-09): a NON-Hermes caller's own repo — its
-    # CORTEX_SESSION_REPO identity, else the MCP child's cwd. Deliberately
+    # FLEET_SESSION_REPO identity, else the MCP child's cwd. Deliberately
     # SKIPPED for a Hermes caller (per-call session_id injected by the enforcer):
     # the shared gateway daemon's cwd is a launch artifact, so tagging from it is
     # the hermes-agent/old-slug mismatch this function exists to prevent.
@@ -563,7 +563,7 @@ def _injected_session_id(args: dict | None) -> str:
 # ── Session identity a NON-Hermes harness supplies through the ENVIRONMENT ──
 # Order matters: the first non-empty value wins. Every name is SURVEYED from the
 # harness's own source, never invented:
-#   CORTEX_SESSION_KEY       — our documented per-session key
+#   FLEET_SESSION_KEY       — our documented per-session key
 #                              (docs/runbooks/context-integration.md; the
 #                              fleet-gateway `command` backend pins it per chat in
 #                              ops/scripts/fleet_gateway/agents.py; the Pi
@@ -572,7 +572,7 @@ def _injected_session_id(args: dict | None) -> str:
 #                              docs/environment-variables.md). NOTE: Pi injects it
 #                              only into bash-tool commands, NOT its own process.env,
 #                              so it does not reach the MCP child by itself — that is
-#                              why the extension writes CORTEX_SESSION_KEY instead.
+#                              why the extension writes FLEET_SESSION_KEY instead.
 #   CLAUDE_CODE_SESSION_ID   — Claude Code's session id, injected into stdio MCP
 #                              children since v2.1.154 (note "CODE" in the middle;
 #                              CLAUDE_SESSION_ID is NOT set — verified via
@@ -585,7 +585,7 @@ def _injected_session_id(args: dict | None) -> str:
 # One MCP child serves ONE session, which is why an env value is a correct
 # discriminator — the same premise the process-scoped fallback below relies on.
 _ENV_SESSION_ID_SOURCES = (
-    ("CORTEX_SESSION_KEY", "session_key"),
+    ("FLEET_SESSION_KEY", "session_key"),
     ("PI_SESSION_ID", "pi_session_id"),
     ("CLAUDE_CODE_SESSION_ID", "claude_session"),
     ("CODEX_SESSION_ID", "codex_session"),
@@ -624,7 +624,7 @@ def _identity_source(args: dict | None) -> tuple[str, str, bool]:
 
       * ``injected``      — per-call session_id the Hermes enforcer injected. One per
                             Hermes session -> unique -> ownership test by equality is sound.
-      * ``env``           — CORTEX_SESSION_KEY / PI_SESSION_ID from this process's
+      * ``env``           — FLEET_SESSION_KEY / PI_SESSION_ID from this process's
                             environment. One MCP child serves one session, so an env value
                             is a correct discriminator (get_session_id Priority 0e) ->
                             unique -> equality is sound.
@@ -664,14 +664,14 @@ def _lock_is_mine(own_sid: str, lock_sid: str, shared: bool) -> bool:
 
 
 def _session_repo_env_path() -> Optional[Path]:
-    """The repo named by ``CORTEX_SESSION_REPO`` — the documented per-harness
+    """The repo named by ``FLEET_SESSION_REPO`` — the documented per-harness
     session identity (``docs/runbooks/context-integration.md``).
 
     Accepts an absolute path or a repo NAME resolved as ``HOME/<name>``. A value
     that is not a real git repo is rejected, so a bogus one cannot point a review
     at an arbitrary directory.
     """
-    raw = (os.environ.get("CORTEX_SESSION_REPO") or "").strip()
+    raw = (os.environ.get("FLEET_SESSION_REPO") or "").strip()
     if not raw:
         return None
     candidates = ([Path(raw).expanduser()] if raw.startswith(("/", "~"))
@@ -708,7 +708,7 @@ def _session_repo_path(args: dict | None = None) -> Optional[Path]:
     """The repo THIS session is working in, or None when it cannot be established.
 
     0. A path the ENFORCER observed for this session and injected (Hermes).
-    1. ``CORTEX_SESSION_REPO`` — the documented per-harness session identity
+    1. ``FLEET_SESSION_REPO`` — the documented per-harness session identity
        (``docs/runbooks/context-integration.md``). Explicit, so it is honoured for a
        Hermes caller too: it is a DECLARATION, not a guess, and it is the one lever a
        host has when the enforcer never learned the session's repo.
@@ -2830,7 +2830,7 @@ def _write_review_receipt(cycle_id=None, args: dict | None = None,
             return _receipt_bail(
                 f"lock has no repo identity (repo_path={repo!r} repo_slug={slug!r}) — "
                 "cannot bind a receipt to a range; re-run begin_change() once this "
-                "session's repo is known (or set CORTEX_SESSION_REPO), then close again"
+                "session's repo is known (or set FLEET_SESSION_REPO), then close again"
             )
         head = _git_capture(Path(repo), "rev-parse", "HEAD").strip()
         if not head:
@@ -4490,7 +4490,7 @@ def _begin_change(args: dict) -> CallToolResult:
         "description": description,
         "repo_slug": _derive_slug(args, _snap_repo),
         # Absolute repo root: injected by the enforcer (Hermes), else the
-        # non-Hermes caller's own repo (CORTEX_SESSION_REPO / MCP-child cwd).
+        # non-Hermes caller's own repo (FLEET_SESSION_REPO / MCP-child cwd).
         # repo_slug alone is a NAME resolved as HOME/<slug>, which mis-resolves
         # for a checkout nested deeper than a HOME child (dev hosts holding many
         # project repos) and re-created the wrong-repo review.
@@ -4537,7 +4537,7 @@ def _begin_change(args: dict) -> CallToolResult:
             "    The close will not be able to write a review receipt for an\n"
             "    always-review range, and the push gate will refuse it. If this session\n"
             "    works in a git repo, run ONE more begin_change() after that repo is\n"
-            "    known (or set CORTEX_SESSION_REPO) before you push.\n"
+            "    known (or set FLEET_SESSION_REPO) before you push.\n"
             % (_snap_repo, _injected_session_id(args))
         )
 
@@ -4946,7 +4946,7 @@ def _authored_commits(repo: Path, base: str, author: str) -> list:
 #: Commit trailer that names the SESSION that made a commit. Written by the
 #: `prepare-commit-msg` hook from the live governance lock (never from an env var), and the only
 #: discriminator between two sessions of one agent on one host — they share a git identity.
-CORTEX_SESSION_TRAILER = "Cortex-Session"
+FLEET_SESSION_TRAILER = "Cortex-Session"
 
 #: How many of an excluded commit's file names the disclosure lists before summarising the rest.
 #: Bounded because a peer's commit can touch hundreds of files, and the block is DISCLOSURE —
@@ -4971,7 +4971,7 @@ def _commit_session(repo: Path, sha: str) -> str:
     values = []
     for line in (body or "").splitlines():
         stripped = line.strip()
-        if stripped.lower().startswith(CORTEX_SESSION_TRAILER.lower() + ":"):
+        if stripped.lower().startswith(FLEET_SESSION_TRAILER.lower() + ":"):
             values.append(stripped.split(":", 1)[1].strip())
     if len(set(values)) != 1:
         return ""
@@ -7355,7 +7355,7 @@ def _adversarial_review_gate(lock: dict, cycle: dict,
     #     lock-side test already applies) — a peer's, a pipeline's or a prior session's
     #     commit in some other repo under HOME is not evidence about this session;
     #   * when the lock's repo IS the session's own repo (`_session_repo_path`, i.e. the
-    #     path the enforcer injected or CORTEX_SESSION_REPO), the tag is RIGHT and there is
+    #     path the enforcer injected or FLEET_SESSION_REPO), the tag is RIGHT and there is
     #     nothing to refuse: the work was simply uncommitted, and cx is empty so no review
     #     would have run against any tree. Measured cost of the old behaviour: a correctly
     #     tagged lock released and its cycle closed UNSCORED, with a message naming a repo
@@ -8051,7 +8051,7 @@ def _session_identity(args: dict | None = None) -> CallToolResult:
     The pre-commit reflexion gate answers its question from the session/memory
     store, keyed by the ACTIVE GOVERNANCE LOCK's ``session_id``. A harness that
     RECORDS evidence (the Pi extension) must therefore resolve the SAME id, and
-    until now it invented a second key — ``CORTEX_SESSION_KEY``, e.g.
+    until now it invented a second key — ``FLEET_SESSION_KEY``, e.g.
     ``fleet-pi-<chat>`` — so the writer and the checker could never agree and every
     Pi commit was refused no matter what the agent did. Measured 2026-10-15:
     the gate asked ``sess_58607c4834b3`` (the per-repo id non-Hermes callers get,
@@ -9403,7 +9403,7 @@ def _promote_issue_to_task(args: dict) -> CallToolResult:
             + ("" if _snap_repo else
                "  ⚠️  NO repo identity resolved for this lock: end_change cannot close this\n"
                "     cycle ('no governed repo to measure complexity'). Declare one\n"
-               "     (CORTEX_SESSION_REPO) or retire it with advance_task_state(\n"
+               "     (FLEET_SESSION_REPO) or retire it with advance_task_state(\n"
                "     new_state='cancelled').\n")
             + f"  Use end_change('{task_id}') when done."
         )

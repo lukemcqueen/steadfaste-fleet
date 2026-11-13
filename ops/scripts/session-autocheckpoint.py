@@ -72,13 +72,13 @@ def _git(*args: str) -> str:
 
 def _identity(args) -> tuple[str, str, str]:
     """Same precedence as the MCP server — args → env → git."""
-    key = (args.session_key or os.environ.get("CORTEX_SESSION_KEY", "")).strip()
+    key = (args.session_key or os.environ.get("FLEET_SESSION_KEY") or os.environ.get("CORTEX_SESSION_KEY", "")).strip()
     if key:
         return (key, "", "")
-    harness = (args.harness or os.environ.get("CORTEX_SESSION_HARNESS")
+    harness = (args.harness or os.environ.get("FLEET_SESSION_HARNESS") or os.environ.get("CORTEX_SESSION_HARNESS")
                or os.environ.get("AGENT_NAME") or "unknown").strip()
-    repo = (args.repo or os.environ.get("CORTEX_SESSION_REPO") or "").strip()
-    branch = (args.branch or os.environ.get("CORTEX_SESSION_BRANCH") or "").strip()
+    repo = (args.repo or os.environ.get("FLEET_SESSION_REPO") or os.environ.get("CORTEX_SESSION_REPO") or "").strip()
+    branch = (args.branch or os.environ.get("FLEET_SESSION_BRANCH") or os.environ.get("CORTEX_SESSION_BRANCH") or "").strip()
     if not repo:
         top = _git("rev-parse", "--show-toplevel")
         repo = Path(top).name if top else ""

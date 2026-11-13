@@ -213,8 +213,8 @@ if (typeof hooks["before_agent_start"] === "function") {
   // REAL handler with a ctx that exposes sessionManager.getSessionId() and assert
   // what it put in process.env — a grep could see the code; only running it
   // proves the value lands where the resolver reads it.
-  const savedKey = process.env.CORTEX_SESSION_KEY;
-  delete process.env.CORTEX_SESSION_KEY;
+  const savedKey = process.env.FLEET_SESSION_KEY || process.env.CORTEX_SESSION_KEY;
+  delete process.env.FLEET_SESSION_KEY; delete process.env.CORTEX_SESSION_KEY;
   try {
     await hooks["before_agent_start"]({ systemPrompt: "BASE" }, {
       sessionManager: { getSessionId: () => "fleet-pi-marker-session" },
@@ -222,10 +222,10 @@ if (typeof hooks["before_agent_start"] === "function") {
   } catch (err) {
     note(false, `before_agent_start (with ctx) threw: ${err}`);
   }
-  note(process.env.CORTEX_SESSION_KEY === "fleet-pi-marker-session",
-       `before_agent_start sets CORTEX_SESSION_KEY from ctx.sessionManager.getSessionId() (got ${JSON.stringify(process.env.CORTEX_SESSION_KEY)})`);
+  note((process.env.FLEET_SESSION_KEY || process.env.CORTEX_SESSION_KEY) === "fleet-pi-marker-session",
+       `before_agent_start sets CORTEX_SESSION_KEY from ctx.sessionManager.getSessionId() (got ${JSON.stringify(process.env.FLEET_SESSION_KEY || process.env.CORTEX_SESSION_KEY)})`);
   // Only-if-unset: an operator/gateway pin must win over the extension.
-  process.env.CORTEX_SESSION_KEY = "fleet-pi-pinned";
+  process.env.FLEET_SESSION_KEY = process.env.CORTEX_SESSION_KEY = "fleet-pi-pinned";
   try {
     await hooks["before_agent_start"]({ systemPrompt: "BASE" }, {
       sessionManager: { getSessionId: () => "fleet-pi-marker-session" },
@@ -233,20 +233,23 @@ if (typeof hooks["before_agent_start"] === "function") {
   } catch (err) {
     note(false, `before_agent_start (pinned) threw: ${err}`);
   }
-  note(process.env.CORTEX_SESSION_KEY === "fleet-pi-pinned",
-       "an existing CORTEX_SESSION_KEY pin is NOT overwritten (only-if-unset)");
-  if (savedKey === undefined) delete process.env.CORTEX_SESSION_KEY;
-  else process.env.CORTEX_SESSION_KEY = savedKey;
+  note((process.env.FLEET_SESSION_KEY || process.env.CORTEX_SESSION_KEY) === "fleet-pi-pinned",
+       "an existing session key pin is NOT overwritten (only-if-unset)");
+  if (savedKey === undefined) {
+    delete process.env.FLEET_SESSION_KEY; delete process.env.CORTEX_SESSION_KEY;
+  } else {
+    process.env.FLEET_SESSION_KEY = process.env.CORTEX_SESSION_KEY = savedKey;
+  }
 
   // A ctx with no sessionManager (or a getSessionId that returns nothing) must
   // set nothing and not throw — the extension runs on every harness shape.
-  const beforeEmpty = process.env.CORTEX_SESSION_KEY;
+  const beforeEmpty = process.env.FLEET_SESSION_KEY || process.env.CORTEX_SESSION_KEY;
   try {
     await hooks["before_agent_start"]({ systemPrompt: "BASE" }, {});
   } catch (err) {
     note(false, `before_agent_start (no sessionManager) threw: ${err}`);
   }
-  note(process.env.CORTEX_SESSION_KEY === beforeEmpty,
+  note((process.env.FLEET_SESSION_KEY || process.env.CORTEX_SESSION_KEY) === beforeEmpty,
        "a ctx without sessionManager sets nothing and does not throw");
 }
 

@@ -25,7 +25,7 @@ Usage:
         --args ~/steadfaste-fleet/mcp-servers/fleet-context-mcp.py
 
 Env (optional; set once per session):
-    CORTEX_SESSION_HARNESS / _REPO / _BRANCH / _KEY
+    FLEET_SESSION_HARNESS / _REPO / _BRANCH / _KEY
 """
 from __future__ import annotations
 

@@ -263,8 +263,8 @@ export default function (pi: any) {
     // env merge above. Only-if-unset: an operator/gateway pin (which already
     // sets it to the same session id) must win.
     const sessionId = ctx?.sessionManager?.getSessionId?.();
-    if (sessionId && !process.env.CORTEX_SESSION_KEY) {
-      process.env.CORTEX_SESSION_KEY = String(sessionId);
+    if (sessionId && !process.env.FLEET_SESSION_KEY && !process.env.CORTEX_SESSION_KEY) {
+      process.env.FLEET_SESSION_KEY = process.env.CORTEX_SESSION_KEY = String(sessionId);
       note(`CORTEX_SESSION_KEY=${sessionId}\n`);
     }
     const snap = parse<Restored>(await cortex("session_restore", {}), { restored: null }).restored;

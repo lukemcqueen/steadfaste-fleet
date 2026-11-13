@@ -2,8 +2,9 @@
 
 Canonical env var names are FLEET_*. Release 2 dropped the legacy CORTEX_*
 spelling: reading through `fleet_env.get()` resolves FLEET_<name> then the
-default. Callers that must read a name the external Hermes harness still sets as
-CORTEX_SESSION_* read os.environ directly (the sweep kept those literal).
+default. The external Hermes handshake still injects CORTEX_SESSION_*, so the
+session readers resolve FLEET_SESSION_* first and fall back to the
+CORTEX_SESSION_* the harness sets (an explicit, documented legacy fallback).
 
 Migration history: the CORTEX_* -> FLEET_* migration (plan P4) used a dual-read
 fallback (FLEET first, then CORTEX with a loud deprecation warning) via this

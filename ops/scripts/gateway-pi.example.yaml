@@ -14,8 +14,8 @@
       "session": "per_chat",
       "session_args": ["--session-id", "{session_id}"],
       "env": {
-        "CORTEX_SESSION_HARNESS": "pi",
-        "CORTEX_SESSION_KEY": "{session_id}"
+        "FLEET_SESSION_HARNESS": "pi",
+        "FLEET_SESSION_KEY": "{session_id}"
       },
       "commands": {
         "compact": {

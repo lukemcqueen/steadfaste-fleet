@@ -128,7 +128,7 @@ fi
   echo
   echo "## 5. Pinned per-chat session keys (captured, not a guard)"
   echo
-  echo "The gateway declares \`env: {CORTEX_SESSION_KEY: {session_id}}\` on the command"
+  echo "The gateway declares \`env: {FLEET_SESSION_KEY: {session_id}}\` on the command"
   echo "backend, so each chat gets its OWN key instead of the shared fallback. Ids are"
   echo "redacted — a chat id is a personal identifier and this is a public repo. The"
   echo "re-runnable guard for the seam is"

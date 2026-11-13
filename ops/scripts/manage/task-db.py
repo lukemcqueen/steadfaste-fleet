@@ -58,7 +58,7 @@ QUERIES ARE REPO-SCOPED (2026-10-14, reported by Titus): `list`, `pending`,
 `list --board`, `list --claimable` and `list --assigned` return the CALLER's repo,
 never another named repo's tasks. The repo resolves from
 `--repo`, else the session repo injected by the governance-enforcer, else
-CORTEX_SESSION_REPO, else the git repo at the working directory; when none of
+FLEET_SESSION_REPO, else the git repo at the working directory; when none of
 those exist the query returns NOTHING (operator rule) rather than every repo's
 tasks. `--repo ALL` is the EXPLICIT fleet-wide view (orchestrator callers).
 
@@ -670,7 +670,7 @@ def cmd_list(agent: str | None, status: str | None, project: str | None,
 
     SCOPED to the caller's repo (cycle 12593): an unresolvable repo lists
     NOTHING rather than every repo's tasks — pass --repo <label>, set
-    CORTEX_SESSION_REPO, or pass repo="ALL" for the deliberate fleet view.
+    FLEET_SESSION_REPO, or pass repo="ALL" for the deliberate fleet view.
 
     STRICT by default (2026-10-19, operator): the caller's own repo only.
     `include_untagged` adds the untagged (pre-tag) rows back, which is what the
@@ -1339,7 +1339,7 @@ def cmd_list_board(repo: str | None = None, repo_path: str | None = None,
     if not _scoped_or_report(
             "task_board",
             "  repo unknown — no board rendered (pass repo=<label> or set "
-            "CORTEX_SESSION_REPO; repo=ALL for the fleet view)", resolved):
+            "FLEET_SESSION_REPO; repo=ALL for the fleet view)", resolved):
         return
     _require_v4("list --board")
     _params = _repo_params(resolved)

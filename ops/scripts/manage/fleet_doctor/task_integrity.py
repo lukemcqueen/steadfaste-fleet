@@ -167,7 +167,7 @@ def check_task_model_integrity(res: "Results") -> None:            # noqa: F821
                     "assigned-and-unstarted slice list was never checked (the "
                     "verdict would otherwise depend on the invoker's cwd)",
                     "Run the doctor from a repo working copy, or set "
-                    "CORTEX_SESSION_REPO; then re-run the doctor")
+                    "FLEET_SESSION_REPO; then re-run the doctor")
         elif "(no unstarted hand-offs" in raw:
             res.add("Stranded slices", "PASS", "no pending slice is assigned-and-unstarted")
         else:

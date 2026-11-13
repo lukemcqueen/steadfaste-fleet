@@ -461,15 +461,15 @@ if [[ "$ACTUAL_HOOKS_RESOLVED" != "$EXPECTED_HOOKS" ]]; then
     # running — the tripwire only exists to catch hooksPath pointing at a
     # dir with NO cortex hooks at all. Accept when the hooks dir carries
     # any cortex-managed hook (banner match); otherwise fail closed.
-    _CORTEX_HOOK_PRESENT=""
+    _FLEET_HOOK_PRESENT=""
     for _hook_name in pre-commit pre-push; do
         if [[ -f "${ACTUAL_HOOKS_RESOLVED}/${_hook_name}" ]] && \
            grep -q "Git .* hook" "${ACTUAL_HOOKS_RESOLVED}/${_hook_name}" 2>/dev/null; then
-            _CORTEX_HOOK_PRESENT=1
+            _FLEET_HOOK_PRESENT=1
             break
         fi
     done
-    if [[ -z "$_CORTEX_HOOK_PRESENT" ]]; then
+    if [[ -z "$_FLEET_HOOK_PRESENT" ]]; then
         echo ""
         echo "❌  core.hooksPath points to '${ACTUAL_HOOKS_RESOLVED}' instead of '${EXPECTED_HOOKS}'"
         echo "    Governance hooks are NOT installed for this repo."
@@ -550,7 +550,7 @@ DOGFOOD_HEAD=$(cd "${HOME}/steadfaste-fleet" && git show HEAD:plugins/governance
 # stale deploy on one host hard-blocked every ordinary commit in every
 # unrelated repo (Titus: "push from a regular non-fleet repo"). That is exactly
 # the "gates are scoped to what they govern" rule. Same ${HOME}/steadfaste-fleet
-# pattern as the IS_CORTEX_REPO guard further down.
+# pattern as the IS_FLEET_REPO guard further down.
 _DOGFOOD_TOPLEVEL=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
 if [[ "$_DOGFOOD_TOPLEVEL" == "${HOME}/steadfaste-fleet" && -n "$DOGFOOD_HEAD" && -f "$DOGFOOD_DEPLOY" ]]; then
   DEPLOY_HASH=$(_sha256 "$DOGFOOD_DEPLOY" | cut -d' ' -f1)
@@ -863,9 +863,9 @@ fi
 # Quality gates (adversarial, secret-leak, doc audit, syntax) still run
 # in every repo. Rule 11 pattern: ${HOME}/steadfaste-fleet comparison.
 if [[ "$REPO_ROOT" == "${HOME}/steadfaste-fleet" ]]; then
-  IS_CORTEX_REPO=1
+  IS_FLEET_REPO=1
 else
-  IS_CORTEX_REPO=0
+  IS_FLEET_REPO=0
 fi
 
 # ── Commit-scope guard: a HUMAN is spared, and told what they are committing ──────────
@@ -887,7 +887,7 @@ if [[ "$SANCTIONED_PIPELINE" != "1" ]] \
 fi
 
 # ── Commit-scope guard: refuse a BARE commit, in EVERY repo these hooks cover ──────────
-# Placed here because it needs IS_CORTEX_REPO (which message to print) and SANCTIONED_PIPELINE
+# Placed here because it needs IS_FLEET_REPO (which message to print) and SANCTIONED_PIPELINE
 # (the exemption), both computed above. The reasoning, the alternatives rejected and the measured index signal are in
 # `_commit_scope_guard` and `_commit_scope_verdict` at the top of this file, and the behaviour
 # is proven by `bash pre-commit-score --self-test`.
@@ -904,7 +904,7 @@ if _commit_scope_guard "$REPO_ROOT" "$SANCTIONED_PIPELINE"; then
     echo "    Check this is a real checkout: git rev-parse --absolute-git-dir"
   else
     echo "❌  BARE COMMIT REFUSED — it would commit whatever is staged, not just your files."
-    if [[ "$IS_CORTEX_REPO" == "1" ]]; then
+    if [[ "$IS_FLEET_REPO" == "1" ]]; then
       echo "    Several agents share this working tree and its ONE git index, and a staged entry"
       echo "    records nothing about which session staged it. A bare commit has swept another"
       echo "    session's work before (a commit captured 17 files where 8 were intended)."
@@ -1041,7 +1041,7 @@ if [[ "$SANCTIONED_PIPELINE" != "1" ]]; then
   # survey/leverage must happen before a change lands, not be prose an agent
   # can skip.
   _FLEET_SKIP_FLAG=""
-  if [[ "$IS_CORTEX_REPO" -ne 1 ]]; then
+  if [[ "$IS_FLEET_REPO" -ne 1 ]]; then
     _FLEET_SKIP_FLAG="--skip-no-session"
   fi
   _reflexion_rc=0
@@ -1067,7 +1067,7 @@ fi
 # commits alone). steadfaste-fleet's own close-review already covers its slices,
 # so this targets the project repos where Titus works; widening it to
 # steadfaste-fleet is one condition away.
-if [[ "$SANCTIONED_PIPELINE" != "1" && "$IS_CORTEX_REPO" -ne 1 ]]; then
+if [[ "$SANCTIONED_PIPELINE" != "1" && "$IS_FLEET_REPO" -ne 1 ]]; then
   FLEET_PLAN_REVIEW=""
   for _cand in "$REPO_ROOT/ops/scripts/plan-review-check.py" \
                "$HOME/.steadfaste-fleet/scripts/plan-review-check.py" \
@@ -1126,12 +1126,12 @@ fi
 # it too). ADVISORY ONLY — always exits 0; the review that refused the close is
 # unchanged. See governance-refused-close-advisory.sh for the reasoning.
 if [[ "$LOCK_FOUND" -eq 1 && "$SANCTIONED_PIPELINE" != "1" ]]; then
-  _ADVISORY="${CORTEX_DEPLOY_ROOT:-$HOME/.steadfaste-fleet}/scripts/governance-refused-close-advisory.sh"
+  _ADVISORY="${FLEET_DEPLOY_HOME:-$HOME/.steadfaste-fleet}/scripts/governance-refused-close-advisory.sh"
   [[ -x "$_ADVISORY" ]] || _ADVISORY=$(command -v governance-refused-close-advisory.sh 2>/dev/null || true)
   [[ -n "$_ADVISORY" && -x "$_ADVISORY" ]] && "$_ADVISORY" "$REPO_SLUG" || true
 fi
 
-if [[ "$SANCTIONED_PIPELINE" != "1" && "$IS_CORTEX_REPO" -eq 1 && "$LOCK_FOUND" -ne 1 ]]; then
+if [[ "$SANCTIONED_PIPELINE" != "1" && "$IS_FLEET_REPO" -eq 1 && "$LOCK_FOUND" -ne 1 ]]; then
   # No session-scoped lock for this repo — block with help message
   echo ""
   echo "❌  No active governance session."
@@ -1165,7 +1165,7 @@ if [[ -z "$AUDIT_SCRIPT" ]]; then
     fi
   done
 fi
-if [[ -n "$AUDIT_SCRIPT" && "$IS_CORTEX_REPO" -eq 1 ]]; then
+if [[ -n "$AUDIT_SCRIPT" && "$IS_FLEET_REPO" -eq 1 ]]; then
   REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || true)
   if [[ -n "$REPO_ROOT" ]]; then
     AGENTS_OUTPUT=$(python3 "$AUDIT_SCRIPT" --repo "$REPO_ROOT" --json 2>&1 || true)

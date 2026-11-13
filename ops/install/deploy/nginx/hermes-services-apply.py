@@ -8,7 +8,7 @@ Substitutes placeholders in hermes-services.conf:
   __NGINX_CONFIG_DIR__ → OS-aware nginx config directory
   __NGINX_LOG_DIR__    → OS-aware nginx log directory
   __HTPASSWD_FILE__    → htpasswd file path
-  __CORTEX_HOME__      → user home directory
+  __FLEET_HOME__      → user home directory
 
 SSL cert discovery order (first found wins):
   1. FLEET_SSL_CERT_PATH / FLEET_SSL_CERT_KEY_PATH env vars (explicit paths)
@@ -317,7 +317,7 @@ def process_template(
         "__NGINX_CONFIG_DIR__": str(nginx_config_dir),
         "__NGINX_LOG_DIR__": str(nginx_log_dir),
         "__HTPASSWD_FILE__": str(htpasswd_file),
-        "__CORTEX_HOME__": str(cortex_home),
+        "__FLEET_HOME__": str(cortex_home),
     }
 
     # SSL placeholders — only substitute if we found valid certs

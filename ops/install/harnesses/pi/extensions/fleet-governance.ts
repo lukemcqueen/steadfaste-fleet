@@ -208,7 +208,7 @@ function sessionRepo(input?: any): string | null {
   repoDiagnostics = [];
   const fromArgs = repoFromToolInput(input);                       // 1. what THIS call touches
   if (fromArgs) return fromArgs;
-  const pinned = (process.env.CORTEX_SESSION_REPO ?? "").trim();   // 2. explicit pin
+  const pinned = ((process.env.FLEET_SESSION_REPO || process.env.CORTEX_SESSION_REPO) ?? "").trim();   // 2. explicit pin
   if (pinned) {
     repoDiagnostics.push(`CORTEX_SESSION_REPO=${pinned} (used as given, never checked)`);
     return path.resolve(pinned);
