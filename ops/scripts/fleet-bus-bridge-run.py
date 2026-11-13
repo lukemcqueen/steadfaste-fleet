@@ -42,8 +42,8 @@ import sys
 from pathlib import Path
 
 _home = Path.home()
-_CORTEX_ENV = Path(os.environ.get("CORTEX_DEPLOY_HOME", str(_home / ".steadfaste-fleet")))
-_SCRIPTS_DIR = _CORTEX_ENV / "scripts"
+_FLEET_ENV = Path(os.environ.get("FLEET_DEPLOY_HOME", str(_home / ".steadfaste-fleet")))
+_SCRIPTS_DIR = _FLEET_ENV / "scripts"
 
 
 def _load_env() -> None:
@@ -113,7 +113,7 @@ def _deliver(text: str, job: str, deliver: str = "") -> None:
 def _save_local(text: str, job: str) -> None:
     """Save job stdout to a file (deliver=local): internal collectors keep a
     durable record without sending to any channel."""
-    outdir = _CORTEX_ENV / "cron-output"
+    outdir = _FLEET_ENV / "cron-output"
     try:
         outdir.mkdir(parents=True, exist_ok=True)
         (outdir / f"{job}.log").write_text(text + "\n")
