@@ -58,7 +58,7 @@ data = json.loads(template_path.read_text())
 # Per-agent env var mapping
 # Template uses {{FLEET_DOMAIN}} etc. — env vars match these names
 PREFIX_MAP = {
-    "moses":  "CORTEX",
+    "moses":  "FLEET",
     "esther": "ESTHER",
     "joseph": "JOSEPH",
     "kustos": "KUSTOS",
