@@ -107,6 +107,35 @@ Survey/leverage and plan-review are **gates, not prose**, and run in **every rep
 
 The reflexion questions apply to **any** development, not steadfaste-fleet-specific work.
 
+## Pro Owns Planning & Complex Review — Escalate (Luke 2026-11-12)
+
+Complexity is not a licence to improvise. When a task is **sufficiently complex** —
+multi-file, multi-subsystem, an unfamiliar domain, a design/reorg/governance
+decision, any feature/pipeline/harness wiring, deep research, or anything whose
+error would be materially costly — the **planning artifacts are Pro's job, never the
+default implementation model's to wing**:
+
+- **Pro is in charge of:** scoping, requirements, user stories, task slicing, deeper
+  research, architecting, and planning. The default (flash/implementation) tier does
+  NOT improvise these alone. Either hand the planning work to the Pro model, or draft
+  it and have Pro review it to CLEAN **before** the first implementation slice.
+- **The "pro reviewer" IS a pinned Pro model** (`deepseek-v4-pro-0813` — Luke's
+  standing rule: *pro for design/planning/review, flash for implementation*). Run the
+  sanctioned, recorded reviewer — never a chat call:
+  `python3 ~/.steadfaste-fleet/scripts/adversarial-review.py --cycle-id <N> --material-file <plan.md> --review --reviewer-id deepseek-v4-pro-0813`.
+  Feed the reviewer a self-contained material file (goal → current reality → proposed
+  approach → evidence pointers) and fold every finding before building.
+- **Already enforced as a gate:** non-trivial slices refuse to commit without a
+  recorded adversarial plan review (see "Survey & Review Are ENFORCED" below);
+  complex changes get an independent review before user submission (Rule 30).
+- **When in doubt, treat it as complex.** A plan you cannot prove simple should get
+  Pro's read before you build on it. The failure mode this exists to prevent is
+  overconfidence — shipping a plan, scope, architecture, or slice a single fast model
+  produced unchecked. Catching yourself being confident about a non-trivial plan is
+  the signal to escalate it to Pro.
+- Simple/trivial work (one file, no operator-facing behaviour, no load-bearing claim)
+  stays exempt — same bar as Rule 30.
+
 ## Slice Discipline — Small, Pro-Reviewed, Verified (Luke 2026-11-04)
 
 For ANY non-trivial task (multi-file, >50 lines, a feature, a pipeline, a harness wiring):

@@ -53,6 +53,21 @@ research inside that item proceeds normally.
 - **Proportionate engineering, thorough checking** — keep the implementation as simple as it can be (exhaust simple fixes before invasive ones), but never skim the *verification*: when forced to choose between checking more and checking less, always check more.
 - **Review to improve, with eagerness** — a review is a gift to the author. Apply it eagerly to strengthen the work, not to demonstrate fault-finding.
 
+## Escalate Planning to Pro — Complex Work Gets a Pro Review
+
+Sufficiently complex work — multi-file, multi-subsystem, an unfamiliar domain, a
+design/architecture/reorg decision, deep research, or anything whose error would be
+materially costly — is **never improvised by the default model alone**. A stronger
+reviewer (a "Pro" tier model, or a peer review) owns scoping, requirements,
+stories, task slicing, deeper research, architecting, and planning: either the plan
+is drafted by that tier, or it is independently reviewed to a clean verdict
+**before** the first implementation slice. Fold every review finding before
+building. When in doubt whether work is "sufficiently complex," treat it as complex
+and get the plan reviewed — the cost of overconfidence is shipping a scope, plan, or
+architecture nobody challenged. Genuinely trivial work (one file, no load-bearing
+claim) is exempt. *(Reach an available reviewer through this project's documented
+review tool; if none is configured, ask the operator which reviewer to use.)*
+
 ---
 
 ## Quick Reference

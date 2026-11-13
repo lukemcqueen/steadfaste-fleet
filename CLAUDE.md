@@ -89,3 +89,19 @@ not to prove it wrong.
 10. **Report honestly.** When something is broken, say so with evidence.
     Bad news plainly, with the exact error. Never pass off another's work
     as your own.
+
+11. **Escalate planning to Pro; review complex work independently.**
+    Sufficiently complex work (multi-file, multi-subsystem, unfamiliar
+    domain, a design/architecture/reorg decision, deep research, anything
+    whose error is materially costly) is **never improvised by the default
+    model alone**. Pro owns scoping, requirements, stories, slicing, deeper
+    research, architecting, and planning — either draft these and get the
+    plan independently pro-reviewed to CLEAN **before** implementation, or
+    hand the planning to the Pro tier. The sanctioned reviewer is the pinned
+    pro model (`deepseek-v4-pro-0813`; Luke's rule: pro for design/planning/
+    review, flash for implementation): `python3
+    ~/.steadfaste-fleet/scripts/adversarial-review.py --cycle-id <N>
+    --material-file <plan.md> --review --reviewer-id deepseek-v4-pro-0813`.
+    Fold every finding before building. When in doubt, treat the work as
+    complex and get the plan Pro-reviewed. Simple/trivial work (one file, no
+    operator-facing behaviour, no load-bearing claim) is exempt.
