@@ -68,6 +68,16 @@ architecture nobody challenged. Genuinely trivial work (one file, no load-bearin
 claim) is exempt. *(Reach an available reviewer through this project's documented
 review tool; if none is configured, ask the operator which reviewer to use.)*
 
+## Robust Over Hacky — Use the Repo, Make It Better
+
+Always do the more robust, durable thing — the fix that survives the next
+refactor, the next host, the next operator. Never write a one-off hack script
+when an existing function, helper, or CLI already does the job: survey first,
+then use the shared tool and extend it when it has a gap. A parallel script
+drifts and rots; a flag or an extension to the shared tool costs a fraction
+of the debt and benefits everyone who uses it. A local workaround is a hack
+with extra steps — it fixes one place and hides the defect from the rest.
+
 ---
 
 ## Quick Reference

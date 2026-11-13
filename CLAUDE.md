@@ -105,3 +105,13 @@ not to prove it wrong.
     Fold every finding before building. When in doubt, treat the work as
     complex and get the plan Pro-reviewed. Simple/trivial work (one file, no
     operator-facing behaviour, no load-bearing claim) is exempt.
+
+12. **Do the robust thing — no hack scripts, use the repo, make it better.**
+    Always prefer the more durable fix: the one that survives the next
+    refactor, host, or operator. Never write a one-off script when a repo
+    function, helper, or CLI already does the job — survey first, then use
+    the shared tool (a flag or entrypoint costs a tenth of a parallel
+    script's debt). Never patch the deployed copy — the next fleet-update
+    reverts it; extend the repo source so every agent benefits. Found a gap
+    in a shared tool? The gap is the work: fix it in the repo, not around
+    it locally.

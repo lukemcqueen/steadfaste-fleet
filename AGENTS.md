@@ -136,6 +136,29 @@ default implementation model's to wing**:
 - Simple/trivial work (one file, no operator-facing behaviour, no load-bearing claim)
   stays exempt — same bar as Rule 30.
 
+## Robust Over Hacky — Use the Repo, Make It Better (Luke 2026-11-12)
+
+Always do the more robust, durable thing — the fix that survives the next
+refactor, the next host, the next operator. A hack that works today is debt
+that fails tomorrow.
+
+- **No hack scripts.** When a repo function, helper, or CLI already does the
+  job, USE IT — never write a one-off script that re-implements existing
+  behavior. A parallel script drifts, goes unregistered, and rots; a flag, a
+  CLI entrypoint, or a `register()` line costs a tenth of the debt. This is
+  `prove-before-create` in action: survey for the existing tool before
+  creating anything new.
+- **Use the repo functions.** The shared repo is the single source of truth —
+  `fleet_lib` helpers, the deployed scripts, the canonical CLIs. Prefer them
+  over re-implementing, and never patch the deployed copy (the next
+  fleet-update reverts it). If the repo path is the right shape but has a
+  gap, the gap is the work.
+- **Make the repo function better.** Found a limitation in a shared tool?
+  Extend it in the repo source so every agent benefits — don't work around it
+  locally and don't leave the fix in your session. A local workaround is a
+  hack with extra steps: it fixes one host and hides the defect from the
+  fleet.
+
 ## Slice Discipline — Small, Pro-Reviewed, Verified (Luke 2026-11-04)
 
 For ANY non-trivial task (multi-file, >50 lines, a feature, a pipeline, a harness wiring):
