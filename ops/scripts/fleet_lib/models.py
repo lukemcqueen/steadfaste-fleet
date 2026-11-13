@@ -96,6 +96,28 @@ def get_model(env_var: str, default: str) -> str:
     return models_env.get(env_var) or os.environ.get(env_var) or default
 
 
+# ── Canonical adversarial reviewer (DRY, 2026-11-13, cycle 8265) ────────────
+# ONE source of truth for the reviewer model. The Close-gate (loop-gov-mcp),
+# plan reviewer (adversarial-review.py), deepseek-review-mcp and the pi agent
+# backend all resolve their default here; changing the reviewer (e.g. to a
+# cheaper model) is a ONE-LINE edit to the constant, not 5 files. The env var
+# ADVERSARIAL_REVIEWER_MODEL is honored first everywhere.
+REVIEWER_MODEL_DEFAULT = "deepseek/deepseek-v4-pro-0813"  # canonical reviewer
+
+
+def get_reviewer_model() -> str:
+    """Resolve the reviewer default: env ADVERSARIAL_REVIEWER_MODEL, else canonical.
+
+    Reads process env FIRST, then the env file, then the canonical constant —
+    matching the reviewer surfaces' own `_env_value` semantics (a host's
+    process-level override must win, exactly as loop-gov reads it), and
+    differing from the generic get_model() order on purpose.
+    """
+    filename = os.environ.get("ADVERSARIAL_REVIEWER_MODEL") \
+        or load_models_env().get("ADVERSARIAL_REVIEWER_MODEL")
+    return filename or REVIEWER_MODEL_DEFAULT
+
+
 def qualify_model(value: str, default: str, *, endpoint: str = "") -> str:
     """Guard a model id that an HTTP endpoint addresses as ``provider/model``.
 

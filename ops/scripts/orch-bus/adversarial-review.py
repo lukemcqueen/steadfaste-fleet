@@ -68,6 +68,22 @@ if _DEPLOYED_TEMPLATE.is_file():
 MARKER = "=== REVIEWED MATERIAL ==="
 DEFAULT_DB = Path.home() / ".steadfaste-fleet" / "data" / "loop-governance.db"
 
+# DRY reviewer model (2026-11-13): ONE canonical source in fleet_lib.models;
+# resolve the fallback there instead of hardcoding the id in this file.
+# Fail-closed: if fleet_lib is missing, REFUSE rather than silently revert to a
+# different model — a reviewer that silently switches its judge is a gate that
+# has quietly changed what it checks.
+# Insert the PARENT directory that CONTAINS fleet_lib (import fleet_lib needs
+# its parent on sys.path): sibling in deployed layout (scripts/fleet_lib beside
+# scripts/adversarial-review.py), one level up in the repo
+# (ops/scripts/orch-bus -> ops/scripts/fleet_lib).
+for _feel in (str(_SCRIPT_DIR),
+              str(_SCRIPT_DIR.parent)):
+    if os.path.isdir(os.path.join(_feel, "fleet_lib")):
+        sys.path.insert(0, _feel)
+        break
+from fleet_lib.models import get_reviewer_model  # noqa: E402
+
 
 def assemble_prompt(material: str) -> str:
     template = TEMPLATE.read_text()
@@ -176,8 +192,7 @@ def _record_review_call(db_path: Path, source: str, model: str,
 
 
 def _call_model(prompt: str, db_path: str | None = None) -> str:
-    model = os.environ.get("ADVERSARIAL_REVIEWER_MODEL",
-                           "deepseek/deepseek-v4-pro-0813")
+    model = get_reviewer_model()
     api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
         # Cron runs may not inherit the shell env — source the Hermes deploy
@@ -451,8 +466,7 @@ def main() -> int:
             print("silent: no unreviewed completed cycles")
             return 0
         reviewer_id = args.reviewer_id or f"adv-review-{uuid.uuid4().hex[:8]}"
-        model = os.environ.get("ADVERSARIAL_REVIEWER_MODEL",
-                               "deepseek/deepseek-v4-pro-0813")
+        model = get_reviewer_model()
         print(f"sweep: {len(pending)} cycle(s) to review (reviewer {reviewer_id})")
         failed = 0
         for row in pending:
@@ -501,8 +515,7 @@ def main() -> int:
     if not args.review and not args.re_review:
         p.error("nothing to do: pass --dry-run, --review, --re-review, or --sweep")
 
-    model = os.environ.get("ADVERSARIAL_REVIEWER_MODEL",
-                           "deepseek/deepseek-v4-pro-0813")
+    model = get_reviewer_model()
     text = _call_model(prompt)
     reviewer_id = args.reviewer_id or f"adv-review-{uuid.uuid4().hex[:8]}"
     return _record(Path(args.db).expanduser(), args.cycle_id, reviewer_id,

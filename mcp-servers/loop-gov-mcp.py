@@ -4646,7 +4646,15 @@ COMPLEXITY_FILE_THRESHOLD = 3       # files touched (non-noise)
 REVIEWER_LIGHT_LINE_THRESHOLD = 200  # added+removed lines that force the deep reviewer
 REVIEWER_LIGHT_FILE_THRESHOLD = 10   # files that force the deep reviewer
 
-REVIEWER_MODEL_DEFAULT = "deepseek/deepseek-v4-pro-0813"  # distinct from worker
+# DRY reviewer model (2026-11-13, cycle 8265): the canonical default lives in
+# fleet_lib.models (single source); loop-gov resolves it there so a one-line
+# change to the reviewer updates every surface. Fail-closed: fleet_lib is
+# ALREADY a hard dependency of this server (the bootstrap above imports
+# fleet_lib.paths), so a missing fleet_lib is a broken deploy — refuse loudly
+# rather than silently re-picking a different judge (a gate that quietly changes
+# what it checks is not a gate).
+from fleet_lib.models import (  # noqa: E402
+    REVIEWER_MODEL_DEFAULT as REVIEWER_MODEL_DEFAULT)
 
 # Spend per tier (2026-10-13, Luke: "too expensive for the deepseek pro reviews").
 #

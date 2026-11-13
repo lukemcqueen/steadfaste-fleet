@@ -63,7 +63,19 @@ MODELS_URL = "https://openrouter.ai/api/v1/models"
 
 # Canonical fleet reviewer. 0813 is the cost-controlled pin; do not change this
 # back to plain v4-pro or chat-v3 — see docs/external/mcp-deepseek-review.md.
-DEFAULT_MODEL = "deepseek/deepseek-v4-pro-0813"
+# DRY (2026-11-13, cycle 8265): the default resolves through fleet_lib.models
+# (the single source) so changing the reviewer is a one-line edit there, and
+# a host env ADVERSARIAL_REVIEWER_MODEL is honored.
+try:
+    _SCRIPT_DIR_ = os.path.dirname(os.path.abspath(__file__))
+    for _feel in (_SCRIPT_DIR_, os.path.dirname(_SCRIPT_DIR_)):
+        if os.path.isdir(os.path.join(_feel, "fleet_lib")):
+            sys.path.insert(0, _feel)
+            break
+    from fleet_lib.models import get_reviewer_model
+    DEFAULT_MODEL = get_reviewer_model()
+except Exception:  # noqa: BLE001 — fail-safe fallback if fleet_lib absent
+    DEFAULT_MODEL = "deepseek/deepseek-v4-pro-0813"
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _ENV_CANDIDATES = [

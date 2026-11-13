@@ -18,7 +18,12 @@
 #   ADVERSARIAL_REVIEW_AGENT_NAME=pi
 set -euo pipefail
 
-MODEL="${REVIEWER_PI_MODEL:-openrouter/deepseek/deepseek-v4-pro-0813}"
+# DRY (2026-11-13, cycle 8265): honor the same consistent env var the python
+# surfaces read first; fall back to the canonical reviewer id (no openrouter/
+# prefix — the model id is provider-free, pi adds its own routing prefix).
+# The literal here is the last fallback only; the single true source is
+# fleet_lib/models.py.
+MODEL="${ADVERSARIAL_REVIEWER_MODEL:-deepseek/deepseek-v4-pro-0813}"
 
 # pi needs the OpenRouter credential to reach the model.
 if [[ -z "${OPENROUTER_API_KEY:-}" && -f "${HOME}/.hermes/.env" ]]; then
