@@ -19,19 +19,11 @@ A file under no repo-owned skill dir is a Hermes default and stays skipped.
 
 | Measure | Value |
 |---|---|
-| Stranded in place (path in repo, content only deployed) | 2 |
-| Absent from the repo (deployed under a repo-owned skill) | 2 |
+| Stranded in place (path in repo, content only deployed) | 0 |
+| Absent from the repo (deployed under a repo-owned skill) | 0 |
 |   ↳ path dropped from repo history | 0 |
-|   ↳ path never committed | 2 |
-| Files in sync | 994 |
+|   ↳ path never committed | 0 |
+| Files in sync | 1000 |
 | Skipped (Hermes defaults, or repo ahead) | 547 |
 
-**Verdict: FAIL**
-
-Stranded in place:
-- devops/rename-sweep/SKILL.md
-- software-development/execute-right/SKILL.md
-
-Absent from the repo (deployed under a repo-owned skill):
-- devops/rename-sweep/references/env-namespace-rename.md (never-committed)
-- devops/rename-sweep/scripts/rename-residue-inventory.py (never-committed)
+**Verdict: PASS**
