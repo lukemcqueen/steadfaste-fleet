@@ -100,7 +100,7 @@ Required services (all should show a PID, not `-`):
 |-------|---------|-------|
 | `com.ollama.serve` | Ollama LLM server | `~/Library/LaunchAgents/com.ollama.serve.plist` |
 | `com.legacy-brain.sync-watch` | legacy auto-sync daemon | `~/Library/LaunchAgents/com.legacy-brain.sync-watch.plist` |
-| `com.hermes.fleet-dashboard` | Companion dashboard (kept name — the dashboard unit keeps its pre-rename identifier) | `~/Library/LaunchAgents/com.hermes.fleet-dashboard.plist` |
+| `com.hermes.fleet-dashboard` | Companion dashboard (renamed from `com.hermes.cortex-dashboard`) | `~/Library/LaunchAgents/com.hermes.fleet-dashboard.plist` |
 | `ai.hermes.gateway` | Hermes Agent messaging gateway (Hermes = the live runtime, kept name) | `~/Library/LaunchAgents/ai.hermes.gateway.plist` |
 | `com.docker.docker` | Docker Desktop (triggers container restart) | `~/Library/LaunchAgents/com.docker.docker.plist` |
 
