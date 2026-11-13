@@ -1899,8 +1899,9 @@ else
  if [[ "$FLEET_OS" == "macos" ]]; then
   DASHBOARD_PLIST="${FLEET_USER_HOME}/Library/LaunchAgents/com.hermes.fleet-dashboard.plist"
   if [[ ! -f "$DASHBOARD_PLIST" ]]; then
-   # Update paths in plist for current user
-   sed "s|FLEET_USER_HOME|${FLEET_USER_HOME}|g" "${REPO_DASHBOARD}/com.hermes.fleet-dashboard.plist" > "$DASHBOARD_PLIST" 2>/dev/null || \
+   # The kept template is $HOME-self-expanding (launchd runs it via bash -lc), so
+   # no placeholder substitution is needed — copy it directly.
+   cp "${REPO_ROOT}/docs/templates/com.hermes.fleet-dashboard.plist" "$DASHBOARD_PLIST" 2>/dev/null || \
    cat > "$DASHBOARD_PLIST" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -1986,9 +1987,9 @@ if [[ "$FLEET_OS" == "macos" ]]; then
  if launchctl list com.docker.docker &>/dev/null 2>&1; then
   info " Docker launch agent already loaded"
  elif [[ ! -f "$DOCKER_PLIST" ]]; then
-  DOCKER_TEMPLATE="${SCRIPT_DIR}/docs/templates/com.docker.docker.plist"
+  DOCKER_TEMPLATE="${REPO_ROOT}/docs/templates/com.docker.docker.plist"
   if [[ -f "$DOCKER_TEMPLATE" ]]; then
-   sed "s|FLEET_USER_HOME|${FLEET_USER_HOME}|g" "$DOCKER_TEMPLATE" > "$DOCKER_PLIST"
+   cp "$DOCKER_TEMPLATE" "$DOCKER_PLIST"
   else
    cat > "$DOCKER_PLIST" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
