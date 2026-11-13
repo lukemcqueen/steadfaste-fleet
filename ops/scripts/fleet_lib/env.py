@@ -1,49 +1,23 @@
-"""Dual-read env resolution for the CORTEX_* -> FLEET_* migration (plan P4).
+"""Canonical FLEET_* env resolution (release 2 - CORTEX_* fallback removed).
 
-Canonical env var names are now FLEET_*. During the migration a host may still set
-the legacy CORTEX_* name in ~/steadfaste-fleet/.env / agent.env / systemd
-Environment=. Reading through `fleet_env.get()` resolves FLEET_<name> first, then
-falls back to CORTEX_<name> with a LOUD one-time deprecation warning - never a
-silent fallback, because a silent fallback is exactly how a half-migrated host
-hides. This makes renaming every repo literal to FLEET_* safe for hosts that have
-not repointed their env yet.
+Canonical env var names are FLEET_*. Release 2 dropped the legacy CORTEX_*
+spelling: reading through `fleet_env.get()` resolves FLEET_<name> then the
+default. Callers that must read a name the external Hermes harness still sets as
+CORTEX_SESSION_* read os.environ directly (the sweep kept those literal).
 
-Resolution order (per name): FLEET_<name>, then CORTEX_<name>, then default.
-If both are set, FLEET_ wins (it is the canonical spelling).
-
-When the migration is complete (release 2), the CORTEX_ fallback and this module
-are removed, and every consumer reads os.environ directly again.
-
-Shell twin: `lib/fleet-env-compat.sh` mirrors CORTEX_* -> FLEET_* at env load so
-shell code and Python agree on the canonical FLEET_ name.
+Migration history: the CORTEX_* -> FLEET_* migration (plan P4) used a dual-read
+fallback (FLEET first, then CORTEX with a loud deprecation warning) via this
+module and its shell twin `lib/fleet-env-compat.sh`. Both fallback layers were
+removed in release 2 once every consumer read FLEET_* and hosts' .env carried
+FLEET_* (consolidate-env.sh converts the .env to FLEET-only).
 """
 
 import os
-import sys
-
-_warned = set()
-_DEPRECATION_LOGGING = True
-
-
-def set_deprecation_logging(on: bool) -> None:
-    """Tests silence the spam; production keeps it ON (loud-once per name)."""
-    global _DEPRECATION_LOGGING
-    _DEPRECATION_LOGGING = bool(on)
 
 
 def get(name: str, default=None):
-    """Resolve FLEET_<name> then CORTEX_<name> then default, loud on legacy."""
-    fleet = os.environ.get("FLEET_" + name)
-    if fleet is not None:
-        return fleet
-    cortex = os.environ.get("CORTEX_" + name)
-    if cortex is not None:
-        if name not in _warned and _DEPRECATION_LOGGING:
-            _warned.add(name)
-            print(f"[fleet-env] DEPRECATED: CORTEX_{name} set; rename to FLEET_{name}",
-                  file=sys.stderr)
-        return cortex
-    return default
+    """Resolve FLEET_<name>, else default. No legacy CORTEX_ fallback."""
+    return os.environ.get("FLEET_" + name, default)
 
 
 def get_bool(name: str, default: bool = False) -> bool:

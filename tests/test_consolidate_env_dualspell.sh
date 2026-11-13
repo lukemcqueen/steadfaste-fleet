@@ -23,12 +23,14 @@ chk() { # <name> <cond>
   if eval "$2"; then pass=$((pass+1)); echo "  ok: $1"; else fail=$((fail+1)); echo "  FAIL: $1"; fi
 }
 
-# T1 mirror generation + idempotence
+# T1 convert CORTEX -> FLEET (release 2) + idempotence
 printf 'CORTEX_DEPLOY_HOME=/srv/deploy\nCORTEX_BUS_ENDPOINT=VAL_A\n# c\nCORTEX_HOME=/srv/f\n' > "$TMP/t1.env"
 B=". '$TMP/harness.sh'; materialize_dual_spellings '$TMP/t1.env'"
 bash -c "$B"
-grep -q '^FLEET_DEPLOY_HOME=/srv/deploy$' "$TMP/t1.env"; chk "T1 FLEET_DEPLOY_HOME mirror" "[ $? -eq 0 ]"
-grep -q '^FLEET_BUS_ENDPOINT=VAL_A$' "$TMP/t1.env"; chk "T1 FLEET_BUS_ENDPOINT mirror" "[ $? -eq 0 ]"
+grep -q '^FLEET_DEPLOY_HOME=/srv/deploy$' "$TMP/t1.env"; chk "T1 FLEET_DEPLOY_HOME" "[ $? -eq 0 ]"
+grep -q '^FLEET_BUS_ENDPOINT=VAL_A$' "$TMP/t1.env"; chk "T1 FLEET_BUS_ENDPOINT" "[ $? -eq 0 ]"
+grep -q '^CORTEX_DEPLOY_HOME=' "$TMP/t1.env" && chk "T1 CORTEX dropped" "[ $? -ne 0 ]" || chk "T1 CORTEX dropped" "[ 1 -eq 1 ]"
+grep -q '# c' "$TMP/t1.env"; chk "T1 comment preserved" "[ $? -eq 0 ]"
 bash -c "$B"  # idempotent
 c1=$(grep -c '^FLEET_DEPLOY_HOME=' "$TMP/t1.env"); chk "T1 idempotent (one FLEET_DEPLOY_HOME, got $c1)" "[ \"$c1\" -eq 1 ]"
 

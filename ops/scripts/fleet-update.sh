@@ -113,16 +113,16 @@ REPO_DIR="${REPO_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 # ── Detect real user (works even under sudo) ─────────────────
 if [ -n "${SUDO_USER:-}" ]; then
   if command -v getent &>/dev/null; then
-    CORTEX_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
+    FLEET_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
   fi
-  CORTEX_HOME="${CORTEX_HOME:-$HOME}"
+  FLEET_HOME="${FLEET_HOME:-$HOME}"
 elif [ -n "${HOME:-}" ]; then
-  CORTEX_HOME="${HOME}"
+  FLEET_HOME="${HOME}"
 else
   if command -v getent &>/dev/null; then
-    CORTEX_HOME="$(getent passwd "$(whoami)" | cut -d: -f6)"
+    FLEET_HOME="$(getent passwd "$(whoami)" | cut -d: -f6)"
   fi
-  CORTEX_HOME="${CORTEX_HOME:-$HOME}"
+  FLEET_HOME="${FLEET_HOME:-$HOME}"
 fi
 
 # Walk up to find repo root (signature file: AGENTS.md at the root)
@@ -181,17 +181,11 @@ if [[ -f "${HOME}/.hermes/.env" ]]; then
   set -a; source "${HOME}/.hermes/.env"; set +a
 fi
 
-# CORTEX_* <-> FLEET_* compat mirror (env migration P4): keeps both spellings
-# resolving while hosts repoint their .env. Remove with release 2.
-if [[ -f "${REPO_DIR}/ops/scripts/lib/fleet-env-compat.sh" ]]; then
-  # shellcheck source=lib/fleet-env-compat.sh
-  source "${REPO_DIR}/ops/scripts/lib/fleet-env-compat.sh"
-fi
+# Release 2: FLEET_DEPLOY_HOME is the sole spelling; the CORTEX_* compat mirror
+# and the CORTEX_DEPLOY_HOME alias were removed (hosts' .env is FLEET-only via
+# consolidate-env.sh).
 FLEET_DEPLOY_HOME="${FLEET_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}"
-# Dual-export bridge (P4): FLEET_DEPLOY_HOME is canonical; CORTEX_DEPLOY_HOME
-# mirrors it for not-yet-migrated external consumers until release 2.
-CORTEX_DEPLOY_HOME="${CORTEX_DEPLOY_HOME:-${FLEET_DEPLOY_HOME}}"
-export FLEET_DEPLOY_HOME CORTEX_DEPLOY_HOME
+export FLEET_DEPLOY_HOME
 
 # ── Deploy-in-progress marker ───────────────────────────────────────────
 # This run unlocks the enforcement files early and relocks them at the END, so
@@ -2007,7 +2001,7 @@ JSON
 # Deploys hermes-services.conf and hermes-zone-defs.conf with
 # OS-aware path substitution. Uses sudo on Linux for /etc/nginx/.
 deploy_nginx_configs() {
-  [[ -n "${CORTEX_SKIP_NGINX:-}" ]] && { info "CORTEX_SKIP_NGINX set — skipping nginx deploy"; return 0; }
+  [[ -n "${FLEET_SKIP_NGINX:-}" ]] && { info "FLEET_SKIP_NGINX set — skipping nginx deploy"; return 0; }
   local nginx_src_dir="${REPO_DIR}/ops/install/deploy/nginx"
   [[ -d "$nginx_src_dir" ]] || return 0
 
@@ -2068,15 +2062,15 @@ deploy_nginx_configs() {
   rm -f "$tmpfile"
 
   # Port prefix: template ships as 13xxx (generic default).
-  # Set CORTEX_NGINX_PORT_PREFIX to your agent's prefix:
+  # Set FLEET_NGINX_PORT_PREFIX to your agent's prefix:
   #   13 = generic/default (no change)
   #   12 = Joseph
   #   14 = Esther
-  local port_prefix="${CORTEX_NGINX_PORT_PREFIX:-13}"
+  local port_prefix="${FLEET_NGINX_PORT_PREFIX:-13}"
 
   # ── Read existing config (preserve ports/SSL unless forced) ──
   local existing_ssl_cert="" existing_ssl_key=""
-  if [[ -f "$conf_dst" && -z "${CORTEX_FORCE_DEPLOY:-}" ]]; then
+  if [[ -f "$conf_dst" && -z "${FLEET_FORCE_DEPLOY:-}" ]]; then
     # POSIX-safe SSL cert extraction (macOS BSD tools don't support grep -P)
     existing_ssl_cert=$(sed -n 's/^[[:space:]]*ssl_certificate[[:space:]]\{1,\}\([^;]*\);/\1/p' "$conf_dst" | head -1) || true
     existing_ssl_key=$(sed -n 's/^[[:space:]]*ssl_certificate_key[[:space:]]\{1,\}\([^;]*\);/\1/p' "$conf_dst" | head -1) || true
@@ -2087,12 +2081,12 @@ deploy_nginx_configs() {
   # ── SSL cert resolution (only if not preserved) ──────
   local ssl_cert="$existing_ssl_cert" ssl_key="$existing_ssl_key"
   if [[ -z "$ssl_cert" ]]; then
-  if [[ -n "${CORTEX_SSL_CERT_PATH:-}" && -n "${CORTEX_SSL_CERT_KEY_PATH:-}" ]]; then
+  if [[ -n "${FLEET_SSL_CERT_PATH:-}" && -n "${FLEET_SSL_CERT_KEY_PATH:-}" ]]; then
     # Trust the user's env var paths — nginx -t will catch any invalid paths
-    ssl_cert="$CORTEX_SSL_CERT_PATH"
-    ssl_key="$CORTEX_SSL_CERT_KEY_PATH"
+    ssl_cert="$FLEET_SSL_CERT_PATH"
+    ssl_key="$FLEET_SSL_CERT_KEY_PATH"
   elif [[ -d /etc/letsencrypt/live ]]; then
-    local le_domain="${CORTEX_SSL_DOMAIN:-}"
+    local le_domain="${FLEET_SSL_DOMAIN:-}"
     if [[ -n "$le_domain" && -f "/etc/letsencrypt/live/$le_domain/fullchain.pem" ]]; then
       ssl_cert="/etc/letsencrypt/live/$le_domain/fullchain.pem"
       ssl_key="/etc/letsencrypt/live/$le_domain/privkey.pem"
@@ -2107,8 +2101,8 @@ deploy_nginx_configs() {
     fi
   fi
   # Fall back to self-signed ~/certs/
-  if [[ -z "$ssl_cert" && -f "${CORTEX_HOME}/certs/fullchain.pem" && -f "${CORTEX_HOME}/certs/privkey.pem" ]]; then
-    ssl_cert="${CORTEX_HOME}/certs/fullchain.pem"; ssl_key="${CORTEX_HOME}/certs/privkey.pem"
+  if [[ -z "$ssl_cert" && -f "${FLEET_HOME}/certs/fullchain.pem" && -f "${FLEET_HOME}/certs/privkey.pem" ]]; then
+    ssl_cert="${FLEET_HOME}/certs/fullchain.pem"; ssl_key="${FLEET_HOME}/certs/privkey.pem"
   fi
   fi  # closes 'if [[ -z "$ssl_cert" ]]' (already preserved from live config)
 
@@ -2128,7 +2122,7 @@ deploy_nginx_configs() {
     -e "s|__NGINX_BREW_DIR__|${brew_dir}|g" \
     -e "s|__NGINX_LOG_DIR__|${log_dir}|g" \
     -e "s|__HTPASSWD_FILE__|${htpasswd}|g" \
-    -e "s|__CORTEX_HOME__|${CORTEX_HOME}|g" \
+    -e "s|__CORTEX_HOME__|${FLEET_HOME}|g" \
     -e "s|__SSL_CERT__|${ssl_cert:-__SSL_CERT__}|g" \
     -e "s|__SSL_CERT_KEY__|${ssl_key:-__SSL_CERT_KEY__}|g" \
     -e "/listen[[:space:]]/s|127\\.0\\.0\\.1:13\\([0-9][0-9][0-9]\\)|127.0.0.1:${port_prefix}\\1|g" \
@@ -2174,7 +2168,7 @@ deploy_nginx_configs() {
 # Uses sudo on Linux for the root-owned path.
 deploy_system_scripts() {
   # Allow skipping nginx-related system scripts (e.g. on servers without sudo)
-  [[ -n "${CORTEX_SKIP_NGINX:-}" ]] && { info "CORTEX_SKIP_NGINX set — skipping system script deploy"; return 0; }
+  [[ -n "${FLEET_SKIP_NGINX:-}" ]] && { info "FLEET_SKIP_NGINX set — skipping system script deploy"; return 0; }
   local _os; _os=$(uname -s)
   local deploy_dir="/usr/local/sbin"
   [[ "$_os" == "Darwin" ]] && deploy_dir="/usr/local/bin"
@@ -2233,7 +2227,7 @@ deploy_system_scripts() {
 
   # Remove old local copies — canonical version is now in /usr/local/sbin/
   local home_link="${FLEET_DEPLOY_HOME}/scripts/install-nginx-full.sh"
-  local agent_link="${CORTEX_HOME}/.steadfaste-fleet/scripts/install-nginx-full.sh"
+  local agent_link="${FLEET_HOME}/.steadfaste-fleet/scripts/install-nginx-full.sh"
   [[ -f "$home_link" ]] && rm -f "$home_link"
   [[ -f "$agent_link" ]] && rm -f "$agent_link"
 }
@@ -2637,11 +2631,11 @@ remove_cost_tracking() {
   #      CAPABILITY rather than whichever `python3` PATH happens to resolve.
   local config="${HOME}/.hermes/config.yaml"
   if [[ -f "$config" ]] && grep -qE '^[[:space:]]*(cost_guard|cost_tracking):|^[[:space:]]*provider:[[:space:]]*cost-guard' "$config"; then
-    # Present ⇒ drop them. CORTEX_PYTHON first (the per-host declaration), then the fleet
+    # Present ⇒ drop them. FLEET_PYTHON first (the per-host declaration), then the fleet
     # venvs, then PATH; the probe runs with PYTHONPATH/PYTHONHOME removed, because an
     # inherited site-packages decides a capability test for you.
     local _py="" _cand
-    for _cand in "${CORTEX_PYTHON:-}" python3 /usr/bin/python3 \
+    for _cand in "${FLEET_PYTHON:-}" python3 /usr/bin/python3 \
                  "${FLEET_DEPLOY_HOME}/venv/bin/python" \
                  "${HOME}/.steadfaste-fleet/venv/bin/python" \
                  "${HOME}/.hermes/hermes-agent/venv/bin/python"; do
@@ -3060,12 +3054,12 @@ main() {
   # the deploy marker (observed: two `fleet-update.sh --force-all` in parallel
   # on moses). The per-deploy-home lock file means DIFFERENT repos on one server
   # deploy independently. The guard re-invokes this script as its own child with
-  # CORTEX_UPDATE_INNER=1, holding the flock for the whole run; the inner run
+  # FLEET_UPDATE_INNER=1, holding the flock for the whole run; the inner run
   # skips this block and does the real work beneath the lock.
   #
   # --dry-run / --status never mutate enforcement files, so they are exempt —
   # an operator inspecting state mid-deploy must not be blocked.
-  if [[ -z "${CORTEX_UPDATE_INNER:-}" ]] && ! $STATUS_ONLY && ! $DRY_RUN; then
+  if [[ -z "${FLEET_UPDATE_INNER:-}" ]] && ! $STATUS_ONLY && ! $DRY_RUN; then
     # Resolve the mutex helper from either the deployed lib dir or the repo
     # source (dogfood invokes the repo copy directly), so the lock engages from
     # the first run — not only after the helper has been deployed.
@@ -3123,11 +3117,11 @@ main() {
   # legitimately point elsewhere (a different venv, a Homebrew python on macOS).
   _agent_env="${HOME}/.steadfaste-fleet/agent.env"
   _declared_default="${HOME}/.steadfaste-fleet/venv/bin/python3"
-  if [[ -f "$_agent_env" ]] && grep -q '^CORTEX_PYTHON=' "$_agent_env" 2>/dev/null; then
-    info "Fleet interpreter: $(grep -E '^CORTEX_PYTHON=' "$_agent_env" | head -1 | cut -d= -f2-) (declared in agent.env)"
+  if [[ -f "$_agent_env" ]] && grep -q '^FLEET_PYTHON=' "$_agent_env" 2>/dev/null; then
+    info "Fleet interpreter: $(grep -E '^FLEET_PYTHON=' "$_agent_env" | head -1 | cut -d= -f2-) (declared in agent.env)"
   elif [[ -f "$_agent_env" ]]; then
-    printf 'CORTEX_PYTHON=%s\n' "$_declared_default" >> "$_agent_env"
-    info "Fleet interpreter: declared CORTEX_PYTHON=${_declared_default/$HOME/~} in agent.env"
+    printf 'FLEET_PYTHON=%s\n' "$_declared_default" >> "$_agent_env"
+    info "Fleet interpreter: declared FLEET_PYTHON=${_declared_default/$HOME/~} in agent.env"
   else
     info "Fleet interpreter: ${_declared_default/$HOME/~} (no agent.env; the built-in order applies)"
   fi
@@ -3591,25 +3585,25 @@ main() {
   # paths against it — a directory-level symlink means both sides
   # of the check land in the same tree, no core agent patch needed)
   _HERMES_AGENT_SCRIPTS="${HOME}/.hermes/scripts"
-  _CORTEX_DEPLOY_SCRIPTS="${FLEET_DEPLOY_HOME}/scripts"
+  _FLEET_DEPLOY_SCRIPTS="${FLEET_DEPLOY_HOME}/scripts"
   # Safety guard: skip symlink dance when both paths resolve to the same directory.
   # This happens when FLEET_DEPLOY_HOME is already set to ~/.hermes — rm -rf would
   # delete all installed scripts and create a self-referential symlink.
-  if [ "$(cd "$_HERMES_AGENT_SCRIPTS" 2>/dev/null && pwd)" = "$(cd "$_CORTEX_DEPLOY_SCRIPTS" 2>/dev/null && pwd)" ]; then
+  if [ "$(cd "$_HERMES_AGENT_SCRIPTS" 2>/dev/null && pwd)" = "$(cd "$_FLEET_DEPLOY_SCRIPTS" 2>/dev/null && pwd)" ]; then
     :
   elif [ -d "$_HERMES_AGENT_SCRIPTS" ] && [ ! -L "$_HERMES_AGENT_SCRIPTS" ]; then
     _UNIQUE=$(comm -23 \
       <(cd "$_HERMES_AGENT_SCRIPTS" && ls *.py *.sh 2>/dev/null | sort) \
-      <(cd "$_CORTEX_DEPLOY_SCRIPTS" && ls *.py *.sh 2>/dev/null | sort))
+      <(cd "$_FLEET_DEPLOY_SCRIPTS" && ls *.py *.sh 2>/dev/null | sort))
     if [ -z "$_UNIQUE" ]; then
       rm -rf "$_HERMES_AGENT_SCRIPTS"
-      ln -sf "$_CORTEX_DEPLOY_SCRIPTS" "$_HERMES_AGENT_SCRIPTS"
+      ln -sf "$_FLEET_DEPLOY_SCRIPTS" "$_HERMES_AGENT_SCRIPTS"
       info "Linked ~/.steadfaste-fleet/scripts/ (directory symlink)"
     else
       warn "~/.hermes/scripts/ has unique files: $_UNIQUE — not replacing"
     fi
   elif [ ! -e "$_HERMES_AGENT_SCRIPTS" ]; then
-    ln -sf "$_CORTEX_DEPLOY_SCRIPTS" "$_HERMES_AGENT_SCRIPTS"
+    ln -sf "$_FLEET_DEPLOY_SCRIPTS" "$_HERMES_AGENT_SCRIPTS"
     info "Created ~/.hermes/scripts/ symlink"
   fi
 

@@ -32,16 +32,16 @@ get_val() { # <file> <key> → value (empty if absent)
   grep -E "^${2}=" "$1" 2>/dev/null | head -1 | cut -d= -f2- || true
 }
 
-# ── Dual-spelling mirror (env migration P4): CORTEX_X ↔ FLEET_X ──────────────
+# ── CORTEX_* → FLEET_* convert (release 2) ─────────────────────────────
 # The canonical .env is the ONE env boundary read by every runtime entrypoint
 # (gateway EnvironmentFile, fleet-bus-bridge-run's child env, fleet-update).
-# During the CORTEX_* → FLEET_* migration the .env carries BOTH spellings with
-# equal values, so a reader on either side — migrated or not — resolves. FLEET_*
-# is canonical: a hand-set FLEET_X that DIFFERS from its CORTEX_X is a data
-# conflict and aborts (never guess). Idempotent and deterministic: given the
-# same input it rewrites to the same output. FLEET-only vars (no CORTEX
-# sibling) are preserved.
-materialize_dual_spellings() {   # <env-file>
+# Release 2 converts the .env to FLEET-only: every CORTEX_X line becomes
+# FLEET_X (dropping the legacy spelling), so a host's .env is FLEET_* and every
+# reader — already migrated to FLEET_* — resolves. FLEET_* is canonical: a
+# hand-set FLEET_X that DIFFERS from its CORTEX_X is a data conflict and aborts
+# (never guess). Idempotent and deterministic: once no CORTEX_ lines remain a
+# re-run rewrites the .env byte-identically. FLEET-only vars are preserved.
+materialize_dual_spellings() {   # convert <env-file> CORTEX_* -> FLEET_*
   local f="$1" tmp="${1}.dual.$$"
   local -a cm cv                                       # CORTEX_ names/values
   local -a fm fv                                       # FLEET_   names/values
@@ -69,26 +69,32 @@ materialize_dual_spellings() {   # <env-file>
     done
   done
   if [[ "$cerr" -ne 0 ]]; then rm -f "$tmp"; return 1; fi
-  # Rebuild: keep non-var lines, keep CORTEX_ lines, emit a FLEET_ mirror after
-  # each CORTEX_ line, drop stale generated FLEET_ lines, then append any
-  # FLEET-only vars (no CORTEX_ sibling) so they are never lost.
+  # Release 2 — CONVERT, not mirror: every CORTEX_X line becomes FLEET_X and the
+  # legacy CORTEX_ spelling is dropped; pre-existing FLEET_ lines are dropped and
+  # regenerated so each name has EXACTLY one FLEET_X line (dedupe). FLEET-only
+  # vars (no CORTEX sibling) are preserved. Non-var lines kept. Idempotent.
   : > "$tmp"
   while IFS= read -r line || [[ -n "$line" ]]; do
     if [[ "$line" =~ ^(CORTEX_[A-Za-z0-9_]+)=(.*)$ ]]; then
-      printf '%s\n' "$line" >> "$tmp"
       printf 'FLEET_%s=%s\n' "${BASH_REMATCH[1]#CORTEX_}" "${BASH_REMATCH[2]}" >> "$tmp"
     elif [[ "$line" =~ ^FLEET_[A-Za-z0-9_]+= ]]; then
-      :   # regenerated from the CORTEX_ mirror; original dropped
+      :   # regenerated below (dedupe); original dropped
     else
       printf '%s\n' "$line" >> "$tmp"
     fi
   done < "$f"
-  # FLEET-only vars preserved
+  # FLEET-only vars preserved (exactly ONE line per name, no CORTEX sibling)
+  local -a seen=()
   for j in "${!fm[@]}"; do
     nm="${fm[$j]}"; local hasc=0
     for i in "${!cm[@]}"; do [[ "${cm[$i]}" == "$nm" ]] && hasc=1; done
     if [[ "$hasc" -eq 0 ]]; then
-      printf 'FLEET_%s=%s\n' "$nm" "${fv[$j]}" >> "$tmp"
+      local already=0
+      for z in "${seen[@]}"; do [[ "$z" == "$nm" ]] && already=1; done
+      if [[ "$already" -eq 0 ]]; then
+        printf 'FLEET_%s=%s\n' "$nm" "${fv[$j]}" >> "$tmp"
+        seen+=("$nm")
+      fi
     fi
   done
   if [[ -s "$tmp" ]]; then
@@ -98,16 +104,12 @@ materialize_dual_spellings() {   # <env-file>
   fi
 }
 
-check_dual_spellings() {   # <env-file> — verify every CORTEX_X has a matching FLEET_X; no mutation
-  local f="$1" ck cvv fn fv2 rc=0
+check_dual_spellings() {   # <env-file> — verify FLEET-only (no CORTEX_* remains); no mutation
+  local f="$1" ck rc=0
   while IFS= read -r line || [[ -n "$line" ]]; do
-    [[ "$line" =~ ^(CORTEX_[A-Za-z0-9_]+)=(.*)$ ]] || continue
-    ck="${BASH_REMATCH[1]}"; cvv="${BASH_REMATCH[2]}"; fn="FLEET_${ck#CORTEX_}"
-    fv2="$(get_val "$f" "$fn")"
-    if [[ -z "$fv2" ]]; then
-      warn "check: ${ck} lacks ${fn} mirror (run consolidate-env.sh without --check to materialize)"; rc=1
-    elif [[ "$fv2" != "$cvv" ]]; then
-      warn "check: ${ck}='${cvv}' differs from ${fn}='${fv2}'"; rc=1
+    if [[ "$line" =~ ^(CORTEX_[A-Za-z0-9_]+)= ]]; then
+      ck="${BASH_REMATCH[1]}"
+      warn "check: ${ck} still present — should be FLEET_${ck#CORTEX_} (run consolidate-env.sh to convert)"; rc=1
     fi
   done < "$f"
   return "$rc"
