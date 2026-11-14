@@ -1,5 +1,23 @@
 # Agent Guidelines — Steadfaste Fleet
 
+## Where Things Live — Repo Layout
+
+The repo is a **layer model** (`src/` was retired; keep the separation):
+
+- `ops/` — all operational source. `ops/scripts/` runnable scripts, `ops/services/`
+  service packages, `ops/install/` installers, `ops/deploy/` nginx+env templates,
+  `ops/offline/` offline corpus, `ops/evidence/` repo-only verify scripts.
+- `core/` — server/library source: `core/fleet_bus/` (bus server + schema),
+  `core/governance/`.
+- `skills/` — canonical skill library by domain (your load surface; manifest is
+  `skills.yaml`). `plugins/` — Hermes plugins. `mcp-servers/` — MCP servers.
+- `docs/` — docs by kind; `docs/older/` = archived, `docs/evidence/` = never-pruned
+  records. `tests/` — suite. `tools/` — fleet-search + scripts. `evals/` — goldens.
+- Root stubs `config/ profiles/` are consolidation candidates (→ `ops/`).
+
+Full canonical structure + naming rules: `skills/software-development/repo-organization/SKILL.md`;
+planned consolidation: `docs/design/repo-consolidation-proposal.md`.
+
 ## Scope — Rules Govern Changes, Not Investigation
 
 Every rule in this file governs *changes* — to the repo, to prod, or to
@@ -26,7 +44,7 @@ research inside that item proceeds normally.
 
 > **⚠️ THREE HARD RULES — Every Agent Must Follow**
 >
-> **RULE 1: LOAD TASK-ORIENT FIRST — `skill_view('task-orient')` is your first tool call on every task.** Nothing precedes it; a task not preceded by it is a trust violation. It bundles the pre-task sequence: cache_search → begin_change → always-skills (task-orient, execute-right, verify-and-ship) → classify → work. **Exact tool names (double underscores):** `mcp__review__cache_search` → `mcp__loop_governance__begin_change` → `mcp__review__feedback_accept` → `mcp__loop_governance__end_change`. Load all 3 always-skills in ONE turn (loads accumulate across turns — never reload one you already have). A block message states its gate (GATE 1 of 2 / GATE 2 of 2) and the exact call to make: follow it, don't read the enforcer source. If `begin_change` is absent from your tool list the MCP server isn't registered here — check `hermes mcp list` (lock-free), report to your orchestrator, never hand-write a lock file. To see what YOUR host's enforcer actually does — gate timing, read-only matrix, block-message text, skill-credit state — run `python3 ~/.steadfaste-fleet/scripts/probe-gate-logic.py` (read-only, lock-free, exit 0 = matches docs); that is the diagnostic for "am I stuck on a real gate or on broken plumbing?"
+> **RULE 1: LOAD TASK-ORIENT FIRST — `skill_view('task-orient')` is your first tool call on every task.** Nothing precedes it; a task not preceded by it is a trust violation. It bundles the pre-task sequence: `mcp__review__cache_search` → `mcp__loop_governance__begin_change` → the always-skills (task-orient, execute-right, verify-and-ship) in one turn → classify → work. A block message states its gate and the exact call — follow it, don't read the enforcer source. If `begin_change` is absent the MCP server isn't registered: check `hermes mcp list` (lock-free), report to your orchestrator, never hand-write a lock file. Stuck-on-a-gate vs broken-plumbing diagnostic: `python3 ~/.steadfaste-fleet/scripts/probe-gate-logic.py` (read-only, exit 0 = matches docs).
 >
 > **RULE 2: USE LOOP GOVERNANCE ALWAYS.** Every change: `mcp__loop_governance__begin_change` → work → `mcp__review__cycle_query` → `feedback_accept/override` → `mcp__loop_governance__end_change`. Write tools block without a lock. **Close out (2026-08-08; tightened 2026-09-23):** `end_change()` refuses until the cycle is closed out — meaning `composite > 0` **or** an explicit `unscored_reason` recorded by `feedback_accept`/`feedback_override`. An unscored close must say why. Decisions are compared by **class** (`LOOP 🔄 — keep iterating` counts as LOOP). `begin_change()` refuses while unclosed cycles exist. Never stack PENDING. **Hook bypass blocked:** `git -c core.hooksPath=...` / `GIT_CONFIG_*=...` blocked — NOT the `--no-verify` hatch (3 tolerated, 4th+ mandated).
 >
