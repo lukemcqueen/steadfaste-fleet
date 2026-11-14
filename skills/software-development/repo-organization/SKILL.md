@@ -37,68 +37,34 @@ Steadfaste Fleet uses three distinct layers, each with a clear purpose:
 
 ## 2. Canonical Directory Structure
 
+> **This is the ACTUAL layout (measured 2026-11-14).** The repo follows a
+> layer-separation model fixed by `src/`→`ops/` (commits `f51df21a`, `7e8a8eac`,
+> `05f6ff68`; P0a `b416ed5c`, P0d `0e5be574`). `src/` was deliberately retired and
+> does not exist anywhere. `config/` and `profiles/` are near-empty stragglers,
+> consolidation candidates that fold into `ops/` (see § Consolidation).
+
 ```
 steadfaste-fleet/
 ├── AGENTS.md                  # Agent guidelines — orients every agent on entry
-├── README.md                  # Human-readable intro + quick-start
-├── LICENSE                    # MIT
-├── VERSION                    # Single version source (e.g., "1.0.0")
-├── install.sh                 # Single-command installer (idempotent)
-├── quick-start.sh             # 10-second TDD scoring setup
-├── pytest.ini                 # Test configuration
-│
-├── skills/                    # Canonical skills (organized by domain)
-│   ├── software-development/
-│   ├── devops/
-│   ├── github/
-│   └── ...
-│
-├── src/                       # All source code
-│   ├── scripts/               # Runable scripts (watchdogs, utilities)
-│   │   ├── system-alert-watchdog.py
-│   │   ├── service-recovery.py
-│   │   ├── orch-fleet-watchdog.py
-│   │   └── ...
-│   ├── agent-inbox/           # Inbox server (FastAPI)
-│   ├── dashboard/             # Fleet dashboard
-│   ├── loop-governance/       # TDD scoring + evaluation pipeline
-│   ├── mcp-servers/           # MCP server implementations
-│   ├── agent-registry.json    # Canonical agent list (who, where, accessible?)
-│   └── project-map/           # Dependency graph analysis
-│
-├── (this repo carries NO .steadfaste-fleet/)
-│                              # The runtime infra dir is ~/.steadfaste-fleet/ — it holds
-│                              # sessions/current.md, archive/, memory/ and skills.yaml.
-│                              # Inside ~/steadfaste-fleet a repo-local .steadfaste-fleet/ would
-│                              # SHADOW that runtime dir (doctor check: Repo-local
-│                              # .steadfaste-fleet). A consumer project may keep its own
-│                              # repo-local overlay — this repo must not.
-│
-├── deploy/                    # Deployment configs
-│   ├── nginx/                 # Nginx site configs
-│   ├── config/                # App configs
-│   └── patches/               # Patch files
-│
-├── docs/                      # Documentation
-│   ├── templates/             # Seed templates
-│   ├── design/                # Design docs (party decision records, ADRs)
-│   ├── elicit/                # Requirements elicitation documents
-│   ├── plans/                 # Implementation plans (dev-plan output)
-│   ├── prd/                   # Product requirement documents
-│   ├── proposals/             # Change/feature proposals awaiting orchestrator review
-│   ├── research/              # Research notes and surveys
-│   ├── reference/             # Technical reference guides
-│   ├── reviews/               # Durable review records (repo-health, code reviews, gap analyses)
-│   ├── archive/               # Archived/superseded design docs
-│   ├── images/                # Screenshots, diagrams
-│   └── DOCS-INDEX.md          # Documentation index — register every new doc here
-│
+├── CLAUDE.md                  # Claude Code auto-loads this — thin pointer to AGENTS.md
+├── README.md / CONTRIBUTING.md / LICENSE / VERSION / skills.yaml / pytest.ini
+├── ops/                       # ALL operational source — the big tree
+│   ├── scripts/               #   runnable scripts (fleet/, fleet_gateway/, fleet_lib/, …)
+│   ├── services/              #   service packages (fleet-bus server, dashboard, mycortex-mem)
+│   ├── install/               #   installers (install-crons, install-orch-crons, seed-project, …)
+│   ├── offline/               #   offline knowledge corpus
+│   ├── deploy/                #   nginx + env templates
+│   └── evidence/              #   repo-only evidence/verify scripts (never deployed)
+├── core/                      # server/library source: fleet_bus (bus server) + governance
+├── skills/                    # Canonical skill library (organized by domain)
+├── docs/                      # Documentation (incl. older/ = archived, evidence/ = records)
 ├── tests/                     # Test suite
-│
-├── .gitignore
-├── .github/                   # GitHub Actions, templates
-│
-│                               # (no agent inbox — use Agent Bus MCP tools for messaging)
+├── plugins/                   # Hermes plugins (governance-enforcer, mycortex-*, prompt-guard)
+├── mcp-servers/               # MCP server implementations (fleet-bus, loop-gov, tasks, executor)
+├── tools/                     # fleet-search (Rust) + auto-remediation-scan
+├── evals/                     # regression golden + suites
+├── config/                    # near-empty (consolidation candidate → ops/config)
+└── profiles/                  # near-empty (consolidation candidate → docs/reference)
 ```
 
 ---
@@ -135,7 +101,7 @@ steadfaste-fleet/
 
 ### What goes where
 
-| This belongs in the repo (`src/`) | This belongs in `~/.steadfaste-fleet/` | This stays in `~/.hermes/` |
+| This belongs in the repo (`ops/` + `core/`) | This belongs in `~/.steadfaste-fleet/` | This stays in `~/.hermes/` |
 |-----------------------------------|-----------------------------------|----------------------------|
 | Runable scripts | Session state | Agent config (config.yaml) |
 | Skill source code | Agent memory (MEMORY.md, USER.md) | Runtime DBs (loop-governance.db) |
