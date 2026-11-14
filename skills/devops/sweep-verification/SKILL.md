@@ -41,7 +41,7 @@ can still be an un-migrated host with load-bearing transition symlinks.
 4. **Deployed tree** `~/.steadfaste-fleet`: grep excluding logs/__pycache__/backups. Deploy never prunes → stale files linger here (see pitfall 1)
 5. **~/.hermes live config**: `cron/jobs.json` (0 expected), `cron/scripts`, `plugins/`, `config.yaml`, `memories/`, `repos.yaml` (a repo-rename leaves the OLD path here even after the code is swept), `SOUL.md`, `AGENTS.md`, `skills/` (deployed copies), **`agent-profiles/*/SOUL.md`** (profile templates seed other hosts' SOULs — a stale ref here ships to the fleet). A transition symlink at the old home keeps these resolving, so a running host is NOT proof they were repointed — grep each surface explicitly.
 6. **~/.hermes historical** (count, do NOT delete): logs, `sessions/`, `state-snapshots/`, `cron/output/` (old run records)
-7. **~/.steadfaste-fleet/data + state**: `loop-events/*.jsonl`, `loop-governance.db` (audit trail — task IDs legitimately mention the token), `state/` (dead state files with old keys, e.g. agent-health-data.json — check readers before deleting)
+7. **~/.steadfaste-fleet/data + state**: `loop-events/*.jsonl`, `loop-governance.db` (audit trail — task IDs legitimately mention the token), `state/` (dead state files with old keys, e.g. agent-health-data.json — check readers before deleting). Two classes here are keyed by the REPO NAME in the FILENAME, so a content grep never sees them — count both spellings explicitly: `.reviewed-<repo_slug>-<sha>.json` (per-blob review receipts) and `.session-<repo_slug>.id` (session-id stamp). See pitfall 15.
 8. **~/brain**: lesson files (historical knowledge — keep)
 9. **Tasks DB**: `SELECT ... WHERE content ILIKE '%<token>%' AND status IN ('pending','in_progress')` (active rows should be 0)
 10. **Bus archives** (primary host): count of subjects/bodies mentioning token (historical messages — keep)
@@ -201,14 +201,62 @@ discovering them in a later grep.
     lock-free read allowlist is `ls, cat, grep, find, git status/log/diff`, and
     `git remote` is not in it. When verifying a repo's origin was repointed, read
     `.git/config` via `read_file` instead of opening a lock for a read.
+    15. **Repo-name-keyed state files are a stale class of their own — sweep them when the
+    repo is renamed.** A rename leaves behind state files whose NAME embeds the old repo
+    slug, not just files whose CONTENT mentions it: the per-blob review-receipt caches
+    (`.reviewed-<repo_slug>-<sha>.json`, written as `REVIEW_RECEIPT_PREFIX + slug + "-" +
+    sha`) and the session-id stamp (`.session-<repo_slug>.id`). Once the slug changes,
+    nothing reads the old-keyed set, so it survives every deploy forever and a content
+    grep reports clean. Count BOTH spellings side by side (`ls -1 .reviewed-<old>-*.json |
+    wc -l` beside the new one), delete only the old-keyed set, and confirm the new count
+    is unchanged afterwards. These are a CACHE, not the ledger — the audit trail is the
+    governance DB — so removing them loses no record.
+    16. **A finished rename can be re-reddened by a LATER content backport — run the
+    migration's own lint during verification and attribute the failure with `git log`.**
+    A skill or lesson backported into the repo AFTER the sweep can reintroduce the retired
+    token and turn the brand lint red while every host surface stays clean, so a green
+    original sweep is not permanent. Run the lint (`bash tests/test_fleet_cli_brand.sh`)
+    as part of the pass, and find the introducing commit with `git log --diff-filter=A
+    --oneline -- <flagged file>` before blaming the sweep. A lint that is not wired into
+    the doctor or the hooks blocks nothing — report it as a finding with the one action
+    that clears it, rather than letting a red gate read as a broken host.
+    17. **A residue lint and a skill that TEACHES the sweep legitimately conflict — report
+    the ONE action that clears it; never re-scope a gate unilaterally.** A lint that
+    greps `skills/` for the retired token flags the methodology reference whose worked
+    example uses that token (`old → new` mappings, shell and regex samples), even though
+    the sweep's own rule says such files stay out of the residue grep. Two fixes exist —
+    generalize the sample tokens to the documented family notation, or exempt the
+    reference by path — and choosing between them is a gate-scoping judgement for the
+    operator. Token-class fact to use when proposing the doc fix: a wildcard family form
+    (`PREFIX_*`) does NOT match a lint pattern shaped `PREFIX_[A-Z0-9_]+`, because `*` is
+    outside that class — and the fleet's authoritative docs already write a retired
+    family that way.
+    18. **A migration's own "converged when the token count is 0" criterion can be
+    over-broad — classify every hit before chasing zero.** The follow-ups doc may state
+    convergence as a blind grep (`git grep -i "<old brand>"` == 0 outside historical
+    dirs), but proposal/design docs and dated records legitimately quote the old brand as
+    the CLI or story they once described. Bucket every hit (record vs live instruction),
+    report the live ones, and name the surfaces you did not reach — a doc that merely sits
+    outside `docs/older|evidence` is not automatically live.
+    19. **A deployed-only entry is not automatically stale — separate "orphan" from "repo
+    gap".** The deploy never prunes, so a repo-vs-deployed dir diff lists extras; most are
+    real leftovers, but a deployed-only SKILL can be a LIVE capability whose repo source
+    is absent (created on the host, or stranded when its repo copy was moved). Confirm the
+    artifact is still loaded before removing it, and recover instead of deleting —
+    `ops/scripts/manage/reconcile-stranded-skills.py` (report first) copies pure supersets
+    back into the repo as its own governed change.
 
-## Steps
+    ## Steps
 
 1. Begin governance cycle (terminal needs a lock).
 2. Run the surface checklist (batch greps; count AND list).
 3. Fix/remove every LIVE hit; leave HISTORICAL; flag CREDENTIAL in the report.
 4. Re-verify: re-run the live-surface greps → 0.
 5. Run the guard test (`pytest tests/test_repo_structure.py -q`) + full suite.
+5b. Run the migration's own consistency lint (`bash tests/test_fleet_cli_brand.sh`) and
+   the doctor (`fleet-doctor.py --quiet`) — record the pass/warn/fail counts and the exit
+   code, not just the ✅ lines. A red lint on a freshly-swept tree is usually a LATER
+   backport (pitfall 16); a red doctor FAIL is real drift that must be fixed in-cycle.
 6. Post-sweep validation: run the component's own battery (e.g. mycortex:
    CLI doctor, sources/stats, schema battery, crons, parity fixture, doctor
    Deploy+Repo sync) to prove the component still works after the purge. When the

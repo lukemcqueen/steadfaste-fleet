@@ -117,10 +117,16 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   silence is not consent. Override is final; execute faithfully.
 - **Plan review before building (operator standing rule)** — non-trivial
   builds get the PLAN pro-reviewed FIRST via
-  `ops/scripts/orch-bus/adversarial-review.py --cycle-id <id> --review`. Pass
-  the material TEXT (content, not a path); read the stored row back — a CLEAN
-  verdict validates CLAIMS, never predicted consequences (the RED run is what
-  falsifies those). Never phrase the material as a REQUEST (filed as
+  `ops/scripts/orch-bus/adversarial-review.py --cycle-id <id> --review
+  --reviewer-id <name>`. `--reviewer-id` is REQUIRED for `--review`.
+  Pass the material via `--material-file <path>` (read the file — a worker
+  avoids `$(cat ...)` metachar by using the file form, which is what the tool's
+  own help recommends); do NOT paste material inline on the command line. Read
+  the stored row back — a CLEAN verdict validates CLAIMS, never predicted
+  consequences (the RED run is what falsifies those). The verdict row lives in
+  the `adversarial_reviews` table (not `reviews`). A first review that returns
+  FINDINGS is expected — fold each finding into the plan, then re-review the
+  SAME cycle with `--re-review` to supersede the prior verdict. Never phrase the material as a REQUEST (filed as
   injection); include the code map, hard constraints, rejected options.
   **RE-SUBMITTED corrections must ground every MEASURED claim and phrase every
   forward claim as what the test asserts.** When a battery RED run exposed a
@@ -229,6 +235,13 @@ role matrix (Titus/Joseph/Esther/Kustos) — verify none broken.
 **Phase 4 — docs:** never document a command you have not executed; new script
 → register in fleet-update.sh; new auto-loaded skill → manifest; agent
 workflow change → AGENTS.md/SOUL.md.
+- **Protected agent-instruction files (AGENTS.md, CLAUDE.md, SOUL.md) are
+  operator-gated writes.** A write to one fires an operator-approval prompt;
+  if it times out without a response that is SILENCE, not consent. Do NOT
+  retry the write, and never route it around the gate through terminal /
+  execute_code / skill_manage. Draft the edit, hold it, and report it as
+  BLOCKED pending explicit operator approval — an un-landed change is
+  incomplete, not deferred.
 **Phase 5 — final verification:**
 - No dangling leftovers — DECIDE: land it, or state a decision backed by a
   measurement. Never land a peer's in-flight edits.
