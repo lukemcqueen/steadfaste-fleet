@@ -25,6 +25,14 @@ A lightweight map of all project documents. Files are grouped by topic.
 > directory (`ls`, `search_files`), not from a hand-kept table that goes stale
 > the moment a run lands.
 
+> **Repo layout (2026-11-14):** a **layer model** (`src/` was retired). `ops/`
+> operational source (scripts/services/install/deploy/offline/evidence),
+> `core/` server+library source (fleet_bus + governance), `skills/`, `tests/`,
+> `plugins/`, `mcp-servers/`, `tools/`, `evals/`; `config/ profiles/` are
+> consolidation candidates (→ `ops/`). Structure & naming:
+> `skills/software-development/repo-organization/SKILL.md`; planned consolidation:
+> `docs/design/repo-consolidation-proposal.md`.
+
 ---
 
 ## Getting Started
