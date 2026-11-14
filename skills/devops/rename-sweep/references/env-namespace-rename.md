@@ -2,7 +2,7 @@
 
 The namespace lives in host files a repo sweep cannot touch (per-host `.env`,
 systemd `Environment=`, launchd plists, service manifests, nginx configs), so a
-repo-only literal rename silently falls through to defaults — `CORTEX_DEPLOY_HOME`
+repo-only literal rename silently falls through to defaults — an old `CORTEX_*` spelling left
 unset means the deploy targets the wrong home with no error. The rule: **build the
 resolution layer FIRST, rename literals second, remove the fallback in a LATER
 release.**
@@ -32,7 +32,7 @@ survive an operator's explicit value.
 Shell traps that bite:
 - Capture the FULL var name from `env`: `sed -n 's/^\(CORTEX_[A-Z0-9_][A-Z0-9_]*\)=.*/\1/p'`
   — require ≥1 char in the suffix or a bare `CORTEX_=` collides. The indirect
-expansion `val="${!name}"` must receive the FULL name (`CORTEX_X`), so strip the
+expansion `val="${!name}"` must receive the FULL name (`CORTEX_<name>`), so strip the
 prefix ONLY when building the twin: `FLEET_${name#CORTEX_}`. A sed that emits the
 bare suffix makes `"${!name}"` look up the wrong variable.
 - The `while read ... done < <(env | sed ...)` loop runs in the current shell
@@ -62,8 +62,8 @@ resolver. Three traps:
   in the test run, green from the CLI, is this trap.
 
 - **Convert isolated single-var reads first; leave multi-var OR-chains for a
-  round-trip-verified cycle.** A read like `CORTEX_BUS_AUTH or CORTEX_BASIC_AUTH or
-  CORTEX_INBOX_AUTH` is a stack of LEGACY aliases that do not map 1:1 to one canonical
+  round-trip-verified cycle.** A read like `CORTEX_<bus> or CORTEX_<basic> or
+  CORTEX_<inbox>` is a stack of LEGACY aliases that do not map 1:1 to one canonical
   `FLEET_<name>` — folding it onto the resolver naively picks the wrong layer and
   breaks auth. The dual-read resolver covers one canonical name's fallback; a
   multi-name alias chain is a separate (riskier) rewrite that needs the live
@@ -108,9 +108,9 @@ Constraints that keep either mode safe and idempotent:
 
 **Active skills that TEACH the env names are part of the sweep surface, not just code and .env.** Code and the canonical file can be NEW-only while the ACTIVE skill .md files still instruct agents to SET/READ the old names (session-id source tuples, CORTEX_REPO/SESSION_*/OS/PYTHON) — an agent following the skills configures the legacy identifiers, re-seeding the drift you just removed. Sweep the non-archive skill files' old env tokens to the canonical names, then confirm the DEPLOYED copies refreshed: agent skills often live in a fleet-owned skill tree that `~/.hermes/skills` is a SYMLINK to and that the deploy re-syncs checksum-style (skips unchanged), so verify by realpath token-count (`grep -c OLD_ <realpath>`), not by the repo state alone.
 
-**"Fully fix <runtime>" means the per-RUNTIME surfaces, not just the repo + canonical file.** When the operator asks to fully fix a named runtime (Hermes, Pi, a service), the repo and the canonical fleet `.env` being NEW-only is necessary but not sufficient — a residual legacy var can sit in the RUNTIME's OWN env file (`~/.hermes/.env` carried `CORTEX_NGINX_PORT_PREFIX` when every repo reader, the canonical `.env`, and the live gateway were already FLEET), an env file that is neither the repo nor the fleet `.env`. Enumerate and sweep each runtime's surface: (a) its own env/config file (`~/.hermes/.env`, gateway/unit yaml, `mcp.json`, `settings.json`) — the runtime's value, renamed to the canonical name in place; (b) its deployed skill copies, by realpath token-count, not repo state; (c) the external yaml that actually SET the legacy name into processes (the setter to repoint). Then the runtime's own `.` greps to 0 old tokens — that, not the repo count, is the proof the runtime is fully migrated.
+**"Fully fix <runtime>" means the per-RUNTIME surfaces, not just the repo + canonical file.** When the operator asks to fully fix a named runtime (Hermes, Pi, a service), the repo and the canonical fleet `.env` being NEW-only is necessary but not sufficient — a residual legacy var can sit in the RUNTIME's OWN env file (`~/.hermes/.env` carried a retired `CORTEX_*` port name when every repo reader, the canonical `.env`, and the live gateway were already FLEET), an env file that is neither the repo nor the fleet `.env`. Enumerate and sweep each runtime's surface: (a) its own env/config file (`~/.hermes/.env`, gateway/unit yaml, `mcp.json`, `settings.json`) — the runtime's value, renamed to the canonical name in place; (b) its deployed skill copies, by realpath token-count, not repo state; (c) the external yaml that actually SET the legacy name into processes (the setter to repoint). Then the runtime's own `.` greps to 0 old tokens — that, not the repo count, is the proof the runtime is fully migrated.
 
-**A new-name sweep regex swallows single-letter PLACEHOLDER labels in comments** (`CORTEX_X` in "CORTEX_X ↔ FLEET_X" matches `\bPREFIX_([A-Z][A-Z0-9_]*)` as name `X`) and turns documentation into self-contradiction ("FLEET_X ↔ FLEET_X", "every FLEET_X has a matching FLEET_X") that the close reviewer files as fabrication. Two mitigations: exclude comment lines with the sentinel label from the sweep, or post-sweep grep the corrupted signature (`<new>_X ↔ <new>_X`, `matching <new>_X`) and fix the labels back to `OLD_X ↔ NEW_X` in a comment-only commit.
+**A new-name sweep regex swallows single-letter PLACEHOLDER labels in comments** (`OLD_X` in "OLD_X ↔ NEW_X" matches `\bPREFIX_([A-Z][A-Z0-9_]*)` as name `X`) and turns documentation into self-contradiction ("FLEET_X ↔ FLEET_X", "every FLEET_X has a matching FLEET_X") that the close reviewer files as fabrication. Two mitigations: exclude comment lines with the sentinel label from the sweep, or post-sweep grep the corrupted signature (`<new>_X ↔ <new>_X`, `matching <new>_X`) and fix the labels back to `OLD_X ↔ NEW_X` in a comment-only commit.
 
 ## 6. Document it so agents implement it correctly — and fix superseded claims
 

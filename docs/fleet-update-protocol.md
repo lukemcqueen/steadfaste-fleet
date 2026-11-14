@@ -116,7 +116,7 @@ When an agent receives `UPDATE_REQUEST`, it:
 | `target_agents` | string[] | **Optional** — only process on named agents (e.g. `["gisu", "titus"]`). All agents process when absent. |
 | `target_labels` | map[string,string] | **Optional** — only process on agents whose labels match ALL specified key-value pairs (e.g. `{"group": "canary"}`). All agents process when absent. |
 
-> **Label targeting:** Labels are set via `hermes cortex agent label set <name> <key>=<value>`.
+> **Label targeting:** Labels are set via `fleet-agent-manager.py label set <name> <key>=<value>`.
 > When both `target_agents` and `target_labels` are present, an agent matching EITHER criteria processes the request.
 > Agents without matching labels silently skip the update (no response sent).
 
