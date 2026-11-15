@@ -1,0 +1,20 @@
+Jev reachability probe — 2026-11-15
+
+OpenRouter key len=73 (masked)
+
+model                                                result
+qwen/qwen3.7-flash                                 HTTP 404  {"error":{"message":"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reason
+qwen/qwen3.5-flash-02-23                           HTTP 404  {"error":{"message":"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reason
+openai/gpt-oss-20b                             OK openai/gpt-oss-20b  cost=$1.79e-06
+mistralai/mistral-small-24b-instruct-2501      OK mistralai/mistral-small-24b-instruct-2501  cost=$8.28e-06
+z-ai/glm-5.3-flash                             OK z-ai/glm-5.3-flash  cost=$2.06e-06
+amazon/nova-lite-v1                            OK amazon/nova-lite-v1  cost=$3.00e-07
+minimax/minimax-m3.1-flash                     OK minimax/minimax-m3.1-flash  cost=$2.74e-05
+deepseek/deepseek-v4-flash                     OK deepseek/deepseek-v4-flash  cost=$7.70e-07
+minimax/minimax-m3                             OK minimax/minimax-m3  cost=$2.27e-05
+qwen/qwen3-coder-30b-a3b-instruct              OK qwen/qwen3-coder-30b-a3b-instruct  cost=$1.95e-06
+xiaomi/mimo-v2.6-pro                           OK xiaomi/mimo-v2.6-pro  cost=$3.88e-06
+thinkingmachines/inkling-small                 OK thinkingmachines/inkling-small  cost=$7.95e-06
+z-ai/glm-4.7                                   OK z-ai/glm-4.7  cost=$5.00e-06
+z-ai/glm-5.3                                   OK z-ai/glm-5.3  cost=$2.31e-06
+qwen/qwen3.5-122b-a10b                         OK qwen/qwen3.5-122b-a10b  cost=$7.50e-04

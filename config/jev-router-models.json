@@ -90,40 +90,58 @@
         "low",
         "medium",
         "high"
+      ],
+      "openrouter:z-ai/glm-5.3-flash": [
+        "none",
+        "low",
+        "medium",
+        "high"
+      ],
+      "openrouter:openai/gpt-oss-20b": [
+        "none",
+        "low",
+        "medium",
+        "high"
+      ],
+      "openrouter:mistralai/mistral-small-24b-instruct-2501": [
+        "none",
+        "low",
+        "medium",
+        "high"
+      ],
+      "openrouter:amazon/nova-lite-v1": [
+        "none",
+        "low",
+        "medium",
+        "high"
       ]
-    },
-    "excluded": {
-      "openrouter:qwen/qwen3.7-flash": {
-        "reason": "route-unreachable on this key (OpenRouter data-policy guardrail: 0 endpoints matching; 404 on every level AND the no-effort baseline). This is NOT an effort refusal - do not declare any level it was never seen to accept.",
-        "evidence": "docs/evidence/jev-effort-levels-2026-10-29/effort-levels.txt"
-      }
     }
   },
   "tiers": {
     "simple": {
       "general": [
-        "openrouter:qwen/qwen3.7-flash"
+        "openrouter:openai/gpt-oss-20b"
       ],
       "vision": [
-        "openrouter:qwen/qwen3.7-flash"
+        "openrouter:z-ai/glm-5.3-flash"
       ],
       "coding": [
-        "openrouter:qwen/qwen3.7-flash"
+        "openrouter:openai/gpt-oss-20b"
       ],
       "writing": [
-        "openrouter:qwen/qwen3.7-flash"
+        "openrouter:openai/gpt-oss-20b"
       ],
       "research": [
-        "openrouter:qwen/qwen3.7-flash"
+        "openrouter:openai/gpt-oss-20b"
       ]
     },
     "medium": {
       "general": [
-        "openrouter:qwen/qwen3.7-flash",
+        "openrouter:deepseek/deepseek-v4-flash",
         "openrouter:deepseek/deepseek-v4-flash-0731"
       ],
       "vision": [
-        "openrouter:qwen/qwen3.7-flash",
+        "openrouter:z-ai/glm-5.3-flash",
         "openrouter:deepseek/deepseek-v4-flash-0731"
       ],
       "coding": [
@@ -131,33 +149,34 @@
         "openrouter:deepseek/deepseek-v4-flash-0731"
       ],
       "writing": [
-        "openrouter:qwen/qwen3.7-flash",
+        "openrouter:mistralai/mistral-small-24b-instruct-2501",
         "openrouter:deepseek/deepseek-v4-flash-0731"
       ],
       "research": [
-        "openrouter:qwen/qwen3.7-flash",
+        "openrouter:amazon/nova-lite-v1",
         "openrouter:deepseek/deepseek-v4-flash-0731"
       ]
     },
     "hard": {
       "general": [
+        "openrouter:minimax/minimax-m3",
         "openrouter:z-ai/glm-4.7",
-        "openrouter:minimax/minimax-m3"
+        "openrouter:thinkingmachines/inkling-small"
       ],
       "coding": [
         "openrouter:qwen/qwen3.5-122b-a10b",
-        "openrouter:z-ai/glm-4.7",
-        "openrouter:minimax/minimax-m3"
+        "openrouter:minimax/minimax-m3",
+        "openrouter:z-ai/glm-4.7"
       ],
       "vision": [
-        "openrouter:minimax/minimax-m3",
         "openrouter:xiaomi/mimo-v2.6-pro",
+        "openrouter:minimax/minimax-m3",
         "openrouter:thinkingmachines/inkling-small"
       ],
       "writing": [
-        "openrouter:z-ai/glm-4.7",
+        "openrouter:thinkingmachines/inkling-small",
         "openrouter:minimax/minimax-m3",
-        "openrouter:thinkingmachines/inkling-small"
+        "openrouter:z-ai/glm-4.7"
       ],
       "research": [
         "openrouter:z-ai/glm-4.7",
@@ -202,11 +221,6 @@
       "out": 2.08,
       "cache_read": 0.0
     },
-    "openrouter:qwen/qwen3.7-flash": {
-      "in": 0.03,
-      "out": 0.13,
-      "cache_read": 0.006
-    },
     "openrouter:thinkingmachines/inkling-small": {
       "in": 0.45,
       "out": 1.2,
@@ -226,6 +240,26 @@
       "in": 0.08,
       "out": 3.6,
       "cache_read": 0.076
+    },
+    "openrouter:z-ai/glm-5.3-flash": {
+      "in": 0.0313,
+      "out": 0.0846,
+      "cache_read": 0.03
+    },
+    "openrouter:openai/gpt-oss-20b": {
+      "in": 0.03,
+      "out": 0.13,
+      "cache_read": 0.03
+    },
+    "openrouter:mistralai/mistral-small-24b-instruct-2501": {
+      "in": 0.05,
+      "out": 0.08,
+      "cache_read": 0.0
+    },
+    "openrouter:amazon/nova-lite-v1": {
+      "in": 0.06,
+      "out": 0.24,
+      "cache_read": 0.0
     }
   },
   "baseline_price_usd_per_m": 0.357,
@@ -234,27 +268,28 @@
     "baseline": "openrouter:deepseek/deepseek-v4-flash-0731 = 0.119 in + 0.238 out = $0.357/M",
     "source": "~/.cache/jev/models_dev.json (models.dev); the filtered extract this list was built from is committed at docs/evidence/jev-router-pools-2026-10-28/catalog-prices.json",
     "heads": {
-      "simple/general": "openrouter:qwen/qwen3.7-flash = 0.03 in + 0.13 out = $0.160/M = 0.45x baseline",
-      "simple/vision": "openrouter:qwen/qwen3.7-flash = 0.03 in + 0.13 out = $0.160/M = 0.45x baseline",
-      "simple/coding": "openrouter:qwen/qwen3.7-flash = 0.03 in + 0.13 out = $0.160/M = 0.45x baseline",
-      "simple/writing": "openrouter:qwen/qwen3.7-flash = 0.03 in + 0.13 out = $0.160/M = 0.45x baseline",
-      "simple/research": "openrouter:qwen/qwen3.7-flash = 0.03 in + 0.13 out = $0.160/M = 0.45x baseline",
-      "medium/general": "openrouter:qwen/qwen3.7-flash = 0.03 in + 0.13 out = $0.160/M = 0.45x baseline",
-      "medium/vision": "openrouter:qwen/qwen3.7-flash = 0.03 in + 0.13 out = $0.160/M = 0.45x baseline",
-      "medium/coding": "openrouter:deepseek/deepseek-v4-flash = 0.091 in + 0.182 out = $0.273/M = 0.76x baseline",
-      "medium/writing": "openrouter:qwen/qwen3.7-flash = 0.03 in + 0.13 out = $0.160/M = 0.45x baseline",
-      "medium/research": "openrouter:qwen/qwen3.7-flash = 0.03 in + 0.13 out = $0.160/M = 0.45x baseline",
-      "hard/general": "openrouter:z-ai/glm-4.7 = 0.6 in + 2.2 out = $2.800/M = 7.84x baseline",
-      "hard/coding": "openrouter:qwen/qwen3.5-122b-a10b = 0.26 in + 2.08 out = $2.340/M = 6.55x baseline",
-      "hard/vision": "openrouter:minimax/minimax-m3 = 0.3 in + 1.2 out = $1.500/M = 4.20x baseline",
-      "hard/writing": "openrouter:z-ai/glm-4.7 = 0.6 in + 2.2 out = $2.800/M = 7.84x baseline",
-      "hard/research": "openrouter:z-ai/glm-4.7 = 0.6 in + 2.2 out = $2.800/M = 7.84x baseline"
+      "simple/general": "openrouter:gpt-oss-20b = 0.04 in + 0.12 out = $0.160/M",
+      "simple/vision": "openrouter:glm-5.3-flash = 0.04 in + 0.16 out = $0.200/M",
+      "simple/coding": "openrouter:gpt-oss-20b = 0.04 in + 0.12 out = $0.160/M",
+      "simple/writing": "openrouter:gpt-oss-20b = 0.04 in + 0.12 out = $0.160/M",
+      "simple/research": "openrouter:gpt-oss-20b = 0.04 in + 0.12 out = $0.160/M",
+      "medium/general": "openrouter:deepseek-v4-flash = 0.091 in + 0.182 out = $0.273/M",
+      "medium/vision": "openrouter:glm-5.3-flash = 0.04 in + 0.16 out = $0.200/M",
+      "medium/coding": "openrouter:deepseek-v4-flash = 0.091 in + 0.182 out = $0.273/M",
+      "medium/writing": "openrouter:mistral-small-24b-instruct-2501 = 0.04 in + 0.09 out = $0.130/M",
+      "medium/research": "openrouter:nova-lite-v1 = 0.04 in + 0.26 out = $0.300/M",
+      "hard/general": "openrouter:minimax-m3 = 0.3 in + 1.2 out = $1.500/M",
+      "hard/coding": "openrouter:qwen3.5-122b-a10b = 0.26 in + 2.08 out = $2.340/M",
+      "hard/vision": "openrouter:mimo-v2.6-pro = 0.435 in + 0.87 out = $1.305/M",
+      "hard/writing": "openrouter:inkling-small = 0.45 in + 1.2 out = $1.650/M",
+      "hard/research": "openrouter:glm-4.7 = 0.6 in + 2.2 out = $2.800/M"
     },
     "baseline_change_note": "baseline moved from openrouter:deepseek/deepseek-v4.1-flash ($0.560/M) to openrouter:deepseek/deepseek-v4-flash-0731 ($0.357/M) on Luke's directive 2026-10-28, so the multipliers stay anchored to the model the host actually runs; the hard cap was re-expressed absolutely at the same time for that reason"
   },
   "candidates": {
     "openrouter:deepseek/deepseek-v4.1-flash": "priced only, NOT routed: within budget, promoted by a one-file edit",
-    "openrouter:qwen/qwen3-coder-30b-a3b-instruct": "priced only, NOT routed: was the medium/coding head at its captured $0.350/M (2026-10-28); the live catalog now prices it $0.750/M = 2.10x baseline, above the medium ceiling, so it was displaced by deepseek-v4-flash. Promote it back with a one-file edit if its price drops below the baseline."
+    "openrouter:qwen/qwen3-coder-30b-a3b-instruct": "priced only, NOT routed: was the medium/coding head at its captured $0.350/M (2026-10-28); the live catalog now prices it $0.750/M = 2.10x baseline, above the medium ceiling, so it was displaced by deepseek-v4-flash. Promote it back with a one-file edit if its price drops below the baseline.",
+    "openrouter:qwen/qwen3.7-flash": "priced only, NOT routed: 404 on this OpenRouter key per live probe 2026-11-15 (0 endpoints matching data policy) and per docs/evidence/jev-effort-levels-2026-10-29/effort-levels.txt. The model appears in the catalog at $0.16/M but is NOT actually callable here; do NOT promote back into a pool head without first re-probing reachability on the live key."
   },
   "rejected": {
     "openrouter:moonshotai/kimi-k2.7-code": {
@@ -275,7 +310,7 @@
   },
   "hard_whitelist": {
     "openrouter:z-ai/glm-4.7": {
-      "price_usd_per_m": 2.52,
+      "price_usd_per_m": 2.8,
       "x_baseline": 4.5,
       "ctx": 204800,
       "vision": false,
