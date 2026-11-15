@@ -109,7 +109,12 @@ The non-negotiable rules of doing the work. Route (`task-orient`) → execute
     is right. The same rule governs diagnostics: a tool that probes a system's
     state must derive its expectations from the live module under test (its own
     attributes, the config it actually reads), never from a hardcoded snapshot
-    that an absorption or rename silently stales.
+    that an absorption or rename silently stales. A handoff, checkpoint, or
+    prior-session summary is the same class of claim about the PAST: it records
+    what a previous session BELIEVED, not what is true now. Re-measure its
+    headline numbers ("N files carry X", "already fixed", a named file list)
+    against the live tree before building on them, and say plainly when they
+    differ — a summary is a lead, never a work order.
 
 ## Survey before action (mandatory pre-flight)
 
@@ -249,4 +254,6 @@ approval) | dependency/tool missing | scope exceeds safe bounds.
 Guessing | multi-change | skip verify | mask failures | "should work" |
 simulate outputs | code before understanding | test-after-code |
 commit-without-red-green | core-patch-first | parallel systems | "I'll search
-later" | stale-doc claims (asserting current behavior from a README instead of the code).
+later" | stale-doc claims (asserting current behavior from a README instead of the
+code) | unverified handoff claims (acting on a summary's file list or "N files"
+count instead of re-measuring it).

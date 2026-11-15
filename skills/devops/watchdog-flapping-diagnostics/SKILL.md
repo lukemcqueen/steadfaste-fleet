@@ -124,11 +124,42 @@ non-200/401/403 as **down**, so one throttled probe = false "unreachable".
 A health/failover watchdog's ALERT must require N consecutive failures and its
 RECOVERY M consecutive successes. A path that alerts on the 1st failure and
 recovers on the 1st success turns any single transient blip — throttle, timeout, or
-retry — into an alert+recovery pair (the flapping noise). Mirror the orchestrator
-pattern (activate only after 3 consecutive failures + elapsed time; recover only
-after 3 consecutive successes) on every worker/degraded path. A debounce makes the
+retry — into an alert+recovery pair (the flapping noise). A debounce makes the
 system robust to ANY future transient probe failure, so you fix the class, not just
 today's throttle.
+
+The concrete, tested shape (deployed in `orch-fleet-watchdog.py`): a PURE state
+function is the testable seam —
+`_debounce_emit(hstate, bad, good, emitted, bad_lim, good_lim)` →
+`(action|None, bad, good)`, where `hstate` ∈ {up, unhealthy, unreachable}.
+The **caller feeds `emitted` back** each invocation (persisting it per subject), so a
+down fires ONCE at the threshold and never re-fires while still down, and a
+resolution fires ONCE; a single opposite sample RESETS the streak, so a blip below
+the threshold never alerts. ALERT only when `bad >= bad_lim` AND `emitted != "down"`;
+RESOLUTION only when `good >= good_lim` AND `emitted == "down"`. Persist
+`{bad, good, emitted}` per subject beside the existing change-detection state
+(add a sibling key, never reshape the fingerprint map other readers rely on) so
+counts survive process restarts. Drive the state-machine tests against the pure
+function, and add ONE script-level test that runs `main()` with `_fetch` stubbed and
+state redirected to tmp to prove the silent-when-stable contract (empty stdout) is
+preserved — the pure tests alone cannot see that.
+
+## Distinguish a self-healing single-bit flap from a real outage
+
+A down that returns to green within one watchdog tick, while the host's vector is
+otherwise all-green, is a TRANSIENT health-bit flip, not a service down. Read which
+vector index reddened: a `no_stale_crons` (or `no_errored_crons`) redmeans a job's
+`last_run_at`/status briefly crossed its threshold — a scheduler stall, not a crash.
+Probe the live endpoint (`curl` the external URL directly) and, on green, name the
+red as transient and self-healing rather than an outage. Do not chase a network,
+service, or disk cause for a bit that already healed.
+
+**A `cron:<name>` suffix on a delivered watchdog alert is the DELIVERING job's
+label, not the subject of the finding.** The bridge/runner prefixes each delivery
+with the cron that produced it, so `digest down cron:orch-fleet-watchdog` means the
+`orch-fleet-watchdog` cron delivered a `digest`-bit red — it is NOT naming the
+stale cron. Read the vector index the message names; grep for `cron:` only to learn
+the sender, never to identify the offending job.
 
 ## Pitfalls
 
