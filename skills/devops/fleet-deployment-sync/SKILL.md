@@ -258,7 +258,7 @@ ps -eo pid,ppid,lstart,args | grep -E 'fleet-update|fleet-dogfood' | grep -v gre
 **An EMPTY process tree does NOT prove a peer holds it — it proves VERSION SKEW.**
 `fcntl.flock` self-releases on process exit, so a persistent "held" with no holder in
 `ps`/`pgrep` is a CALLER bug, not a stale lock: the deployed mutex helper and the repo
-script disagree on the inner-run env var (`FLEET_UPDATE_INNER` vs `CORTEX_UPDATE_INNER`)
+script disagree on the inner-run env var (`FLEET_UPDATE_INNER` vs `CORTEX_UPDATE_INNER` (STALE — pre-rename spelling))
 after the CORTEX_*→FLEET_* rename, so the guard's own child re-enters the mutex and
 contends with its parent. Probe the lock as free (open + `flock(LOCK_EX|LOCK_NB)` →
 `ACQUIRED`) and grep the two `UPDATE_INNER` names before assuming a peer — see Pitfall 30.
@@ -289,9 +289,9 @@ The deploy script prefers the DEPLOYED helper copies when it resolves them. When
 moved ahead (a dogfood/skew state), the deployed helper is stale and the pair disagrees on
 a name, in two distinct shapes:
 
-- **Env-var name (`FLEET_UPDATE_INNER` vs `CORTEX_UPDATE_INNER`).** The repo script's mutex
+- **Env-var name (`FLEET_UPDATE_INNER` vs `CORTEX_UPDATE_INNER` (STALE — pre-rename spelling)).** The repo script's mutex
   block checks `${FLEET_UPDATE_INNER}`; a stale deployed `fleet-update-mutex.py` sets
-  `CORTEX_UPDATE_INNER` in its child's env. The guard acquires the flock, spawns its child
+  `CORTEX_UPDATE_INNER` (STALE — pre-rename spelling) in its child's env. The guard acquires the flock, spawns its child
   with the OLD name, the child (new script) re-enters the mutex and contends with its parent
   → `mutex held` instantly, on a fresh lock, no external holder.
   **Fix:** sync the deployed helper to the repo copy (`cp <repo>/ops/scripts/lib/fleet-update-mutex.py
