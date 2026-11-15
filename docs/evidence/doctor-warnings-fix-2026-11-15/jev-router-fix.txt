@@ -47,3 +47,21 @@ PASS | Jev decision layer :: installed · routing on · 15 pool(s) · current mo
   fef1b5a2 rejected (deepseek-v4-pro $4.115 > $3.00 cap).
 - tests/test_fleet_doctor_jev_layer.py fixture patched CATALOG_CACHE (an attribute
   that no longer exists) -> the real CATALOG_CANDIDATES list seam.
+
+========== UPDATE — peer 890cbd88 superseded the policy; re-applied --write ==========
+Peer titus then committed 890cbd88 "re-route all tiers onto today-verified reachable,
+cheaper models" (qwen3.7-flash is HTTP 404 on this key per docs/evidence/jev-reachability-
+2026-11-15). That rewrite moved qwen3.7-flash to candidates and dropped effort.excluded.
+Live routing.json was re-applied from the merged config and now matches (--check 0 findings);
+doctor Jev decision layer PASS. Two more PRE-EXISTING stale tests pinned to the old format
+were reconciled in the same sweep:
+  - test_every_priced_model_is_routed_or_named_as_a_candidate asserted heads carry
+    "x baseline"; the rewrite uses $-priced arithmetic strings -> pin "$" presence.
+  - test_config_effort_capability_map_is_sound asserted qwen3.7-flash is effort-excluded;
+    it is no longer routed -> assert it is neither declared nor routed.
+
+Full combined run (loop-gov stamp map + jev pool + jev layer):
+  $ ~/.steadfaste-fleet/venv/bin/python3 -m pytest \
+      tests/test_doctor_stale_loop_gov.py tests/test_jev_router_pools.py \
+      tests/test_fleet_doctor_jev_layer.py -q
+  37 passed in 1.59s

@@ -182,8 +182,10 @@ def test_every_priced_model_is_routed_or_named_as_a_candidate():
     assert orphans <= named, \
         f"priced but neither routed nor named as candidates/rejected: {sorted(orphans)}"
     # and every head the policy leans on carries its arithmetic in the file
+    # (in + out -> $/M; the peer 890cbd88 rewrite dropped the "x baseline" suffix
+    # from these strings, so pin the $-price presence, not that specific phrase)
     heads = doc["derivation"]["heads"]
-    assert heads and all("x baseline" in v for v in heads.values()), heads
+    assert heads and all("$" in v for v in heads.values()), heads
 
 
 def _config():
@@ -275,14 +277,20 @@ def test_no_model_dearer_than_the_hard_cap_is_even_listed():
     assert not offenders, f"above the ${cap:.2f}/M hard cap but still in the file: {offenders}"
 
 
-def test_the_whitelist_head_is_deepseek_v4_pro_and_stays_affordable():
-    """Luke's pick, and the reason it qualifies: cheapest pro seat, 1048k ctx."""
+def test_the_hard_coding_head_stays_affordable():
+    """The hard/coding head must be a whitelisted, in-budget, 200k+-ctx seat.
+
+    The specific model may change: deepseek-v4-pro-0813 was this pool's head until
+    2026-11-15, when its catalog OUTPUT price rose (4.0/M out) making blended $/M
+    $4.115 — over the $3.00 hard cap — so fef1b5a2 rejected it and
+    qwen3.5-122b-a10b became the head. Pin the INVARIANT (in-cap, whitelisted,
+    200k+ ctx), not a hardcoded id, so a future promotion does not rot this test.
+    """
     doc = _config()
-    base = _bl(doc, doc["baseline"])
     head = doc["tiers"]["hard"]["coding"][0]
-    assert head == "openrouter:deepseek/deepseek-v4-pro-0813"
     cap = float(doc["policy"]["hard"]["max_price_usd_per_m"])
     assert _bl(doc, head) <= cap, f"{head} is ${_bl(doc, head):.3f}/M - over the ${cap:.2f}/M cap"
+    assert head in doc["hard_whitelist"], f"{head} is not on the hard whitelist"
     assert doc["hard_whitelist"][head]["ctx"] >= 200000
 
 
@@ -391,12 +399,12 @@ def test_config_effort_capability_map_is_sound():
     assert not uncovered, f"routed models with no effort decision: {sorted(uncovered)}"
     # glm-5.3 refuses `none` (measured: 'Reasoning is mandatory'); it must never declare it.
     assert "none" not in effort["models"].get("openrouter:z-ai/glm-5.3", [])
-    # qwen3.7-flash is route-unreachable on this key, NOT effort-refused: it must be
-    # excluded (with a reason) and NOT declare any level it was never seen to accept.
+    # qwen3.7-flash is route-unreachable on this key (live probe 2026-11-15) and the
+    # peer 890cbd88 rewrite moved it OUT of the pools to candidates, so it is no longer
+    # routed and needs no effort capability entry; it must still never declare a level
+    # it was never seen to accept.
     assert "openrouter:qwen/qwen3.7-flash" not in declared
-    assert "openrouter:qwen/qwen3.7-flash" in excluded
-    q_ex = excluded_doc["openrouter:qwen/qwen3.7-flash"]
-    assert q_ex["reason"] and q_ex.get("evidence"), q_ex
+    assert "openrouter:qwen/qwen3.7-flash" not in routed
     # every excluded entry names why and where the measurement lives
     for model, entry in excluded_doc.items():
         assert entry.get("reason") and entry.get("evidence"), (model, entry)

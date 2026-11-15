@@ -60,7 +60,9 @@ def doctor(tmp_path, monkeypatch):
     cache = tmp_path / "models_dev.json"
     cache.write_text(json.dumps(CATALOG))
     monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr(jev, "CATALOG_CACHE", cache)
+    # _catalog_prices() reads CATALOG_CANDIDATES (a list of cache paths, not a
+    # single CATALOG_CACHE attr) — point it at the fixture catalog only.
+    monkeypatch.setattr(jev, "CATALOG_CANDIDATES", [cache])
     monkeypatch.setattr(jev, "_current_model", lambda: "deepseek/deepseek-v4.1-flash")
     return home
 
