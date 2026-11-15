@@ -1,0 +1,51 @@
+loop-gov daemon per-pid stamp map — RED then GREEN (test_first, TDD)
+Date: 2026-11-15. Repo: steadfaste-fleet. Files: mcp-servers/loop-gov-mcp.py,
+ops/scripts/manage/fleet_doctor/checks.py, tests/test_doctor_stale_loop_gov.py.
+
+The defect: _write_daemon_stamp() wrote ONE {pid, sha256} object (write_text), so
+of two session-spawned sibling daemons (pid 2285405 --role review, pid 2285456
+--role loop-governance) the second OVERWROTE the first and only one pid was ever
+stamped. The doctor check could only verify the last-started pid; the sibling
+permanently read "COULD NOT VERIFY by content" — the recurring warning. Fix: a
+per-pid stamp MAP merged, never overwritten, with legacy single-pid normalization
+on both the writer and the check.
+
+========== RED — new test against UNMODIFIED check (before the fix) ==========
+$ ~/.steadfaste-fleet/venv/bin/python3 -m pytest \
+    tests/test_doctor_stale_loop_gov.py::test_per_pid_stamp_map_verifies_every_stamped_sibling -p no:cacheprovider
+
+tests/test_doctor_stale_loop_gov.py:176: in test_per_pid_stamp_map_verifies_every_stamped_sibling
+    assert hit[0]["status"] == "PASS", hit
+E   AssertionError: [{'name': 'loop-gov daemon', 'status': 'WARN',
+E       'detail': 'COULD NOT VERIFY by content — pid 1111 (loop-gov-mcp.py is newer
+E         than the daemon start, and this daemon wrote no startup stamp);
+E         pid 2222 (loop-gov-mcp.py is newer than the daemon start, and this daemon
+E         wrote no startup stamp)',
+E       'fix': 'This daemon predates the startup stamp, ...'}]
+E   assert 'WARN' == 'PASS'
+=========================== short test summary info ============================
+FAILED tests/test_doctor_stale_loop_gov.py::test_per_pid_stamp_map_verifies_every_stamped_sibling
+============================== 1 failed in 0.19s ===============================
+
+(Red is behavioral: the check ignores the per-pid map, so both fake siblings read
+"wrote no startup stamp" -> WARN. Exactly the defect.)
+
+========== GREEN — same test against the fixed check + writer ==========
+$ ~/.steadfaste-fleet/venv/bin/python3 -m pytest tests/test_doctor_stale_loop_gov.py -p no:cacheprovider -q
+
+tests/test_doctor_stale_loop_gov.py ....
+============================== 4 passed in 0.26s ===============================
+
+========== syntax check of both changed modules ==========
+$ ~/.steadfaste-fleet/venv/bin/python3 -m py_compile ops/scripts/manage/fleet_doctor/checks.py mcp-servers/loop-gov-mcp.py
+PYCOMPILE_OK
+
+========== A4 adversarial gate on every changed file ==========
+$ python3 ~/.steadfaste-fleet/scripts/adversarial-verify.py --file <each> --level A4 --gate
+mcp-servers/loop-gov-mcp.py ......................... GATE_PASSED (no critical/high)
+ops/scripts/manage/fleet_doctor/checks.py ........... GATE_PASSED (no critical/high)
+tests/test_doctor_stale_loop_gov.py ................. GATE_PASSED (no critical/high)
+tests/test_fleet_doctor_jev_layer.py ............... GATE_PASSED (no critical/high)
+tests/test_jev_router_pools.py .................... GATE_PASSED (no critical/high)
+Medium findings reported on the large pre-existing files; none target my changed
+lines; no critical/high anywhere.

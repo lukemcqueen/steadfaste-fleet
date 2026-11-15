@@ -1,0 +1,49 @@
+Jev router pools rebuild — live routing.json from committed policy
+Date: 2026-11-15. Policy list config/jev-router-models.json (peer fef1b5a2).
+
+Problem (doctor FAIL): medium/coding led with openrouter:qwen/qwen3-coder-30b-a3b-
+instruct ($0.750/M) ahead of the host's current model deepseek-v4-flash-0731
+($0.343/M) — 2.1x, above the check's 1.5x tolerance. The committed policy defines
+medium/coding = [deepseek-v4-flash ($0.273), deepseek-v4-flash-0731], so the LIVE
+routing.json was stale.
+
+========== jev-router-pools.py (bare run == --check) BEFORE the fix ==========
+router pricing list : ~/steadfaste-fleet/config/jev-router-models.json (captured 2026-11-15)
+baseline            : openrouter:deepseek/deepseek-v4-flash-0731 = $0.359/M
+live pools          : $HERMES_HOME/jev/routing.json
+
+7 finding(s):
+  [order]    medium/coding: live head qwen3-coder-30b-a3b-instruct ($0.750/M) != list head deepseek-v4-flash ($0.273/M) ($+0.477/M)
+  [ceiling]  medium/coding: head qwen3-coder-30b ($0.750/M) above the 1x baseline ceiling ($0.359/M) ($+0.391/M)
+  [order]    hard/general: live head deepseek-v4-pro-0813 ($4.115/M) != list head glm-4.7 ($2.800/M) ($+1.315/M)
+  [order]    hard/coding: live head deepseek-v4-pro-0813 ($4.115/M) != list head qwen3.5-122b-a10b ($2.340/M) ($+1.775/M)
+  [order]    hard/writing: live head glm-5.3 ($3.680/M) != list head glm-4.7 ($2.800/M) ($+0.880/M)
+  [order]    hard/research: live head glm-5.3 ($3.680/M) != list head glm-4.7 ($2.800/M) ($+0.880/M)
+  [effort-drift] -/-: live effort.models != list effort.models (run --write)
+CHECK_EXIT=1
+
+========== --write (the documented/sanctioned rebuild) ==========
+$ python3 ops/scripts/manage/jev-router-pools.py --write
+wrote $HERMES_HOME/jev/routing.json from ~/steadfaste-fleet/config/jev-router-models.json
+WRITE_EXIT=0
+
+========== jev-router-pools.py AFTER the fix ==========
+router pricing list : ~/steadfaste-fleet/config/jev-router-models.json (captured 2026-11-15)
+baseline            : openrouter:deepseek/deepseek-v4-flash-0731 = $0.359/M
+live pools          : $HERMES_HOME/jev/routing.json
+
+no findings — every pool matches the list
+CHECK_EXIT=0
+
+========== doctor Jev decision layer AFTER the fix ==========
+$ python3 ops/scripts/manage/fleet-doctor.py --json
+PASS | Jev decision layer :: installed · routing on · 15 pool(s) · current model
+      openrouter:deepseek/deepseek-v4-flash-0731 ($0.343/M)
+
+========== stale tests fixed in the same sweep ==========
+- tests/test_jev_router_pools.py test_the_whitelist_head_is_deepseek_v4_pro... ->
+  renamed to test_the_hard_coding_head_stays_affordable, now pins the INVARIANT
+  (head in-cap + whitelisted + 200k ctx) instead of a hardcoded model the peer
+  fef1b5a2 rejected (deepseek-v4-pro $4.115 > $3.00 cap).
+- tests/test_fleet_doctor_jev_layer.py fixture patched CATALOG_CACHE (an attribute
+  that no longer exists) -> the real CATALOG_CANDIDATES list seam.
