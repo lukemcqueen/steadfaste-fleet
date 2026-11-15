@@ -150,6 +150,17 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   --review --reviewer-id <new>` — it supersedes the prior verdict into the
   append-only history and records the fresh one; loop until CLEAN (info
   findings are non-blocking).
+  **A re-review after FOLDING findings must be a FULL REWRITE of the material to
+  the final state — never a "folding" note appended under the old description.**
+  The reviewer's window cannot see the repository: it judges only the material
+  you hand it. If the upper section still describes the pre-fix code (the old
+  commit ref, the removed heuristic) while a folding paragraph below says the
+  code changed, the reviewer reads the stale upper text as the current state and
+  files the contradiction as FABRICATION — costing you a round re-reviewing your
+  own inconsistency, not the code. Rewrite so ONE commit ref and ONE code
+  description appear anywhere; embed the ACTUAL committed file verbatim for the
+  lines the reviewer must verify (the constants a guard imports, the filter logic);
+  let the folding note state only what changed and why.
 - Name the cycle for the diff it will CONTAIN, not the instruction that started
   it; sized so the close review can read it (blob count, not line count).
 - grep the repo for the old name/term; check cron jobs.json; cron install

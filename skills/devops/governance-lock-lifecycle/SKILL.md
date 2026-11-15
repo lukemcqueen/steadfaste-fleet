@@ -399,6 +399,22 @@ the daemon itself wrote it. Root cause is the single-slot stamp: the
 durable fix is a per-pid stamp map so every daemon is verified by content
 and the byte-identical rewrite stops re-warning.
 
+## A close that never judges blobs is a DOWN reviewer — probe the credential before the gate
+
+A close returning "reviewed this pass: 0" on EVERY pass — for many sessions in a row — is a DOWN
+reviewer, NOT a gate desync. The per-blob reviewer's resolved credential is shadow-candidate by
+precedence: in this fleet the repo `.env` outranks `~/.hermes/.env` in `_env_value`, so a REVOKED
+`OPENROUTER_API_KEY` sitting in the repo `.env` takes the whole close-gate down (HTTP 401), no blob
+is ever judged, and the repeated zero-work output reads as an endless desync (it was once
+misdiagnosed as a blob-sha problem and ground on for a whole stretch). Rule: before touching the
+gate, widening any window, or diagnosing a desync, probe the reviewer's RESOLVED credential with an
+AUTHENTICATED call (`curl -H "Authorization: Bearer $KEY" https://openrouter.ai/api/v1/key`) —
+never the public `/models` endpoint, which returns 200 for a revoked key; a 401 is the whole
+answer. Compare candidate keys across every source by HASH, never by value. When the reviewer is
+healthy and you are closing a WIDE range, follow `governance-closeout/references/wide-range-close-grind.md`
+(fleet CLI with an explicit session_id, ONE code path so `rules_rev` stays consistent, a persistent
+background loop of `end_change`).
+
 ### A wide close judges a WAVE of blobs per pass — concurrency, never a longer window
 
 A close refused with **"N blob(s) of the push range still carry no review verdict"** names the exact

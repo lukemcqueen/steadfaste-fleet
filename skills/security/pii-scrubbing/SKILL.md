@@ -74,6 +74,47 @@ Also verify the `.gitignore` patterns that catch them. Common patterns: `*cred*`
 | Multiple TLD variants (same base domain) | `client.org`, `client.or.kr`, `client.com` | Search for the base word across all TLDs, not just the one you found first |
 | API endpoint URLs | `https://works.customer.org/api/...` | Replace with `https://api.client-domain.com/...` |
 
+### Phase 1b: Read-side scan — what the TRACKED tree actually carries
+
+The write-time gate is only half the story: an enforcer that inspects writes
+never re-reads the repository, so a leak can already be COMMITTED (a redaction
+that missed a fragment, a file imported from another host, content added before
+its entry landed). Measure the surface before you edit anything, using the
+enforcer's OWN digest set rather than a hand-typed word list.
+
+1. **`git ls-files` is the surface.** Tracked files only — a gitignored `.env`
+   legitimately holds real values and is not a leak. `git grep` also sees only
+   tracked files; `grep -r` sees untracked ones too, so a term with 0 tracked
+   hits but N filesystem hits lives in ignored config. Confirm per path with
+   `git ls-files --error-unmatch <path>` before calling anything a finding.
+2. **The deny-list terms are stored as SHA-256 digests**, plus a tuple of their
+   lengths (`_PII_SENSITIVE_DIGESTS` / `_PII_SENSITIVE_LENGTHS` in the
+   enforcer). You cannot grep for them — hash every window of each listed
+   length and test membership.
+3. **Classify with the gate's own sanctioned-context rule — ALL of its
+   clauses.** A hit whose digest is in `_PII_SENSITIVE_URL_ALLOWED` and whose
+   ±60/+40 context matches the repo-URL regex is the repo's own public URL (a
+   keep). The gate has a SECOND clause: an operator-placeholder regex
+   (`fleet-operator`-style) in the same context also sanctions it. A guard that
+   implements only the URL clause flags legitimate placeholder contexts as
+   findings, so mirror every clause the module actually uses. Everything else
+   is a finding.
+4. Run `scripts/denylist-surface-scan.py` (in this skill) instead of hand-typing
+   the sweep. It prints only (path, line, digest prefix, length) — never the
+   term. The sweep costs O(total tracked bytes × lengths): shard it across
+   processes and compute it ONCE per test session. Two tests each calling it
+   double an already-tens-of-seconds sweep on a 10 MB tree, and a per-file
+   `.encode()` inside the window loop is the difference between ~40 s and a
+timeout — hash over `bytes` (`raw.lower()` once per file).
+
+**Then classify every text hit as functional or prose.** A functional value is a
+name a script, config path, env var, or test fixture RESOLVES at runtime (a
+gateway config filename, an `AGENT_NAME` value, a bus queue name, an env var
+name). Those are keeps — scrubbing them breaks the runtime and buys nothing;
+the operator's own contract already says bare functional usernames stay. Prose
+references and captured output are the candidates for redaction. Never
+blind-sweep.
+
 ### Phase 2: Patch Working Tree
 
 For each file with PII, determine the right treatment:
@@ -370,8 +411,23 @@ clientco==>acme                              # ← now safe: only matches non-do
 - **Don't blind-batch a uniform redaction + note header across a whole directory** — applying one replacement (e.g. a markdown '<HOME> + redacted-copy' header prepend) to EVERY file matching a pattern, including serialized evidence (.json, .raw.json) and MEMORY snapshots, corrupts machine-readable files and adds spurious headers to dozens of unrelated records. Redact per file class; after each pass re-validate anything that must stay machine-readable (parse the JSON, bash -n the scripts, compile the .py) before you commit.
 - **Never `.replace()` a short substring that is the prefix of a longer real token** — `str.replace` and a per-line `re.sub` do naive substring matching: `.replace("import json, subproc", "import json, subproc, os")` chops `import json, subprocess, os` into the corrupt `import json, subproc, osess, os` (the needle `subproc` matched the start of `subprocess`). For identifier-like text use a word-boundary regex or match the full token; after a mass-replace of identifiers/imports, grep the touched set for chopped tokens and for a doubled import (`import json, os, os` from a needle that ran twice) before committing.
 
+- **A handoff, plan, or task summary is not evidence about the deny-list.** A token list carried in a summary is a HYPOTHESIS; the digest set is the data. Test membership before editing 30 files for a "leak" — hash the token and compare, or attempt a scratch write and read the gate's verdict. A term can be everywhere in a repo and be a deliberately-sanctioned functional username; conversely a capture can leak a term nobody listed.
+- **A probe that CONTAINS the identifier cannot be written** — the gate refuses the write even in a scratch directory ("a home-folder write is one deploy/copy from the public repo"). Build probes that EXTRACT candidate values from repo files at runtime (regex over the file's own text, `git ls-files` walk) and print only (path, line, class, length). A probe file holding the plaintext is dead on arrival.
+- **Prove absence, do not infer it.** A term is "not an entry" only when a tracked file contains it verbatim AND the full-surface digest sweep did not flag that file. "I grepped and it isn't in the list" is not available — you cannot read the list.
+- **Do not restate the identifier while describing the scrub** — naming the personal domain/username/filename inside a new evidence record, commit message, or test leaks exactly what you removed. Describe it generically ("the operator's personal domain", "the gateway bot-username token") and let the digest prefix stand for the value.
+- **Scan the REDACTED file, not just the original.** The classic miss is a pass that replaced the person's name but left an adjacent deny-listed term in the same line (a pytest param id, a command line). Re-run the digest sweep over the redacted artefact; repair a missed fragment with the file's OWN declared placeholder convention (`<redacted-...>`) rather than rewriting the capture.
+- **Keep the read side as a TEST, not a one-time sweep** — the enforcer covers writes only, so the tree can silently regress. A guard test that walks `git ls-files`, hashes the windows and asserts the unsanctioned set is empty is the standing control; give it a positive control (assert it FINDS the sanctioned repo-URL hits) so a broken scanner cannot report a clean tree. Run the sweep once per session (cache it): two tests that each re-sweep an already-tens-of-seconds scan is a self-inflicted timeout.
+- **A URL sanction is a LOOKAHEAD, not a prefix match.** The repo-URL regex ends with a lookahead that accepts only `/ $ whitespace ) , . ;` after the repo name, so the SAME repo's own URL is refused when it is wrapped in backticks or followed by a backtick: `` `https://github.com/owner/repo` `` fails, `(https://github.com/owner/repo)` passes. Do not rewrite the sentence to dodge it — change the quoting, or use the placeholder handle below.
+- **An URL carrying a userinfo segment is not recognised as the repo URL** — `https://<token>@github.com/owner/repo.git` misses the gate's URL regex, so a docstring or doc example holding it is refused even though it IS the repo's own public URL. In that position write the repo's SANCTIONED placeholder handle (`fleet-operator`-style, the one the gate's OK-clause knows) — a placeholder is correct in an example, but keep real URLs in their full sanctioned form elsewhere.
+- **A bare `owner/repo` mention is the same class as the above** — it matches no sanction clause and reads as a finding. Fix it into the full sanctioned URL form (the doc stays factually correct) rather than replacing the handle with a placeholder that would make it wrong. Verify the replace actually clears the guard and that the replacement introduces no NEW hit.
+- **Do not widen a guard past what the gate allows to make your tree pass** — widen only where the gate itself sanctions (its own clauses), and if you must, say so in the guard's docstring. The other way round — deleting a line, or relaxing the guard — trades a real control for a green run.
+- **A surface guard must FAIL on a file it cannot scan, never report clean** — 'could not read' is a third outcome, not a pass. Return a `READFAIL` finding on any I/O error and assert `visited == len(git ls-files)` in the positive control, so no read error or heuristic exclusion is invisible. A tracked-but-worktree-deleted file (a pending deletion, a sparse checkout) is a normal transient, not a finding: read it from the INDEX blob (`git show :<path>`) because the tracked surface IS the index, and reserve `READFAIL` for a file absent from BOTH.
+- **A placeholder you substitute for a real handle must not contradict the code it documents** — replacing `owner` with the operator-placeholder org in a docstring only 'passes' if the code actually ACCEPTS that org; if the acceptance guard explicitly rejects it, the rewritten doc now contradicts the command it documents and the reviewer files it as a doc/code disagreement (a full close round). Use a neutral metavariable (`<owner>`) or a value the code's own guard sanctions, and confirm by reading the acceptance check, not by assuming the placeholder is valid.
+
+
 ## References
 
+- `scripts/denylist-surface-scan.py` — literal-free sweep of the tracked surface against the enforcer's deny-list digests; prints path/line/class only, mirrors every gate sanction clause, and exits 3 (not 0) when it cannot prove its own reach
 - `deploy/.env.example` — reference template for Langfuse docker-compose env vars
 - `src/agent-registry.json.example` — reference template for agent registry with placeholder URLs
 - `ops/scripts/inbox.conf.example` — reference template for inbox config

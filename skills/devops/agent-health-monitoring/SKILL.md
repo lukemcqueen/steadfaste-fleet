@@ -791,6 +791,36 @@ green) = timing/concurrency on the local health server, not an outage. Check
 latency distribution and server threading BEFORE touching the registry, nginx,
 or firewalls.
 
+## Diagnostic Procedure: repeated "index 3 down" → "restored" pairs (no_stale flapping)
+
+A watchdog that reports `no_stale_crons down` and then `health restored` on a
+fixed cadence is usually NOT a service outage: probe the vector and it is
+green now, and every other bit is 1. The `no_stale_crons` bit just reddened
+momentarily. Run this in order.
+
+1. **The `cron:<name>` in an alert is the DELIVERING watchdog, not the stale
+   cron.** `check_no_stale_crons` reads the whole jobs table and returns ONE
+   boolean — it never names the offender, and the messenger labels the delivery
+   with the cron that SENT it. Do not diagnose the job named in the label.
+2. **Confirm the red is transient, not permanent.** Probe the external vector a
+   few times; green now = a momentary crossing of one job's 2× interval, i.e. a
+   scheduler gap (~10 min), not a dead service. If it is red on EVERY probe, that
+   is a permanently-stale job (see the bounded-hour-range and paused-job pitfalls).
+3. **Name the actual culprit with margins.** For every enabled job compute
+   `elapsed_since_last_run − 2 × estimate_cron_interval(schedule)`, reusing the
+   health-vector module's own `_estimate_cron_interval` so your numbers use its
+   exact threshold. Sort ascending — the least-negative is the one a scheduler
+   burst can push over the line. All negative = transient. A `*/1` or `*/2` job
+   sitting near its 2× line is the usual offender under a :00 dispatch burst.
+4. **Fix both layers.** (a) Debounce the watchdog — alert after N consecutive
+   failures, recover after M consecutive successes; otherwise every single
+   transient becomes a down/restored pair. (b) Remove the ~10-min gap
+   underneath: a gateway restart interrupts crons at one timestamp, or the job is
+   DOUBLE-OWNED (still enabled in `jobs.json` AND on an active systemd bridge
+   timer) so its `last_run_at` is written only by the Hermes scheduler and goes
+   stale during any stall even though the timer keeps the job running and
+   delivering.
+
 ## Health-Report Pitfall: Stale SERVICE_MAP
 
 The orchestrator poller (`orch-health-report.py`) has a hardcoded `SERVICE_MAP` that maps vector indices to service names. Over time, if the agent-side health endpoint changes format (e.g. from 8-element `health-vector.py` to 9-element `health-server.py`), the poller's map becomes stale and misreports every vector.

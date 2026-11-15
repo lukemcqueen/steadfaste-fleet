@@ -236,3 +236,34 @@ chat call. See `references/pro-review-grounding.md` for the full loop: writing a
 self-contained material file, pinning every factual claim to a reproducible
 command, and grounding `unverified-claim`/`fabrication` findings to a CLEAN
 verdict.
+
+Mechanics that cost the session real time (measured):
+
+- **The material file must live in the REPO, not the deployed tree.** The
+  command `adversarial-review.py --cycle-id N --review --reviewer-id pro
+  --material-file <path>` path-mangles a `~/.steadfaste-fleet/...` path and
+  cannot read it; put the material under the repo's `docs/plans/` and pass that
+  absolute path (a fresh filename avoids the "overwrite an un-read file" guard
+  when write_file lands it in the wrong tree first).
+- **Read verdicts from the DB, not the CLI's stdout.** The command prints only a
+  one-line "superseded" acknowledgment. Verdicts live in
+  `~/.steadfaste-fleet/data/loop-governance.db`, table `adversarial_reviews`
+  (columns `review_id, cycle_id, reviewer_id, reviewer_model, verdict,
+  findings_json, summary, ts, fingerprint` — there is NO `id` column); a failed
+  first run still records a hollow row, until `--re-review` supersedes it. The
+  reviewer's JSON may echo a wrong `cycle_id` in `summary`, but the ROW is keyed
+  on the `--cycle-id` you passed.
+- **Pre-build reviews file `unverified-claim` against DESCRIBED changes until the
+  artifact and its captured evidence are COMMITTED in the same range.** Grinding
+the material forward line-by-line does not converge; commit the code + a
+`docs/evidence/` file (git-ls-files layout + the diff), then `--re-review`
+WITH the commit/evidence cited → that is what turns the loop CLEAN.
+- **Two finding classes to preempt in reorg material:** (a) PII — a plan that
+  GENERATES a nav/map from `git ls-files` will print a hostname-named root file
+  straight into the artifact; order generation AFTER the move that rehomes it,
+  or add a filter. (b) scope-drift — adding an executable script to a
+  "docs-only" slice is always flagged; keep a docs-only slice free of code.
+- **A material whose stated scope is WIDER than its commit is surfaced as
+  fabrication.** Say explicitly which items land in THIS commit versus which are
+  follow-up; a scope/commit mismatch reads as a false claim and re-opens the
+  loop.

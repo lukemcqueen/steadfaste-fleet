@@ -23,6 +23,14 @@ related_skills:
 
 ## Multi-Axis Audit (preferred for comprehensive reviews)
 
+**Delegated survey subagents fail SILENTLY inside a governed repo.** A child
+cannot take a governance lock, so its terminal commands in the fleet repo are
+refused and it returns nothing but `{}` (two such audits shipped empty this
+way). Within the fleet/governed repo, survey YOURSELF with lock-free single
+read primitives (`ls`/`find`/`grep`/`git status|log|diff`/`read_file`/
+`search_files`) or run the survey inside your OWN governed cycle; reserve
+`delegate_task` axes for read-tool-only survey work that never opens a terminal.
+
 For thorough reviews, run 3+ parallel subagents via `delegate_task` — one per axis.
 Each subagent scans a different dimension simultaneously, keeping your context
 uncluttered while they work:
@@ -333,3 +341,14 @@ never at the docs root.
 - ❌ Skipping MD5 verification — two files with same name may differ
 - ❌ Not checking cross-references before renames — breaks other agents
 - ❌ Leaving stales without documenting the decision
+- ❌ Deleting or rehoming a "dead" tracked file by its NAME alone — a root stray
+  can be a LIVE tool. Verify by reading its source (it reads a live conf / curls
+  a live endpoint / is a package marker) and grep the design/decision docs that
+  may already account for it before pruning. A clean-name "empty __init__.py"
+  can be a live package marker; a root script named after an agent can be a
+  live bus-poll tool.
+- ❌ Proposing a fresh cleanup/reorg plan before checking for an existing
+  operator-directed one — `docs/design/repo-consolidation-proposal.md` +
+  `repo-organization-decision.md` may already be the roadmap (one existed for
+  weeks un-executed). Survey `docs/design/` + `docs/plans/` for prior plan &
+  decision docs FIRST, then extend them rather than re-deriving the work.

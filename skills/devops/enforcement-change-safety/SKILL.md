@@ -247,6 +247,23 @@ client repos, any project without the fleet `ops/` tree). A hook that builds
 a path on `$REPO_ROOT` (the repo being committed IN) and assumes fleet
 layout breaks EVERY commit in those repos — even one-line test fixes.
 
+**The SAME gate lives in MULTIPLE enforcement layers — scope every copy, or the
+fleet-wide freeze returns through the one you missed.** The dogfood check is
+implemented in BOTH the pre-commit hook AND the MCP `begin_change` tool
+(`_require_dogfood()` in loop-gov-mcp.py). Scoping one copy is not enough: the
+hook gained its `${HOME}/steadfaste-fleet` guard (2026-10-01) but the MCP gate
+kept comparing global enforcer paths unconditionally, so a stale enforcer deploy
+on one host froze `begin_change` in EVERY repo for EVERY agent (2026-11-14) —
+the identical class of bug the hook scoping was meant to fix. Before declaring a
+dogfood/scope fix done, grep EVERY enforcement layer for sibling copies of the
+gate and confirm each is scoped to the same repo. The MCP copy resolves the
+session repo (`_session_repo_path(args)`) and enforces only for
+`~/steadfaste-fleet`; a non-fleet or unknown repo must never block. Changing the
+helper's SIGNATURE (`_require_dogfood(session_repo)`) also forces an audit of
+the tests that monkeypatch it: only the monkeypatch sites that DRIVE
+`_begin_change` need an arg-tolerant stub (`lambda *a, **k: None`); the ones
+that never call it are inert and safe to leave.
+
 **Real regression (2026-08-04, Esther, commit `faa0e929`):** the adversarial
 gate hard-resolved `ADVERSARIAL_SCRIPT="$REPO_ROOT/ops/scripts/quality/adversarial-verify.py"`.
 That path exists only in ~/steadfaste-fleet itself. Project repos have no `ops/`
