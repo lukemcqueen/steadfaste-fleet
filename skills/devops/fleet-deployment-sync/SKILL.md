@@ -801,6 +801,16 @@ ls -la ~/.steadfaste-fleet/<path-to-module>.py           # when the DEPLOYED cop
   with `git log --oneline -1 -- <module>` that nothing actually changed it before building a theory
   on the timestamp.
 
+## Pitfall 29: The doctor is cwd-dependent — run it FROM the fleet repo, and know the dev-repo checks' mechanics
+
+The doctor mixes two kinds of checks: host-level scans (cwd-independent — they walk `$HOME`) and **repo-level checks that read the LOCAL git repo at the process cwd**. Run it from any other repo (e.g. a dev repo you just `cd`'d into) and the repo-level rows report that repo's garbage as the host's state: `Repo branch — on 'HEAD' not 'main'`, `Repo sync — N commit(s) behind`, `Deploy sync — deployed revision does not resolve in this repo`, `Skills manifest: always — Cannot derive required set from template`, `Crons registry — Could not parse install-crons.sh`, `USER.md template not found`. That is a false FAILING — the terminal session's cwd persists across calls, so a `cd ~/some-repo` earlier in the session silently retargets the next doctor run. Always pass `workdir=/home/moses/steadfaste-fleet` (or `cd` back) when running the doctor, and before trusting a FAILING report check WHICH repo it was run from. (The deployed script is at `~/.steadfaste-fleet/scripts/fleet-doctor.py`; invoke it with the venv python exactly as fleet-update does.)
+
+**The dev-repo checks are mechanical, so their "fixes" are mechanical — know which measure is which:**
+
+- `AGENTS.md (<repo>)` FAIL is **mtime-based**: it compares the AGENTS.md file mtime against the repo's HEAD commit time and fails when the file is >1 day older than the latest commit. A doc-only commit (CLAUDE.md governance sync) makes HEAD newer than AGENTS.md → the check fails even though the AGENTS.md content is fine. The proportionate fix is `touch ~/<repo>/AGENTS.md` (marks it current; no content change needed for a governance-doc commit). It is NOT a content-completeness check.
+- `CLAUDE.md (dev repos)` is **heading-based**: it requires the exact string `## Excellence — Core Value, Every Action` in each dev repo's CLAUDE.md. Source the canonical section from the fleet's `AGENTS.md` (lines ~55-62; it is self-contained by design — keep the two bullets verbatim, adapt only the trailing "supporting detail" pointer to the target repo's own structure). The check reads the heading only, so a project-adapted body under that heading is current.
+- After editing dev-repo governance files, the OTHER repos' git hooks apply the same pathspec-commit rule (`git commit --only -m ... -- path`) — the shared-index guard is fleet-wide, not fleet-repo-only.
+
 ## Rollback
 
 Deployed governance files are immutable (`chattr +i`); there is no agent-side rollback. If a deploy broke something:
