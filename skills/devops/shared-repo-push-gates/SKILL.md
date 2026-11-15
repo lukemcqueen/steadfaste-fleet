@@ -292,6 +292,18 @@ does not apply.
   battery/emitter with the added header so the file is still the run's own output; a hand-edited
   transcript is a transcription, and byte-identity with the run is the whole of its evidential
   value. Regeneration is cheap and the numbers come out the same.
+- **A test that MOCKS a sibling to test it in isolation must anchor its mock shapes to the
+  sibling's own SOURCE, not to hand-copied values — a hand-copied shape is an
+  `unverified-claim` finding for the per-blob close reviewer.** When a behavior lives on
+  another file (a persisted `_debounce` map, a config key set), a test that restates the
+  shape by hand is re-deriving it in a place the reviewer can check, and it silently rots
+  when the sibling changes. Add ONE source-anchor assertion that reads the sibling file
+  itself for the exact tokens the test depends on — `ast.parse` + `ast.get_source_segment`
+  for the write line, `read`+grep for the `.get()` consumption keys — so the test and the
+  code are pinned to the same source of truth. The reviewer then verifies the shapes twice
+  (in the sibling and in the test) instead of taking your word. This is the difference
+  between a debounce test the close gate accepts and one it sends back twice.
+
 - **A claim the reviewer cannot check from the window is a HIGH `unverified-claim` finding
   that refuses the close — commit the ARTIFACT, never cite it in prose.** The reviewer sees
   the range's diff plus your note, and nothing else: "ran the suite (N passed)", "dogfood
