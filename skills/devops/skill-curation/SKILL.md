@@ -155,6 +155,18 @@ and a merged skill serves better than two overlapping ones.
    regenerated and committed (it records the verdict; leaving it stale is the same defect
    one level up).
 
+   **After rebasing ANOTHER reconciler's overlapping backport into the repo, RE-DEPLOY before
+   trusting a stranded-count FAIL.** When you land your skill backports and then rebase onto a
+   peer commit that ALSO backported one of the same skills, the local DEPLOYED copy lags the
+   merged repo (it has neither the peer's content nor your resync), so the checker reads that
+   file as stranded even though the repo is the correct lossless UNION. Verify the union: peer's
+   committed copy ⊆ repo AND local deployed ⊆ repo (no lines missing from repo in either
+   direction), then run `fleet-update.sh` to resync deployed — the parity/verifier go green with
+   NO further skill or parity edit. A transient `stranded: 1` in the WORKING TREE during that
+   lag window is not the committed truth: when `git status` is clean, the parity file already
+   matches HEAD and needs no commit — do not commit a spurious parity change derived from the
+   lagging deployed copy.
+
    **Recovering a skill's SCRIPT is the step that stalls: the pre-commit TDD gate refuses
    an ADDED code file with no test in the same commit.** The gate scans
    `--diff-filter=A` for `py|ts|tsx|js|jsx|mjs|cjs|go|rs|…` and has no bypass flag, and a

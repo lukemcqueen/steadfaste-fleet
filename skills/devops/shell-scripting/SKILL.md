@@ -12,6 +12,30 @@ Patterns, pitfalls, and portability guidance for shell scripts in the Steadfaste
 
 ## Bash Pitfalls
 
+### Derive a script's repo root from an exported REPO fallback, not only `$0`
+
+A script that derives its repo root from `$0` (`cd "$(dirname "$0")/../../.."`)
+silently climbs past the real root to `/` when a negative-test harness copies it
+into a temp dir (a `$0` under /tmp reverse-steps three times to `/`), so every
+repo-relative path after it (`${REPO:-$PWD}/ops/...`) resolves to a broken
+`/ops/...` and the whole run degrades to COULD NOT VERIFY instead of testing
+anything. Derive the root from an exported `REPO` override (falling back to the
+`$0`-derived path) — `cd "${REPO:-$(cd "$(dirname "$0")/../../.." && pwd)}"` — and
+have the harness `export REPO` so relocated copies land on the real root. Prove
+it with a run from the temp copy, not only from the script's real location.
+
+### A negative-test stub sed must match the current invocation shape
+
+A blackbox test that stubs a production call by `sed`-replacing the literal
+text (`s|python3 ops/scripts/x.py|printf ...|`) silently FAILS to stub the
+moment the production invocation shape changes (e.g. the script starts calling
+`"${PY}" ops/scripts/x.py`): the un-stubbed real call runs instead, and the
+probe's expected-failure never triggers. Match the stub's sed pattern to the
+CURRENT invocation text (`grep` the script for how it actually calls the
+target); when a probe starts passing when it should fail, check first whether
+the stub is even being applied (run with `bash -x` and look at what ran), not
+whether the code under test regressed.
+
 ### `set -e` + `((var++))` = silent exit
 
 A **classic `set -e` trap**. When a variable starts at 0, `((var++))` evaluates to 0 (the post-increment result), which is falsy in shell arithmetic context. With `set -e`, this causes an immediate script exit:
