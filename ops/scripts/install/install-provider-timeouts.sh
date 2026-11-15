@@ -66,8 +66,20 @@ fi
 # ── Verify what actually landed ────────────────────────────────
 APPLIED_REQ=""
 APPLIED_STALE=""
-if command -v python3 &>/dev/null; then
-  read -r APPLIED_REQ APPLIED_STALE < <(python3 -c "
+# Read back with a YAML-capable interpreter. A bare `python3` in fleet-update's
+# context has no PyYAML, so `yaml.safe_load` throws, the except prints '' and
+# the read-back looks empty even though `hermes config set` (which uses the
+# venv) landed the value correctly — a false WARNING on a correct config.
+# Prefer the fleet venv (yaml imports there); env -u so a foreign PYTHONPATH
+# cannot shadow its site-packages. Verified: venv read-back returns 300 300.
+YAML_PY=""
+if [[ -x "${FLEET_DEPLOY_HOME}/venv/bin/python3" ]]; then
+  YAML_PY="${FLEET_DEPLOY_HOME}/venv/bin/python3"
+elif command -v python3 &>/dev/null; then
+  YAML_PY="python3"
+fi
+if [[ -n "$YAML_PY" ]]; then
+  read -r APPLIED_REQ APPLIED_STALE < <(env -u PYTHONPATH -u PYTHONHOME "$YAML_PY" -c "
 import yaml, sys
 try:
     c = yaml.safe_load(open('${HERMES_HOME}/config.yaml'))
