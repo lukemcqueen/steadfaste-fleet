@@ -1,6 +1,6 @@
 {
   "source": "models.dev, read through `jev models list` (cache: ~/.cache/jev/models_dev.json)",
-  "captured": "2026-10-28",
+  "captured": "2026-11-15",
   "baseline": "openrouter:deepseek/deepseek-v4-flash-0731",
   "policy": {
     "simple": {
@@ -24,18 +24,73 @@
   },
   "effort": {
     "enabled": true,
-    "levels": ["low", "low", "medium", "high"],
+    "levels": [
+      "low",
+      "low",
+      "medium",
+      "high"
+    ],
     "note": "trivial->low, routine->low, substantial->medium, expert->high. Chosen over [none,low,medium,high] because none on a confident-trivial tool-needing turn is the recorded regression (upstream jevkit/effort.py: a live fleet turn answered without calling a single tool when thinking was off); low on trivial buys most of the saving without that failure. One config value flips back if the operator wants none.",
     "models": {
-      "openrouter:deepseek/deepseek-v4-flash-0731": ["none", "low", "medium", "high"],
-      "openrouter:qwen/qwen3-coder-30b-a3b-instruct": ["none", "low", "medium", "high"],
-      "openrouter:deepseek/deepseek-v4-pro-0813": ["none", "low", "medium", "high"],
-      "openrouter:z-ai/glm-4.7": ["none", "low", "medium", "high"],
-      "openrouter:minimax/minimax-m3": ["none", "low", "medium", "high"],
-      "openrouter:qwen/qwen3.5-122b-a10b": ["none", "low", "medium", "high"],
-      "openrouter:xiaomi/mimo-v2.6-pro": ["none", "low", "medium", "high"],
-      "openrouter:thinkingmachines/inkling-small": ["none", "low", "medium", "high"],
-      "openrouter:z-ai/glm-5.3": ["low", "medium", "high"]
+      "openrouter:deepseek/deepseek-v4-flash": [
+        "none",
+        "low",
+        "medium",
+        "high"
+      ],
+      "openrouter:deepseek/deepseek-v4-flash-0731": [
+        "none",
+        "low",
+        "medium",
+        "high"
+      ],
+      "openrouter:qwen/qwen3-coder-30b-a3b-instruct": [
+        "none",
+        "low",
+        "medium",
+        "high"
+      ],
+      "openrouter:deepseek/deepseek-v4-pro-0813": [
+        "none",
+        "low",
+        "medium",
+        "high"
+      ],
+      "openrouter:z-ai/glm-4.7": [
+        "none",
+        "low",
+        "medium",
+        "high"
+      ],
+      "openrouter:minimax/minimax-m3": [
+        "none",
+        "low",
+        "medium",
+        "high"
+      ],
+      "openrouter:qwen/qwen3.5-122b-a10b": [
+        "none",
+        "low",
+        "medium",
+        "high"
+      ],
+      "openrouter:xiaomi/mimo-v2.6-pro": [
+        "none",
+        "low",
+        "medium",
+        "high"
+      ],
+      "openrouter:thinkingmachines/inkling-small": [
+        "none",
+        "low",
+        "medium",
+        "high"
+      ],
+      "openrouter:z-ai/glm-5.3": [
+        "low",
+        "medium",
+        "high"
+      ]
     },
     "excluded": {
       "openrouter:qwen/qwen3.7-flash": {
@@ -72,7 +127,7 @@
         "openrouter:deepseek/deepseek-v4-flash-0731"
       ],
       "coding": [
-        "openrouter:qwen/qwen3-coder-30b-a3b-instruct",
+        "openrouter:deepseek/deepseek-v4-flash",
         "openrouter:deepseek/deepseek-v4-flash-0731"
       ],
       "writing": [
@@ -86,14 +141,13 @@
     },
     "hard": {
       "general": [
-        "openrouter:deepseek/deepseek-v4-pro-0813",
         "openrouter:z-ai/glm-4.7",
         "openrouter:minimax/minimax-m3"
       ],
       "coding": [
-        "openrouter:deepseek/deepseek-v4-pro-0813",
+        "openrouter:qwen/qwen3.5-122b-a10b",
         "openrouter:z-ai/glm-4.7",
-        "openrouter:qwen/qwen3.5-122b-a10b"
+        "openrouter:minimax/minimax-m3"
       ],
       "vision": [
         "openrouter:minimax/minimax-m3",
@@ -101,26 +155,51 @@
         "openrouter:thinkingmachines/inkling-small"
       ],
       "writing": [
-        "openrouter:z-ai/glm-5.3",
-        "openrouter:deepseek/deepseek-v4-pro-0813",
-        "openrouter:minimax/minimax-m3"
+        "openrouter:z-ai/glm-4.7",
+        "openrouter:minimax/minimax-m3",
+        "openrouter:thinkingmachines/inkling-small"
       ],
       "research": [
-        "openrouter:z-ai/glm-5.3",
+        "openrouter:z-ai/glm-4.7",
         "openrouter:minimax/minimax-m3",
-        "openrouter:deepseek/deepseek-v4-pro-0813"
+        "openrouter:thinkingmachines/inkling-small"
       ]
     }
   },
   "prices": {
+    "openrouter:deepseek/deepseek-v4-flash": {
+      "in": 0.091,
+      "out": 0.182,
+      "cache_read": 0.0182
+    },
+    "openrouter:deepseek/deepseek-v4-flash-0731": {
+      "in": 0.059,
+      "out": 0.3,
+      "cache_read": 0.035
+    },
+    "openrouter:deepseek/deepseek-v4-pro-0813": {
+      "in": 0.115,
+      "out": 4.0,
+      "cache_read": 0.11
+    },
     "openrouter:deepseek/deepseek-v4.1-flash": {
-      "in": 0.14,
-      "out": 0.42,
-      "cache_read": 0.0042
+      "in": 0.045,
+      "out": 0.5,
+      "cache_read": 0.012
+    },
+    "openrouter:minimax/minimax-m3": {
+      "in": 0.3,
+      "out": 1.2,
+      "cache_read": 0.06
     },
     "openrouter:qwen/qwen3-coder-30b-a3b-instruct": {
-      "in": 0.07,
-      "out": 0.28,
+      "in": 0.15,
+      "out": 0.6,
+      "cache_read": 0.0
+    },
+    "openrouter:qwen/qwen3.5-122b-a10b": {
+      "in": 0.26,
+      "out": 2.08,
       "cache_read": 0.0
     },
     "openrouter:qwen/qwen3.7-flash": {
@@ -128,53 +207,25 @@
       "out": 0.13,
       "cache_read": 0.006
     },
-    "openrouter:deepseek/deepseek-v4-pro-0813": {
-      "in": 0.66,
-      "out": 1.98,
-      "ctx": 1048576,
-      "vision": false
-    },
-    "openrouter:z-ai/glm-4.7": {
-      "in": 0.54,
-      "out": 1.98,
-      "ctx": 204800,
-      "vision": false
-    },
-    "openrouter:minimax/minimax-m3": {
-      "in": 0.3,
+    "openrouter:thinkingmachines/inkling-small": {
+      "in": 0.45,
       "out": 1.2,
-      "ctx": 1048576,
-      "vision": true
-    },
-    "openrouter:qwen/qwen3.5-122b-a10b": {
-      "in": 0.26,
-      "out": 2.08,
-      "ctx": 262144,
-      "vision": true
+      "cache_read": 0.1
     },
     "openrouter:xiaomi/mimo-v2.6-pro": {
       "in": 0.435,
       "out": 0.87,
-      "ctx": 1050000,
-      "vision": true
+      "cache_read": 0.0036
     },
-    "openrouter:thinkingmachines/inkling-small": {
-      "in": 0.45,
-      "out": 1.2,
-      "ctx": 524288,
-      "vision": true
+    "openrouter:z-ai/glm-4.7": {
+      "in": 0.6,
+      "out": 2.2,
+      "cache_read": 0.11
     },
     "openrouter:z-ai/glm-5.3": {
-      "in": 0.0699,
-      "out": 1.4,
-      "ctx": 1048576,
-      "vision": false
-    },
-    "openrouter:deepseek/deepseek-v4-flash-0731": {
-      "in": 0.119,
-      "out": 0.238,
-      "ctx": 1048576,
-      "vision": false
+      "in": 0.08,
+      "out": 3.6,
+      "cache_read": 0.076
     }
   },
   "baseline_price_usd_per_m": 0.357,
@@ -190,35 +241,39 @@
       "simple/research": "openrouter:qwen/qwen3.7-flash = 0.03 in + 0.13 out = $0.160/M = 0.45x baseline",
       "medium/general": "openrouter:qwen/qwen3.7-flash = 0.03 in + 0.13 out = $0.160/M = 0.45x baseline",
       "medium/vision": "openrouter:qwen/qwen3.7-flash = 0.03 in + 0.13 out = $0.160/M = 0.45x baseline",
-      "medium/coding": "openrouter:qwen/qwen3-coder-30b-a3b-instruct = 0.07 in + 0.28 out = $0.350/M = 0.98x baseline",
+      "medium/coding": "openrouter:deepseek/deepseek-v4-flash = 0.091 in + 0.182 out = $0.273/M = 0.76x baseline",
       "medium/writing": "openrouter:qwen/qwen3.7-flash = 0.03 in + 0.13 out = $0.160/M = 0.45x baseline",
       "medium/research": "openrouter:qwen/qwen3.7-flash = 0.03 in + 0.13 out = $0.160/M = 0.45x baseline",
-      "hard/general": "openrouter:deepseek/deepseek-v4-pro-0813 = 0.66 in + 1.98 out = $2.640/M = 7.39x baseline",
-      "hard/coding": "openrouter:deepseek/deepseek-v4-pro-0813 = 0.66 in + 1.98 out = $2.640/M = 7.39x baseline",
-      "hard/vision": "openrouter:minimax/minimax-m3 = 0.3 in + 1.2 out = $1.500/M = 4.2x baseline",
-      "hard/writing": "openrouter:z-ai/glm-5.3 = 0.0699 in + 1.4 out = $1.470/M = 4.12x baseline",
-      "hard/research": "openrouter:z-ai/glm-5.3 = 0.0699 in + 1.4 out = $1.470/M = 4.12x baseline"
+      "hard/general": "openrouter:z-ai/glm-4.7 = 0.6 in + 2.2 out = $2.800/M = 7.84x baseline",
+      "hard/coding": "openrouter:qwen/qwen3.5-122b-a10b = 0.26 in + 2.08 out = $2.340/M = 6.55x baseline",
+      "hard/vision": "openrouter:minimax/minimax-m3 = 0.3 in + 1.2 out = $1.500/M = 4.20x baseline",
+      "hard/writing": "openrouter:z-ai/glm-4.7 = 0.6 in + 2.2 out = $2.800/M = 7.84x baseline",
+      "hard/research": "openrouter:z-ai/glm-4.7 = 0.6 in + 2.2 out = $2.800/M = 7.84x baseline"
     },
     "baseline_change_note": "baseline moved from openrouter:deepseek/deepseek-v4.1-flash ($0.560/M) to openrouter:deepseek/deepseek-v4-flash-0731 ($0.357/M) on Luke's directive 2026-10-28, so the multipliers stay anchored to the model the host actually runs; the hard cap was re-expressed absolutely at the same time for that reason"
   },
   "candidates": {
-    "openrouter:deepseek/deepseek-v4.1-flash": "priced only, NOT routed: within budget, promoted by a one-file edit"
+    "openrouter:deepseek/deepseek-v4.1-flash": "priced only, NOT routed: within budget, promoted by a one-file edit",
+    "openrouter:qwen/qwen3-coder-30b-a3b-instruct": "priced only, NOT routed: was the medium/coding head at its captured $0.350/M (2026-10-28); the live catalog now prices it $0.750/M = 2.10x baseline, above the medium ceiling, so it was displaced by deepseek-v4-flash. Promote it back with a one-file edit if its price drops below the baseline."
   },
   "rejected": {
     "openrouter:moonshotai/kimi-k2.7-code": {
       "price_usd_per_m": 3.66,
       "ratio_of_baseline": 6.54,
       "reason_ref": "policy.rejected_reason"
+    },
+    "openrouter:deepseek/deepseek-v4-pro-0813": {
+      "price_usd_per_m": 4.115,
+      "ratio_of_baseline": 11.53,
+      "reason": "was the hard/general + hard/coding head at its captured $2.640/M (2026-10-28); the live catalog's OUTPUT price rose (4.0/M out) so blended $/M is now $4.115, above the hard $3.00/M cap. Rejected 2026-11-15 while it exceeds the cap; promote it back in a one-file edit if the output price returns under $3.00/M blended."
+    },
+    "openrouter:z-ai/glm-5.3": {
+      "price_usd_per_m": 3.68,
+      "ratio_of_baseline": 10.31,
+      "reason": "was the hard/writing + hard/research head at its captured $1.470/M (2026-10-28); the live catalog's OUTPUT price rose (3.6/M out) so blended $/M is now $3.680, above the hard $3.00/M cap. Rejected 2026-11-15 while it exceeds the cap; promote it back in a one-file edit if the output price returns under $3.00/M blended."
     }
   },
   "hard_whitelist": {
-    "openrouter:deepseek/deepseek-v4-pro-0813": {
-      "price_usd_per_m": 2.64,
-      "x_baseline": 4.71,
-      "ctx": 1048576,
-      "vision": false,
-      "why": "open weights, reasoning + tool_call, ctx>=200k, within the hard budget"
-    },
     "openrouter:z-ai/glm-4.7": {
       "price_usd_per_m": 2.52,
       "x_baseline": 4.5,
@@ -252,13 +307,6 @@
       "x_baseline": 2.95,
       "ctx": 524288,
       "vision": true,
-      "why": "open weights, reasoning + tool_call, ctx>=200k, within the hard budget"
-    },
-    "openrouter:z-ai/glm-5.3": {
-      "price_usd_per_m": 1.47,
-      "x_baseline": 2.62,
-      "ctx": 1048576,
-      "vision": false,
       "why": "open weights, reasoning + tool_call, ctx>=200k, within the hard budget"
     }
   }

@@ -329,8 +329,18 @@ def _selftest(doc: dict) -> int:
 
 def _refresh(list_path: Path, doc: dict, args) -> int:
     """Re-price every listed model from the catalog cache (no network)."""
-    cache = Path(os.environ.get("JEV_CATALOG_CACHE")
-                 or (Path.home() / ".cache" / "jev" / "models_dev.json"))
+    # Current Jev cache locations (plugin writes ~/.hermes/models_dev_cache.json);
+    # ~/.cache/jev/models_dev.json is the legacy path still present on older hosts.
+    cache = None
+    env_cache = os.environ.get("JEV_CATALOG_CACHE")
+    for candidate in (env_cache and Path(env_cache),
+                      Path.home() / ".hermes" / "models_dev_cache.json",
+                      Path.home() / ".cache" / "jev" / "models_dev.json"):
+        if candidate and candidate.is_file():
+            cache = candidate
+            break
+    if cache is None:
+        cache = Path.home() / ".cache" / "jev" / "models_dev.json"
     raw, reason = read_json(cache)
     if raw is None:
         print(f"COULD NOT VERIFY: {reason}", file=sys.stderr)
