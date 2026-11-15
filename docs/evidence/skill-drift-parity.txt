@@ -20,45 +20,10 @@ A file under no repo-owned skill dir is a Hermes default and stays skipped.
 | Measure | Value |
 |---|---|
 | Stranded in place (path in repo, content only deployed) | 0 |
-| Absent from the repo (deployed under a repo-owned skill) | 33 |
-|   ↳ path dropped from repo history | 5 |
-|   ↳ path never committed | 28 |
+| Absent from the repo (deployed under a repo-owned skill) | 0 |
+|   ↳ path dropped from repo history | 0 |
+|   ↳ path never committed | 0 |
 | Files in sync | 1001 |
-| Skipped (Hermes defaults, or repo ahead) | 518 |
+| Skipped (Hermes defaults, or repo ahead) | 547 |
 
-**Verdict: FAIL**
-
-Absent from the repo (deployed under a repo-owned skill):
-- autonomous-ai-agents/steadfaste-fleet/references/project-cortex-directory.md (dropped-from-repo)
-- devops/auto-remediation/references/clickhouse-merge-failures.md (never-committed)
-- devops/auto-remediation/references/cortex-inbox-url.md (dropped-from-repo)
-- devops/auto-remediation/references/docker-desktop-macos.md (never-committed)
-- devops/auto-remediation/references/gbrain-migration-recovery.md (dropped-from-repo)
-- devops/auto-remediation/references/git-merge-conflict-resolution.md (never-committed)
-- devops/auto-remediation/references/launchd-plist-variable-expansion.md (never-committed)
-- devops/auto-remediation/references/llm-provider-vs-network-outage.md (never-committed)
-- devops/auto-remediation/references/provider-timeout-repin.md (never-committed)
-- devops/codebase-portability/references/gbrain-wrapper-crossplatform.md (dropped-from-repo)
-- devops/loop-governance/references/governance-bypass-audit.md (never-committed)
-- devops/loop-governance/references/lock-file-mismatch-workaround.md (never-committed)
-- devops/mycortex/references/building-memory-provider-plugin.md (never-committed)
-- devops/sensor-false-positive-remediation/references/gbrain-health-false-positive.md (dropped-from-repo)
-- software-development/change-test-loop/references/propshaft-css-url-rewriting.md (never-committed)
-- software-development/codebase-design/references/pluggable-backend-architecture.md (never-committed)
-- software-development/engineering-approach/references/cross-process-notification-pattern.md (never-committed)
-- software-development/engineering-approach/references/cwr-export-pub-share-pitfalls.md (never-committed)
-- software-development/engineering-approach/references/env-aware-cli-wrapper.md (never-committed)
-- software-development/engineering-approach/references/error-banner-and-async-lazy-load.md (never-committed)
-- software-development/engineering-approach/references/fastapi-entity-resolution-pattern.md (never-committed)
-- software-development/engineering-approach/references/frontend-entity-by-id-fetch-pattern.md (never-committed)
-- software-development/engineering-approach/references/koscap-contract-detail-rights-summary.md (never-committed)
-- software-development/engineering-approach/references/koscap-contract-naming-patterns.md (never-committed)
-- software-development/engineering-approach/references/koscap-frontend-catalog-debugging.md (never-committed)
-- software-development/engineering-approach/references/koscap-song-import-patterns.md (never-committed)
-- software-development/engineering-approach/references/legacy-export-validation-audit.md (never-committed)
-- software-development/engineering-approach/references/model-migration-completeness.md (never-committed)
-- software-development/engineering-approach/references/postgresql-jsonb-array-contains.md (never-committed)
-- software-development/engineering-approach/references/rails-import-pipeline-tracing.md (never-committed)
-- software-development/engineering-approach/references/stage-deployment-bare-repo-pattern.md (never-committed)
-- software-development/react-best-practices/references/recharts-legend-toggle.md (never-committed)
-- software-development/subagent-driven-development/references/parallel-fanout.md (never-committed)
+**Verdict: PASS**
