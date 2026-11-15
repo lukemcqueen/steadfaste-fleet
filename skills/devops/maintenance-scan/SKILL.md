@@ -251,7 +251,11 @@ Known doctor-fix patterns:
   - `USER.md template (~/.hermes)` — mtime-only check (seed newer than live ⇒ "review the
     template"). The seed is generic new-user boilerplate and a personalized live profile
     is already the superset — nothing to merge; `touch` the live file to record the
-    review and the check passes.
+    review and the check passes. Touch it to NOW, never to the seed's mtime:
+    `touch ~/.hermes/memories/USER.md` — `st_mtime` is a FLOAT (seconds.fraction), so
+    setting live equal to the seed's integer-second time leaves live fractionally OLDER
+    and `template.mtime > live.mtime` stays true, so the check still warns. The comparison
+    is strict `>`, so live must be strictly newer than the seed.
   - `Skills loadable (published)` — a foreign ~/.agents/skills SKILL.md with
     loader-refused frontmatter; the usual defect is an unquoted `: ` (colon+space)
     inside `description:` (YAML: "mapping values are not allowed here"). Fix the SOURCE
@@ -261,11 +265,15 @@ Known doctor-fix patterns:
     approval prompt is NO consent, so it cannot be fixed in-session — report it and
     wait for the operator's explicit authorization.
   - `PENDING cycles` (INFO) — usually your own open cycle; clears when it closes.
-  - `loop-gov daemon` — a deploy artifact, not stale code: the deploy force-rewrites
-    `loop-gov-mcp.py` byte-identically (mtime advances past the daemon start) and the
-    startup stamp records ONE pid, so the un-stamped sibling daemon reads "COULD NOT
-    VERIFY by content" after EVERY deploy. Remedy: gateway restart; the durable fix is
-    a per-pid stamp map.
+  - `loop-gov daemon` — a deploy artifact, not stale code: the check compares the
+    **SHA-256 of what a running `loop-gov-mcp.py` daemon LOADED** against the current
+    deployed file, so after a redeploy that changes the module the running daemon
+    genuinely holds pre-redeploy code and the warning is CORRECT, not a false positive.
+    A gateway restart respawns the gateway but SESSION-SPAWNED MCP loop-gov daemons can
+    OUTLIVE the restart and still hold the old sha, so the warning can persist past a
+    restart until those pids recycle (a fresh session). Remedy: gateway restart, or wait
+    for the MCP daemons to respawn; the durable fix is a per-pid stamp map. It is a
+    0-fail warning — record it deferred rather than chasing a restart loop.
 - **`⚠️ MCP wiring (<server>) — registered against the HERMES venv`** → re-register against the
   fleet venv, keeping the deployed script paths as `--args`. `hermes mcp add` is INTERACTIVE: it
   asks `Enable all N tools?` and with stdin closed it prints `Cancelled.` and writes NOTHING while
