@@ -257,6 +257,28 @@ treat that as part of the deliverable, not a follow-up.
   one pass's worth of change before writing.
 - **git stash pop without `--index` silently unstages everything** — the
   staged index is lost; re-stage with `git add -A` before re-committing.
+- **A sync tool's AUTO-STASH can reintroduce pre-rename content — classify a
+  peer's restored working tree by CONTENT, not by trust.** The git-main-sync
+  flow auto-stashes the tree before pulling and pops it after; a stash taken
+  BEFORE the rename and restored AFTER brings the OLD tokens back into the
+  index/worktree (measured: a staged set reverting `FLEET_DEPLOY_HOME` →
+  `CORTEX_DEPLOY_HOME` and re-adding `CORTEX_BUS_*` guidance). When the tree
+  then carries a large "peer's staged set" overlapping the merged origin,
+  diff the overlapping file's staged content against the merge's version
+  before preserving it — the restored side is often STALE and the merged tree
+  is authoritative. Prove the WHOLE set's direction cheaply before deciding:
+  grep each file's ADDED lines for the old-token family
+  (`git diff HEAD -- <f> | grep -cE '^\+.*CORTEX_'`) — when the additions are
+  almost entirely old-token reverts, and one file carries another host's
+  absolute paths (a foreign `.mcp.json`), the set is stale residue: restore it
+  to HEAD (`git restore --worktree -- .`), and a clean
+  `git grep <old-token>` afterwards is the proof the repo was already migrated.
+  Resolve stash-apply conflicts by CONTENT (the side
+  carrying the new names wins, whatever "ours/theirs" label git printed), and
+  after integrating, sweep the AGENT-FACING SKILLS for the reintroduced old
+  env names: code and docs migrate, but a restored skill snapshot keeps
+  teaching the retired tokens, which is the highest-leverage residue (agents
+  re-apply the old names from the skill they load).
 - **`git checkout --ours/--theirs <file>` during rebase restores the WHOLE
   file from that side** — auto-merged hunks in that file are reverted (a
   `--ours` on install.sh reverted an entire 16-file sweep's changes to it).
@@ -457,6 +479,7 @@ treat that as part of the deliverable, not a follow-up.
   of the per-line decisions. When fixing a flagged record, write the sentence as a single
   un-wrapped line so a re-flow can never separate the date from the old-path token again.
 - **Live systemd units are part of the sweep surface — and the generator does NOT repair them.** The deploy's orphan-sweep deletes old-named deployed scripts; any live unit whose ExecStart names them fails en masse (one renamed bridge-run script took down 26 generated bridge units at once). Generators that wrote those units SKIP existing ones, so re-running the generator changes nothing. Hand-patch the unit files (new script path + renamed `--script` names), `systemctl --user daemon-reload`, `reset-failed`, then assert 0 failed units and the timers active.
+- **A swept repo can still run new code under OLD-named live systemd units — measure the systemd namespace separately, and expect the renamed unit's import to be coupled to a bytecode-only shim.** After the repo/env/deployed-scripts all carry the new name, `old-bus.service` / `old-gateway.service` / `old-bridge-*` can keep firing the migrated module (`fleet_bus.server`, `fleet-bus-bridge-run.py`) under the old unit file; the doctor does NOT flag a working unit, so a green doctor is not proof the unit namespace is swept (`git grep` of 0 old tokens covers content, and `ls ~/.config/systemd/user/` / `systemctl --user list-unit-files` is the only list that covers unit FILENAMES). Renaming a live unit is usually COUPLED: its `ExecStart` still imports `old_pkg.server`, which only resolves because a bytecode-only `core/old_pkg/` dir (`__pycache__/` + no `.py`) survived — so removing the shim without renaming the unit breaks the unit's NEXT restart. Delete the shim and rename the unit in the SAME change, and flip with no outage: create+enable the new unit first, `stop` the old, `start` the new, verify the port's health, then disable+remove the old + `daemon-reload`. Where one of the old units is the gateway the agent session runs through, that restart is operator-only (an agent cannot restart the gateway it runs inside) — hand that unit to the operator. Re-running a bridge GENERATOR while the old `old-bridge-*` units are still enabled makes every migrated job fire twice: disable the old timers before enabling the new ones, or accept a brief pause rather than a double-fire.
 - **Closing a large rename range is a long governed grind — budget for it, and only the lock-owning session can drive it.** The `end_change` blob-close loop judges ~4 blobs per wave (one 240s window), so a 350-file range is ~90 serial waves (an hour-plus), not minutes. Verdicts are content-keyed: blobs already CLEAN are never re-judged, so each further swept commit only adds its own new blobs to the grind. The per-blob reviewer REFUSES the close on any documentary straggler it finds — fix the named file (a content change re-opens only that blob), commit, call `end_change` again; the loop continues from where it stopped. A subagent CANNOT grind it: a child session's `end_change` with your task_id finds no pending cycle in its own session and mints empty MOVE_ON cycles (ledger pollution) instead of judging — the loop only advances from the session that holds the lock.
   **A close-gate FINDING may be stale — recorded against an OLDER blob than the current tree — verify the current content before grinding a fix.** Verdicts are keyed to blob content, so a finding the reviewer filed against a pre-fix version (evidence citing a duplicated var, a `CORTEX` literal, a mangled comment) can describe code your later sweep commits already corrected. Before fixing a named finding, compute the file's current sha (`git hash-object <file>`) and look up its verdict in the review store — if the current sha has no verdict (or a CLEAN one), the finding is stale and the file may need no change at all; re-emit the close to have the gate re-judge the changed blobs. Checking `blob_reviews` against `git hash-object` first separates the real remaining defects from the historical ones and stops a grind that would otherwise "fix" already-fixed files.
 - **A close-gate finding can be CURRENT but its RECOMMENDATION mechanically wrong — verify it against the live function before adopting.** The per-blob reviewer audits the DIFF with quotes stripped, so its "revert to the original form" and "restore the removed line" suggestions can be wrong or even break the test (it asked to restore a duplicate fixture line that the converter demonstrably does not dedupe — restoring it fails the idempotence assertion the test exists to check). Before adopting a recommendation, run the test against the LIVE function (extract it into a harness with `sed -n '/^func()/,/^}/p' <src>`, add the `warn()` stub, feed the proposed fixture) and adopt only what holds; when you deviate deliberately, say so in a test comment so the re-review sees intent instead of re-flagging the deviation.

@@ -248,6 +248,27 @@ def all_scripts_executable(trace: dict) -> bool:
     return all(s['exists'] and s['executable'] for s in scripts)
 ```
 
+### Grading Generated Code (model A/Bs)
+
+When the eval asks a model to WRITE code and grades it by executing the output
+against a known-correct reference (codegen model A/Bs, capability evals), three
+rules keep the grader honest:
+
+- **The reference lives at HARNESS module scope; only the model's code goes
+  through `exec`.** Looking the oracle up inside the model's exec'd namespace
+  (`ns.get('f_ref')` after `exec(code, ns)`) returns None for every row — the
+  whole run reports "no callable f (or ref)" while the generated code is fine,
+  and the eval silently measures its own bug. Compare the model's output
+  against the module-level reference directly.
+- **Smoke-test the grader on a known-good AND a known-bad solution (plus a
+  missing-symbol case) before the real run** — assert good passes, bad fails
+  with detail, and the missing symbol is flagged. A grader that has never seen
+  a failing input is untested.
+- **Execute each solution in a timeout-bounded child process** so a
+  non-terminating solution grades as wrong instead of hanging the run; record
+  tokens, latency and catalogue-price cost per (model, task) so the comparison
+  covers cost and speed, not just correctness.
+
 ### LLM Rubric Graders
 
 ```python
