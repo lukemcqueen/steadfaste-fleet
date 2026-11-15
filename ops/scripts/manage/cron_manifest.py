@@ -209,7 +209,7 @@ def diff_cron(live: dict, desired: dict) -> list[str]:
 
 
 def _bridge_owned() -> set:
-    """Cron names owned by the standalone HC cron bridge, not by Hermes.
+    """Cron names owned by the standalone fleet cron bridge, not by Hermes.
 
     The S2a migration hosts eligible simple no_agent jobs on user-scope systemd
     timers and REMOVES the Hermes entry so exactly one scheduler owns each job.
@@ -254,7 +254,7 @@ def check_drift(verbose: bool = False) -> tuple[list[dict], list[dict], list[str
             continue
         manifest_names.add(name)
         if name in bridged:
-            # Owned by the HC cron bridge (systemd timer) and removed from
+            # Owned by the fleet cron bridge (systemd timer) and removed from
             # Hermes by design — not expected in live jobs.json.
             continue
         if name not in live:

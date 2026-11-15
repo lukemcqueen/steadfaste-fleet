@@ -194,7 +194,7 @@ create_cron() {
   # symlink in timers.target.wants/ (filesystem-only, no DBus); a disabled
   # unit (paused-for-a-reason job) is absent and still gets created here.
   if [[ -e "${HOME}/.config/systemd/user/timers.target.wants/fleet-bridge-${name}.timer" ]]; then
-    info "Skipping '${name}' — owned by the HC cron bridge (systemd timer)"
+    info "Skipping '${name}' — owned by the fleet cron bridge (systemd timer)"
     return 0
   fi
 

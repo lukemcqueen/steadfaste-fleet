@@ -169,7 +169,7 @@ create_cron() {
   # bible-reading, hermes-update, …) is absent from wants/, so that job is
   # still created here, exactly as intended.
   if [[ -e "${HOME}/.config/systemd/user/timers.target.wants/fleet-bridge-${name}.timer" ]]; then
-    info "Skipping '${name}' — owned by the HC cron bridge (systemd timer)"
+    info "Skipping '${name}' — owned by the fleet cron bridge (systemd timer)"
     return 0
   fi
 

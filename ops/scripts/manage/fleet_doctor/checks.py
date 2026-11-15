@@ -1217,7 +1217,7 @@ def _check_changed_script_execution(res):
 
 
 def _bridge_owned_jobs() -> set:
-    """Cron names owned by the standalone HC cron bridge, not by Hermes.
+    """Cron names owned by the standalone fleet cron bridge, not by Hermes.
 
     The S2a migration hosts eligible simple no_agent jobs on user-scope
     systemd timers (`fleet-bridge-<name>.timer`) and REMOVES the Hermes entry
@@ -1315,7 +1315,7 @@ def check_crons(res):
   orphan_crons = []
   for name, job in registered.items():
     if name in _bridged:
-      continue  # owned by the HC cron bridge (systemd timer), not by Hermes
+      continue  # owned by the fleet cron bridge (systemd timer), not by Hermes
     if name not in expected_crons:
       if name.startswith("local-"):
         continue # local-* crons silently excluded
@@ -1455,7 +1455,7 @@ def _bridge_unit_names() -> set:
 
 
 def check_cron_bridge_migration(res) -> None:
-    """Have this host's eligible no_agent crons been migrated to the HC bridge?
+    """Have this host's eligible no_agent crons been migrated to the fleet bridge?
 
     S2a moves simple no_agent jobs off the Hermes `cronjob` scheduler onto
     systemd user timers, so they fire whether or not the gateway is alive. A
@@ -1477,7 +1477,7 @@ def check_cron_bridge_migration(res) -> None:
     # systemd) the bridge is not the mechanism, so this is not a gap.
     if platform.system() != "Linux":
         res.add("Cron bridge", "INFO",
-            f"not applicable on {platform.system()} — the HC cron bridge is systemd-based")
+            f"not applicable on {platform.system()} — the fleet cron bridge is systemd-based")
         return
     if not JOBS_FILE.exists():
         return
@@ -1540,7 +1540,7 @@ def check_bridge_unit_killmode(res) -> None:
     """
     if platform.system() != "Linux":
         res.add("Bridge unit kill mode", "INFO",
-            f"not applicable on {platform.system()} — the HC cron bridge is systemd-based")
+            f"not applicable on {platform.system()} — the fleet cron bridge is systemd-based")
         return
     units_dir = Path.home() / ".config" / "systemd" / "user"
     wants = units_dir / "timers.target.wants"
