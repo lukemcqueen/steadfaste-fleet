@@ -166,6 +166,32 @@ timer is enabled. A rename that touches an LLM sibling job (not bridge-hosted)
 is the plain case: deploy creates the new name, remove the old-name row
 from `jobs.json`, no systemd units involved.
 
+### Bulk-renaming the unit NAMESPACE in place (e.g. `cortex-bridge-*` → `fleet-bridge-*`)
+
+When a rename sweep changes the unit PREFIX for every bridged job, rename the
+unit FILES in place — do not regenerate. The generator reads only `jobs.json`,
+so regeneration produces units for jobs still there and silently drops
+on-disk jobs whose Hermes rows were already removed. In-place rename preserves
+every unit exactly:
+
+```bash
+cd ~/.config/systemd/user
+# For each old-name timer: move the unit files AND the enable symlink, then reload.
+# Delete (disable + rm) any STALE old-name duplicate that sits next to a
+# current-name unit (e.g. cortex-bus-failover-watchdog beside fleet-bus-failover-
+# watchdog) — renaming it would COLLIDE with the live name.
+systemctl --user daemon-reload
+systemctl --user reset-failed      # clears phantom failed records (see below)
+systemctl --user start timers.target  # starts every wanted-but-inactive timer
+```
+
+Four pitfalls in this exact order cost a turn each:
+
+1. **`[ -e ]` is FALSE on a dangling symlink.** If you `mv` the unit file BEFORE the enable symlink in `timers.target.wants/`, the symlink dangles and `-e` returns false, so the symlinks silently stay behind under the old name (60 of 62 in one run). Test with `[ -L ]` (`[ -e ] || [ -L ]`), or move the symlinks first.
+2. **Renaming unit files leaves phantom `not-found failed` records.** The manager keeps the old unit names in failed state (`systemctl --user list-units --state=failed` shows the old names) → the doctor's `Systemd stale units` check FAILs. `systemctl --user reset-failed` clears all of them.
+3. **The enable symlink preserves ENABLED, not ACTIVE.** The running timer instances died with the old names; after reload they are loaded-but-inactive with `Trigger: n/a`. `systemctl --user start timers.target` starts every wanted-but-inactive timer; verify with `list-timers --all | grep fleet-bridge` counting ACTIVE (not just the `wants/` symlinks).
+4. **Verify against the ownership marker, not the file count.** The doctor/installers read `timers.target.wants/fleet-bridge-<name>.timer`; the marker flips to the new prefix automatically once the symlinks are moved. After the rename, remove the duplicate Hermes entries for every enabled-timer job (the two-step migration), keep entries for disabled-timer (paused) jobs, and check the `Cron bridge migration` check for NEW gaps (jobs that never got a unit — generate those).
+
 ## Cron → OnCalendar translation
 
 Use `references/systemd-timer-oncalendar.md` — the correct syntax variants and the **`systemd-analyze calendar <expr>` validator** that catches a wrong form before it ships. **The `/N` step goes on the field it steps: an hour interval is `00/N:00:00`, a minute interval is `*:0/N:00`. Do NOT write an "every N hours" job as `*:00/N:00` — that puts the step on the MINUTE field and it fires every N MINUTES** (the silent-cadence bug: the value still validates, only the `Next elapse:` line reveals it). Read `Next elapse:` to confirm cadence (hours away, not minutes), then `systemd-analyze verify` the unit pair.
