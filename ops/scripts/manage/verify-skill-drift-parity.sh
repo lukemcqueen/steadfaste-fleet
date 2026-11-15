@@ -29,7 +29,10 @@
 #     treated as COULD NOT VERIFY (its report text is what we actually judge).
 #   - reconcile-stranded-skills.py must print a verdict line.
 set -uo pipefail
-cd "$(dirname "$0")/../../.." || { echo "FAIL: cannot locate repo root"; exit 1; }
+# Honour an exported REPO (the negative-test harness runs a $TMP copy whose
+# `dirname "$0"` is under /tmp, so deriving the root from $0 would climb to
+# `/` and break every repo-relative path). Fall back to $0-derived when unset.
+cd "${REPO:-$(cd "$(dirname "$0")/../../.." 2>/dev/null && pwd)}" || { echo "FAIL: cannot locate repo root"; exit 1; }
 rc=0
 # Skills this run reconciled. Default is the class recovered 2026-10-19;
 # override with SKILLS="cat/name cat/name" to re-scope for another run.

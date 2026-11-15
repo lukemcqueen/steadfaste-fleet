@@ -13,6 +13,7 @@
 # asserted in prose with no runnable backing. Run THIS to check the claim.
 set -uo pipefail
 REPO="$(cd "$(dirname "$0")/../../.." && pwd)"
+export REPO
 VERIFIER_SRC="$REPO/ops/scripts/manage/verify-skill-drift-parity.sh"
 [ -f "$VERIFIER_SRC" ] || { echo "FAIL: verifier not found at $VERIFIER_SRC"; exit 1; }
 
@@ -92,7 +93,7 @@ cat > "$TMP/doctor-mydrift.py" <<'PYEOF'
 import sys
 for i in range(1, 471):
     print("  \u2705 check %d" % i)
-print("  \u26a0\ufe0f  Skill drift: devops/shell-scripting")   # one of ours
+print("  \u26a0\ufe0f  Skill drift: devops/codebase-portability")   # one of ours (in the class)
 sys.exit(1)
 PYEOF
 variant "$TMP/c1c.sh" "s|ops/scripts/manage/fleet-doctor.py|$TMP/doctor-mydrift.py|"
@@ -116,7 +117,7 @@ fi
 
 echo "== C2: reconcile could not run =="
 variant "$TMP/c2.sh" "s|python3 ops/scripts/manage/reconcile-stranded-skills.py 2>&1|printf 'gibberish\\\\n'|"
-expect_fail "reconcile prints no verdict line" "$TMP/c2.sh" "printed no verdict line"
+expect_fail "reconcile prints no stranded count" "$TMP/c2.sh" "printed no stranded count"
 
 echo "== C3/C4/C5: files missing =="
 variant "$TMP/c3.sh" "s|^SKILLS=.*|SKILLS=\"devops/DOES-NOT-EXIST-SKILL\"|"
