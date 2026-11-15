@@ -1,0 +1,49 @@
+# orch-fleet-watchdog flap debounce — fix + evidence (2026-11-15)
+
+## Diagnosis (cycle 14756)
+Recurring down/restored alert pairs for "Moses" from the no_agent watchdog.
+Measured: Moses health vector was healthy; the `no_stale_crons` bit (vector
+index 3) reddened only transiently — a job whose jobs.json last_run_at briefly
+crossed 2x its interval. The watchdog had NO debounce (alert on 1st bad,
+restore on 1st good), so every transient produced a pair.
+
+## Root causes addressed
+1. Double-ownership: `orch-fleet-watchdog` existed as an ENABLED entry in
+   Moses's ~/.hermes/cron/jobs.json (id e16cd7163d4b, */5) — run and delivered
+   by the Hermes scheduler — AND as an active systemd bridge timer
+   (fleet-bridge-orch-fleet-watchdog.timer, */5). The bridge runner
+   (fleet-bus-bridge-run.py) does not touch jobs.json, so only the Hermes
+   scheduler refreshed that entry's last_run_at; whenever it stalled past 2x the
+   interval, Moses health flagged no_stale_crons.
+2. No flapping debounce in the watchdog.
+
+## Fix (commit)
+- orch-fleet-watchdog.py: DEBOUNCE_BAD=DEBOUNCE_GOOD=3; pure `_debounce_emit`
+  (alert after 3 consecutive unhealthy/unreachable, resolve after 3 consecutive
+  healthy after a down, opposite sample resets); main() feeds and persists
+  per-agent {bad, good, emitted} under `_debounce` in fleet-state.json
+  (fingerprint map kept top-level, additive key).
+- tests/test_orch_fleet_watchdog_debounce.py: 7 tests (state machine + a
+  script-level main() silence test stubbing _fetch and redirecting state/dash
+  to tmp).
+- Moses operational: `hermes cron remove e16cd7163d4b` (orch-fleet-watchdog).
+  Operator approved the two-part fix with explicit "Go" to a message listing
+  both parts. Verified after: jobs.json no longer contains the name; the
+  systemd bridge timer is still `active` (single owner remains).
+
+## Verification (committed runs)
+- pytest tests/test_orch_fleet_watchdog_debounce.py -q -> 7 passed, rc=0.
+- Live: `python3 ops/scripts/agent/orch-fleet-watchdog.py` -> rc=0, empty stdout
+  (silent-when-stable preserved); fleet-state.json gained `_debounce`
+  (moses/gisu/joseph good=1, kustos bad=1 matching its pre-existing
+  no_errored_crons red).
+- adversarial-verify --level A4 --gate on orch-fleet-watchdog.py:
+  GATE_PASSED (no critical/high). One medium = PRE-EXISTING: 4 empty
+  `except: ... pass` watchdog handlers (deliberate silent-missing-state
+  pattern); not introduced by this change.
+- Moses health after removal: index 3 green (orphan scan no longer sees a
+  jobs.json entry to mis-time).
+
+## Expected behaviour after deploy
+Transient no_stale_crons blips no longer alert (they must sustain 3 samples =
+~15 min to fire, and clear after 3 healthy). Sustained real outages still alert.

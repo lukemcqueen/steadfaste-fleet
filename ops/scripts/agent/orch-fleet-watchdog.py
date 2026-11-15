@@ -179,6 +179,39 @@ def _fingerprint(data: Optional[dict]) -> str:
     return "|".join(parts)
 
 
+# Flapping debounce. A watchdog that alerts on the 1st bad sample and recovers
+# on the 1st good one turns any single transient health bit (a cron whose
+# last_run briefly crossed 2x its interval, a throttled probe) into an
+# alert+recovery pair. So an ALERT fires only after DEBOUNCE_BAD consecutive
+# unhealthy samples, and a RESOLUTION only after DEBOUNCE_GOOD consecutive
+# healthy ones after a down. 3 samples at the 5-min cadence = ~15 min of
+# sustained state before anything is said.
+DEBOUNCE_BAD = 3
+DEBOUNCE_GOOD = 3
+
+
+def _debounce_emit(hstate: str, bad: int, good: int, emitted,
+                   bad_lim: int, good_lim: int):
+    """One debounce sample. Returns (action, bad, good).
+
+    hstate in {"up", "unhealthy", "unreachable"}. action is None (silent),
+    ("down", hstate), or ("up",). The caller persists and feeds back `emitted`
+    (None | "down" | "up") so a down fires ONCE at the threshold and never
+    re-fires while still down, and a resolution fires ONCE. An opposite sample
+    resets the streak, so a single transient blip below bad_lim never alerts.
+    """
+    if hstate == "up":
+        bad, good = 0, good + 1
+        if emitted == "down" and good >= good_lim:
+            return ("up",), 0, good
+        return None, 0, good
+    # unhealthy or unreachable
+    good, bad = 0, bad + 1
+    if emitted != "down" and bad >= bad_lim:
+        return ("down", hstate), bad, 0
+    return None, bad, 0
+
+
 def _check_workflows() -> dict:
     """Check for active workflow steps via Agent Bus messages.
 
@@ -235,33 +268,43 @@ def main():
     alerts: list[str] = []
     resolves: list[str] = []
     poll_results: dict[str, Optional[dict]] = {}
+    deb_prev = prev.get("_debounce", {}) if isinstance(prev, dict) else {}
+    deb: dict[str, dict] = {}
 
     for a in agents:
         key = a["key"]
         name = a["name"]
         data = _fetch(a["url"])
         poll_results[key] = data
-        fp = _fingerprint(data)
-        now[key] = fp
-        old = prev.get(key, "")
-
-        if fp == old:
-            continue
+        now[key] = _fingerprint(data)
 
         if data is None:
-            alerts.append(f"🔴 {name} — unreachable")
-        elif not data.get("healthy", True):
-            issues = data.get("issues", [])
-            lines = []
-            for iss in issues[:5]:
-                icon = {"critical": "🔴", "high": "⚠️", "warning": "⚡"}.get(iss.get("severity"), "ℹ️")
-                lines.append(f"{icon} {iss['detail']}")
-            if len(issues) > 5:
-                lines.append(f"… +{len(issues)-5} more")
-            alerts.append(f"🔴 {name}\n" + "\n".join(lines))
-        elif data.get("healthy", False):
-            if old and "ok=True" not in old:
+            hstate = "unreachable"
+        else:
+            hstate = "up" if data.get("healthy", True) else "unhealthy"
+
+        st = deb_prev.get(key, {})
+        bad = st.get("bad", 0)
+        good = st.get("good", 0)
+        emitted = st.get("emitted")
+        action, bad, good = _debounce_emit(
+            hstate, bad, good, emitted, DEBOUNCE_BAD, DEBOUNCE_GOOD)
+        if action:
+            emitted = "up" if action[0] == "up" else "down"
+            if action[0] == "up":
                 resolves.append(f"✅ {name} — health restored")
+            elif action[1] == "unreachable":
+                alerts.append(f"🔴 {name} — unreachable")
+            else:
+                issues = (data or {}).get("issues", [])
+                lines = []
+                for iss in issues[:5]:
+                    icon = {"critical": "🔴", "high": "⚠️", "warning": "⚡"}.get(iss.get("severity"), "ℹ️")
+                    lines.append(f"{icon} {iss['detail']}")
+                if len(issues) > 5:
+                    lines.append(f"… +{len(issues)-5} more")
+                alerts.append(f"🔴 {name}\n" + "\n".join(lines))
+        deb[key] = {"bad": bad, "good": good, "emitted": emitted}
 
     # Workflow check
     wf = _check_workflows()
@@ -291,9 +334,12 @@ def main():
     DASHBOARD_FILE.parent.mkdir(parents=True, exist_ok=True)
     DASHBOARD_FILE.write_text(json.dumps(dashboard, indent=2))
 
-    # Save fingerprint state
+    # Save fingerprint + debounce state (fingerprints stay top-level so any
+    # other reader of fleet-state.json keeps its shape; `_debounce` is additive).
     STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    STATE_FILE.write_text(json.dumps(now, indent=2))
+    state_out = dict(now)
+    state_out["_debounce"] = deb
+    STATE_FILE.write_text(json.dumps(state_out, indent=2))
 
     # Output — no_agent cron delivers non-empty stdout
     output = []
