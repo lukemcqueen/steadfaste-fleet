@@ -2,26 +2,41 @@
 
 # claude-code — fleet context integration
 
-**Layer:** `mcp`  ·  **Status:** `documented`  ·  **Surface:** `.mcp.json`
+**Layer:** `mcp`  ·  **Status:** `shipped`  ·  **Surface:** `.mcp.json`
 
 This harness reads MCP servers from its own configuration, so its TOOL surface needs **no shim** — registration is a config entry. (MCP has no lifecycle, so a harness may still ship a small trigger artifact; see *Shipped artifact*.)
 
 ## Why this layer
 
-MCP-native; registration is a config entry, no shim.
+MCP-native; registration is a config entry, no shim. The harness also
+reaches the bus reply path through agent-bus MCP — both server
+registrations are written by `install-claude-mcp.sh`, mirroring the pi
+installer. Per `cross-agent-design > references/harness-session-identity.md`
+(verified 2026-11-11): Claude Code injects `CLAUDE_CODE_SESSION_ID` into
+stdio MCP children since v2.1.154, so the resolver answers "env, unique"
+once the harness lifecycle hook sets `FLEET_SESSION_KEY`. The `command`
+backend in gateway.yaml (`command: ["claude"]`) is the SAME door as pi —
+no daemon, transport, or backend code change.
 
 ## Install
 
 ```bash
-Add to .mcp.json:
-  {"mcpServers": {"fleet-context": {"command": "python3",
-    "args": ["<mcp_server>"]}}}
+# USER SCOPE — every Claude Code session, one registration (recommended):
+bash ~/steadfaste-fleet/ops/scripts/install/install-claude-mcp.sh
+```
+
+## Run
+
+```bash
+claude   # tools come from ~/.claude.json (install-claude-mcp.sh)
 ```
 
 ## Verify (do not report a wiring you have not exercised)
 
-1. claude mcp list  (or /mcp) shows fleet-context
-2. Call mem_context; the peer card must come back.
+1. claude mcp list shows fleet-context AND agent-bus.
+2. In a Claude Code session call mem_context — the peer card must come back.
+3. env | grep CLAUDE_CODE_SESSION_ID is non-empty (so the resolver answers env,unique).
+4. gateway-titus-claude.example.yaml applies cleanly; the doctor reports `Titus claude gateway` PASS.
 
 ## Session identity
 

@@ -203,6 +203,26 @@ harnesses:
           - 'node ops/install/harnesses/pi/verify-governance-extension.mjs exits 0 — it EXECUTES the gate, asserts both directions, and includes the no-metacharacter write commands.'
           - 'loop-gov.py check_repo_lock against the session repo exits 0 while a lock covers it and 1 when none does.'
           - 'In a Pi session with no lock a write is refused with GOVERNANCE LOCK REQUIRED; after begin_change the same write succeeds.'
+      gateway:
+        adapter: command
+        register: ops/scripts/install/install-pi-mcp.sh
+        from: ops/scripts/fleet_gateway/agents.py
+        requires: "pi >= 0.99 (MCP client); the `command` backend only needs the pi binary"
+        why: |
+          The fleet-gateway daemon (ops/scripts/fleet_gateway/) exposes two kinds:
+          `hermes` (bus adapter — inbox_<a>/out_<a>) and `command` (spawn a CLI per
+          dispatch). For an agent whose harness is Pi, the canonical backend is
+          `command` shelling out to `pi` — proven live on the second bot with the
+          full slash/streaming/typing surface (CR5,
+          docs/design/fleet-gateway-parity.md §CR5, 32 slash-parity tests). The
+          MCP half is already shipped: agent-bus MCP is registered by the same
+          install-pi-mcp.sh script the harness already uses, so a Pi-hosted Titus
+          reaches the bus reply path the same Hermes-hosted agent does.
+        verify:
+          - 'pi mcp list shows agent-bus (so the reply leg writes to out_<titus>).'
+          - 'gateway.yaml has an agents.titus entry with backend=command and the pi binary on PATH.'
+          - 'gateway-titus-pi.example.yaml applies cleanly to a host with pi; the doctor adds a Titus pi gateway PASS row.'
+          - 'fleet-update.sh runs the installer on any host where pi is present and reports `Titus pi gateway` in the doctor.'
     # Built-in tools only: the memory/session surface is NOT a --tools entry any
     # more — it arrives over MCP, so there is no per-harness tool list left to
     # rot when the contract grows.
@@ -244,20 +264,64 @@ harnesses:
 
   - name: claude-code
     layer: mcp
-    status: documented
+    status: shipped
     presence:
       - ~/.claude.json
       - ~/.claude/settings.json
       - cmd:claude
     surface: '.mcp.json'
-    why: MCP-native; registration is a config entry, no shim.
+    why: |
+      MCP-native; registration is a config entry, no shim. The harness also
+      reaches the bus reply path through agent-bus MCP — both server
+      registrations are written by `install-claude-mcp.sh`, mirroring the pi
+      installer. Per `cross-agent-design > references/harness-session-identity.md`
+      (verified 2026-11-11): Claude Code injects `CLAUDE_CODE_SESSION_ID` into
+      stdio MCP children since v2.1.154, so the resolver answers "env, unique"
+      once the harness lifecycle hook sets `FLEET_SESSION_KEY`. The `command`
+      backend in gateway.yaml (`command: ["claude"]`) is the SAME door as pi —
+      no daemon, transport, or backend code change.
     install: |
-      Add to .mcp.json:
-        {"mcpServers": {"fleet-context": {"command": "python3",
-          "args": ["<mcp_server>"]}}}
+      # USER SCOPE — every Claude Code session, one registration (recommended):
+      bash ~/steadfaste-fleet/ops/scripts/install/install-claude-mcp.sh
+    capabilities:
+      context:
+        adapter: mcp
+        register: ops/scripts/install/install-claude-mcp.sh
+        from: fleet-context-mcp.py
+        requires: "claude-code >= 2.1.154 (CLAUDE_CODE_SESSION_ID reaches MCP children)"
+        why: |
+          Same as the pi entry — the MCP server is the shared implementation;
+          Claude Code is not special. Registration is a config entry (no shim).
+        verify:
+          - 'claude mcp list shows fleet-context with the memory/session tools.'
+          - 'In a Claude Code session call mem_context — the peer card must come back.'
+      gateway:
+        adapter: command
+        register: ops/scripts/install/install-claude-mcp.sh
+        from: ops/scripts/fleet_gateway/agents.py
+        requires: "claude-code >= 2.1.154 (CLAUDE_CODE_SESSION_ID reaches MCP children); the gateway config has agents.titus with backend=command"
+        why: |
+          Same shape as the pi gateway capability — the `command` backend
+          shelling out to `claude <args>` is the SAME CommandBackend class. The
+          MCP half ships agent-bus so the bus reply path is wired. The
+          slash-command path (`/new`, `/model`, `/compact`, `/restart`) lives
+          in the gateway (the harness-only `/model` UI is unrelated), and
+          Claude Code's compact lives in its RPC mode, so the gateway uses
+          `commands.compact` to invoke `claude_control.py` (deployed beside
+          `pi_control.py`).
+        verify:
+          - 'claude mcp list shows fleet-context AND agent-bus.'
+          - 'gateway.yaml has `agents.titus` with backend=command and the claude binary on PATH.'
+          - 'gateway-titus-claude.example.yaml applies; the doctor adds "Titus claude gateway" PASS.'
+          - 'fleet-update.sh runs the installer on any host where claude is present and reports `Titus claude gateway` in the doctor.'
+    tools_base: [Read, Bash, Edit, Write]
+    run: |
+      claude   # tools come from ~/.claude.json (install-claude-mcp.sh)
     verify:
-      - 'claude mcp list  (or /mcp) shows fleet-context'
-      - 'Call mem_context; the peer card must come back.'
+      - 'claude mcp list shows fleet-context AND agent-bus.'
+      - 'In a Claude Code session call mem_context — the peer card must come back.'
+      - 'env | grep CLAUDE_CODE_SESSION_ID is non-empty (so the resolver answers env,unique).'
+      - 'gateway-titus-claude.example.yaml applies cleanly; the doctor reports `Titus claude gateway` PASS.'
 
   - name: codex
     layer: mcp
