@@ -189,7 +189,9 @@ discovering them in a later grep.
     pointer (its gitdir may resolve through the transition symlink) and remove it
     with `git worktree remove <dir>`; do this BEFORE removing the transition
     symlink the pointer rides on.
-14. **Transition symlinks mask live config that was never repointed — running
+14. **A verifier's own assertions can be MID-MIGRATION expectations — a FAIL there is proof of COMPLETION, not a regression.** A rename's per-host verifier (e.g. `verify-rename-local.sh`) asserts the OLD paths still EXIST as symlinks to the new ones (`[[ -L $OLD ]] && readlink == NEW`), because its job is to prove the transition is in place. On a host that has fully migrated and then removed the transition symlinks (`rm -f ~/old ~/.old` per pitfall 15), those assertions FAIL while the host is in the cleanest possible state — the symlinks being gone IS the end-state the runbook's asynchronous section prescribes. Before treating a verifier FAIL as "the migration regressed", read the verifier's own expectation: does it require a state the runbook LATER removes? Pair it against the final-state checks (old dirs absent, `consolidate-env.sh --check` clean, brand lint 0 fail, doctor `Stale pre-migration home folders` PASS) and prefer the completion check over the mid-transition one. Same shape: a verifier that greps for `cortex`-named launchd/systemd labels counts 0 after the rename repointed everything — 0 cortex labels IS the migrated state.
+
+    **Transition symlinks mask live config that was never repointed — running
     services are not proof of completion.** A symlink at the old location keeps
     `~/old-name` resolving, so the host works while a live surface still loads the
     old path. "Fully migrated" is false until EVERY live surface is repointed, not

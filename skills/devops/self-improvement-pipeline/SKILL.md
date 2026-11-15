@@ -135,6 +135,16 @@ A session where you review the conversation and find nothing to update is a miss
 
 **The litmus test:** If the user saw your fix, would they say "you fixed it" or "you hid it"? If the latter, your fix is wrong.
 
+**The variant that disables the GUARDED FEATURE — not just the warning.** When the warning is emitted by a cost/safety gate about a feature that is *working* (e.g. the Jev decision layer's "price unknown" cost guard, a session guard, a routing check), the ``fix the warning by turning the feature off`` move is a suppression dressed as a fix: it silences the check AND degrades the thing the check protects, sometimes the wrong direction (routing ``off`` sends every turn to the expensive main model — *raising* the very cost the guard exists to contain). The user will reject it ("fix the functionality don't disable important functionality").
+
+Correct order when a guard warns about live functionality:
+1. **Distrust the guard's own data path before distrusting the feature.** A "price unknown" / "cannot verify" / "store unreachable" verdict is frequently the check reading a stale or nonexistent cache path, or mis-parsing config output — not the feature being broken. Grep the check's source for where it reads its data and whether that path/schema still matches what the writer actually produces (a cache file may have moved; `hermes config get model` may emit `provider:`/`default:` labeled lines the parser reads as one bare value).
+2. **Fix the check** (point it at the real source, parse correctly), then re-run clean.
+3. If the guard then FIRES a real finding (e.g. a pool leads with a model dearer than the running one), fix the CONFIG to satisfy it (cheapest-first) — still keeping the feature on.
+4. Only as a last resort consider disabling, and only with the cost consequence stated out loud to the user — never silently. Verify the feature is still enabled before reporting done.
+
+The doctor's `--json` renderer can also report `disposition: None` for a check whose disposition the store actually holds (writer/renderer key mismatch) — before treating a warning as "undisposed", read the disposition store directly (`doctor-dispositions.json`).
+
 ## Anti-Pattern: "task-start loads the always skills" is False
 
 The most common trust violation: agent calls skill_view(task-start), then immediately calls begin_change, believing the always skills are loaded. The old session-start ritual said "The task-start skill loads survey-before-action, agent-flow, reasoning-patterns..." This is false. task-start describes the sequence but does NOT execute it. Each always skill requires its own separate skill_view() call.
