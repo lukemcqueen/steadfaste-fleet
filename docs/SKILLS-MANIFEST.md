@@ -130,7 +130,7 @@ their domain.
 | `meme-generation` | 2.0.0 | Create meme PNGs from templates with Pillow text overlay. | `skill_view(name='meme-generation')` |
 | `pixel-art` | 2.0.0 | Pixel art w/ era palettes (NES, Game Boy, PICO-8). | `skill_view(name='pixel-art')` |
 
-## Devops (164 skills)
+## Devops (167 skills)
 
 | Skill | Version | Purpose | Load With |
 |-------|---------|---------|-----------|
@@ -190,6 +190,7 @@ their domain.
 | `documentation-scope` | 1.0.0 | Multi-audience documentation scoping conventions for Steadfaste Fleet. Defines when and how to distinguish... | `skill_view(name='documentation-scope')` |
 | `enforcement-change-safety` | 1.1.0 | Use before enforcement code changes or shared-repo commits. | `skill_view(name='enforcement-change-safety')` |
 | `enforcement-gate-migration` | 1.0.0 | Use when re-pointing a gate onto a new evidence store. | `skill_view(name='enforcement-gate-migration')` |
+| `enforcement-immutability` | 1.0.0 | Use when enforcement files lose their immutable flag. | `skill_view(name='enforcement-immutability')` |
 | `enforcer-modification-considerations` | 1.0.0 | Use before modifying any enforcer/governance code. | `skill_view(name='enforcer-modification-considerations')` |
 | `env-aware-compose-wrapper` | 2 | Build an env-aware `_compose()` wrapper for `./run` CLI scripts that requires an explicit environment varia... | `skill_view(name='env-aware-compose-wrapper')` |
 | `eval-harness` | 1.0.0 | Systematic evaluation framework for agent capabilities — capability tests, regression suites, failure analysis | `skill_view(name='eval-harness')` |
@@ -213,6 +214,7 @@ their domain.
 | `governance-compliance-reporting` | 1.0.0 | Review agent commits for enforcement compliance. | `skill_view(name='governance-compliance-reporting')` |
 | `governance-identity-hardening` | 1.0.0 | Use when hardening orchestrator identity or unlock tokens. | `skill_view(name='governance-identity-hardening')` |
 | `governance-lock-lifecycle` | 1.1.0 | Use when blocked after fleet update or end_change rejects. | `skill_view(name='governance-lock-lifecycle')` |
+| `governance-regression-triage` | 1.0.0 | Triage a host's governance issues: what changed. | `skill_view(name='governance-regression-triage')` |
 | `governance-sentinel` | 1.0.0 | DEPRECATED alias — merged into loop-governance. Load loop-governance instead. | `skill_view(name='governance-sentinel')` |
 | `health-external-verification` | 1.0.0 | Verify your health endpoint is externally reachable by testing the URL end-to-end instead of assuming local... | `skill_view(name='health-external-verification')` |
 | `hermes-agent-regression-triage` | 1.0.0 | Use when hermes-agent breaks after update or won't update. | `skill_view(name='hermes-agent-regression-triage')` |
@@ -235,6 +237,7 @@ their domain.
 | `llm-cost-optimization` | 1.1.0 | Cut LLM API spend: cache-hit rate, thinking mode, telemetry. | `skill_view(name='llm-cost-optimization')` |
 | `llm-judge-scorer` | 1.0.0 | LLM-as-Judge trace quality scorer. Evaluates Hermes conversation traces in Langfuse using a local Ollama mo... | `skill_view(name='llm-judge-scorer')` |
 | `loop-governance` | 1.5.0 | TDD cycle scoring, self-improvement, and governance system for Steadfaste Fleet. Scores completeness/qualit... | `skill_view(name='loop-governance')` |
+| `macbook-linux-maintenance` | 1.0.0 | Legacy MacBook Linux fixes: GPU wedge, reboot hang, thermal. | `skill_view(name='macbook-linux-maintenance')` |
 | `maintenance-scan` | 1.0.0 | Systematic system health survey run proactively when the user gives an open-ended directive to "find work"... | `skill_view(name='maintenance-scan')` |
 | `mcp-health-monitoring` | 1.0.0 | Probe MCP server health; extend the governance watchdog. | `skill_view(name='mcp-health-monitoring')` |
 | `messaging-gateway` | 1.0.0 | DEPRECATED alias — merged into hermes-gateway-operations. Load hermes-gateway-operations instead. | `skill_view(name='messaging-gateway')` |

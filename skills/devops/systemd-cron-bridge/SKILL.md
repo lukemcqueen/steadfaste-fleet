@@ -192,6 +192,16 @@ Four pitfalls in this exact order cost a turn each:
 3. **The enable symlink preserves ENABLED, not ACTIVE.** The running timer instances died with the old names; after reload they are loaded-but-inactive with `Trigger: n/a`. `systemctl --user start timers.target` starts every wanted-but-inactive timer; verify with `list-timers --all | grep fleet-bridge` counting ACTIVE (not just the `wants/` symlinks).
 4. **Verify against the ownership marker, not the file count.** The doctor/installers read `timers.target.wants/fleet-bridge-<name>.timer`; the marker flips to the new prefix automatically once the symlinks are moved. After the rename, remove the duplicate Hermes entries for every enabled-timer job (the two-step migration), keep entries for disabled-timer (paused) jobs, and check the `Cron bridge migration` check for NEW gaps (jobs that never got a unit — generate those).
 
+### Hand-installed service units (bus/gateway/dashboard) — rename by FLIP, not regeneration
+
+The generator owns only `fleet-bridge-*` units. A hand-installed service unit (`fleet-bus.service`, `fleet-gateway.service`, dashboard) has no generator — rename it with the flip sequence, and never let old + new run at once:
+
+1. Write the NEW unit (`~/.config/systemd/user/fleet-<name>.service`) with the current ExecStart/env, `systemctl --user daemon-reload` + `enable` (staged, NOT started — enable alone avoids the port/token conflict).
+2. `systemctl --user stop <old>.service` BEFORE `start fleet-<name>.service` — two services on one port (8903) fail to bind, and two pollers on one Telegram bot token get a 409. The order is stop-then-start, never start-then-stop.
+3. Verify health on the SAME probe the old service answered (e.g. `curl 127.0.0.1:8903/health` → 200) before touching the old unit.
+4. Only then: `disable` + `rm` the old unit, `daemon-reload`, and remove any orphaned bytecode shim the old module left behind (`core/cortex_bus/`) — confirm it is git-untracked and unreferenced (`search_files` for the old module name in the deployed scripts) before `rm -rf`.
+5. Grep the deploy map + installers for `register`/template references that would re-create the old name on the next fleet-update — a hand-renamed unit the deploy regenerates is a rename that did not stick.
+
 ## Cron → OnCalendar translation
 
 Use `references/systemd-timer-oncalendar.md` — the correct syntax variants and the **`systemd-analyze calendar <expr>` validator** that catches a wrong form before it ships. **The `/N` step goes on the field it steps: an hour interval is `00/N:00:00`, a minute interval is `*:0/N:00`. Do NOT write an "every N hours" job as `*:00/N:00` — that puts the step on the MINUTE field and it fires every N MINUTES** (the silent-cadence bug: the value still validates, only the `Next elapse:` line reveals it). Read `Next elapse:` to confirm cadence (hours away, not minutes), then `systemd-analyze verify` the unit pair.
