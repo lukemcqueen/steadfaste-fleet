@@ -860,6 +860,16 @@ May need several rounds on active days; each round's dogfood re-runs clean.
   drops your unintended edit — then `git add` it and `GIT_EDITOR=true git rebase --continue`. Read
   what `-A` staged BEFORE committing (`git diff --cached --name-only`): an evidence directory full
   of generated files is exactly where a foreign file hides.
+- **A reconcile cron `git add -A` sweeps YOUR untracked files into ITS commit — the reverse
+  direction of the fence above.** The `auto: reconcile skill-drift strands [pipeline]` cron stages
+  everything it sees (including files you just created and have NOT staged) and expressly paths
+  them in `git commit … -- <paths>`, so a fresh `docs/evidence/` file lands under the pipeline's
+  "reconcile strands" message instead of your own commit, and the SAME cron holds `index.lock`
+  while it runs — a commit you issue in that window fails `fatal: Unable to create .git/index.lock`.
+  When that happens: wait the cron out (do not `rm` the lock or race it), then confirm via
+  `git show --stat <pipeline-commit>` that your files are actually inside it. They are COMMITTED,
+  not lost (attribution rides the `FLEET-Session:` trailer) — cite the committed path in your
+  material/review instead of re-creating the file, and land the rest of your work as usual.
 - **Verify the file set that actually LANDED, not the one you staged.** Even
   with an explicit `git add <yours>`, a gated commit can sweep a file a peer
   session had modified into your commit. Run `git show --stat HEAD` and confirm
