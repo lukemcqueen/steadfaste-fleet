@@ -9468,14 +9468,24 @@ def _write_daemon_stamp() -> None:
     what was loaded), so the process records it itself: pid + the sha256 of the file it is running.
     The doctor compares that hash with the file's hash NOW — content, not timestamps.
     """
+    pid = str(os.getpid())
+    entry = {
+        "started": time.time(),
+        "module": str(Path(__file__).resolve()),
+        "sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+    }
     try:
         DAEMON_STAMP.parent.mkdir(parents=True, exist_ok=True)
-        DAEMON_STAMP.write_text(json.dumps({
-            "pid": os.getpid(),
-            "started": time.time(),
-            "module": str(Path(__file__).resolve()),
-            "sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        }, indent=2) + "\n")
+        try:
+            data = json.loads(DAEMON_STAMP.read_text())
+        except Exception:
+            data = {}
+        if isinstance(data, dict) and "pid" in data and isinstance(data.get("sha256"), str):
+            data = {str(data["pid"]): data}       # legacy single-pid object -> map
+        if not isinstance(data, dict):
+            data = {}
+        data[pid] = entry                          # merge — never overwrite a sibling stamp
+        DAEMON_STAMP.write_text(json.dumps(data, indent=2) + "\n")
     except Exception as e:  # never fatal: the doctor falls back to mtime and says so
         print(f"loop-governance: could not write the daemon stamp ({type(e).__name__}: {e}); "
               f"the doctor will fall back to mtime", file=sys.stderr)

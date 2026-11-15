@@ -12,6 +12,7 @@ These tests drive the check's logic in isolation by monkeypatching the `ps`
 output to a controlled listing pointing at a REAL temp module with an explicit
 daemon-start epoch — so they assert the check's behaviour, never the live host.
 """
+import hashlib
 import os
 import subprocess
 import sys
@@ -43,6 +44,30 @@ def _run_check():
     r = Results()
     chk.check_stale_loop_gov_daemon(r)
     return [c for c in r.checks if c["name"] == "loop-gov daemon"]
+
+
+def _patch_ps_multi(pids_mod_map, daemon_start_epoch: float):
+    """A ps listing that names MULTIPLE loop-gov daemons starting at one epoch.
+
+    The sibling-daemon case a single-pid stamp cannot cover: two session-spawned
+    MCP daemons (--role review and --role loop-governance) start ~1s apart, and a
+    single-object stamp only ever records one of them.
+    """
+    real_run = subprocess.run
+    rendered = "".join(f"{pid} {sys.executable} {mod}\n" for pid, mod in pids_mod_map)
+
+    def fake_run(cmd, **kw):
+        if cmd == ["ps", "-eo", "pid,args"]:
+            return type("R", (), {"stdout": rendered, "returncode": 0})()
+        if (cmd[0:2] == ["ps", "-o"] and "lstart=" in cmd[2:3] and "-p" in cmd):
+            start = datetime.fromtimestamp(daemon_start_epoch)
+            return type("R", (), {
+                "stdout": start.strftime("%a %b %d %H:%M:%S %Y"),
+                "returncode": 0})()
+        return real_run(cmd, **kw)
+
+    subprocess.run = fake_run
+    return lambda: setattr(subprocess, "run", real_run)
 
 
 def _patch_ps_path(pid: int, argv_mod: Path, daemon_start_epoch: float,
@@ -121,3 +146,31 @@ def test_reports_skip_when_daemon_argv_names_a_missing_module(tmp_path):
         restore()
     assert hit, "expected at least a SKIP row"
     assert hit[0]["status"] == "SKIP"
+
+
+def test_per_pid_stamp_map_verifies_every_stamped_sibling(tmp_path, monkeypatch):
+    """A per-pid stamp MAP must verify EVERY stamped daemon by content -> PASS,
+    never leave a sibling reading COULD-NOT-VERIFY.
+
+    Current code reads a single-object stamp (`stamp.get("pid")`), so a map fed
+    to it is ignored and both fake pids read "wrote no startup stamp" -> WARN
+    (the RED). The fix makes the check read the map (via `_read_daemon_stamp`),
+    so two sibling entries with a matching module sha both `continue` to PASS.
+    """
+    now = time.time()
+    mod = tmp_path / "loop-gov-mcp.py"
+    mod.write_text("x = 1\n")
+    os.utime(mod, (now, now))            # module written NOW (newer than daemon start)
+    sha = hashlib.sha256(mod.read_bytes()).hexdigest()
+    # Both siblings carry a stamp entry whose sha matches the module on disk.
+    monkeypatch.setattr(chk, "_read_daemon_stamp", lambda: {
+        "1111": {"started": now - 60, "module": str(mod), "sha256": sha},
+        "2222": {"started": now - 60, "module": str(mod), "sha256": sha},
+    }, raising=False)
+    restore = _patch_ps_multi([(1111, mod), (2222, mod)], now - 60)
+    try:
+        hit = _run_check()
+    finally:
+        restore()
+    assert hit, "check produced no loop-gov-daemon row"
+    assert hit[0]["status"] == "PASS", hit

@@ -411,6 +411,26 @@ def _daemon_start_epoch(pid: str) -> float | None:
     return None
 
 
+def _read_daemon_stamp() -> dict:
+    """The daemon stamp as a PER-PID MAP, migrating a legacy single-pid object.
+
+    ``loop-gov-mcp.py`` writes ``{str(pid): {started, module, sha256}}``. A first
+    generation wrote a single ``{pid, sha256}`` object, which the second of two
+    session-spawned sibling daemons overwrote (measured 2026-11-15: pids
+    2285405/2285456) — so the un-stamped sibling read "COULD NOT VERIFY" forever.
+    Normalize either shape to the map so every daemon is content-verifiable.
+    """
+    data = {}
+    try:
+        data = json.loads((Path.home() / ".steadfaste-fleet" / "state"
+                           / "loop-gov-daemon.json").read_text())
+    except (OSError, json.JSONDecodeError):
+        data = {}
+    if isinstance(data, dict) and "pid" in data and isinstance(data.get("sha256"), str):
+        return {str(data["pid"]): data}          # legacy single-pid object -> map
+    return data if isinstance(data, dict) else {}
+
+
 def check_stale_loop_gov_daemon(res: "Results") -> None:
     """Warn when the running loop-governance MCP daemon serves a STALE module.
 
@@ -478,16 +498,11 @@ def check_stale_loop_gov_daemon(res: "Results") -> None:
     # 2026-10-18, a deploy advanced the deployed module's mtime while its body stayed byte-identical
     # to the repo source, and this check called a CURRENT daemon stale — a warning that fired on
     # every deploy and could only be "fixed" by a restart that changed nothing.
-    import json as _json
-    stamp = {}
-    try:
-        stamp = _json.loads((Path.home() / ".steadfaste-fleet" / "state"
-                             / "loop-gov-daemon.json").read_text())
-    except Exception:
-        stamp = {}
+    stamp = _read_daemon_stamp()
     stale, unverified = [], []
     for pid, mod_path, start, mod_mtime, mod_sha in daemons:
-        rec_sha = stamp.get("sha256") if str(stamp.get("pid")) == str(pid) else None
+        rec = stamp.get(str(pid)) if isinstance(stamp, dict) else None
+        rec_sha = rec.get("sha256") if isinstance(rec, dict) else None
         if rec_sha and mod_sha:
             if rec_sha != mod_sha:
                 stale.append(f"pid {pid} loaded {rec_sha[:12]}, the file is now {mod_sha[:12]}")
