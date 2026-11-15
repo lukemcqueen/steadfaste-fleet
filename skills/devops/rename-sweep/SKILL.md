@@ -208,6 +208,19 @@ with the sweep, in the same change:
    per-host env file through months of deploys). The deploy must REWRITE that file to the
    new invariant — read it, drop the retired lines, write it back — and the doctor needs a
    FAIL naming the retired name with the repair command.
+
+   **A rename that changes an ENV-KEY a store/gate reads must migrate the host `.env` in the SAME
+   release — or the reader resolves an EMPTY value and every downstream gate that reads the store fails
+   with no red token anywhere.** When the code's env-key changes (`MYCORTEX_MEM_PASSWORD` →
+   `MYFLEET_MEM_PASSWORD`) but the host `.env` still carries the old name, the store's resolver finds
+   nothing, `psql` says "no password supplied", and a gate that answers off that store (the pre-commit
+   reflexion `session_loaded_skill` check) refuses EVERY governed commit on the host — while `git grep`
+   reads clean because the sweep renamed the code only. Two checks catch it: grep the host `.env` KEY names
+   for the retained family after the sweep (`grep -nE '^MY(FLEET|CORTEX)_MEM_PASSWORD=' ~/<env>` — values
+   masked, never printed), and when a gate fails with a "store unreachable" flavor that has no matching
+   residual token, test the store's own connectivity (`Store().available()` / `psql` auth) before assuming
+   the gate logic regressed. The host `.env` is gitignored, so it is never covered by a repo grep — a
+   host-env-key sweep is a separate surface from the repo sweep.
 6. **Fix the GENERATOR, not its output — then gate the generator.** When the swept names
    live in GENERATED artifacts (per-harness READMEs, unit files, generated manifests),
    editing the artifact is a no-op: the next regeneration restores the old names. Fix the

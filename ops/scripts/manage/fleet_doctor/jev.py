@@ -21,7 +21,12 @@ import shutil
 import subprocess
 from pathlib import Path
 
-CATALOG_CACHE = Path.home() / ".cache" / "jev" / "models_dev.json"
+CATALOG_CANDIDATES = [
+    # Current Jev cache locations (plugin writes here).
+    Path.home() / ".hermes" / "models_dev_cache.json",
+    # Legacy cache location still used on some hosts.
+    Path.home() / ".cache" / "jev" / "models_dev.json",
+]
 # A pool may lead with a model up to this much dearer than the current one before it
 # is worth reporting: prices move, and a hair over is not a finding.
 TOLERANCE = 1.5
@@ -56,9 +61,14 @@ def _routing_mode() -> str:
 
 def _catalog_prices() -> dict:
     """{provider:model -> blended $/M} from the local catalog cache (no network)."""
-    try:
-        raw = json.loads(CATALOG_CACHE.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    raw = None
+    for path in CATALOG_CANDIDATES:
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+            break
+        except (OSError, json.JSONDecodeError):
+            continue
+    if not isinstance(raw, dict):
         return {}
     prices = {}
     # models.dev is keyed BY PROVIDER at the top level (`{"openrouter": {"models": …}}`).
@@ -89,16 +99,27 @@ def _current_model() -> str:
                              text=True, timeout=15).stdout.strip()
     except (OSError, subprocess.SubprocessError):
         return ""
+
+    provider = ""
+    default = ""
     for line in out.splitlines():
         line = line.strip()
-        if not line:
+        if not line or ":" not in line:
             continue
-        # `hermes config get model` labels the value ("default: <provider>/<model>");
-        # only a KNOWN label is stripped, so a `provider:model` id keeps its prefix.
-        for label in ("default:", "model:"):
-            if line.lower().startswith(label):
-                return line[len(label):].strip()
-        return line
+        key, value = line.split(":", 1)
+        key = key.strip().lower()
+        value = value.strip()
+        if key == "provider":
+            provider = value
+        elif key == "default":
+            default = value
+        elif key == "model" and not default:
+            default = value
+
+    if default and provider and ":" not in default:
+        return f"{provider}:{default}"
+    if default:
+        return default
     return ""
 
 
