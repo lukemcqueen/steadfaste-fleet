@@ -255,6 +255,14 @@ evidence — it can be days old while a live holder exists. Read the process tre
 ps -eo pid,ppid,lstart,args | grep -E 'fleet-update|fleet-dogfood' | grep -v grep
 ```
 
+**An EMPTY process tree does NOT prove a peer holds it — it proves VERSION SKEW.**
+`fcntl.flock` self-releases on process exit, so a persistent "held" with no holder in
+`ps`/`pgrep` is a CALLER bug, not a stale lock: the deployed mutex helper and the repo
+script disagree on the inner-run env var (`FLEET_UPDATE_INNER` vs `CORTEX_UPDATE_INNER`)
+after the CORTEX_*→FLEET_* rename, so the guard's own child re-enters the mutex and
+contends with its parent. Probe the lock as free (open + `flock(LOCK_EX|LOCK_NB)` →
+`ACQUIRED`) and grep the two `UPDATE_INNER` names before assuming a peer — see Pitfall 30.
+
 A `fleet-dogfood.sh --force` parent means a peer session is running pull → deploy → doctor →
 verify on the SAME tree: it deploys exactly what you would, so wait for it and read its log
 (its scratch dir, e.g. `~/.hermes/cache/scratch/<tag>/dogfood*.txt`) rather than queueing your own
@@ -268,6 +276,50 @@ run.
   resync for YOUR uncommitted work, not a defect you introduced.
 - **Do not commit into a tree a peer is mid-cycle in.** Its close window is `base..HEAD`, so your
   commit lands in its review range as scope drift; commit once it has landed.
+
+## Pitfall 30: "mutex held" / "Operation not permitted" with no holder is VERSION SKEW, not a peer or a stuck flag
+
+A deploy that reports `fleet-update mutex held` but shows NO holder (`ps`/`pgrep` empty,
+lock freshly flockable) — or that fails `cp: ... Operation not permitted` on an enforcement
+file its own unlock step just "cleared" — is almost always the DEPLOYED helper disagreeing
+with the REPO script after the CORTEX_* → FLEET_* rename, not a real concurrent deploy and
+not a genuinely stuck `uchg`.
+
+The deploy script prefers the DEPLOYED helper copies when it resolves them. When the repo
+moved ahead (a dogfood/skew state), the deployed helper is stale and the pair disagrees on
+a name, in two distinct shapes:
+
+- **Env-var name (`FLEET_UPDATE_INNER` vs `CORTEX_UPDATE_INNER`).** The repo script's mutex
+  block checks `${FLEET_UPDATE_INNER}`; a stale deployed `fleet-update-mutex.py` sets
+  `CORTEX_UPDATE_INNER` in its child's env. The guard acquires the flock, spawns its child
+  with the OLD name, the child (new script) re-enters the mutex and contends with its parent
+  → `mutex held` instantly, on a fresh lock, no external holder.
+  **Fix:** sync the deployed helper to the repo copy (`cp <repo>/ops/scripts/lib/fleet-update-mutex.py
+  <deploy>/scripts/lib/fleet-update-mutex.py`), re-run.
+- **Sanctioned token (`--fleet-update` vs `--cortex-update`).** The enforcer step calls the
+  BARE `hermes-plugin-lock unlock --fleet-update`; PATH resolves a stale system
+  `/usr/local/bin/hermes-plugin-lock` that still accepts only `--cortex-update`, so the
+  unlock is REFUSED (audit-logged), the `uchg` flag never clears, and `cp` fails
+  `Operation not permitted` even though perms look right. The top-of-deploy unlock "worked"
+  only because it used the newer deployed helper by absolute path — the step's use of the
+  bare name is the divergence.
+  **Fix:** replace the system helper once (`sudo chflags nouchg
+  /usr/local/bin/hermes-plugin-lock && sudo cp <repo>/ops/install/deploy/nginx/hermes-plugin-lock
+  /usr/local/bin/hermes-plugin-lock && sudo chmod 755 ...`), re-run; self-update then keeps
+  it current via the sudoers NOPASSWD entry.
+
+**Diagnose before concluding a stuck lock or immutable flag:** the lock is an advisory
+`fcntl.flock` — probe it directly (any python-capable route; the lock file is host live-state,
+editable with no repo lock): open + `flock(LOCK_EX|LOCK_NB)` → `ACQUIRED` proves false
+contention. Then `grep -n 'UPDATE_INNER'` on `ops/scripts/fleet-update.sh` AND the deployed
+`scripts/lib/fleet-update-mutex.py`, and `grep -nE 'fleet-update|cortex-update'` on the repo
+helper AND `/usr/local/bin/hermes-plugin-lock` — a name mismatch on either pair IS the root
+cause.
+
+**Root-cause the code, not the instance:** the enforcer and system-script steps must call the
+deployed helper by ABSOLUTE path (`${FLEET_DEPLOY_HOME}/scripts/hermes-plugin-lock`), which the
+deploy keeps current, instead of the bare name that PATH can resolve to a stale system copy;
+and the mutex-helper preference should favor the repo copy under dogfood.
 
 ## Pitfall 19: A `git pull --rebase --autostash` that hits the terminal timeout may have FINISHED — and can leave a conflicted autostash
 

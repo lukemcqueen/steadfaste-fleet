@@ -262,7 +262,7 @@ treat that as part of the deliverable, not a follow-up.
   flow auto-stashes the tree before pulling and pops it after; a stash taken
   BEFORE the rename and restored AFTER brings the OLD tokens back into the
   index/worktree (measured: a staged set reverting `FLEET_DEPLOY_HOME` →
-  `CORTEX_DEPLOY_HOME` and re-adding `CORTEX_BUS_*` guidance). When the tree
+  `CORTEX_DEPLOY_HOME` (STALE retired spelling) and re-adding `CORTEX_*` guidance). When the tree
   then carries a large "peer's staged set" overlapping the merged origin,
   diff the overlapping file's staged content against the merge's version
   before preserving it — the restored side is often STALE and the merged tree
