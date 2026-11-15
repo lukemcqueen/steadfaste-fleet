@@ -30,6 +30,15 @@ REMOVE the matching Hermes entry** — `hermes cron list` to find the job's `id`
 then `hermes cron remove <id>` (always list first; never guess IDs). A live
 timer + a live `cronjob` tick = the job runs twice.
 
+**Batch-removing Hermes entries is slow per call — budget for it.** `hermes
+cron remove` costs ~3–4s per job (CLI startup + scheduler write), so a 50–60
+entry migration crosses the terminal's default foreground timeout mid-loop and
+the command is killed with a PARTIAL state (some removed, some not). Run the
+loop with a generous `timeout` (or in chunks), and make it idempotent: compute
+the to-remove set from the CURRENT `jobs.json` each pass (already-removed names
+are simply absent), and after any timeout re-list which bridge-owned names
+remain in `jobs.json` instead of assuming the loop finished or double-removing.
+
 **The double-fire is not merely duplicate work — the second run collides on
 shared state.** A double-owned job that stages files (a backup staging dir, a
 symlink, a lockfile) fails its second run with `Errno 17` / `File exists` on

@@ -811,6 +811,26 @@ The doctor mixes two kinds of checks: host-level scans (cwd-independent — they
 - `CLAUDE.md (dev repos)` is **heading-based**: it requires the exact string `## Excellence — Core Value, Every Action` in each dev repo's CLAUDE.md. Source the canonical section from the fleet's `AGENTS.md` (lines ~55-62; it is self-contained by design — keep the two bullets verbatim, adapt only the trailing "supporting detail" pointer to the target repo's own structure). The check reads the heading only, so a project-adapted body under that heading is current.
 - After editing dev-repo governance files, the OTHER repos' git hooks apply the same pathspec-commit rule (`git commit --only -m ... -- path`) — the shared-index guard is fleet-wide, not fleet-repo-only.
 
+## Pitfall 30: A cron erroring every night with "fleet-update rc=2" is usually uncommitted reconciler drift — commit, then re-run
+
+`agent-steadfaste-fleet-sync` (and any job whose gate is `doctor-clean`, e.g.
+the daily regression gate) errors when the deploy-time doctor exits 2. On a
+host where the skill-drift reconciler runs on a schedule, the recurring cause
+is NOT a broken script: the reconciler backports deployed-superset lessons
+into the repo working tree WITHOUT committing, so the tree carries uncommitted
+skill edits at every nightly sync and the doctor FAILs on them. Re-running the
+cron without committing just re-fails.
+
+Check `git status --short` FIRST; commit the reconciler output (pathspec-
+scoped, as its own governed change), then re-run the cron through the
+scheduler so its `last_status` clears. Expect this to recur — the reconciler
+re-dirties the tree on its next pass, and committing the backport IS the
+designed convergence; once the tree is clean the residual drift is WARN (not
+FAIL), so fleet-update exits 0 and the fleet watchdog's `no_errored_crons`
+bit clears. A watchdog that re-alerts the same issue every 5 minutes is the
+symptom of the STALE errored `last_status`, not a new fault — clear the
+underlying error and the loop dies with it.
+
 ## Rollback
 
 Deployed governance files are immutable (`chattr +i`); there is no agent-side rollback. If a deploy broke something:
