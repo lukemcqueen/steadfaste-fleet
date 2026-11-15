@@ -130,6 +130,11 @@ API field names in 3.206+: `costDetails`, `calculatedTotalCost` — NOT legacy `
 | Doctor checksum mismatch | SOURCE header adds 3 lines to deployed files | Use `_content_md5()` (strips header) |
 | Gateway restart needed after plugin change | File-on-disk ≠ change-live | Restart session/gateway, verify the change is loaded. The deploy cannot always read the gateway's start time and then FAILS CLOSED as restart-required even when nothing changed — treat it as pending, hand the restart to the host operator (it must run from a shell OUTSIDE the gateway process), and do not loop retrying or edit the deployed copy |
 
+## Doctor verification pitfalls
+
+- **Run the doctor under the fleet venv — the base interpreter lacks the declared import set.** `ops/scripts/manage/fleet-doctor.py`'s "Skills loadable" check needs the skill manifest imports; `python3` (system) fails it while `/Users/luke/.steadfaste-fleet/venv/bin/python3` passes. Use the venv interpreter for doctor AND `cron_manifest.py --repair` and `reconcile-stranded-skills.py`.
+- **`fleet-doctor.py --json` does NOT surface stored dispositions — a check that is already disposed reads `disposition: null` there.** The JSON renderer returns only the live check's disposition; the recorded store is `~/.steadfaste-fleet/state/doctor-dispositions.json`. Before re-disposing a WARN/FAIL that the text doctor showed as handled, confirm it is absent from the store — otherwise you re-run/re-record the same disposition. The text renderer (which honors the store) is authoritative for "0 undisposed".
+
 ## Stranded skills — the DEPLOYED copy can be NEWER than the repo
 
 `fleet-update.sh` refuses to overwrite a deployed skill whose copy is newer than the repo source,

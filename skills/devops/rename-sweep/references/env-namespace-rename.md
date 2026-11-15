@@ -112,6 +112,14 @@ Constraints that keep either mode safe and idempotent:
 
 **A new-name sweep regex swallows single-letter PLACEHOLDER labels in comments** (`OLD_X` in "OLD_X ↔ NEW_X" matches `\bPREFIX_([A-Z][A-Z0-9_]*)` as name `X`) and turns documentation into self-contradiction ("FLEET_X ↔ FLEET_X", "every FLEET_X has a matching FLEET_X") that the close reviewer files as fabrication. Two mitigations: exclude comment lines with the sentinel label from the sweep, or post-sweep grep the corrupted signature (`<new>_X ↔ <new>_X`, `matching <new>_X`) and fix the labels back to `OLD_X ↔ NEW_X` in a comment-only commit.
 
+## 5b. A credential env var whose spelling a gate's store reads is the highest-stakes orphan — verify store reachability, not just variable presence
+
+A rename that changes the spelling of a DB/API-password var (`MYCORTEX_MEM_PASSWORD` → `MYFLEET_MEM_PASSWORD`) has a THIRD failure mode beyond "reader gets empty": when a FAIL-CLOSED gate (the reflexion/commit gate) depends on a store that reads the new spelling from the per-host `.env`, a host whose file still carries only the OLD name makes the store silently unreachable — and the gate then blocks EVERY governed action with a MISLEADING error ("skills not loaded this session") that points at the wrong cause. The stack: store.py reads the new spelling; host `.env` has only the old key; store can't auth → `store available: False`; every commit refused.
+
+- Sweep the per-host env for the credential spellings explicitly (names only, grep the OLD and NEW key, never the value), not just the functional config vars.
+- The repair is ADDING the new spelling to the host `.env` (value COPIED from the old key in-place — never printed, never removed until every consumer reads the new one) — then VERIFY the store resolves: probe `store.available()` / run the consumer, and confirm the gate's check now passes, because "the var is present" is a weaker proof than "the store is reachable."
+- The gate's own nominal check can pass while the real door stays shut when run under a different interpreter/venv than the consumer — the fix is the env-add, not a gate edit.
+
 ## 6. Document it so agents implement it correctly — and fix superseded claims
 
 The namespace sweep is a long multi-batch effort, so the RESULT belongs in a
