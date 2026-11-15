@@ -55,7 +55,7 @@ def canonical_remote(url: str) -> str:
     """Normalize a git remote URL to scheme://host/path, stripping credentials.
 
     Hosts may store the origin URL with an embedded token
-    (https://<token>@github.com/lukemcqueen/steadfaste-fleet.git) — that is still
+    (https://<token>@github.com/<owner>/steadfaste-fleet.git) — that is still
     the canonical repo, and the guard must not refuse it (kustos, 2026-08-13;
     remote corrected from the pre-rewrite fleet-operator URL 2026-08-24).
     Non-http URLs (ssh, file) are returned unchanged.

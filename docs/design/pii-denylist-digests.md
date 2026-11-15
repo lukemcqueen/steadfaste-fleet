@@ -86,3 +86,24 @@ repository's own GitHub URL, which appears throughout the README and docs.
 
 It also asserts the enforcer source contains no identifier component, which is
 the regression guard for this whole design.
+
+## Read-side coverage: the surface guard
+
+The gate above governs WRITES. Nothing checked the repository that already
+exists — an identifier could reach the tree by a path the gate never inspected
+(a redaction that missed a fragment, an import from another host, a file added
+before its entry landed).
+
+`tests/test_pii_denylist_surface_guard.py` closes that gap: it sweeps every
+window of every `git ls-files`-tracked file against `_PII_SENSITIVE_DIGESTS`
+(reusing the module's own lengths, digests and sanction rules — never a
+hand-typed list, which would go stale and would itself be an index). Two
+properties make its verdict meaningful:
+
+* a **positive control** — it must FIND the sanctioned repo-URL hits, so a
+  scanner that silently matched nothing cannot report a clean tree;
+* a failure names **path, line, digest prefix and length**, never the term.
+
+It is the regression guard for redacted captures in particular: a redaction
+that replaces a person's name but leaves a deny-listed term standing is
+invisible to every path check and is caught here.

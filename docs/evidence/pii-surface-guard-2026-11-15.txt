@@ -1,0 +1,100 @@
+# PII deny-list surface guard — 2026-11-15
+
+## What was measured
+
+A hash-window sweep of every git-tracked file in this repo against the
+enforcer's own `_PII_SENSITIVE_DIGESTS` — same lengths, same digests, same
+sanction rules as the write gate (`_PII_SENSITIVE_URL_ALLOWED`, `_PII_REPO_URL_RE`,
+`_PII_SENSITIVE_OK_RE`). Windows are hashed over bytes so an 11 MB tree sweeps in
+~40 s (sharded 8-way in the guard test).
+
+## Corrected inventory (measured, not the handoff's premise)
+
+Only TWO deny-list classes appear in the tracked surface:
+
+- class `d8AerF` (length 7 — the URL-allowed repo-owner entry): 31 files,
+  virtually all occurrences sitting inside the repo's own public GitHub URLs
+  (sanctioned). Four deviating bare-form mentions are listed and fixed below.
+- class `t7hTWY` (length 10): exactly ONE line — a surviving fragment inside an
+  already-redacted evidence capture (`docs/evidence/task-queue-suite-baseline.txt:26`
+  before fix).
+
+The three hostname / bot-username / agent-name tokens the previous session's
+survey named are NOT members of the deny-list: each appears verbatim in tracked
+files (live-file counts 8 / 18 / 0) and the full-surface sweep flagged none of
+them. The personal-domain token exists only in untracked `.env*` files (the
+real env, correctly gitignored).
+
+Commit `87bb6033` (2026-11-04) already remediated the deny-listed identifiers
+repo-wide and replaced them with placeholders.
+
+## Guard test: pre-fix RED run (proves the detector)
+
+Command: `tests/run-tests.sh tests/test_pii_denylist_surface_guard.py -q`
+Result: 1 failed, 1 passed; the failing finding:
+
+```
+E   AssertionError: deny-listed identifier in a tracked file (path, line, class, length):
+E   [('CONTRIBUTING.md', 17, 'd8AerF', 7),
+E    ('docs/evidence/task-queue-suite-baseline.txt', 26, 't7hTWY', 10),
+E    ('docs/older/design/fleet-git-reset-2026-08-24.md', 22, 'd8AerF', 7),
+E    ('docs/older/design/fleet-git-reset-2026-08-24.md', 23, 'd8AerF', 7),
+E    ('ops/scripts/manage/fleet-git-reset.py', 58, 'd8AerF', 7)]
+```
+
+## Fixes applied
+
+1. `CONTRIBUTING.md:17` — bare `owner/repo` reference rewritten to the repo's
+   own full public URL (that context is sanctioned; a bare mention is not).
+2. `ops/scripts/manage/fleet-git-reset.py:58` — docstring example URL switched
+   to the sanctioned `fleet-operator` placeholder (matches line 50 in the same
+   function; a real handle inside a `<token>@` userinfo is not recognized by
+   the gate's URL regex).
+3. `docs/older/design/fleet-git-reset-2026-08-24.md:22-23` — same placeholder.
+4. `docs/evidence/task-queue-suite-baseline.txt` — the surviving deny-listed
+   fragment in a redacted pytest id replaced with `<redacted-term>`; its
+   redaction-contract header widened to cover deny-listed terms.
+5. `docs/design/pii-denylist-digests.md` — added a "read-side coverage"
+   section so the doc's test-coverage list stays truthful.
+
+## Guard test: post-fix GREEN run
+
+Command: `tests/run-tests.sh tests/test_pii_denylist_surface_guard.py -q`
+Result:
+
+```
+tests/test_pii_denylist_surface_guard.py ..                              [100%]
+============================== 2 passed in 41.02s ==============================
+run-tests.sh: interpreter=.../venv/bin/python3 rc=0
+```
+
+## Independent review (cycle 14752) and folding
+
+The pro reviewer (deepseek-v4-pro) returned FINDINGS — two medium findings, both
+about the scanner being able to report clean without scanning a file:
+
+- ADV-14752-1 (swallowed-error): `except OSError` returned clean, so an
+  unreadable tracked file would pass silently.
+- ADV-14752-2 (unverified-claim): the "skip binary (NUL in first 8k)" heuristic
+  could hide a deny-listed identifier later in such a file.
+
+Both folded:
+
+- On ANY read failure the file now returns a `READFAIL` finding, so the guard
+  FAILS on a file it cannot verify — never reports clean.
+- `test_scanner_sees_the_sanctioned_repo_url_context` now asserts
+  `visited == len(git ls-files)` — no file is excluded by a heuristic without
+  failing the positive control.
+- The binary-skip heuristic was REMOVED; every tracked file is swept.
+- A tracked-but-worktree-deleted file (still in the index, absent on disk —
+  a pending deletion or sparse checkout) is read from its index blob via
+  `git show :<path>`, because the tracked surface IS the index; only a file
+  absent from both index and worktree is a true READFAIL.
+
+Run after folding (same command):
+
+```
+tests/test_pii_denylist_surface_guard.py ..                              [100%]
+============================== 2 passed in 38.96s ==============================
+runner rc=0
+```

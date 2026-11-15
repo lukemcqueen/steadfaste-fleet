@@ -3,9 +3,9 @@
 Commit: 626b964b (the commit this change was built on)
 Command: python3 -m pytest tests/ -q
 
-Captured output, not regenerable. Personal identifiers that appear inside the
-captured test ids are redacted to <redacted-...> placeholders — this repo is
-public.
+Captured output, not regenerable. Personal identifiers and deny-listed terms
+that appear inside the captured test ids are redacted to <redacted-...>
+placeholders — this repo is public.
 
 ```
 E     MISSING orch-skill-lifecycle
@@ -23,7 +23,7 @@ FAILED tests/test_dogfood_gate_scoping.py::test_scope_guard_passes_in_the_cortex
 FAILED tests/test_enforcer_pii_gate.py::test_pii_blocked[<redacted-email>]
 FAILED tests/test_enforcer_pii_gate.py::test_pii_blocked[Built by <redacted-name> in Seoul]
 FAILED tests/test_enforcer_pii_gate.py::test_pii_blocked[the bus at <redacted-domain>:13004]
-FAILED tests/test_enforcer_pii_gate.py::test_pii_blocked[co-founder with <redacted-name>]
+FAILED tests/test_enforcer_pii_gate.py::test_pii_blocked[<redacted-term> with <redacted-name>]
 FAILED tests/test_enforcer_pii_gate.py::test_pii_blocked[call <redacted-number>]
 FAILED tests/test_enforcer_pii_gate.py::test_pii_blocked[connect to https://my-secret-server.internal:8443]
 FAILED tests/test_enforcer_pii_gate.py::test_pii_blocked[panel at https://192.168.1.10/admin]

@@ -18,16 +18,19 @@ origin/main is the clean history. The fork is real (all hashes changed).
 
 ## The tool: `fleet-git-reset.py` (fixed 2026-08-24)
 
-Pre-built for exactly this. **Bug fixed**: EXPECTED_REMOTE was the stale
-`lukemcqueen` URL → tool refused the real repo. Now accepts
-`lukemcqueen/hermes-cortex.git` (deployed to ~/.hermes-cortex/scripts/).
+Pre-built for exactly this. **Bug fixed** (2026-08-24): EXPECTED_REMOTE was the
+stale pre-migration owner URL → tool refused the real repo.
+`is_canonical_remote` now accepts `https://github.com/<owner>/steadfaste-fleet.git`
+(owner-agnostic) and explicitly rejects the retired `fleet-operator` org. The
+historical record's deploy path (`~/.hermes-cortex/scripts/`) reflects the
+pre-2026-11-03 state, before the repo migrated to `steadfaste-fleet`.
 
 ```bash
-python3 ~/.hermes-cortex/scripts/fleet-git-reset.py --check   # dry-run
-python3 ~/.hermes-cortex/scripts/fleet-git-reset.py --reset   # align to clean main
+python3 ~/.steadfaste-fleet/scripts/fleet-git-reset.py --check   # dry-run
+python3 ~/.steadfaste-fleet/scripts/fleet-git-reset.py --reset   # align to clean main
 ```
 
-Safety guards (fail closed): only ~/hermes-cortex, verifies remote,
+Safety guards (fail closed): only ~/steadfaste-fleet, verifies remote,
 refuses dirty worktree without --force, refuses unreachable origin/main,
 only aligns main.
 
@@ -38,7 +41,7 @@ git fetch origin
 git reset --hard origin/main          # align local main to clean history
 git reflog expire --expire=now --all && git gc --prune=now   # purge old PII objects
 git branch | grep -E "pii-scrub|pr/[0-9]" | xargs -r git branch -D  # stale branches
-bash ~/.hermes-cortex/scripts/cortex-dogfood.sh --force      # sync deployed state
+bash ~/.steadfaste-fleet/scripts/fleet-dogfood.sh --force     # sync deployed state
 ```
 
 ## ⛔ Never

@@ -14,7 +14,7 @@
 
 ## Overview
 
-**Steadfaste Fleet** is a public GitHub repo (`lukemcqueen/steadfaste-fleet`) containing:
+**Steadfaste Fleet** is a public GitHub repo (https://github.com/lukemcqueen/steadfaste-fleet) containing:
 
 - **Source scripts** in `ops/scripts/` — watchdogs, installers, utilities
 - **Canonical skills** in `skills/` — organized by domain
