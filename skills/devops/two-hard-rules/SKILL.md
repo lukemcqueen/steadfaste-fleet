@@ -33,6 +33,15 @@ Every code, config, or cron change REQUIRES this sequence — no exceptions:
 - Locks are session-scoped: `rm -f ~/.steadfaste-fleet/state/.governance-<session-id>.json`
   (find yours with `ls -t ~/.steadfaste-fleet/state/.governance-*.json | head -1`;
   the legacy name `.governance-active.json` is obsolete).
+- **A lock that is YOURS can read as foreign — pass the session_id explicitly.
+  `begin_change` stamps the injected Hermes session id on the lock, but
+  `check_lock`/`end_change` may resolve the MCP's SHARED per-repo id instead
+  (`identity_source` "per-repo", `lock_is_mine` false, ownership "none"), and
+  `end_change` answers "No governance session active. Nothing to release." while
+  the lock stays held and the write gate blocks everything. Before force-clearing,
+  re-issue the call with `session_id="<the id begin_change recorded>"` and re-check
+  `identity_source`: when it flips to "injected" / `lock_is_mine` true, ownership
+  was only hidden, not lost, and that explicit id is the sanctioned release.
 - Never silently force-clear without calling `end_change` first.
 
 The MCP server blocks write tools without an active lock — this is enforced at the tool level, not optional.

@@ -26,8 +26,11 @@ if [[ ! -x "$MYCORTEX" ]]; then
   exit 1
 fi
 
-# Per-host jitter: stable 0-120s offset derived from hostname
-offset=$(( $(printf '%s' "$(hostname)" | cksum | awk '{print $1}') % 121 ))
+# Keep this script fork-light under host process pressure.
+# A previous jitter pipeline (hostname|cksum|awk) failed when fork/exec was
+# temporarily unavailable, then set -u crashed on unset offset and turned a
+# recoverable pressure event into a hard cron failure.
+offset=0
 sleep "$offset"
 
 out="$("$MYCORTEX" sync 2>&1)"
