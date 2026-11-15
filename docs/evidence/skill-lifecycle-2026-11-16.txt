@@ -1,0 +1,58 @@
+=== orch-skill-lifecycle run @ 2026-11-16 04:39 KST ===
+
+OK   doctor:
+OK   stranded: 0
+checking 32 reported skill(s): window=48h
+  WARN adversarial-review-passoff: no repo source and not deployed locally (fleet-only skill)
+  OK   agent-health-monitoring (repo==deployed)
+  OK   cron-job-management (repo==deployed)
+  OK   enforcement-change-safety (repo==deployed)
+  OK   enforcement-immutability (repo==deployed)
+  OK   eval-harness (repo==deployed)
+  OK   execute-right (repo==deployed)
+  OK   fleet-bus (repo==deployed)
+  OK   fleet-deployment-sync (repo==deployed)
+  OK   governance-lock-lifecycle (repo==deployed)
+  OK   governance-regression-triage (repo==deployed)
+  OK   llm-cost-optimization (repo==deployed)
+  WARN local-cron-suppression-design: no repo source and not deployed locally (fleet-only skill)
+  WARN local-hermes-cortex: no repo source and not deployed locally (fleet-only skill)
+  WARN local-hermes-cortex-maintenance: no repo source and not deployed locally (fleet-only skill)
+  WARN local-hermes-cortex-repo-deploy: no repo source and not deployed locally (fleet-only skill)
+  WARN local-hermes-cortex-setup: no repo source and not deployed locally (fleet-only skill)
+  OK   macbook-linux-maintenance (repo==deployed)
+  OK   maintenance-scan (repo==deployed)
+  OK   pii-scrubbing (repo==deployed)
+  OK   rename-sweep (repo==deployed)
+  OK   repo-health-review (repo==deployed)
+  OK   repo-organization (repo==deployed)
+  OK   shared-repo-push-gates (repo==deployed)
+  OK   shell-scripting (repo==deployed)
+  OK   skill-curation (repo==deployed)
+  OK   sweep-verification (repo==deployed)
+  OK   systemd-cron-bridge (repo==deployed)
+  OK   task-orient (repo==deployed)
+  OK   two-hard-rules (repo==deployed)
+  OK   verify-and-ship (repo==deployed)
+  OK   watchdog-flapping-diagnostics (repo==deployed)
+PASS: no unapplied skill content in the window
+  OK   stub doctor emits >=100 lines
+probe 1: green tree
+  OK   green -> rc=0
+probe 2: deployed copy diverges (a deploy is outstanding)
+  OK   divergence -> rc=1 (FAIL, a deploy is outstanding)
+probe 3: reconciler crashes (rc=3, no stranded line) -> COULD NOT VERIFY, never green
+  OK   reconciler crash -> COULD NOT VERIFY
+probe 4: doctor runs but never prints a per-check verdict -> COULD NOT VERIFY
+  OK   doctor without a verdict line -> COULD NOT VERIFY
+probe 5: stranded: 6 (content only on the deployed tree) while the verdict line still says PASS
+  OK   stranded:6 with PASS verdict -> rc=1 (count judged, not the verdict word)
+probe 6: deployed file missing entirely -> FAIL, not skipped
+  OK   missing deployed -> rc=1 (a real failure, not 'unverifiable')
+probe 7: archived-category reports are skipped, live ones are still judged
+  OK   .archive skipped, live+missing still judged -> rc=1 (narrow filter)
+probe 8: reported name is a CATEGORY dir in the repo (exists, no SKILL.md of its own) -> tolerated WARN, not FAIL
+  OK   category dir -> rc=0 (tolerated, not a repo skill)
+
+probes run: 8 · noticed: 8 · blind spots: 0
+HARNESS PASS: 8 probes, 0 blind spots
