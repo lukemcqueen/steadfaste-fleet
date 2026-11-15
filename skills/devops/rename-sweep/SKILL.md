@@ -381,6 +381,7 @@ treat that as part of the deliverable, not a follow-up.
   expands `${HOME}` — a literal `${HOME}` can never stand in a shebang (the
   kernel does not expand variables there). Add this to the migration runbook's
   cleanup list; it is a distinct residue class from stale `__pycache__`.
+- **Deployed launcher SYMLINKS silently survive a directory rename and break every cron that calls them.** A `~/.hermes/bin/<tool>` symlink whose target still points into the renamed home (`~/hermes-cortex/…` after the tree became `~/steadfaste-fleet`) makes the cron fail with "CLI not found at <path>" while the symlink itself exists — the target is dead, so `-f` / `-x` on the link fails. The sweep surface includes symlink TARGETS, not just files: `find ~/.hermes/bin -type l -exec readlink {} + | grep <old-home>` finds them; re-point with `ln -sfn <new-target> <link>`. A "not found" error on a path that exists as a symlink is a dead-target signature, never a missing-file assumption.
 - **A background result can be SUPERSEDED — check it is the latest run before
   acting.** A long test/deploy run finishing late reports the tree from when it
   STARTED. Two completion notices can disagree (an older 7-failure run landing

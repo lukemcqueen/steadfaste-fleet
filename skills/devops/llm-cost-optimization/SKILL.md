@@ -82,8 +82,9 @@ same job. Keep it on reasoning-heavy work (orchestrator decisions, diagnosis,
 evaluation). Pin via the cron manifest so it survives deploys, not just live
 jobs.json (live edits get reverted by fleet-update).
 
-**Enabling per-turn reasoning-effort routing needs a MEASURED capability map,
-never a guess** — a level a model does not accept either 400s the request or is
+**"Start with a pro model and sub-agent to cheaper models" is usually the WRONG cost move for a single whole-document pass.** Fan-out re-sends the full material to every worker (input cost × N) AND the pro re-reads it to synthesize — more total tokens than one bounded call. Fan-out only wins when each sub-task needs a *slice* of the input (decomposable subtasks, not a holistic review). For an adversarial review of one plan/diff (whole-document judgement), bound the single call instead: explicit `reasoning_effort` + a `max_tokens` high enough to still judge. Quote the ratio when recommending a model*: the output-heavy surfaces are dominated by OUTPUT price, not input — pick by completion $/M, and remember an alias (unpinned id) resolves to a pricier revision silently.
+
+**An effort probe that a model ACCEPTS a level is evidence of reachability, NOT of quality parity.** "low accepted" means the API didn't 400; it does not mean low performs like high, and the operator is the authority on which levels a model genuinely has (a config may list a level the physical model does not really do, e.g. a flash model with no meaningful medium — do not argue with the operator's field knowledge using a config comment). When asked "would low work just as well," the honest answer without a quality head-to-head is: *low is cheaper but unproven equal; run the measured head-to-head (recall AND precision) before promoting it.* — a level a model does not accept either 400s the request or is
 silently ignored, and the whole point is the token bill. Probe each pool model at
 each level WITH a no-effort baseline, separate the two non-acceptance shapes
 (level REFUSED while the bare request works = a model you declare without that
@@ -341,3 +342,8 @@ rules for a skip-class: `references/review-gate-spend.md`.
   env-override template + live .env, agent-facing skills/docs, tests, the
   doctor/check), and the "no agent-facing doc re-applies the expensive id"
   verification.
+- `references/model-vs-effort-ab.md` — which knob cuts the bill (model vs
+  reasoning effort): measured finding that effort is NOT the worker lever (a
+  cheaper model at medium was 5x cheaper than flash at ANY effort) while effort
+  IS the lever on output-heavy reviews; the (model × effort) A/B protocol that
+  grades correctness AND cost together.

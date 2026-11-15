@@ -30,6 +30,16 @@ REMOVE the matching Hermes entry** — `hermes cron list` to find the job's `id`
 then `hermes cron remove <id>` (always list first; never guess IDs). A live
 timer + a live `cronjob` tick = the job runs twice.
 
+**The double-fire is not merely duplicate work — the second run collides on
+shared state.** A double-owned job that stages files (a backup staging dir, a
+symlink, a lockfile) fails its second run with `Errno 17` / `File exists` on
+state the first run already wrote — so "job failed with EEXIST" is a
+double-ownership signature to check for, not a disk problem. Make staging
+writes idempotent anyway (`link.unlink(missing_ok=True)` before
+`symlink_to`/overwrite; clean stale partial staging from failed runs) so a
+leftover partial run can never break the next one, then remove the second
+owner.
+
 **Remove, do not merely pause.** A paused row is not the endpoint: it is an
 owner-in-waiting (a reinstall can resume it) and it leaves two sources of truth
 for one job. Pausing was an intermediate migration step; removal finishes it.

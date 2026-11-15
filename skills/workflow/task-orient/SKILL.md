@@ -118,6 +118,7 @@ Measured traps (each costs a turn):
   be resolved for this call". For lock-free multi-file inspection use repeated
   `read_file`/`search_files` (or a simple `ls`/`grep` compound), and run
   `execute_code` only inside a governed cycle with the repo resolved.
+- **The operator-consent approval gate is INDEPENDENT of the governance lock and silently stalls a long migration.** A compound command inside a governed cycle still prompts the operator for consent, and when they step away the prompt times out as `BLOCKED — user did NOT consent` after minutes, freezing the whole workflow (do not retry; the block persists until the operator returns). Read-only inspection should therefore use `read_file`/`search_files`/single read primitives so progress never depends on an approval prompt — save the compound commands for the mutations that genuinely need consent, and batch those so each approval window counts.
 - When a read is blocked, change the MECHANISM (listed primitive or
   read_file/search_files) — never re-run the same shape reworded.
 

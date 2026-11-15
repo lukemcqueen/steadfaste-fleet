@@ -242,7 +242,9 @@ def main() -> None:
         tgz = STAGING / f"sysconfig-{i}.tar.gz"
         with tarfile.open(tgz, "w:gz") as tf:
             _tar_add_readable(tf, Path(cfg), Path(cfg).name)
-        (host_dir / f"sysconfig-{i}.tar.gz").symlink_to(tgz)
+        link = host_dir / f"sysconfig-{i}.tar.gz"
+        link.unlink(missing_ok=True)  # idempotent — a prior partial run may have left this (Errno 17)
+        link.symlink_to(tgz)
 
     svc = service_snapshot(OS_FAMILY)
     if svc:
