@@ -33,7 +33,11 @@ cd "$(dirname "$0")/../../.." || { echo "FAIL: cannot locate repo root"; exit 1;
 rc=0
 # Skills this run reconciled. Default is the class recovered 2026-10-19;
 # override with SKILLS="cat/name cat/name" to re-scope for another run.
-SKILLS="${SKILLS:-devops/codebase-portability devops/governance-lock-lifecycle software-development/agent-contract software-development/change-checklist software-development/documentation-auditing software-development/fail-closed-design}"
+# agent-contract & change-checklist removed from this class 2026-11-15:
+# they have no SKILL.md in repo, deployed fleet, Hermes defaults, or the
+# manifest (absorbed into verify-and-ship / change-test-loop), so a "repo copy
+# missing" check for them can never pass. Keep the four real recovered skills.
+SKILLS="${SKILLS:-devops/codebase-portability devops/governance-lock-lifecycle software-development/documentation-auditing software-development/fail-closed-design}"
 MIN_DOCTOR_LINES=100
 
 fail() { echo "FAIL: $*"; rc=1; }
