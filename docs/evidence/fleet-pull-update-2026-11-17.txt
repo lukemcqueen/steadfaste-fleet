@@ -114,3 +114,69 @@ NOT DONE (deliberate, and why)
 NOT DONE (this run, deliberately): still no push (pull-latest policy), still no
 model.default / roster change (parked on the operator).
 
+7. Third pass, same cycle: a POINTER fix demanded by this cycle's own review scope. The
+   backported "What each tier is FOR" section asserted that recall is flat across reviewer
+   models without naming where that is recorded. Committed 67b0506c, which cites the record
+   — docs/evidence/plan-reviewer-model-eval-2026-11-13/README.md, which states it directly
+   ("Recall is NOT a differentiator. All four caught all three planted") — and now requires
+   a verdict to cite the eval's own record path, so the next reader re-runs the eval
+   instead of trusting a summary. No claim changed, only the pointer to its record.
+
+8. Re-deploy #3 — the pointer commit touched a DEPLOY-MAPPED path (`skills/`), so it
+   needed the second deploy: UPDATE_EXIT=0 · `Deploy sync` ✅ · `Skill drift` ✅ (the
+   defect cleared) · `Overall: WARNING (511 pass · 5 warn · 0 fail · 2 info) · 3 undisposed`.
+   The FRESH idle run that followed it: `Overall: WARNING (514 pass · 2 warn · 0 fail ·
+   2 info)` with NO undisposed line. For the next reader, precisely: 511/5 belongs to the
+   DEPLOY SNAPSHOT and 514/2 to the FRESH run after it. Pairing a snapshot figure with the
+   word "fresh" (or the reverse) is exactly the mis-attribution an independent reviewer
+   caught in this cycle's review material — see (12).
+
+9. THE DRIFT REAPPEARED, inside this cycle and unattended. At 01:32:23 the DEPLOYED copy
+   of skills/devops/fleet-deployment-sync/SKILL.md grew 68358 -> 70801 bytes, gaining two
+   sections the repo did not carry:
+     - "Re-deploy only when your commit touched a DEPLOY-MAPPED path — decide from the
+       doctor, not reflexively" (the lesson this very cycle measured), and
+     - a refinement to the stranded-skill recovery covering whether the CYCLE'S OWN
+       DESCRIPTION names the paths.
+   Provenance, established rather than assumed: the freshly dispatched independent reviewer
+   subagent is CLEARED — its full transcript (73 lines) contains only read_file/search_files
+   and no write to any path. The append is the documented stranded-in-place mechanism: an
+   unattended lesson-writer appending to the deployed tree, which is how both original
+   supersets arose in the first place.
+   Recovered with the sanctioned reconciler, never by hand:
+     bare run  -> SUPERSET devops/fleet-deployment-sync/SKILL.md pure superset (+35, -0)
+     --apply   -> APPLIED (+35, -0); `cmp` IDENTICAL; re-run reports stranded: 0.
+   This is the second drift of the same class on this one file in this one cycle. It is NOT
+   a regression of the fix — the fix held, and the writer is independent. Expect recurrence
+   while an unattended writer keeps appending lessons to the deployed tree.
+
+10. A THIRD file in the same family was already resolved earlier in this range, and the
+    record now says so. The pre-fix capture listed three stranded files while the backport
+    above cites two supersets; the third — devops/hermes-model-config/references/
+    model-upstream-servability.md — was recovered under cycle 14886 (commit 2cb474e0).
+    Verified now, not assumed: the file IS in the repo and `cmp` reports the repo and
+    deployed copies IDENTICAL, with the detector reporting stranded: 0.
+
+11. The reconciler's success message is narrower than it reads. Its bare re-run prints
+    "Nothing stranded: repo and deployed trees agree on content" while the DETECTOR still
+    prints "Verdict: FAIL" — because the detector measures two classes and the reconciler
+    reconciles only the first. The distinction is now recorded in its canonical home,
+    skills/devops/fleet-deployment-sync/references/stranded-skill-reconciliation.md, so a
+    reader of that message is not misled. Read both numbers: verdict FAIL, stranded 0.
+
+12. INDEPENDENT REVIEW of this cycle — two reviewers, one recorded and one fresh-session:
+    - Recorded gate: `adversarial-review.py --cycle-id 14889 --review` -> verdict CLEAN,
+      one `info` finding (ADV-14889-01) whose own recommendation states there is "nothing
+      for the worker to change": it could not see the diff hunks. The cause is a model
+      limitation, tested both ways here — the reviewer (xiaomi/mimo-v2.6-pro) returns EMPTY
+      content whenever the material carries the diff, and answers only when it is
+      note-only. Recorded as a known limitation of the recorded gate, NOT as evidence that
+      the diff was reviewed.
+    - Fresh-session reviewer (delegate_task, deepseek/deepseek-v4-pro) given the full
+      material WITH the diff: verdict FINDINGS — 1 medium + 2 low + 2 info. Its medium
+      finding was REAL (a snapshot figure labelled as a fresh run's) and is fixed above at
+      (8). Its two low findings are fixed at (10) and (11). Both of its `info` findings
+      correctly identify that it could execute nothing (no governance lock), so every
+      live-execution claim in this record rests on the written evidence — which is why each
+      claim above names the command that re-produces it.
+

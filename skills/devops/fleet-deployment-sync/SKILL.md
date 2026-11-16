@@ -173,6 +173,28 @@ push range; pull-latest never pushes, so nothing is refused. The warning only ma
 actual push of an always-review range — then re-run begin_change once with the repo known (or set
 FLEET_SESSION_REPO), close again, then push.
 
+## Re-deploy only when your commit touched a DEPLOY-MAPPED path — decide from the doctor, not reflexively
+
+Your own commits move `HEAD` past the deployed revision, and a deploy costs 5–8
+minutes, so classify the commit before spending one. A single fresh doctor run
+answers it: read `Deploy sync`, `Repo clean`, and the `Checksum: <file>` rows.
+
+- **A deploy-mapped path — anything the register map copies (`skills/`,
+  `ops/scripts/`, `hooks/`, the plugin, the cron manifest) — needs the second
+  deploy.** Commit the change FIRST, deploy LAST, then verify. Symptoms of skipping
+  it: `Deploy sync` ⚠/❌, `Checksum: <file> — MD5 mismatch … Run: fleet-update.sh to
+  resync`, or a `Skill drift` entry naming the file you just edited. Landing the
+  deploy clears all three at once (measured: a committed `SKILL.md` edit left all
+  three sour, and one re-deploy returned `Skill drift ✅` and `Deploy sync ✅`).
+- **A docs- or evidence-only commit does NOT disturb deploy sync.** After committing
+  a `docs/evidence/*.txt` file, a fresh doctor still read `Deploy sync ✅` and
+  `Repo clean ✅` — nothing under `docs/` is registered, so there is nothing to
+  resync. Confirm with one fresh doctor run rather than burning a deploy; re-deploy
+  only if a check actually flags.
+- Either way the post-deploy verification still applies (immutable flags via
+  `lsattr`, plugin enabled, doctor `Overall:` with 0 fail) — the rule is about the
+  ORDER, not about skipping the check.
+
 ## Invoke the deploy so it survives the terminal timeout — background + log redirect
 
 A foreground `bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh | tail -60`
@@ -711,6 +733,19 @@ python3 ops/scripts/manage/reconcile-stranded-skills.py --apply   # copies the S
 5. Exit codes are a three-way outcome, not a boolean: `0` nothing stranded · `1` work
    left (review or missing) · `3` **could not verify** — the detector itself failed to
    run, so never read it as a clean tree.
+
+**Recover it inside the cycle you are already in — but only if that cycle's task
+description NAMES the paths.** The doctor's own remedy line calls the recovery "its OWN
+governed change, not part of the update cycle", while this section's opening instruction
+is that it is "the next step of the same job". They reconcile on the DESCRIPTION, not on
+the cycle boundary: a close gate reads the range's file list against the task
+description, so a backport committed under a description that never mentions `skills/`
+reads as scope drift, while the same commit under a description that already says
+"commit any reconciler drift the update surfaces" is in scope. So either widen the
+description when you open the pull-latest cycle, or land the backport in a second cycle
+whose description names it. Do not defer it either way: a pure superset backport is
+safe, lossless and cheap, and deferring a drift you could have fixed is
+documenting-and-passing.
 
 **The drift-parity artifact goes STALE between deploys — `--check` answering "STALE
 artifact - regenerate" is the normal state, not a failure.** The committed

@@ -13,6 +13,17 @@ and mtime is irrelevant. The detector owns that definition — take the stranded
 from `check-skill-drift-parity.py` rather than re-deriving it, so a second, looser
 implementation cannot disagree with the gate.
 
+**Two classes — and the reconciler's success message covers only the first.** The
+detector measures (a) files stranded IN PLACE (path in the repo, content only deployed)
+and (b) files ABSENT FROM THE REPO (a deployed file under a repo-owned skill dir that the
+repo does not carry at all, marked `never-committed` or `dropped-from-repo`). The
+reconciler reconciles only (a) — so after a clean apply its report reads "Nothing
+stranded: repo and deployed trees agree on content" while the detector still prints
+"Verdict: FAIL" whenever (b) is non-empty. That is the documented two-number outcome, not
+a contradiction: read BOTH numbers (`Verdict: FAIL · stranded: 0`). Never read the
+reconciler's success line as the parity verdict, and never auto-copy class (b): a file
+only the deployed tree holds may be a dangling route the fleet should not receive.
+
 ## Classification, and why a rewrite is never auto-applied
 
 | Deployed vs repo | Meaning | Action |
