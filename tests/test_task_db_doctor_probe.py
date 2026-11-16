@@ -36,7 +36,8 @@ class _Resolved(SimpleNamespace):
 
 
 def _drive(monkeypatch, *, add_raises=None, probe_id="9abc1234-0000-0000-0000-000000000000",
-           pending_count=2, cleanup_raises=False):
+           pending_count=2, fail_at=None):
+    """fail_at: 'start' | 'complete' | 'archive' — which cleanup step raises."""
     calls = []
 
     monkeypatch.setattr(tdb, "resolve_repo_for_query", lambda *a, **k: _Resolved())
@@ -55,13 +56,22 @@ def _drive(monkeypatch, *, add_raises=None, probe_id="9abc1234-0000-0000-0000-00
                         lambda probe, resolved, include_untagged=False: probe_id)
 
     def _update(*a, **k):
-        calls.append(("update", a[1]))
-        if cleanup_raises:
-            raise SystemExit("cleanup boom")
+        st = a[1]
+        calls.append(("update", st))
+        step = "start" if st == "in_progress" else "complete"
+        if fail_at == step:
+            raise SystemExit(f"boom at {step}")
 
     monkeypatch.setattr(tdb, "cmd_update", _update)
-    monkeypatch.setattr(tdb, "psql",
-                        lambda q, *a, **k: "1" if "task_archive_old" in q else "")
+
+    def _psql(q, *a, **k):
+        if "task_archive_old" in q:
+            if fail_at == "archive":
+                raise SystemExit("boom at archive")
+            return "1"
+        return ""
+
+    monkeypatch.setattr(tdb, "psql", _psql)
 
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
@@ -118,3 +128,26 @@ def test_invisible_probe_row_is_write_probe_fail_readback(monkeypatch):
         "check": "write_probe", "part": "readback", "status": "FAIL",
         "msg": "probe row added but not visible in task-db.py list — RLS or list path broken",
     }]
+
+
+def test_transition_failure_is_write_probe_fail_not_warn(monkeypatch):
+    # a FAILED in_progress transition means the roundtrip never completed — that
+    # is a real FAIL (the row did not even start), NOT a benign archive leak.
+    data, _ = _drive(monkeypatch, fail_at="start")
+    assert data["ok"] is False
+    assert [r for r in data["results"] if r["check"] == "write_probe"] == [{
+        "check": "write_probe", "part": "cleanup", "status": "FAIL",
+        "msg": "task-db.py start update failed: boom at start",
+    }]
+
+
+def test_archive_failure_is_warn_leak_not_fail(monkeypatch):
+    # add->start->complete all succeeded; only the final archive cleanup leaked.
+    # That keeps ok=True (roundtrip is done) but surfaces a WARN, not a PASS.
+    data, _ = _drive(monkeypatch, fail_at="archive")
+    assert data["ok"] is True
+    wp = [r for r in data["results"] if r["check"] == "write_probe"][0]
+    assert wp["status"] == "WARN"
+    assert wp["part"] == "cleanup"
+    assert wp["msg"].startswith("add \u2192 start \u2192 complete \u2192 archive roundtrip OK")
+    assert "archive cleanup failed: boom at archive" in wp["msg"]

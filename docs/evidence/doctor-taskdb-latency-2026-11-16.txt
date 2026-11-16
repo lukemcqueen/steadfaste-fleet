@@ -75,3 +75,16 @@ Both runs rc=0. Full-suite reds in tests/test_cloudflare_security_audit_skill.py
 and tests/test_context_harnesses.py are PRE-EXISTING (files reference neither
 fleet_doctor nor task-db.py — grep for the modules returns no hits in them),
 so they are unrelated to this change.
+
+REVIEW FOLD (ADV-8358-1, swallowed-error on cleanup)
+----------------------------------------------------
+The close-gate reviewer correctly flagged that the cleanup step swallowed ANY
+SystemExit and reframed it as "roundtrip OK" — so a FAILED in_progress
+transition (the row never even started) would read as a benign leak. Fixed:
+cmd_doctor_probe now distinguishes a failed TRANSITION (start/complete → FAIL,
+"task-db.py <step> update failed: <detail>") from a failed ARCHIVE on a
+completed roundtrip (→ WARN, "…roundtrip OK (archive cleanup failed: <detail>)"),
+capturing the exception message. Pinned by test_transition_failure_is_write_
+probe_fail_not_warn and test_archive_failure_is_warn_leak_not_fail; the
+whole healthy path still emits the identical PASS. This is strictly more
+honest than the old 6-subprocess path, which discarded cleanup output entirely.

@@ -77,3 +77,27 @@ def test_readback_failure_is_write_probe_fail_rls_message_with_rls_remedy():
         "probe row added but not visible in task-db.py list — RLS or list path broken",
         "Check tasks.tasks RLS policies and tasks.task_list()",
     )]
+
+
+def test_transition_failure_is_write_probe_fail_with_cleanup_remedy():
+    out = ('{"ok": false, "results": ['
+           '{"check": "write_probe", "part": "cleanup", "status": "FAIL", '
+           '"msg": "task-db.py start update failed: boom"}]}')
+    rows = probe(out)
+    assert rows == [(
+        "Task DB write-probe", "FAIL",
+        "task-db.py start update failed: boom",
+        "Check tasks.task_archive_old / task transitions (fleet-update.sh)",
+    )]
+
+
+def test_archive_leak_is_write_probe_warn():
+    out = ('{"ok": true, "results": ['
+           '{"check": "write_probe", "part": "cleanup", "status": "WARN", '
+           '"msg": "add \u2192 start \u2192 complete \u2192 archive roundtrip OK (archive cleanup failed: boom)"}]}')
+    rows = probe(out)
+    assert rows == [(
+        "Task DB write-probe", "WARN",
+        "add \u2192 start \u2192 complete \u2192 archive roundtrip OK (archive cleanup failed: boom)",
+        "Check tasks.task_archive_old / task transitions (fleet-update.sh)",
+    )]

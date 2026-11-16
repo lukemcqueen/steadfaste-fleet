@@ -1735,15 +1735,38 @@ def cmd_doctor_probe(repo: str | None = None):
         return
 
     # 4. cleanup: pending -> in_progress -> completed -> archive (v005 matrix).
-    try:
-        with redirect_stdout(io.StringIO()):
+    # Distinguish a failed TRANSITION (the roundtrip never completed — FAIL)
+    # from a failed ARCHIVE with a completed roundtrip (a leak — WARN). A single
+    # blanket except would turn a real transition failure into a false "OK".
+    cleanup_err = None
+    with redirect_stdout(io.StringIO()):
+        try:
             cmd_update(probe_id, "in_progress")
-            cmd_update(probe_id, "completed")
-            psql("SELECT tasks.task_archive_old(?);", [PROFILE])
-    except SystemExit:
-        results.append({"check": "write_probe", "part": "cleanup", "status": "WARN",
-                        "msg": "add → start → complete → archive roundtrip OK (cleanup leaked a doctor-probe row)"})
-        _print_probe_json(True, results)
+        except SystemExit as _e:
+            cleanup_err = ("start", str(_e))
+        if cleanup_err is None:
+            try:
+                cmd_update(probe_id, "completed")
+            except SystemExit as _e:
+                cleanup_err = ("complete", str(_e))
+        if cleanup_err is None:
+            try:
+                psql("SELECT tasks.task_archive_old(?);", [PROFILE])
+            except SystemExit as _e:
+                cleanup_err = ("archive", str(_e))
+
+    if cleanup_err:
+        step, detail = cleanup_err
+        if step == "archive":
+            # add -> start -> complete all succeeded; only archive leaked.
+            results.append({"check": "write_probe", "part": "cleanup", "status": "WARN",
+                            "msg": f"add → start → complete → archive roundtrip OK "
+                                   f"(archive cleanup failed: {detail})"})
+            _print_probe_json(True, results)
+        else:
+            results.append({"check": "write_probe", "part": "cleanup", "status": "FAIL",
+                            "msg": f"task-db.py {step} update failed: {detail}"})
+            _print_probe_json(False, results)
         return
 
     results.append({"check": "write_probe", "part": "cleanup", "status": "PASS",
