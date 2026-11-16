@@ -1,6 +1,6 @@
 {
   "source": "models.dev, read through `jev models list` (cache: ~/.cache/jev/models_dev.json)",
-  "captured": "2026-11-15",
+  "captured": "2026-11-16",
   "baseline": "openrouter:qwen/qwen3-coder-30b-a3b-instruct",
   "policy": {
     "simple": {
@@ -19,7 +19,7 @@
     "rejected": [
       "openrouter:moonshotai/kimi-k2.7-code"
     ],
-    "rejected_reason": "4.88x the baseline ($3.660/M vs the list's own $0.750/M baseline at baseline_price_usd_per_m) for a medium coding turn; the suggested pool order put it first. Ratio computed from this file's prices.",
+    "rejected_reason": "5.47x the baseline ($4.100/M vs the list's own $0.750/M baseline at baseline_price_usd_per_m) for a medium coding turn; the suggested pool order put it first. Ratio computed from this file's prices (live 2026-11-16).",
     "rule": "Every pool must LEAD with a model cheaper than the baseline. Every model in a SIMPLE pool is cheaper than the baseline. A medium pool may carry the baseline as the in-pool fallback. `hard` may lead dearer - that is the exception for very complex work - but only from the hard whitelist and never above $3.00/M."
   },
   "effort": {
@@ -137,8 +137,8 @@
     },
     "medium": {
       "general": [
-        "openrouter:deepseek/deepseek-v4-flash",
         "openrouter:deepseek/deepseek-v4-flash-0731",
+        "openrouter:deepseek/deepseek-v4-flash",
         "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
       ],
       "vision": [
@@ -147,8 +147,8 @@
         "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
       ],
       "coding": [
-        "openrouter:deepseek/deepseek-v4-flash",
         "openrouter:deepseek/deepseek-v4-flash-0731",
+        "openrouter:deepseek/deepseek-v4-flash",
         "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
       ],
       "writing": [
@@ -157,21 +157,21 @@
         "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
       ],
       "research": [
-        "openrouter:amazon/nova-lite-v1",
         "openrouter:deepseek/deepseek-v4-flash-0731",
+        "openrouter:amazon/nova-lite-v1",
         "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
       ]
     },
     "hard": {
       "general": [
         "openrouter:minimax/minimax-m3",
-        "openrouter:z-ai/glm-4.7",
-        "openrouter:thinkingmachines/inkling-small"
+        "openrouter:thinkingmachines/inkling-small",
+        "openrouter:z-ai/glm-4.7"
       ],
       "coding": [
         "openrouter:xiaomi/mimo-v2.6-pro",
-        "openrouter:qwen/qwen3.5-122b-a10b",
-        "openrouter:minimax/minimax-m3"
+        "openrouter:minimax/minimax-m3",
+        "openrouter:qwen/qwen3.5-122b-a10b"
       ],
       "vision": [
         "openrouter:xiaomi/mimo-v2.6-pro",
@@ -179,36 +179,36 @@
         "openrouter:thinkingmachines/inkling-small"
       ],
       "writing": [
-        "openrouter:thinkingmachines/inkling-small",
         "openrouter:minimax/minimax-m3",
+        "openrouter:thinkingmachines/inkling-small",
         "openrouter:z-ai/glm-4.7"
       ],
       "research": [
-        "openrouter:z-ai/glm-4.7",
         "openrouter:minimax/minimax-m3",
-        "openrouter:thinkingmachines/inkling-small"
+        "openrouter:thinkingmachines/inkling-small",
+        "openrouter:z-ai/glm-4.7"
       ]
     }
   },
   "prices": {
     "openrouter:deepseek/deepseek-v4-flash": {
-      "in": 0.091,
-      "out": 0.182,
+      "in": 0.09,
+      "out": 0.18,
       "cache_read": 0.0182
     },
     "openrouter:deepseek/deepseek-v4-flash-0731": {
-      "in": 0.059,
-      "out": 0.3,
+      "in": 0.06,
+      "out": 0.18,
       "cache_read": 0.035
     },
     "openrouter:deepseek/deepseek-v4-pro-0813": {
-      "in": 0.115,
-      "out": 4.0,
+      "in": 0.111,
+      "out": 4.44,
       "cache_read": 0.11
     },
     "openrouter:deepseek/deepseek-v4.1-flash": {
-      "in": 0.045,
-      "out": 0.5,
+      "in": 0.14,
+      "out": 0.42,
       "cache_read": 0.012
     },
     "openrouter:minimax/minimax-m3": {
@@ -237,23 +237,23 @@
       "cache_read": 0.0036
     },
     "openrouter:z-ai/glm-4.7": {
-      "in": 0.6,
-      "out": 2.2,
+      "in": 0.4,
+      "out": 1.75,
       "cache_read": 0.11
     },
     "openrouter:z-ai/glm-5.3": {
-      "in": 0.08,
-      "out": 3.6,
+      "in": 0.0699,
+      "out": 1.4,
       "cache_read": 0.076
     },
     "openrouter:z-ai/glm-5.3-flash": {
-      "in": 0.0313,
-      "out": 0.0846,
+      "in": 0.0399,
+      "out": 0.0784,
       "cache_read": 0.03
     },
     "openrouter:openai/gpt-oss-20b": {
-      "in": 0.03,
-      "out": 0.13,
+      "in": 0.075,
+      "out": 0.3,
       "cache_read": 0.03
     },
     "openrouter:mistralai/mistral-small-24b-instruct-2501": {
@@ -274,22 +274,23 @@
     "source": "~/.cache/jev/models_dev.json (models.dev); the filtered extract this list was built from is committed at docs/evidence/jev-router-pools-2026-10-28/catalog-prices.json",
     "baseline_change_note_2026-11-16": "re-anchored from openrouter:deepseek/deepseek-v4-flash-0731 ($0.357/M) to qwen3-coder-30b-a3b-instruct ($0.750/M) on Luke's 2026-11-15 directive (matching the session/worker default switch in hermes config). Pool heads stay compliant: simple ceiling relaxed to 0.5 x $0.750 = $0.375 (every simple head is under), medium ceiling 1.0 x $0.750 = $0.750 (every medium head is under). The previous baseline-change note (2026-10-28) describes the original v4-flash-0731 anchor.",
     "heads": {
-      "simple/general": "openrouter:openai/gpt-oss-20b = 0.03 in + 0.13 out = $0.160/M",
-      "simple/vision": "openrouter:z-ai/glm-5.3-flash = 0.0313 in + 0.0846 out = $0.116/M",
-      "simple/coding": "openrouter:openai/gpt-oss-20b = 0.03 in + 0.13 out = $0.160/M",
-      "simple/writing": "openrouter:openai/gpt-oss-20b = 0.03 in + 0.13 out = $0.160/M",
-      "simple/research": "openrouter:openai/gpt-oss-20b = 0.03 in + 0.13 out = $0.160/M",
-      "medium/general": "openrouter:deepseek/deepseek-v4-flash = 0.091 in + 0.182 out = $0.273/M",
-      "medium/vision": "openrouter:z-ai/glm-5.3-flash = 0.0313 in + 0.0846 out = $0.116/M",
-      "medium/coding": "openrouter:deepseek/deepseek-v4-flash = 0.091 in + 0.182 out = $0.273/M",
+      "simple/general": "openrouter:openai/gpt-oss-20b = 0.075 in + 0.3 out = $0.375/M",
+      "simple/vision": "openrouter:z-ai/glm-5.3-flash = 0.0399 in + 0.0784 out = $0.118/M",
+      "simple/coding": "openrouter:openai/gpt-oss-20b = 0.075 in + 0.3 out = $0.375/M",
+      "simple/writing": "openrouter:openai/gpt-oss-20b = 0.075 in + 0.3 out = $0.375/M",
+      "simple/research": "openrouter:openai/gpt-oss-20b = 0.075 in + 0.3 out = $0.375/M",
+      "medium/general": "openrouter:deepseek/deepseek-v4-flash-0731 = 0.06 in + 0.18 out = $0.240/M",
+      "medium/vision": "openrouter:z-ai/glm-5.3-flash = 0.0399 in + 0.0784 out = $0.118/M",
+      "medium/coding": "openrouter:deepseek/deepseek-v4-flash-0731 = 0.06 in + 0.18 out = $0.240/M",
       "medium/writing": "openrouter:mistralai/mistral-small-24b-instruct-2501 = 0.05 in + 0.08 out = $0.130/M",
-      "medium/research": "openrouter:amazon/nova-lite-v1 = 0.06 in + 0.24 out = $0.300/M",
+      "medium/research": "openrouter:deepseek/deepseek-v4-flash-0731 = 0.06 in + 0.18 out = $0.240/M",
       "hard/general": "openrouter:minimax/minimax-m3 = 0.3 in + 1.2 out = $1.500/M",
       "hard/coding": "openrouter:xiaomi/mimo-v2.6-pro = 0.435 in + 0.87 out = $1.305/M",
       "hard/vision": "openrouter:xiaomi/mimo-v2.6-pro = 0.435 in + 0.87 out = $1.305/M",
-      "hard/writing": "openrouter:thinkingmachines/inkling-small = 0.45 in + 1.2 out = $1.650/M",
-      "hard/research": "openrouter:z-ai/glm-4.7 = 0.6 in + 2.2 out = $2.800/M"
-    }
+      "hard/writing": "openrouter:minimax/minimax-m3 = 0.3 in + 1.2 out = $1.500/M",
+      "hard/research": "openrouter:minimax/minimax-m3 = 0.3 in + 1.2 out = $1.500/M"
+    },
+    "price_refresh_note_2026-11-16": "prices + tier order refreshed from the live daily scan (orch-model-market-scan.py, the live OpenRouter /models catalog), applied under governance from state/model-market.json. cache_read is carried unchanged (not part of the blended $/M basis)."
   },
   "candidates": {
     "openrouter:deepseek/deepseek-v4.1-flash": "priced only, NOT routed: within budget, promoted by a one-file edit",
@@ -298,25 +299,25 @@
   },
   "rejected": {
     "openrouter:moonshotai/kimi-k2.7-code": {
-      "price_usd_per_m": 3.66,
-      "ratio_of_baseline": 4.88,
+      "price_usd_per_m": 4.1,
+      "ratio_of_baseline": 5.47,
       "reason_ref": "policy.rejected_reason"
     },
     "openrouter:deepseek/deepseek-v4-pro-0813": {
-      "price_usd_per_m": 4.115,
-      "ratio_of_baseline": 5.49,
-      "reason": "was the hard/general + hard/coding head at its captured $2.640/M (2026-10-28); the live catalog's OUTPUT price rose (4.0/M out) so blended $/M is now $4.115, above the hard $3.00/M cap. Rejected 2026-11-15 while it exceeds the cap; promote it back in a one-file edit if the output price returns under $3.00/M blended."
+      "price_usd_per_m": 4.551,
+      "ratio_of_baseline": 6.07,
+      "reason": "was the hard/general + hard/coding head at its captured $2.640/M (2026-10-28); the live catalog's OUTPUT price rose (4.44/M out) so blended $/M is now $4.551, above the hard $3.00/M cap. Rejected 2026-11-15 while it exceeds the cap; promote it back in a one-file edit if the output price returns under $3.00/M blended."
     },
     "openrouter:z-ai/glm-5.3": {
-      "price_usd_per_m": 3.68,
-      "ratio_of_baseline": 4.91,
-      "reason": "was the hard/writing + hard/research head at its captured $1.470/M (2026-10-28); the live catalog's OUTPUT price rose (3.6/M out) so blended $/M is now $3.680, above the hard $3.00/M cap. Rejected 2026-11-15 while it exceeds the cap; promote it back in a one-file edit if the output price returns under $3.00/M blended."
+      "price_usd_per_m": 1.47,
+      "ratio_of_baseline": 1.96,
+      "reason": "was the hard/writing + hard/research head at its captured $1.470/M (2026-10-28); the live catalog's OUTPUT price rose (3.6/M out) so blended $/M was $3.680 on 2026-11-15, above the hard $3.00/M cap. On 2026-11-16 the live price fell back (1.4/M out) => blended $1.470/M, UNDER the cap, so the one-file-edit promotion this note invites is now AVAILABLE - but NOT auto-applied by the scan (it preserves pool membership) and re-routing it also needs its hard_whitelist entry re-added, a vetting decision. Raised to the operator in the 2026-11-16 scan report."
     }
   },
   "hard_whitelist": {
     "openrouter:z-ai/glm-4.7": {
-      "price_usd_per_m": 2.8,
-      "x_baseline": 3.73,
+      "price_usd_per_m": 2.15,
+      "x_baseline": 2.87,
       "ctx": 204800,
       "vision": false,
       "why": "open weights, reasoning + tool_call, ctx>=200k, within the hard budget"
