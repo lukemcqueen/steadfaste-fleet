@@ -40,3 +40,33 @@ the cron; both verified active + enabled.
 `ops/scripts/manage/fix-cron-bridge-duplicates.py` (deploy-map registered in
 fleet-update.sh) ships to every host so each agent can idempotently self-clear
 its own doubles. Test: tests/test_fix_cron_bridge_duplicates.py.
+
+## Durability re-visit (2026-11-16 21:15) — the removal was NOT durable at first
+A row-removal alone did NOT persist: the very next `fleet-update.sh` re-created
+52 of the removed rows, so the doctor flipped back to 52 FAIL.
+
+ROOT CAUSE (verified): the 63 bridge timers exist as `fleet-bridge-<name>.timer`,
+but the `~/.config/systemd/user/timers.target.wants/fleet-bridge-<name>.timer`
+enable symlinks still pointed at the PRE-RENAME `cortex-bridge-<name>.timer`
+target (leftover from the 2026-11-03 STEADFASTE-FLEET rename) — 59/63 were
+DANGLING. `systemctl` still reported them `enabled` (the link exists), but
+install-crons.sh's durable bridge-guard uses `test -e` which FOLLOWS the link ->
+dangling = FALSE -> the installer did NOT skip the bridged cron and re-created
+its Hermes row. Only the 4 with a non-dangling link (incl. the 2 enabled here)
+stayed clean.
+
+DURABLE REPAIR (applied, non-destructive, no repo change): re-point each want
+symlink at the live unit —
+`systemctl --user reenable fleet-bridge-<name>.timer` (59 links fixed, 0 left
+dangling; does not start/stop any unit). Now `install-crons.sh --dry-run`
+reports `✓ Skipping '<name>' — owned by the fleet cron bridge` for all 63 no
+longer involves re-adding rows, and the doctor is again 0 FAIL
+(`ℹ️ every one of 63 bridged names has exactly one owner`).
+
+LESSON (fleet-wide): a `hermes cron remove` cleanup is durable ONLY when the
+bridge timer's want-symlink RESOLVES (target on disk). After the fleet rename,
+stale `cortex-bridge-*` want links defeat every `test -e` bridge-guard. Any
+agent whose doctor re-flags doubled crons after a fleet-update should first run
+the `systemctl --user reenable fleet-bridge-<name>.timer` repair (or
+`systemctl --user daemon-reload && reenable --all` equivalent) and re-verify
+with `install-crons.sh --dry-run` before re-removing rows.
