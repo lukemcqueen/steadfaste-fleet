@@ -175,3 +175,53 @@ def test_skips_when_no_gateway_process_is_running(tmp_path, monkeypatch):
         restore()
     assert hit, "check produced no row"
     assert hit[0]["status"] == "SKIP", hit[0]
+
+
+def test_gateway_with_unreadable_start_is_could_not_verify_not_skip(tmp_path, monkeypatch):
+    """A gateway IS running but its start time cannot be read ⟶ COULD NOT VERIFY.
+
+    The two states are different facts and must not share a row: "no gateway to
+    compare" is a SKIP, while "a gateway is running that cannot be judged" is a
+    COULD-NOT-VERIFY WARN. The deploy-side _restart_pending() treats exactly this
+    state as UNVERIFIABLE (banner fires) rather than clean, so a check that SKIPped
+    here would be MORE permissive than the deploy it mirrors.
+    """
+    monkeypatch.setattr(chk, "FLEET_DEPLOY_HOME", tmp_path, raising=False)
+    now = time.time()
+    _write_state(tmp_path, epoch=now - 60)
+    monkeypatch.setattr(chk, "_daemon_start_epoch", lambda pid: None, raising=False)
+    restore = _patch_ps(4242, f"{sys.executable} ... gateway run", now - 300)
+    try:
+        hit = _run_check()
+    finally:
+        restore()
+    assert hit, "check produced no row"
+    assert hit[0]["status"] == "WARN", hit[0]
+    assert "COULD NOT VERIFY" in hit[0]["detail"], hit[0]["detail"]
+    assert "gateway is running" in hit[0]["detail"], hit[0]["detail"]
+
+
+def test_does_not_report_clean_when_one_of_two_gateways_cannot_be_judged(tmp_path, monkeypatch):
+    """One current gateway + one unreadable ⟶ NOT PASS (the unjudged one is named)."""
+    monkeypatch.setattr(chk, "FLEET_DEPLOY_HOME", tmp_path, raising=False)
+    now = time.time()
+    _write_state(tmp_path, epoch=now - 300)          # current relative to the readable pid
+    monkeypatch.setattr(chk, "_daemon_start_epoch",
+                        lambda pid: (now - 60) if str(pid) == "1111" else None,
+                        raising=False)
+    real_run = subprocess.run
+    listing = f"1111 {sys.executable} ... gateway run\n2222 {sys.executable} ... gateway run\n"
+
+    def fake_run(cmd, **kw):
+        if cmd == ["ps", "-eo", "pid,args"]:
+            return type("R", (), {"stdout": listing, "returncode": 0})()
+        return real_run(cmd, **kw)
+
+    subprocess.run = fake_run
+    try:
+        hit = _run_check()
+    finally:
+        subprocess.run = real_run
+    assert hit, "check produced no row"
+    assert hit[0]["status"] == "WARN", hit[0]
+    assert "2222" in hit[0]["detail"], hit[0]["detail"]

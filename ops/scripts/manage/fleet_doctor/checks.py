@@ -623,6 +623,7 @@ def check_stale_enforcer_plugin(res: "Results") -> None:
         res.add(name, "SKIP", f"could not scan processes: {type(e).__name__}")
         return
     gateways = []
+    unreadable = []
     for line in ps.splitlines():
         stripped = line.strip()
         if stripped.startswith(("grep", "PID")):
@@ -634,10 +635,25 @@ def check_stale_enforcer_plugin(res: "Results") -> None:
         if not any(marker in args for marker in _GATEWAY_ARGV_MARKERS):
             continue
         start = _daemon_start_epoch(pid)
-        if start is not None:
+        if start is None:
+            # A gateway IS running here; its start time simply could not be read. Keep
+            # the two apart: "nothing to compare" (SKIP) and "something is running that
+            # cannot be judged" (COULD NOT VERIFY) are different facts. The deploy-side
+            # _restart_pending() treats this same state as UNVERIFIABLE rather than
+            # clean, and this check must not be more permissive than the deploy.
+            unreadable.append(pid)
+        else:
             gateways.append((pid, start))
-    if not gateways:
+    if not gateways and not unreadable:
         res.add(name, "SKIP", "no running hermes gateway found to compare")
+        return
+    if not gateways:
+        res.add(name, "WARN",
+                "COULD NOT VERIFY — a gateway is running (pid "
+                + ", ".join(unreadable)
+                + ") but its start time could not be read, so staleness cannot be judged",
+                "The gateway's start time is what answers 'is the current enforcer in play?'. "
+                "Read it with: ps -o lstart=,pid= | grep -e <pid>")
         return
     state = FLEET_DEPLOY_HOME / "state" / "governance-enforcer-deployed"
     try:
@@ -670,6 +686,15 @@ def check_stale_enforcer_plugin(res: "Results") -> None:
                 "Run from a separate shell: hermes gateway restart  — the gateway loads the "
                 "enforcer plugin at start, so the current revision is not in play until that "
                 "process cycles. (Nothing is broken: the previous revision is enforcing.)")
+        return
+    if unreadable:
+        res.add(name, "WARN",
+                "COULD NOT VERIFY — gateway process(es) "
+                + ", ".join(f"pid {p}" for p in unreadable)
+                + " are running but their start time could not be read, so staleness "
+                  "cannot be judged for them",
+                "Judge them with: ps -o lstart=,pid= | grep -e <pid>. Until then this "
+                "check does not report the host clean.")
         return
     res.add(name, "PASS",
             f"running gateway loaded the current enforcer revision "

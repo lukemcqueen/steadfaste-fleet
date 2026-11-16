@@ -4,6 +4,17 @@ Operator request: moses cannot update the fleet; reported that fleet-update.sh "
 possible for me to execute directly due to the governance and permission restrictions"
 and "needs to be executed by someone with administrative access". Fix it.
 
+WHAT THIS RANGE DOES — AND DOES NOT DO. Read this before the claims below.
+  DOES:      it detects and SURFACES the "deployed, not loaded" condition on every host,
+             permanently, from the deploy's own recorded content-change epoch.
+             It also records the immediate unblock for moses: the sanctioned invocation
+             works on his host today (F1) and he was sent the exact command (F7).
+  DOES NOT:  it does not LOAD the current enforcer anywhere. That needs a gateway
+             restart, which no agent can perform (F8). Until that restart, moses — and
+             esther — remain in the condition this record describes: correctly enforced,
+             by the PREVIOUS revision. Nothing in this range claims otherwise, and no
+             reader of this file alone should infer that moses is unblocked by it.
+
 Every claim below carries the command that re-produces it. Where a number could be a
 timeout it is shown with its real exit code instead — a 124 is not a result.
 
