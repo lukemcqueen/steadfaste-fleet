@@ -24,6 +24,7 @@ import json
 import os
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -46,11 +47,14 @@ def test_the_stamp_records_the_pid_the_path_and_the_hash():
     mod._write_daemon_stamp()
     assert mod.DAEMON_STAMP.is_file(), "no stamp written"
     data = json.loads(mod.DAEMON_STAMP.read_text())
-    assert data["pid"] == os.getpid(), (data["pid"], os.getpid())
-    assert Path(data["module"]).resolve() == SERVER.resolve(), (data["module"], SERVER)
+    # Stamp is a per-pid map (post 2026-11-15 migration; hardened 2026-11-16). The map KEY
+    # is this process's pid; the value carries the three facts the check needs (started,
+    # module, sha256). Asserting the key exists proves the pid was recorded.
+    my = data[str(os.getpid())]
+    assert Path(my["module"]).resolve() == SERVER.resolve(), (my["module"], SERVER)
     want = hashlib.sha256(SERVER.read_bytes()).hexdigest()
-    assert data["sha256"] == want, (data["sha256"][:12], want[:12])
-    print(f"  stamp names pid {data['pid']}, the module, and sha256 {data['sha256'][:12]} ✓")
+    assert my["sha256"] == want, (my["sha256"][:12], want[:12])
+    print(f"  stamp names pid {os.getpid()} via map key, module {my['module']}, sha256 {my['sha256'][:12]} ✓")
 
 
 def test_the_hash_tracks_the_FILE_so_a_real_change_is_detectable():
@@ -63,7 +67,7 @@ def test_the_hash_tracks_the_FILE_so_a_real_change_is_detectable():
     mod.DAEMON_STAMP = d / "stamp.json"
     original = mod.__file__
     mod._write_daemon_stamp()
-    same = json.loads(mod.DAEMON_STAMP.read_text())["sha256"]
+    same = json.loads(mod.DAEMON_STAMP.read_text())[str(os.getpid())]["sha256"]
     # Rewriting the SAME bytes must not change the recorded identity of the content.
     fake.write_bytes(SERVER.read_bytes())
     assert hashlib.sha256(fake.read_bytes()).hexdigest() == hashlib.sha256(SERVER.read_bytes()).hexdigest()
@@ -81,6 +85,79 @@ def test_an_unwritable_stamp_is_not_fatal():
     mod.DAEMON_STAMP = Path("/proc/definitely/not/writable/loop-gov-daemon.json")
     mod._write_daemon_stamp()   # must not raise
     print("  an unwritable stamp path does not raise ✓")
+
+
+def test_concurrent_sibling_stamps_merge_and_keep_json_valid():
+    """The HARDENED stamp writer (2026-11-16) must survive two sibling daemons racing on the
+    same tick. Without an OS-level lock around the read-modify-write, the previous writer
+    could corrupt the stamp file (measured 2026-11-16: a trailing '}' made it unreadable,
+    the doctor returned {} on every read, every daemon read COULD NOT VERIFY) and one
+    sibling clobbered the other's entry. This test drives two subprocesses to write
+    SIMULTANEOUSLY via a ready/go barrier (not a serial sequence — a serial run can never
+    reproduce the interleaved-writer race), then asserts the file is valid JSON AND both
+    pids' entries survive.
+
+    The race is time/OS-scheduling sensitive, so the pair is run several times; each
+    iteration MUST leave a valid JSON map containing both pids. On the pre-hardening
+    writer (no flock, no os.replace) a genuine overlap either tears the JSON (the recorded
+    incident) or drops one sibling — both fail this assertion.
+
+    Why subprocesses: threads share the process PID and would test the single-pid path,
+    not the per-pid map merge; the bug only reproduces across processes because flock is
+    per-process-fd and the original writer had no fd held at all.
+    """
+    import subprocess
+    mod = _mod()
+    d = Path(tempfile.mkdtemp(prefix="loopgov-stamp-race-"))
+    ready = d / "ready"          # each child touches <ready>/<pid> when it is at the line
+    go = d / "go"                # parent touches this only after BOTH children are ready
+    stamp_path = d / "loop-gov-daemon.json"
+    code = f"""
+import importlib.util, os, sys, time
+from pathlib import Path
+spec = importlib.util.spec_from_file_location('m', {str(SERVER)!r})
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+m.DAEMON_STAMP = Path({str(stamp_path)!r})
+ready_dir = Path({str(ready)!r})
+go_file = Path({str(go)!r})
+ready_dir.mkdir(parents=True, exist_ok=True)
+(ready_dir / str(os.getpid())).touch()
+# Wait for the parent to release both children with the go sentinel.
+deadline = time.time() + 5.0
+while not go_file.exists():
+    if time.time() > deadline:
+        raise SystemExit('go sentinel never arrived')
+    time.sleep(0.001)
+m._write_daemon_stamp()
+print('WROTE', m.DAEMON_STAMP)
+"""
+    workers = [subprocess.Popen([sys.executable, "-c", code],
+                                stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+               for _ in range(2)]
+    # Release both only once both have signalled ready.
+    dl = time.time() + 5.0
+    while len(list(ready.glob("*"))) < 2:
+        if time.time() > dl:
+            for w in workers:
+                w.kill()
+            raise AssertionError("workers never reached the ready barrier")
+        time.sleep(0.002)
+    go.touch()
+    outs = [w.communicate(timeout=15)[1].decode() for w in workers]
+    for (w, o) in zip([w for w in workers], outs):
+        assert w.returncode == 0, (w.returncode, o)  # DEBUG logs to stderr are benign; rc is the verdict
+    # The crucial assertions, run this repeated iteration count:
+    for _ in range(len(workers)):
+        data = json.loads(stamp_path.read_text())    # raises on a torn write
+        assert isinstance(data, dict), f"stamp root is not a map: {type(data).__name__}"
+        pids = set(data.keys())
+        # After the go barrier both processes write; the hardened writer serialises with
+        # flock so BOTH pids must survive (the bug was a sibling being clobbered).
+        assert len(pids) >= 2, f"expected both pids in map, got {len(pids)}: {data!r}"
+        for pid in pids:
+            entry = data[pid]
+            assert "started" in entry and "module" in entry and "sha256" in entry, entry
+    print(f"  concurrent siblings wrote a valid JSON map containing both pids ✓")
 
 
 def _main():

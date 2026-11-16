@@ -163,10 +163,12 @@ def test_per_pid_stamp_map_verifies_every_stamped_sibling(tmp_path, monkeypatch)
     os.utime(mod, (now, now))            # module written NOW (newer than daemon start)
     sha = hashlib.sha256(mod.read_bytes()).hexdigest()
     # Both siblings carry a stamp entry whose sha matches the module on disk.
-    monkeypatch.setattr(chk, "_read_daemon_stamp", lambda: {
+    # Patch _read_daemon_stamp (returns (map, err_or_None)) — the caller uses this so a
+    # JSON decode error surfaces in the warning when present.
+    monkeypatch.setattr(chk, "_read_daemon_stamp", lambda: ({
         "1111": {"started": now - 60, "module": str(mod), "sha256": sha},
         "2222": {"started": now - 60, "module": str(mod), "sha256": sha},
-    }, raising=False)
+    }, None), raising=False)
     restore = _patch_ps_multi([(1111, mod), (2222, mod)], now - 60)
     try:
         hit = _run_check()
