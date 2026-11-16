@@ -60,7 +60,12 @@ else
 fi
 
 # Claim 4 - the captured transcript re-verifies its own recorded sha256 (a hash
-# chain: each capture verifies the transcript present when it ran).
+# chain: each capture verifies the transcript present when it ran). make-evidence.sh
+# --verify recomputes the hash over the file EXCEPT its final "sha256:" line and
+# compares it to the recorded value, so a capture in progress is unaffected - the
+# checker always verifies the file that exists BEFORE make-evidence rewrites it.
+# A transcript that is absent or fails verification is a COUNTED failure: an
+# unverifiable hash chain must not read as "failed claims: 0".
 if [ -f "$EVID" ]; then
   if ev_out="$(bash ops/scripts/make-evidence.sh --verify "$EVID" 2>&1)"; then
     echo "$ev_out" | sed 's/^/  PASS  /'
@@ -68,7 +73,7 @@ if [ -f "$EVID" ]; then
     echo "$ev_out" | sed 's/^/  FAIL  /'; fails=$((fails + 1))
   fi
 else
-  note WARN "transcript absent (first capture) - transcript hash not re-verified"
+  note FAIL "transcript $EVID absent - hash chain not re-verified"; fails=$((fails + 1))
 fi
 
 # Info - does live scan state still agree with the snapshot? A comparison that
