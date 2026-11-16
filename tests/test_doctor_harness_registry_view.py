@@ -23,6 +23,12 @@ must still WARN — the check must not be silenced into a pass.
 
 Hermetic: `_run_harness_list` and `_run_harness_verify` are monkeypatched here;
 the real CLI is never run and no host path is read.
+
+`_VIEW` below is MINIMAL BY DESIGN for the parse contract: it carries the keys
+the parse and the presence/skip path read (name, layer, status, surface,
+presence, why, install). It is a fixture for "is the object found and read", not
+a copy of the registry's full schema — so it stays stable when the registry
+gains keys the parse does not need.
 """
 import sys
 from pathlib import Path

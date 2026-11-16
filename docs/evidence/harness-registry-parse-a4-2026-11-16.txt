@@ -1,0 +1,30 @@
+Running: python3 ops/scripts/quality/adversarial-verify.py --file ops/scripts/manage/fleet_doctor/checks.py --level A4 --gate
+rc: 0
+when: 2026-11-16T07:42:29Z
+
+
+── ops/scripts/manage/fleet_doctor/checks.py ──
+   Level: A4
+   Attack Surface:
+     ⚠️ Inputs: 174 item(s)
+     ⚠️ State: 59 item(s)
+     ⚠️ Dependencies: 122 item(s)
+     ⚠️ Concurrency: 25 item(s)
+   Functions: 76
+     - _invokes_score_cycle(text)
+     - _score_cycle_consumers(search_roots)
+     - _is_git_repo(repo_dir)
+     - _is_cortex_worktree(repo_dir)
+     - check_restart_pending(res)
+     ... and 71 more
+   Fuzz inputs generated: 755
+
+📊 Summary: 1 file(s), 80 finding(s)
+   🟡 Medium: 4
+   🔵 Low: 18
+   ⚪ Info: 58
+
+🟡 Medium findings — fix before shipping.
+
+✅ GATE_PASSED — no critical/high findings
+sha256: 5b3a843f28c277a8bac3d38dce137719e35c803150de83ff2e1d3010718df597
