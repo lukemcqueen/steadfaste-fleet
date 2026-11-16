@@ -35,8 +35,20 @@ import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-CANONICAL = "deepseek/deepseek-v4-pro-0813"
 ADVERSARIAL_REVIEW = "ADVERSARIAL_REVIEWER_MODEL"
+
+# The canonical reviewer id is owned by fleet_lib/models.py (DRY, surface 4:
+# never hardcode a model name). Resolve it once here so these assertions track
+# the CURRENT canonical rather than pinning one that the operator can change.
+import importlib.util as _ilu  # noqa: E402
+
+_spec = _ilu.spec_from_file_location("fleet_lib_models_for_dry_test",
+                                     REPO / "ops" / "scripts" / "fleet_lib" / "models.py")
+assert _spec is not None and _spec.loader is not None
+_models_mod = _ilu.module_from_spec(_spec)
+assert _spec.loader is not None
+_spec.loader.exec_module(_models_mod)
+CANONICAL = _models_mod.REVIEWER_MODEL_DEFAULT
 
 # Code surfaces that must NOT carry a hardcoded reviewer literal after DRY.
 # The two ENFORCEMENT surfaces fail-closed (a gate must never silently re-pick
