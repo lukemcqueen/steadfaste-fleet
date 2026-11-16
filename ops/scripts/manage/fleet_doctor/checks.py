@@ -3037,6 +3037,104 @@ def _check_fix_blocked_ips_root_copy(res):
         immutable_remediation(root_path))
 
 
+# ── Governance lock naming + liveness ───────────────────────────────────────
+# Two questions, deliberately kept separate because one of them gates a
+# DESTRUCTIVE remedy (`rm -f`).
+#
+# 1. NAMING — is this the id of a real session, or a hand-written slug? The id
+#    namespace is wider than it once looked; every form below is CURRENT:
+#      * Hermes timestamp id     20260725_164953_750cbfe2
+#      * cron/background id      cron_<hash>_20260731_120022
+#      * non-Hermes per-repo id  sess_<hex>   (state/.session-<slug>.id)
+#      * Hermes local state id   local-<sha256>, minted by the runtime's
+#        state-key module (`'local-' + sha256(identity).hexdigest()`), and used
+#        as a session key in loop-governance.db and the skills-* stores.
+#    Anything else is a descriptive slug (`.governance-fix-auth-bug.json`) and
+#    IS legacy. Omitting `local-` from this list made the check call a LIVE
+#    session's lock legacy and print `rm -f` for it (2026-11-16).
+#
+# 2. LIVENESS — a name can never prove the owner is gone. Only a lock whose own
+#    heartbeat is older than its own TTL is provably dead; anything unverifiable
+#    fails closed and gets NO removal instruction.
+_GOVERNANCE_LOCK_TIMESTAMP_RE = re.compile(r"\d{8}_\d{6}")
+_GOVERNANCE_LOCK_LOCAL_RE = re.compile(
+    r"^\.governance-local-[0-9a-f]{16,}(?:-\d+)?\.json$"
+)
+_GOVERNANCE_LOCK_DEFAULT_TTL_S = 3600
+
+
+def governance_lock_id_is_known(filename: str) -> bool:
+    """True when a lock filename carries a recognised session-id namespace."""
+    return bool(
+        _GOVERNANCE_LOCK_TIMESTAMP_RE.search(filename)
+        or "sess_" in filename
+        or _GOVERNANCE_LOCK_LOCAL_RE.match(filename)
+    )
+
+
+def _lock_owner_is_live(lock_path: Path):
+    """(live, detail) from the lock's OWN heartbeat/TTL.
+
+    live is True/False, or None when it cannot be established — the caller must
+    treat None as "not proven dead" and withhold any removal remedy.
+    """
+    try:
+        body = json.loads(lock_path.read_text())
+    except Exception as exc:  # noqa: BLE001 — any read/parse failure means unverifiable
+        return None, f"unreadable ({type(exc).__name__})"
+    if not isinstance(body, dict):
+        return None, "not a JSON object"
+    raw = body.get("heartbeat_at") or body.get("started_at")
+    if not raw:
+        return None, "no heartbeat_at/started_at field"
+    try:
+        ts = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except ValueError:
+        return None, f"unparsable timestamp {raw!r}"
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    try:
+        ttl = int(body.get("ttl_seconds") or _GOVERNANCE_LOCK_DEFAULT_TTL_S)
+    except (TypeError, ValueError):
+        ttl = _GOVERNANCE_LOCK_DEFAULT_TTL_S
+    age = (datetime.now(timezone.utc) - ts).total_seconds()
+    return age < ttl, f"heartbeat {int(age)}s ago, ttl {ttl}s"
+
+
+def classify_governance_locks(state_dir: Path) -> list:
+    """Verdicts for every `.governance-*.json` in a state dir.
+
+    Returns dicts with name/status/detail/fix for the doctor's result store.
+    """
+    out: list = []
+    try:
+        locks = sorted(state_dir.glob(".governance-*.json"))
+    except OSError:
+        return out
+    for lock_path in locks:
+        if governance_lock_id_is_known(lock_path.name):
+            continue
+        live, detail = _lock_owner_is_live(lock_path)
+        if live is False:
+            out.append({
+                "name": f"Legacy lock ({lock_path.name})",
+                "status": "WARN",
+                "detail": f"slug-based naming superseded by session-scoped locks;"
+                          f" owner provably gone ({detail})",
+                "fix": f"Remove: rm -f {lock_path}",
+            })
+        else:
+            out.append({
+                "name": f"Lock naming ({lock_path.name})",
+                "status": "WARN",
+                "detail": f"unrecognised id namespace and the owner is NOT proven gone"
+                          f" ({detail}) — confirm the owning session before touching it",
+                "fix": f"Verify the owning session for {lock_path}; do not remove a"
+                       f" live lock",
+            })
+    return out
+
+
 def check_governance(res):
   """7. Governance system: plugin, pre-commit hook, MCP servers, lock files, score-cycle."""
   config_text = read_file(CONFIG_FILE)
@@ -3649,22 +3747,12 @@ def check_governance(res):
               f"Update {enforcer_path} to include the missing guard")
 
     if state_dir.exists():
-      # Lock files named .governance-{session_id}.json where session_id
-      # is a timestamp-based UUID (e.g. 20260725_164953_750cbfe2), a
-      # cron/background session id (e.g. cron_<hash>_20260731_120022), or a
-      # non-Hermes per-repo id (sess_<hex>, persisted at state/.session-<slug>.id).
-      # Files with a descriptive slug instead of a session ID (e.g.
-      # .governance-fix-auth-bug.json) are legacy — flag them.
-      legacy = [
-        f for f in state_dir.glob(".governance-*.json")
-        if not re.search(r"\d{8}_\d{6}", f.name)
-        and "sess_" not in f.name
-      ]
-      if legacy:
-        for lf in legacy:
-          res.add(f"Legacy lock ({lf.name})", "WARN",
-              "slug-based naming superseded by session-scoped locks",
-              f"Remove: rm -f {lf}")
+      # Lock NAMING and lock LIVENESS are two different questions — ask both.
+      # The accepted-id list below must track every namespace that actually
+      # mints session ids, and the remedy is gated on the lock's own heartbeat
+      # because it is destructive.
+      for verdict in classify_governance_locks(state_dir):
+        res.add(verdict["name"], verdict["status"], verdict["detail"], verdict["fix"])
   else:
     res.add("Governance coverage", "INFO", "enforcer source not found in repo")
 

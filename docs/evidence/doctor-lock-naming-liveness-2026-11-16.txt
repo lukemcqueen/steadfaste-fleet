@@ -1,0 +1,14 @@
+Running: bash docs/evidence/doctor-lock-naming-liveness-2026-11-16.sh
+rc: 0
+when: 2026-11-16T09:29:30Z
+
+PASS  the deleted filename is a known id now and was misread as legacy before
+PASS  a LIVE lock is never given 'rm -f'
+PASS  a provably-dead legacy lock still reports its removal remedy
+PASS  an unparsable lock yields no removal instruction (fails closed)
+PASS  the deployed doctor carries both new helpers
+PASS  tests/test_doctor_legacy_lock_check.py passes
+PASS  the live doctor reports 0 fail with the rewired check
+
+failed claims: 0
+sha256: 96b576c8c0048c702b561d39c248e4abaebd3a16add230f2ab9abbc5ed82c243
