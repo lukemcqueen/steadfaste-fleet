@@ -117,6 +117,12 @@ def _is_empty_or_whitespace(text: str) -> bool:
     return not text or not text.strip()
 
 
+# The routing annotation the Jev layer appends to a reply. Harness metadata,
+# not lane content: `[Jev] <difficulty> · <domain> → <model> · confidence <n>`,
+# or the `Jev: picked … · reason …` form.
+_JEV_ANNOTATION_RE = re.compile(r"(?:\[\s*Jev\s*\]|Jev\s*:)[^\n]*", re.IGNORECASE)
+
+
 def _is_silent_noop(response: str) -> bool:
     """True for the healthy no-op token in any JSON/quote/whitespace wrapping.
 
@@ -129,9 +135,26 @@ def _is_silent_noop(response: str) -> bool:
     (<SILENT>) after a provider fallback; strip those too so the watchdog does not
     false-flag the healthy no-op as token garbage. Square brackets stay structural
     (a malformed [SILENT must never become a bare marker).
+
+    2026-11-16 (reported fleet-wide: "I'm seeing a bunch of these on agents"): two
+    further real deviations, both verbatim from live cron output.
+      * the token carrying a trailing Jev routing annotation —
+        `[SILENT]` then `[Jev] medium · general -> deepseek/… · confidence 0.00`.
+        The Jev layer stamps that onto EVERY Jev-driven reply, so a lane cannot
+        obey the prompt's "EXACTLY this single line and nothing else";
+      * case drift — `[Silent]`, a model that did not capitalise the token.
+    Both deliver NOTHING and must read as the healthy no-op. Each was falling
+    through to Check 5b (short response = "possible token garbage") AND Check 6
+    (session-guard skip contract) — two alerts per run, on every Jev-enabled lane.
+
+    Leak detection is deliberately NOT widened. Stripping only the Jev annotation
+    keeps the 2026-08-04 regression class caught: trailing PROSE is still not
+    silence (`[SILENT]` followed by a summary must still alert), because the
+    annotation regex removes only annotation lines, never prose.
     """
-    normalized = re.sub(r"[\s\"'<>]", "", response.strip())
-    return normalized in ("[SILENT]", "SILENT")
+    body = _JEV_ANNOTATION_RE.sub("", response).strip()
+    normalized = re.sub(r"[\s\"'<>]", "", body)
+    return normalized.lower() in ("[silent]", "silent")
 
 
 def _count_suspicious_chars(text: str) -> int:
@@ -244,8 +267,12 @@ def main() -> None:
             issues.append(f"\U0001f534 {name}: AGENT SELF-BLOCKED (QUALITY_G_BLOCKED token found)")
             continue
 
-        # [SILENT] is the healthy no-op signal (also JSON/quote-wrapped variants,
-        # gisu proposal 2026-08-19 — one-off model deviation emitted ["SILENT"])
+        # [SILENT] is the healthy no-op signal (also JSON/quote/angle-wrapped and
+        # case-drifted variants, and the no-op plus a trailing Jev annotation —
+        # gisu 2026-08-19, 2026-09-28, and the 2026-11-16 fleet-wide report).
+        # This `continue` deliberately subsumes Check 5b (short response) and
+        # Check 6 (session-guard skip contract): a healthy no-op is neither token
+        # garbage nor a skip-contract violation, so it must reach neither.
         if _is_silent_noop(response):
             continue
 

@@ -1,0 +1,34 @@
+cron-quality watchdog: healthy no-op must not be flagged
+  repo source : ~/steadfaste-fleet/ops/scripts/health/agent-cron-quality-watchdog.py
+  deployed    : ~/.steadfaste-fleet/scripts/agent-cron-quality-watchdog.py
+
+  PASS  repo: no-op + Jev trailer (2 real payloads) is silence
+  PASS  repo: case drift '[Silent]' is silence
+  PASS  repo: trailing PROSE is NOT silence
+  PASS  repo: malformed '[SILENT' is NOT silence
+  PASS  deployed: no-op + Jev trailer (2 real payloads) is silence
+  PASS  deployed: case drift '[Silent]' is silence
+  PASS  deployed: trailing PROSE is NOT silence
+  PASS  deployed: malformed '[SILENT' is NOT silence
+
+  PASS  deployed script: 0 issues on LIVE cron output (dedup bypassed)
+  PASS  skill documents case drift + Jev annotation as the no-op
+
+ALL CLAIMS PASS — the healthy no-op is no longer reported as garbage
+
+──────────────────────────────────────────────────────────────────────────────
+BEFORE / AFTER on the LIVE cron output (dedup layer bypassed, same data)
+
+BEFORE (deployed copy, pre-fix):
+## Cron Quality Watchdog — 2026-11-16 20:40 KST
+4 issue(s) detected:
+- 🟠 orch-bus-worker: suspiciously short response (85 chars < 100) '[SILENT]\n\n[Jev] hard · general → minimax/minimax-m3 · confid' — possible token garbage
+- 🟠 orch-bus-worker: session guard said ACTIVE but reply was '[SILENT]\n\n[Jev] hard · general → minimax/minimax-m3 · confid' — expected the skip token
+- 🟠 fleet-bus-workday: suspiciously short response (97 chars < 100) '[SILENT]\n\n[Jev] medium · general → deepseek/deepseek-v4-flas' — possible token garbage
+- 🟠 fleet-bus-workday: session guard said ACTIVE but reply was '[SILENT]\n\n[Jev] medium · general → deepseek/deepseek-v4-flas' — expected the skip token
+
+AFTER (fixed):
+(no issues detected)  exit 0
+──────────────────────────────────────────────────────────────────────────────
+Reproduce:  bash docs/evidence/cron-quality-noop-false-positive-2026-11-16.sh
+Exit code == number of failed claims (0 = all pass).

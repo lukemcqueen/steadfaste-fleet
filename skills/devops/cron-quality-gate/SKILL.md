@@ -78,7 +78,16 @@ Runs as `no_agent=True` cron on schedule `*/10 * * * *`. Delivers to origin.
   `~/.hermes/cron/jobs.json` — no hardcoded list to drift.
 - **Looks up output by JOB ID** (output dirs are `output/<job_id>/`, not name).
 - **Checks run on the `## Response` section only** (not the embedded prompt/skill).
-- **`[SILENT]` is the healthy no-op** — never flagged.
+- **`[SILENT]` is the healthy no-op** — never flagged. Recognised through
+  wrapping (JSON/quote/angle), **case drift** (`[Silent]`), and a trailing
+  **Jev routing annotation** (`[SILENT]` then `[Jev] hard · general → model ·
+  confidence 0.69`). Both variants were reported fleet-wide on 2026-11-16 as
+  "suspiciously short response" + "session guard said ACTIVE but reply was …
+  expected the skip token" — two false alerts per run. A no-op is neither token
+  garbage nor a skip-contract violation, so the no-op check short-circuits both.
+  **Leak detection is not widened**: trailing *prose* after the token is still
+  flagged (the 2026-08-04 regression delivered prose instead of skipping), and a
+  malformed `[SILENT` is still never treated as silence.
 - **Session-guard skip contract**: if the injected script output says `ACTIVE (`
   and the reply is not the skip token (`skipped` + `interactive session`), it is
   flagged 🟠. This caught the 2026-08-04 regression where `agent-inbox-workday`
