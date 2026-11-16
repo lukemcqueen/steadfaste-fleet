@@ -62,15 +62,20 @@ evidence selects a wrong model with full confidence:
 - **`hard` / the pro tier is REVIEW OR PLANNING ONLY — an operator standing rule, not a
   preference.** Nothing in this tier builds. So the qualifying evidence is the
   plan/reviewer A/B, never a codegen score:
-  - **Recall is FLAT across reviewer models.** Every candidate in the reviewer A/B caught
-    every planted defect, so recall separates nothing and a "best coder" ranking is the
-    wrong input entirely.
+  - **Recall is FLAT across reviewer models** — the record is
+    `docs/evidence/plan-reviewer-model-eval-2026-11-13/README.md`, which states it
+    directly ("Recall is NOT a differentiator. All four caught all three planted"). Every
+    candidate in the reviewer A/B caught every planted defect, so recall separates nothing
+    and a "best coder" ranking is the wrong input entirely.
   - What actually decides: **latency against the review ceiling**, **cost per review**,
-    and **provider depth**. With equal recall, the cheap fast one is simply better.
-  - The measurement surface already exists — the plan-reviewer A/B runner beside
-    `docs/evidence/plan-reviewer-model-eval-*/`. EXTEND that eval for a new candidate
-    instead of arguing from structure: a slot picked on "1M ctx and 6 providers" with no
-    measured review recall is a guess wearing a table.
+    and **provider depth**. With equal recall, the cheap fast one is simply better — that
+    same record carries its own cost comparison (roughly 6x cheaper per plan review at the
+    same recall).
+  - The measurement surface already exists: the plan-reviewer A/B runner, whose evidence
+    sits under `docs/evidence/plan-reviewer-model-eval-<date>/`. EXTEND that eval for a new
+    candidate instead of arguing from structure: a slot picked on "1M ctx and 6 providers"
+    with no measured review recall is a guess wearing a table. Cite the eval's own record
+    path in the verdict, so the next reader can re-run it rather than trust the summary.
 - **Eligibility is a hard gate, and it is not just price or context.** A candidate must
   serve `tool_calls` across MORE THAN ONE distinct provider. Count DISTINCT providers —
   several endpoints under one provider is ONE upstream (the single-upstream trap). And
