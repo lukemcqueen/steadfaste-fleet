@@ -33,8 +33,11 @@ WHAT THIS SCRIPT DOES (deterministic, stdlib-only, portable to macOS):
 EXIT CODES:
   0 = live prices/order match the committed list (nothing to apply) — silent.
   1 = prices/order changed → an apply is warranted (report the delta).
-  2 = new unvetted cheaper candidate(s) found → quality alert (even if no apply).
-  3 = could not verify (no catalog + no cache).
+  2 = quality alert only: new unvetted cheaper candidate(s) found, no apply pending.
+  3 = could not verify — no catalog/cache readable, OR the re-priced list breaches
+      an invariant (a model over the hard $/M cap, or a head not below baseline /
+      ceiling) so it CANNOT be auto-applied. Violations fail closed to this code;
+      they are listed in state/model-market.json for the operator, never applied.
 
 This script only WRITES the state file; it does not commit, push, deploy, or edit
 config/jev-router-models.json. Applying a pending change is the orchestrator
@@ -61,12 +64,19 @@ STATE_PATH = os.environ.get("MODEL_MARKET_STATE", "").strip() or (
     str(Path.home() / ".steadfaste-fleet" / "state" / "model-market.json"))
 
 
-def blended(price: dict) -> float:
-    """$/M on the same basis as router-pools.py: input + output per million."""
+def blended(price: dict) -> float | None:
+    """$/M on the same basis as router-pools.py: input + output per million.
+
+    Returns None for an absent/malformed price — NEVER 0.0. 0.0 would price a
+    corrupt or unpriceable model as free, sort it to the head of every pool
+    (reorder_pool), and make it the cheapest 'head' for the unvetted comparison,
+    silently reordering the router list on bad data."""
+    if not price:
+        return None
     try:
-        return float(price.get("in", 0)) + float(price.get("out", 0))
+        return float(price.get("in") or 0) + float(price.get("out") or 0)
     except (TypeError, ValueError):
-        return 0.0
+        return None
 
 
 def default_list() -> Path:
@@ -179,9 +189,15 @@ def price_for(catalog: dict, model: str) -> dict:
 
 
 def reorder_pool(models: list, prices: dict) -> list:
-    """Stable sort cheapest-first by blended $/M (in+out). Never drops a model."""
+    """Stable sort cheapest-first by blended $/M (in+out). Never drops a model.
+
+    Unpriceable models (blended None) are pushed to the END, stable, so a model
+    with no/ corrupt price can never become a pool head (a 0.0 sort would put it
+    first and mislead the head comparisons + unvetted scan)."""
     keyed = [(blended(prices.get(m, {})), idx, m) for idx, m in enumerate(models)]
-    return [m for _, _, m in sorted(keyed, key=lambda t: (t[0], t[1]))]
+    return [m for _, _, m in sorted(
+        keyed,
+        key=lambda t: (t[0] is None, t[0] if t[0] is not None else float("inf"), t[1]))]
 
 
 def signature(doc: dict) -> str:
@@ -249,6 +265,8 @@ def main(argv=None) -> int:
             if not head:
                 continue
             head_price = blended(prices_new.get(head, {}))
+            if head_price is None:
+                continue  # unpriceable head -> already in missing_models; can't validate invariants
             if tier != "hard" and base_price and head_price >= base_price:
                 violations.append(f"{tier}/{spec} head {head} (${head_price:.3f}/M) not below baseline ${base_price:.3f}/M")
             if ceiling is not None and base_price and head_price > base_price * float(ceiling):
@@ -262,8 +280,11 @@ def main(argv=None) -> int:
         for model, price in prices_new.items():
             if model in rejected:
                 continue
-            if blended(price) > float(hard_cap):
-                violations.append(f"{model} is ${blended(price):.3f}/M, above the ${float(hard_cap):.2f}/M hard cap")
+            b = blended(price)
+            if b is None:
+                continue  # unpriceable -> already in missing_models; don't score as $0
+            if b > float(hard_cap):
+                violations.append(f"{model} is ${b:.3f}/M, above the ${float(hard_cap):.2f}/M hard cap")
 
     # 5. NEW unvetted cheaper candidates: catalog models cheaper than a pool head
     #    that are not already routed/candidate/rejected. Quality gated: report only.
@@ -328,8 +349,11 @@ def main(argv=None) -> int:
         return RC_COULD_NOT_VERIFY
 
     if violations:
-        # A reordered/invariant violation means the list CANNOT be auto-applied.
-        rc = RC_COULD_NOT_VERIFY if not apply_pending else RC_ALERT
+        # An invariant violation (a model over the hard cap, or a head not below
+        # baseline/ceiling) means the re-priced list is NOT safe to auto-apply —
+        # fail closed as 'could not verify', never present it as a normal apply
+        # or a quality alert. The violations are in the state file for the operator.
+        rc = RC_COULD_NOT_VERIFY
     elif apply_pending:
         rc = RC_APPLY
     elif alerts:

@@ -158,3 +158,44 @@ def test_get_catalog_rejects_corrupt_and_misshapen_cache_with_reasons(tmp_path, 
         assert "unparsable" in msg and "env-cache.json" in msg
         assert "unexpected shape" in msg and "models_dev_cache" in msg
         assert "not present" in msg  # the missing ~/.cache/jev path is surfaced too
+
+
+def test_reorder_pool_unpriceable_sinks_to_end():
+    mod = load_scan()
+    # gamma has no price in the prices dict -> blended None -> must sink to the end,
+    # never become pool head (a 0.0 blend would wrongly sort it first as 'free').
+    ordered = mod.reorder_pool(
+        ["openrouter:fakeprov/alpha", "openrouter:fakeprov/gamma", "openrouter:fakeprov/beta"],
+        {"openrouter:fakeprov/alpha": {"in": 0.1, "out": 0.2},
+         "openrouter:fakeprov/beta": {"in": 0.05, "out": 0.10}})
+    assert ordered == ["openrouter:fakeprov/beta", "openrouter:fakeprov/alpha", "openrouter:fakeprov/gamma"]
+    # blended of an absent/malformed price is None, never 0.0
+    assert mod.blended({}) is None
+    assert mod.blended({"in": "abc", "out": 1}) is None
+
+
+def test_scan_violation_fails_closed(tmp_path, monkeypatch):
+    mod = load_scan()
+    # catalog has a 'delta' priced over the list's hard cap (3.0/M)
+    viol_catalog = {"fakeprov": {"models": {
+        "alpha": {"cost": {"input": 0.1, "output": 0.2}},
+        "beta":  {"cost": {"input": 0.05, "output": 0.10}},
+        "gamma": {"cost": {"input": 0.4, "output": 0.5}},
+        "delta": {"cost": {"input": 2.0, "output": 2.0}},   # 4.0/M blended > 3.0 cap
+    }}}
+    doc = _list_doc(beta_first=True)
+    doc["tiers"]["medium"]["coding"].append("openrouter:fakeprov/delta")
+    list_path = tmp_path / "jev-router-models.json"
+    list_path.write_text(json.dumps(doc), encoding="utf-8")
+    state_path = tmp_path / "state.json"
+    monkeypatch.setattr(mod, "default_list", lambda: list_path)
+    monkeypatch.setattr(mod, "get_catalog", lambda: (viol_catalog, "test"))
+    monkeypatch.setattr(mod, "STATE_PATH", str(state_path))
+
+    rc = mod.main(["--json"])
+    # violation present AND an apply would be pending -> fail CLOSED (3), never
+    # misreported as a normal apply (1) or a quality alert (2)
+    assert rc == 3
+    st = json.loads(state_path.read_text(encoding="utf-8"))
+    assert st["violations"], "expected a violation to be recorded"
+    assert any("hard cap" in v for v in st["violations"])
