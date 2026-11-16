@@ -11,6 +11,11 @@ metadata:
     tags: [governance, lock, fleet-update, loop-governance, deploy]
     related_skills: [loop-governance, fleet-deployment-sync, fleet-preflight, two-hard-rules]
 ---
+<!-- Backport provenance (deployed -> repo): the DEPLOYED copy of this file carried
+     lessons the repo lacked. Every repo-only line it would drop was checked by phrase
+     match and is a reflow or a deliberate CORRECTION, so the direction is
+     deployed -> repo. Everything below is the deployed lesson copied verbatim, plus this
+     note; it was NOT authored in the backport range that landed it. -->
 
 # Governance Lock Lifecycle During Deploy Operations
 

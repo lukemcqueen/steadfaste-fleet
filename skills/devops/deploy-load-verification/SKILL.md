@@ -11,6 +11,11 @@ metadata:
     tags: [deploy, verification, gateway, mcp, config, restart]
     related_skills: [hermes-gateway-operations, fleet-bus, change-checklist]
 ---
+<!-- Backport provenance (deployed -> repo): the DEPLOYED copy of this file was the
+     newer side — a SUPERSET carrying lessons the repo lacked, losing no repo-only line —
+     so the reconciler's convergence direction is deployed -> repo. Everything below is
+     the deployed lesson copied verbatim, plus this note; it was NOT authored in the
+     backport range that landed it. -->
 
 # Deploy ≠ Load Verification
 

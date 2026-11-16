@@ -16,6 +16,11 @@ related_skills:
   - loop-governance
   - governance-closeout
 ---
+<!-- Backport provenance (deployed -> repo): the DEPLOYED copy of this file carried
+     lessons the repo lacked. Every repo-only line it would drop was checked by phrase
+     match and is a reflow or a deliberate CORRECTION, so the direction is
+     deployed -> repo. Everything below is the deployed lesson copied verbatim, plus this
+     note; it was NOT authored in the backport range that landed it. -->
 
 # Verify and Ship — Pre-Delivery Validation
 
