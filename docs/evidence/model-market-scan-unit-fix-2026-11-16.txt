@@ -1,6 +1,6 @@
 Running: /Users/luke/.steadfaste-fleet/venv/bin/python -m pytest tests/test_model_market_scan.py tests/test_jev_router_pools.py -q
 rc: 0
-when: 2026-11-16T15:10:31Z
+when: 2026-11-16T15:22:25Z
 
 ============================= test session starts ==============================
 platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
@@ -12,5 +12,5 @@ collected 36 items
 tests/test_model_market_scan.py ..........                               [ 27%]
 tests/test_jev_router_pools.py ..........................                [100%]
 
-============================== 36 passed in 0.64s ==============================
-sha256: 2680c0214b35b536b06188c6c449f6995f8e00ab4723bf88c13c85b6a82d4a94
+============================== 36 passed in 0.61s ==============================
+sha256: 162e6c0d03156c2f8a4192f3985802f9280706f41261103220423c202cde0582

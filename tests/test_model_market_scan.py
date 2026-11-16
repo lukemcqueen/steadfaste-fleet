@@ -255,10 +255,15 @@ def test_scan_ignores_sentinel_dynamic_pricing(tmp_path, monkeypatch):
         "beta":  {"cost": {"input": 0.00000005, "output": 0.0000001}},   # $/M 0.15 head
         "gamma": {"cost": {"input": 0.0000004, "output": 0.0000005}},    # $/M 0.90
     }}}
-    # dynamic-pricing sentinels under their own provider: -1/-1 -> blended -2.0
+    # dynamic-pricing sentinels under their own provider: -1/-1 -> blended -2.0,
+    # and a genuinely FREE model (0.0/0.0 -> blended 0.0) under another provider
+    # that IS a real cheaper candidate and must still be alerted.
     cat["switchprov"] = {"models": {
         "auto":       {"cost": {"input": -1, "output": -1}},
         "auto-beta":  {"cost": {"input": -1, "output": -1}},
+    }}
+    cat["freesrov"] = {"models": {
+        "free-tiny": {"cost": {"input": 0.0, "output": 0.0}},
     }}
     list_path = tmp_path / "jev-router-models.json"
     list_path.write_text(json.dumps(_list_doc(beta_first=True)), encoding="utf-8")
@@ -269,10 +274,17 @@ def test_scan_ignores_sentinel_dynamic_pricing(tmp_path, monkeypatch):
 
     rc = mod.main(["--json"])
     st = json.loads(state_path.read_text(encoding="utf-8"))
-    # no violation in play; at most an apply (or nothing) — never a cap breach
-    assert rc in (0, 1)
+    # no apply, no violation — exactly one real cheaper candidate surfaced, so
+    # the correct rc is 2 (quality-alert only), proving the sentinel-exclusion
+    # (rc is no longer forced to 1 by a fabricated price_changed).
+    assert rc == 2
     alerted = [c["model"]
                for cands in st["unvetted_cheaper_candidates"].values() for c in cands]
     assert all("switchprov/" not in m for m in alerted), (
         "sentinel -1/-1 models must not be reported as unvetted cheaper candidates"
+    )
+    # anti-vacuity: a genuinely free model IS a cheaper candidate and must show —
+    # pb >= 0 keeps sentinels out without silently dropping real zero-priced models
+    assert any("freesrov/free-tiny" in m for m in alerted), (
+        "a genuinely-free model must still be reported as an unvetted cheaper candidate"
     )

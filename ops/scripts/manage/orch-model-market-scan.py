@@ -356,11 +356,13 @@ def main(argv=None) -> int:
                     if not c:
                         continue
                     pb = float(c.get("input", 0) or 0) + float(c.get("output", 0) or 0)
-                    # pb > 0: providers price dynamic-pricing metas as -1/-1
-                    # sentinels (blended -2.0), which is truthy and '< any head' —
-                    # a sentinel is not a lower REAL price and must never be
-                    # offered as a candidate for an A/B that cannot run.
-                    if pb > 0 and pb < head_price:
+                    # pb >= 0: providers price dynamic-pricing metas as -1/-1
+                    # sentinels (blended -2.0, always negative), which are not a
+                    # lower REAL price and must never be offered for an A/B that
+                    # cannot run. Real catalog prices are non-negative, so >= 0
+                    # keeps the sentinels out while a genuinely $0.00/M free model
+                    # (blended 0.0) is still a real cheaper candidate and is kept.
+                    if pb >= 0 and pb < head_price:
                         full = f"{provider}/{bare}"
                         if full in existing:
                             continue
