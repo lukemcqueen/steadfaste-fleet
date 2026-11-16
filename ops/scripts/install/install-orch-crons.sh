@@ -461,7 +461,7 @@ create_cron "orch-weekly-cost-report" "0 9 * * 1" \
 # and (by governance cycle) commits + deploys + pushes when prices move; alerts
 # on NEW unvetted cheaper candidates for a future A/B (never auto-adopts them).
 create_cron "orch-model-market-scan" "0 8 * * *" \
-  "" \
+  "manage/orch-model-market-scan.py" \
   "Run the daily model-market scan and apply any price-driven change under governance.
 
 STEP 0 — run the scan: python3 ~/.steadfaste-fleet/scripts/manage/orch-model-market-scan.py --json
