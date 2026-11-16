@@ -274,6 +274,28 @@ def check_drift(verbose: bool = False) -> tuple[list[dict], list[dict], list[str
     return drifted, missing, orphan_names
 
 
+def installer_coverage() -> list[str]:
+    """Crons install-crons.sh declares (create_cron) but cron-manifest.yaml lacks.
+
+    The manifest is the single source of truth; a cron created only by the
+    installer (no manifest entry) is invisible to --check/missing and would
+    silently survive the cron-reconcile fast gate. Guard: surface any such
+    cron so a future installer-only declaration is seen, not silently missed.
+    No create_cron name is installer-only today (verified 2026-11-16).
+    """
+    import re
+    installer = (FLEET_REPO or Path.home() / "steadfaste-fleet") / \
+        "ops/scripts/install-crons.sh"
+    if not installer.exists():
+        return []
+    names = {m.group(1) for m in
+             re.finditer(r'^\s*create_cron "([a-z0-9-]+)"', installer.read_text(), re.M)}
+    if not names:
+        return []
+    manifest_names = {c.get("name", "") for c in load_manifest()}
+    return sorted(names - manifest_names)
+
+
 # ── Repair engine ─────────────────────────────────────────────────────
 def _hermes_cmd() -> str:
     """Locate the hermes CLI."""
@@ -428,6 +450,7 @@ def main() -> int:
         return 1 if any(r["action"] == "error" for r in results) else 0
 
     drifted, missing, orphans = check_drift()
+    installer_only = installer_coverage()
     problems = drifted + missing
 
     if args.json:
@@ -435,6 +458,7 @@ def main() -> int:
             "drifted": [{**d, "diffs": d["diffs"]} for d in drifted],
             "missing": [m["name"] for m in missing],
             "orphans": orphans,
+            "installerNotInManifest": installer_only,
         }, indent=2))
     else:
         for d in drifted:
@@ -445,10 +469,12 @@ def main() -> int:
             print(f"MISSING {m['name']}")
         for o in orphans:
             print(f"ORPHAN {o}")
-        if not problems and not orphans:
+        for i in installer_only:
+            print(f"INSTALLER_NOT_IN_MANIFEST {i}")
+        if not problems and not orphans and not installer_only:
             print("OK: all in-scope crons match manifest")
 
-    return 1 if (problems or orphans) and args.check else 0
+    return 1 if (problems or orphans or installer_only) and args.check else 0
 
 
 if __name__ == "__main__":

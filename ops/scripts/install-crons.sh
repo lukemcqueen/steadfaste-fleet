@@ -1246,14 +1246,22 @@ create_cron "agent-stale-ref-watchdog" "0 5 * * *" \
 # Daily bible reading (no_agent script — reads SOUL.md, calls deepseek API
 # internally, appends entry + brain page; canonical pattern per
 # skills/spiritual-disciplines/agent-daily-bible-reading/SKILL.md)
-create_cron "agent-daily-bible-reading" "0 1 * * *" \
-  "agent-daily-bible-reading.py" \
-  "" \
-  "" \
-  "" \
-  "origin" \
-  "" \
-  "true"
+# OPTOUT/OPT-IN parity (2026-11-16): cron-manifest.yaml declares this cron
+# `scope: opt-in` with `opt_in_marker: bible-reading-enabled` — it is only
+# in-scope when ~/.steadfaste-fleet/bible-reading-enabled exists (matches
+# cron_manifest.is_in_scope). Create it conditional on that marker so the
+# installer and the manifest agree on ownership; otherwise it becomes a
+# perpetual doctor ORPHAN (live-but-out-of-scope).
+if [[ -f "${FLEET_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}/bible-reading-enabled" ]]; then
+  create_cron "agent-daily-bible-reading" "0 1 * * *" \
+    "agent-daily-bible-reading.py" \
+    "" \
+    "" \
+    "" \
+    "origin" \
+    "" \
+    "true"
+fi
 
 # No-verify audit — no-agent script checks for --no-verify commits every 60m
 create_cron "agent-no-verify-audit" "*/10 * * * *" \

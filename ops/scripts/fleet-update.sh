@@ -3675,8 +3675,27 @@ main() {
     warn "  Remove it: rm -rf ~/agent-inbox-private"
   fi
 
+  # ── Cron-reconcile fast gate (dogfood/deploy speedup) ──
+  # Verified safe: every cron install-crons.sh/install-orch-crons.sh creates
+  # is declared in cron-manifest.yaml (0 installer-only crons today, checked
+  # 2026-11-16). So when --check reports drifted AND missing both empty, no
+  # manifest-in-scope cron needs create/edit and no `hermes` CLI call is
+  # needed — skip the installers + manifest --repair entirely. Any drift or
+  # missing → gate falls through → full reconcile runs (fix propagation
+  # preserved). Orphans are ignored: the repair path never touches them.
+  _CRON_NEEDS=""
+  _cm="${FLEET_DEPLOY_HOME}/scripts/manage/cron_manifest.py"
+  [[ -f "$_cm" ]] || _cm="${REPO_DIR:-$HOME/steadfaste-fleet}/ops/scripts/manage/cron_manifest.py"
+  if [[ -f "$_cm" && -f "${REPO_DIR:-$HOME/steadfaste-fleet}/ops/install/cron-manifest.yaml" ]]; then
+    _cm_out="$(python3 "$_cm" --check --json 2>/dev/null || true)"
+    if [[ "$_cm_out" == *'"drifted": []'* && "$_cm_out" == *'"missing": []'* ]]; then
+      _CRON_NEEDS="in-sync"
+      info "Crons already in sync with manifest — skipping reconcile"
+    fi
+  fi
+
   # Install/update universal crons (idempotent — skips existing)
-  if command -v hermes &>/dev/null; then
+  if [[ -z "$_CRON_NEEDS" ]] && command -v hermes &>/dev/null; then
     FLEET_DEPLOY_HOME="${FLEET_DEPLOY_HOME}" bash "${FLEET_DEPLOY_HOME}/scripts/install-crons.sh" 2>/dev/null && \
       info "Crons up to date" || warn "Cron install skipped (no hermes CLI?)"
 
@@ -3759,7 +3778,7 @@ main() {
   # change in the manifest reaches live jobs automatically on every update.
   # (Output captured to a var first — piping python to grep -q under
   # set -euo pipefail can SIGPIPE-abort the deploy on large output.)
-  if command -v hermes &>/dev/null && [[ -f "${REPO_DIR:-$HOME/steadfaste-fleet}/ops/install/cron-manifest.yaml" ]]; then
+  if [[ -z "$_CRON_NEEDS" ]] && command -v hermes &>/dev/null && [[ -f "${REPO_DIR:-$HOME/steadfaste-fleet}/ops/install/cron-manifest.yaml" ]]; then
     local _manifest_out _manifest_script
     _manifest_script="${FLEET_DEPLOY_HOME:-$HOME/.steadfaste-fleet}/scripts/manage/cron_manifest.py"
     if [[ ! -f "$_manifest_script" ]]; then
