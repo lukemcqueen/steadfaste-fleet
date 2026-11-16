@@ -114,20 +114,47 @@ def catalog_cache_paths() -> list:
     return paths
 
 
+def _cache_shape_ok(raw) -> bool:
+    """True iff raw is {provider: {"models": {bare: {"cost": {...}}}}} — the shape
+    both fetch_catalog() (live) and the Jev plugin cache (/v1/models) write. A
+    cache of any other shape would make price_for() silently return empty prices
+    for every model, so we reject it loudly instead of trusting an unknown shape."""
+    if not isinstance(raw, dict):
+        return False
+    for prov, body in raw.items():
+        if not isinstance(body, dict) or not isinstance(body.get("models"), dict):
+            return False
+        for bare, entry in body["models"].items():
+            if not isinstance(entry, dict) or not isinstance(entry.get("cost"), dict):
+                return False
+    return True
+
+
 def get_catalog() -> tuple[dict, str]:
-    """Live catalog, falling back to the jev cache; raises on total failure."""
-    reason = ""
+    """Live catalog, falling back to a validated plugin cache; raises on total failure.
+
+    Every rejection (live fetch, missing cache path, unparsable cache, wrong cache
+    shape) is recorded with its reason and surfaced in the final exception, so a
+    corrupt/misshapen cache is distinguishable from no cache at all — never a silent
+    'nothing to do'."""
+    reasons: list = []
     try:
         return fetch_catalog(), "live"
     except Exception as exc:  # noqa: BLE001 - network can fail many ways; fall back
-        reason = f"live fetch failed: {exc}"
+        reasons.append(f"live HTTP fetch failed: {exc}")
     for path in catalog_cache_paths():
-        if path.is_file():
-            raw, err = load_json(path)
-            if raw is None:
-                continue
-            return raw, f"cache {path}"
-    raise RuntimeError(f"{reason}; no catalog cache readable")
+        if not path.is_file():
+            reasons.append(f"{path}: cache file not present")
+            continue
+        raw, err = load_json(path)
+        if raw is None:
+            reasons.append(f"{path}: unparsable ({err})")
+            continue
+        if not _cache_shape_ok(raw):
+            reasons.append(f"{path}: unexpected shape (expected {{provider: {{models: {{bare: {{cost: ...}}}}}}}})")
+            continue
+        return raw, f"cache {path}"
+    raise RuntimeError("no catalog available; every source rejected:\n  " + "\n  ".join(reasons))
 
 
 def price_for(catalog: dict, model: str) -> dict:

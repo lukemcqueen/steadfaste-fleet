@@ -114,3 +114,47 @@ def test_scan_noop_when_unchanged(tmp_path, monkeypatch):
     # list is already beta-first (cheapest head), prices match, no cheaper unvetted -> no-op
     assert rc == 0
     assert json.loads(state_path.read_text(encoding="utf-8"))["apply_pending"] is False
+
+
+def _isolate_home(monkeypatch, tmp_path):
+    # Point every Path.home() lookup at the sandbox so catalog_cache_paths() never
+    # sees the host's real ~/.hermes / ~/.cache Jev caches.
+    monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
+
+
+def test_get_catalog_falls_back_to_valid_jev_cache(tmp_path, monkeypatch):
+    mod = load_scan()
+    _isolate_home(monkeypatch, tmp_path)
+    monkeypatch.setattr(mod, "fetch_catalog", lambda: (_ for _ in ()).throw(RuntimeError("no network")))
+    cache = tmp_path / "env-cache.json"
+    # real Jev plugin cache shape: {provider: {models: {bare: {cost: {...}}}}}
+    cache.write_text(json.dumps(SYNTH_CATALOG), encoding="utf-8")
+    monkeypatch.setenv("JEV_CATALOG_CACHE", str(cache))
+
+    cat, src = mod.get_catalog()
+    assert src == f"cache {cache}"
+    # price_for resolves from the validated cache — not silently empty/missing
+    assert mod.price_for(cat, "openrouter:fakeprov/alpha") == {"in": 0.1, "out": 0.2}
+
+
+def test_get_catalog_rejects_corrupt_and_misshapen_cache_with_reasons(tmp_path, monkeypatch):
+    mod = load_scan()
+    _isolate_home(monkeypatch, tmp_path)
+    monkeypatch.setattr(mod, "fetch_catalog", lambda: (_ for _ in ()).throw(RuntimeError("no network")))
+
+    corrupt = tmp_path / "env-cache.json"
+    corrupt.write_text("{not json", encoding="utf-8")  # in JEV_CATALOG_CACHE slot
+    wrong = tmp_path / ".hermes" / "models_dev_cache.json"
+    wrong.parent.mkdir(parents=True, exist_ok=True)
+    wrong.write_text(json.dumps({"flat": [1, 2, 3]}), encoding="utf-8")  # misshapen cache slot
+    monkeypatch.setenv("JEV_CATALOG_CACHE", str(corrupt))
+
+    try:
+        mod.get_catalog()
+        assert False, "get_catalog must raise, not silently return a bad/empty catalog"
+    except RuntimeError as exc:
+        msg = str(exc)
+        # each rejection is recorded with its reason — corrupt vs wrong-shape vs missing
+        assert "unparsable" in msg and "env-cache.json" in msg
+        assert "unexpected shape" in msg and "models_dev_cache" in msg
+        assert "not present" in msg  # the missing ~/.cache/jev path is surfaced too
