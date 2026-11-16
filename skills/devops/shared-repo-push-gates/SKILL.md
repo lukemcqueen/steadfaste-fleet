@@ -57,6 +57,33 @@ working tree), not a problem with your diff.
 - A push or commit was rejected and the cause isn't obvious
 - Writing docs or scripts to the shared surface (repo or `~/.hermes/skills`)
 
+## Orchestrator-only paths: split the commit, escalate the blocked files
+
+`docs/orchestrator-only-paths.txt` (committed) marks `ops/scripts/`, `ops/install/`,
+`plugins/`, `mcp-servers/`, `skills/`, `tests/`, `docs/templates/`, `AGENTS.md`, `SOUL.md`
+as non-orchestrator-blocked. A `git commit` naming ANY of those paths is refused with
+"Current host: LAM2 … Send a bus message to Moses/Esther". The block is per-PATH, not
+per-repo: `ops/scripts/manage/`, `ops/scripts/fleet_doctor/`, `docs/`, `tests/` and
+`mcp-servers/` DID commit fine this session while `ops/scripts/orch-bus/` and
+`ops/scripts/install/` were refused — so a change spanning committable + blocked files
+must be SPLIT, and the blocked files handed off.
+
+The non-orchestrator response to a mixed change:
+1. Commit the committable subset with their own pathspec (`git commit --only -F <msg> -- <committable paths>`).
+2. Save each blocked file's diff to scratch (`git diff <path> > scratch/<name>.diff`), then
+   `git checkout -- <blocked paths>` so the tree is clean for the push.
+3. Message the orchestrator (Moses/Esther) naming the two diffs and the time-sensitivity —
+   use the bus subject rule (`^[A-Z0-9_]+$`) and put the paths + why in the body. The
+   blocked files land under the orchestrator's identity, not yours.
+
+Do NOT try to commit blocked files by splitting the pathspec in creative ways, editing the
+paths config from the working copy (it is read from the COMMITTED file — a working-tree
+edit won't bypass), or leaving the diff uncommitted in the shared tree hoping a peer commits
+it — an uncommitted orchestrator-file diff is not your work to land, and leaving it dirty
+blocks every push on the host. The audit reads the file's content for hardcoded model ids
+against the CURRENT canonical too (see `llm-cost-optimization` on test pins), so a test-
+only change to a blocked path that would rot CI is exactly the kind to escalate fast.
+
 ## The Gates (verified behavior, 2026-08-24; review-receipt gate added 2026-10-07)
 
 **Review receipt gate.** A push whose range touches an always-review path needs

@@ -297,6 +297,22 @@ rules for a skip-class: `references/review-gate-spend.md`.
   — because an env override beats the code default and a stale doc makes agents
   re-apply the expensive id. Check the fleet-wide surfaces cold before calling it
   done. Full procedure: `references/pinning-model-defaults.md`.
+- **A test that asserts the CANONICAL by LITERAL is a landmine — resolve the expected value
+  from the source of truth, never hardcode the id.** The session that re-anchored the reviewer
+  to a cheaper winner found `test_dry_reviewer_model.py` asserted `CANONICAL = "<old id>"` as a
+  module constant, so origin CI FAILED against the new canonical until the test was patched.
+  When a default can change (reviewer, session model), derive the expected constant from
+  `fleet_lib/models.py` `REVIEWER_MODEL_DEFAULT` via `importlib` at import time — the test then
+  tracks whatever the operator chooses and can never rot the moment the pin moves. A hardcoded
+  expected-id in a test is the same stale-doc trap as a doc that names the id: it re-applies the
+  old identity and blocks the migration the change was meant to land.
+- **Runtime scripts: resolve the model from the canonical/env at CALL time and fail closed when
+  it is unset — never bake the id into the comment or a fallback.** A comment claiming "the pin is
+  X" goes stale the instant the constant changes, sending the next reader back to the old id.
+  Keep comments pointing at the resolver (`get_reviewer_model()` / `ADVERSARIAL_REVIEWER_MODEL`,
+  not a model id), and let the fallback path raise if fleet_lib is unavailable AND the env var is
+  unset rather than defaulting to a literal. Point docs at "the current canonical reviewer", not
+to a pinned id that will be replaced.
 
 ## Verification
 
