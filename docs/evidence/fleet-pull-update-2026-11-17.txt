@@ -180,3 +180,33 @@ model.default / roster change (parked on the operator).
       live-execution claim in this record rests on the written evidence — which is why each
       claim above names the command that re-produces it.
 
+=== FINAL VERIFICATION — commit ff4b0ad4 · deploy #4 · end of cycle 14889 ===
+
+Commit: ff4b0ad4 "fix(skills): recover the drift that reappeared mid-cycle, and make its
+message honest [14889]" — 3 files, 112 insertions. The pre-commit gate ran on it:
+"Adversarial verify: passed on 3 file(s)" and "change-validate: all checks passed".
+
+Deploy #4 (a deploy-mapped path was touched, so it was required): UPDATE_EXIT=0 ·
+`Deploy sync` ✅ · `Skill drift` ✅ · snapshot `Overall: WARNING (511 pass · 5 warn ·
+0 fail · 2 info) · 3 undisposed`.
+
+FRESH idle run after it — the number that counts:
+  `Repo clean` ✅ · `Repo sync` ✅ · `Deploy sync` ✅ · `Service (Dashboard)` ✅ ·
+  `Service (Langfuse)` ✅ · `Service (Agent Bus)` ✅ · `Skill drift` ✅
+  `Overall: WARNING (514 pass · 2 warn · 0 fail · 2 info)` — with NO undisposed line.
+  Every residual item is already decided, named here rather than implied:
+    [WARN] Script run evidence   — orch-model-market-scan.py changed upstream and has not
+                                   run through its scheduler; deferred (owner esther).
+    [WARN] Multi-session repo    — 2 live locks: 20261116_120352_a100c2aa (owner session
+                                   ENDED; held to its own TTL by the no-reclaim/no-race
+                                   rule) plus this cycle's own. Deferred, not "fixed".
+    [INFO] PENDING cycles        — this cycle's own lock; clears at end_change.
+    [INFO] Cron bridge ownership — undeclared timer local-clickhouse-log-cleanup;
+                                   deliberate (owner esther).
+  Enforcement state re-read, not assumed: immutable flag present on all three
+  (`----i---------e-------`), governance-enforcer enabled.
+
+git: tree CLEAN · HEAD ff4b0ad4 · ahead 9 · behind 0. NO PUSH — pull-latest policy.
+No model.default and no model roster change: that decision stays parked on the operator,
+and this cycle did not touch it.
+
