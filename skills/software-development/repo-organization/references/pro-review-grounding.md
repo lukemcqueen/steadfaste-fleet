@@ -17,8 +17,10 @@ FINDINGS rounds to CLEAN).
    sees ONLY its own text window.
 3. **Run**: `python3 <repo>/ops/scripts/orch-bus/adversarial-review.py
    --cycle-id <N> --review --material-file <path> --reviewer-id
-deepseek-v4-pro-0813`. rc=0, no stdout — the verdict goes to the store, not
-   stdout.
+<current canonical reviewer>`. The reviewer resolves from
+   `get_reviewer_model()` (`fleet_lib/models.py` `REVIEWER_MODEL_DEFAULT` /
+   `ADVERSARIAL_REVIEWER_MODEL` env) — read it there; do not hardcode an id.
+   rc=0, no stdout — the verdict goes to the store, not stdout.
 4. **Read the verdict** from `~/.steadfaste-fleet/data/loop-governance.db`,
    table `adversarial_reviews`, latest row for `cycle_id` (parse `findings_json`
    for severity + technique + recommendation per finding).
@@ -50,8 +52,9 @@ deepseek-v4-pro-0813`. rc=0, no stdout — the verdict goes to the store, not
 - Every restatement of a number must agree: assert "6 hits" in one bullet and
   the evidence-pointer says "3 hits" and that contradiction is itself a high
   finding. Reconcile every number everywhere it appears.
-- `--reviewer-id deepseek-v4-pro-0813` is the pro model (Luke: pro for
-  design/review, flash for implementation).
+- `--reviewer-id` names the canonical reviewer (Luke: strong for
+  design/review, cheap for implementation) — resolve it from `get_reviewer_model()`,
+  don't pin an id that can go stale.
 - Grounding is a dialog: the review is not clean until every factual claim it
   quotes has a pointer. A KEEP-fit rule: the material's every assertion (file
   count, commit hash, command, directive, observation) maps to a reproducible

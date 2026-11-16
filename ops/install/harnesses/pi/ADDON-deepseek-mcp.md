@@ -19,7 +19,7 @@ agent must be able to recognise as *not ours* rather than try to "repair" with
 | **Where its source lives** | the fleet OWNS a copy: `mcp-servers/deepseek-review-mcp.py` (deployed to `~/.steadfaste-fleet/scripts/deepseek-review-mcp.py`). The same server also lives in a product repo: `~/Developer/AI/steadfaste-s1-model/scripts/util/mcp_deepseek_server.py` — the pi registration may point at either copy. |
 | **Credential** | `OPENROUTER_API_KEY` — from the env, or a `./.env` beside the server |
 | **Registered in** | `~/.pi/agent/mcp.json`, one entry named `deepseek`, next to the five fleet entries |
-| **Default model** | `deepseek/deepseek-v4-pro-0813` (OpenRouter) — the cost-controlled canonical reviewer; never plain `v4-pro` or `chat-v3` |
+| **Default model** | the canonical reviewer, resolved at runtime via `fleet_lib.models.get_reviewer_model()` (currently `xiaomi/mimo-v2.6-pro`, the verified cheaper winner) — honoures `ADVERSARIAL_REVIEWER_MODEL`; never a hardcoded `v4-pro`/`chat-v3` |
 
 The review tool is named **`review`**. It was `review_experimental_plan` — narrower than what
 it does, since it reviews a memo, a plan, or a results summary. The rename is **automated**, not
@@ -117,8 +117,9 @@ pi mcp list | grep deepseek      # expected: connected, with its 3 tools, named 
   is the fleet-owned server, registered in `fleet-update.sh` so every host gets it deployed.
   The product repo may keep its own copy — the pi `deepseek` entry may point at either — but
   this repo no longer depends on a product checkout existing.
-- **One model rule for every copy: `deepseek-v4-pro-0813` default.** Plain `v4-pro` and
-  `chat-v3` are banned as defaults fleet-wide (cost ruling 2026-11-11).
+- **One model rule for every copy: the canonical reviewer default** (resolved via
+  `get_reviewer_model()`, currently `xiaomi/mimo-v2.6-pro`). Plain `v4-pro` and
+  `chat-v3` are banned as hardcoded defaults fleet-wide (cost ruling 2026-11-11).
 
 Evidence for both claims: `docs/evidence/pi-audit-foreign-server-2026-10-12.txt`,
 whose commands (`tests/test_pi_integration_foreign_server.py`, the installer scratch

@@ -161,8 +161,9 @@ measurement it already uses to decide *whether* to review:
   under the heavy bar (`<10` files and `<200` added+removed lines): reviewed over
   a **fast chat-completions call** rather than spawning the agent, even when
   `ADVERSARIAL_REVIEW_BACKEND=agent`. The tier changes the **transport, not the
-  model** — it uses `ADVERSARIAL_REVIEWER_MODEL` (the canonical
-  `deepseek/deepseek-v4-pro-0813`), the same reviewer as every other change. Set
+  model** — it uses `ADVERSARIAL_REVIEWER_MODEL` (the canonical reviewer
+  resolved via `get_reviewer_model()` / `REVIEWER_MODEL_DEFAULT` — currently
+  `xiaomi/mimo-v2.6-pro`, see `fleet_lib/models.py`), the same reviewer as every other change. Set
   `ADVERSARIAL_REVIEW_LIGHT_MODEL` to review the light tier with a different
   model on purpose; before 2026-10-08 this tier silently defaulted to
   `deepseek/deepseek-v4-flash-0731`.

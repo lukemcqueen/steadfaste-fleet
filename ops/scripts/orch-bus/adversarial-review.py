@@ -29,7 +29,8 @@ Independence properties asserted here:
 - The reviewed material is appended BELOW the untrusted-data marker.
 - Empty reviewed material is refused (nothing to review = no review).
 - Independence comes from the fixed prompt + distinct reviewer model
-  (deepseek-v4-pro, not the worker's own model) + recorded reviewer_id/model
+  (resolved via fleet_lib.models.get_reviewer_model() — the canonical reviewer,
+  kept distinct from the worker's session model) + recorded reviewer_id/model
   for audit — NOT from which actor receives the row.
 """
 

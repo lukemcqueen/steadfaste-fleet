@@ -3162,9 +3162,10 @@ def check_governance(res):
   # but was quietly downgraded by an env override, which returns verdicts and reports nothing.
   # That failure mode leaves no other trace, which is why configuration is the thing worth
   # reading here.
-  # "The default reviewer is deepseek/deepseek-v4-pro for all agents" is true in the CODE BY
+  # "The default reviewer is the canonical reviewer for all agents" is true in the CODE BY
   # CONSTRUCTION: loop-gov-mcp.py's `_reviewer_model()` and `_light_reviewer_model()` both
-  # fall back to REVIEWER_MODEL_DEFAULT, and there is deliberately no lighter default
+  # fall back to REVIEWER_MODEL_DEFAULT (fleet_lib/models.py — currently mimo, the verified
+  # cheaper winner; change it there, not here), and there is deliberately no lighter default
   # constant. What the code cannot guarantee is a host's ENV — setting
   # ADVERSARIAL_REVIEWER_MODEL (or ADVERSARIAL_REVIEW_LIGHT_MODEL) to something cheaper
   # silently downgrades every review on that host, and NOTHING reported it. That is the gap

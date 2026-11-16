@@ -7,10 +7,11 @@ Use when a design question benefits from an outside expert model opinion (e.g. i
    ```bash
    KEY=$(grep '^OPENROUTER_API_KEY=' ~/.hermes/.env | cut -d= -f2- | tr -d '"')
    ```
-2. Write the request body to a JSON file (heredoc-quoted, no curl|pipe-to-python):
+2. Write the request body to a JSON file (heredoc-quoted, no curl|pipe-to-python),
+   resolving the reviewer model from the canonical (`fleet_lib.models`), not a pinned id:
    ```bash
-   cat > /tmp/q.json <<'EOF'
-   {"model": "deepseek/deepseek-v4-pro-0813", "messages": [{"role": "user", "content": "<the concrete design question>"}], "max_tokens": 3000}
+   cat > /tmp/q.json <<EOF
+   {"model": "$(cd <repo> && python3 -c 'import sys; sys.path.insert(0,"ops/scripts"); from fleet_lib.models import get_reviewer_model; print(get_reviewer_model())')", "messages": [{"role": "user", "content": "<the concrete design question>"}], "max_tokens": 3000}
    EOF
    ```
 3. POST and parse from file, not pipe:
