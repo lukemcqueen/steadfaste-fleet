@@ -96,15 +96,22 @@ def test_repair_cron_refuses_a_bridge_owned_name_when_called_directly():
     assert "bridge" in detail.lower(), detail
 
 
-def test_load_manifest_fails_closed_instead_of_reading_an_empty_manifest():
+def test_load_manifest_fails_closed_instead_of_reading_an_empty_manifest(tmp_path):
     """Issue #291: load_manifest() wrapped `import yaml` AND the parse in
     `except Exception: return []`. Under an interpreter without PyYAML the tool
     read an EMPTY manifest, printed `0 declared, 0 drifted`, exited 0 and repaired
     nothing — every line looked like a clean no-op. An unreadable manifest is a
     FAILURE, not an empty one."""
     mod = _load_module()
-    bad = Path(__file__).resolve().parent / "fixtures" / "manifest_unparsable.yaml"
+    bad = tmp_path / "manifest_unparsable.yaml"
     bad.write_text("crons:\n  - name: 'unterminated\n   scope: [unclosed\n")
     with pytest.raises(Exception) as exc:
         mod.load_manifest(bad)
     assert "manifest" in str(exc.value).lower(), f"unhelpful error: {exc.value}"
+
+
+def test_load_manifest_still_returns_empty_for_a_genuinely_absent_file(tmp_path):
+    """The honest absence must stay empty — the fix must not turn "no manifest on
+    this host" into a hard failure that breaks every caller."""
+    mod = _load_module()
+    assert mod.load_manifest(tmp_path / "does-not-exist.yaml") == []
