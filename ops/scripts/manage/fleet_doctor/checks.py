@@ -1709,6 +1709,107 @@ def check_scripts(res):
           f"REQUIRED: Run: fleet-update.sh to resync")
 
 
+def classify_bridge_ownership(unit_names: set, declared: set, live: set) -> list:
+    """The single-owner rule for the fleet cron bridge, in BOTH failure directions.
+
+    A bridged job's owner is its systemd TIMER and its Hermes row is removed
+    deliberately on migration — so `unit + declared + not live` is the CORRECT
+    migrated shape and must stay silent. The two failures are:
+
+    * **ORPHAN TIMER** — a unit whose name is declared nowhere. The bridge
+      generator only CREATES units (no prune step), so a retired job keeps
+      firing from its timer and keeps delivering to the user with the cron gone
+      from every listing. Real case (2026-10-02): a retired `orch-task-board-digest`
+      kept delivering its daily digest. The manifest is what distinguishes this
+      from the healthy migrated shape — a migrated job is still declared, a
+      retired one had its manifest entry dropped.
+
+    * **DOUBLE OWNERSHIP** — a unit whose name also has a Hermes `jobs.json` row.
+      Two owners means the job runs twice, and the second run collides on shared
+      state (`Errno 17`), which surfaces as a host health flap rather than an
+      obvious double-fire. Verified live (2026-11-16): `agent-daily-bible-reading`'s
+      bridge service started 01:00:08 and ran to 01:01:25 while the Hermes row
+      recorded `dispatched_at 01:00:55` — two independent dispatches, one minute.
+
+    * **UNDECLARED TIMER** — a unit whose name is in neither the manifest nor
+      `jobs.json`. This is NOT proof the job is retired: a wanted job can simply
+      be missing from the manifest (a manifest gap). It is reported as needing a
+      human decision, never asserted as a retirement.
+
+    Returns `[{name, detail, fix}]`; an EMPTY list is the healthy world (every
+    name has exactly one owner). Pure — the caller gathers the sets.
+    """
+    out: list = []
+    for name in sorted(set(unit_names)):
+        if name not in declared:
+            out.append({"name": name,
+                        "detail": "UNDECLARED TIMER: fleet-bridge unit for a name in "
+                                  "neither cron-manifest.yaml nor jobs.json "
+                                  "(stale timer OR a manifest gap — undetermined)",
+                        "fix": f"decide which: if the job is retired, "
+                               f"systemctl --user disable --now fleet-bridge-{name}.timer "
+                               f"&& rm -f ~/.config/systemd/user/fleet-bridge-{name}.*; "
+                               f"if it is still wanted, add it to ops/install/cron-manifest.yaml"})
+        elif name in live:
+            out.append({"name": name,
+                        "detail": "DOUBLE OWNERSHIP: fleet-bridge timer AND a Hermes jobs.json row",
+                        "fix": f"the timer owns it and its ExecStart is self-contained "
+                               f"(--name/--script/--deliver inline) — drop the duplicate Hermes row "
+                               f"(`hermes cron remove <id of {name}>`)"})
+    return out
+
+
+def check_cron_bridge_ownership(res) -> object:
+    """3b. Every bridged name has exactly ONE owner.
+
+    `check_cron_bridge_migration` covers the third direction (an eligible job
+    with no unit). This covers the other two — see `classify_bridge_ownership`.
+    """
+    units = _bridge_unit_names()
+    if not units:
+        res.add("Cron bridge ownership", "INFO",
+                "no fleet-bridge units installed — nothing to check")
+        return res
+    try:
+        import cron_manifest as _cm     # sibling module, ops/scripts/manage
+        declared = {str(r.get("name", "")) for r in _cm.load_manifest(_cm.MANIFEST_PATH)}
+        declared.discard("")
+    except Exception as exc:            # noqa: BLE001 — never swallow: say so
+        # Fail closed on the CLAIM, not on the world: without the manifest we
+        # cannot tell a migrated job from a retired one, so we report that we
+        # could not verify rather than passing or guessing.
+        res.add("Cron bridge ownership", "INFO",
+                f"COULD NOT VERIFY bridge ownership — manifest unreadable: "
+                f"{type(exc).__name__}: {exc}",
+                fix="run under the fleet venv (PyYAML) and re-run the doctor")
+        return res
+    live = set()
+    try:
+        data = json.loads(JOBS_FILE.read_text()) if JOBS_FILE.exists() else {}
+        rows = data.get("jobs", []) if isinstance(data, dict) else []
+        live = {str(r.get("name", "")) for r in rows
+                if isinstance(r, dict) and r.get("name")}
+    except Exception as exc:            # noqa: BLE001 — never swallow: say so
+        res.add("Cron bridge ownership", "INFO",
+                f"COULD NOT VERIFY bridge ownership — jobs.json unreadable: "
+                f"{type(exc).__name__}: {exc}",
+                fix=f"read {JOBS_FILE} and re-run the doctor")
+        return res
+    verdicts = classify_bridge_ownership(units, declared, live)
+    for v in verdicts:
+        # Severity follows EVIDENCE, not suspicion. Double ownership is proven
+        # harm (two dispatches observed), so it FAILs. An undeclared timer is
+        # undetermined by construction — stale timer or manifest gap — so it is
+        # INFO: it needs a human decision, but calling it a failure on every run
+        # would be a permanent false alarm that trains people to ignore warnings.
+        res.add("Cron bridge ownership", "FAIL" if "DOUBLE" in v["detail"] else "INFO",
+                f"{v['name']}: {v['detail']}", fix=v["fix"])
+    if not verdicts:
+        res.add("Cron bridge ownership", "INFO",
+                f"✅ every one of {len(units)} bridged names has exactly one owner")
+    return res
+
+
 def check_cron_runtime_scripts(res):
   """Cron runtime path integrity: ~/.hermes/scripts must resolve to the SAME
   tree as ~/.steadfaste-fleet/scripts (fleet-update deploy target).

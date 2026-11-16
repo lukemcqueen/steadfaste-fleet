@@ -1,3 +1,16 @@
+# Fleet crons — single source of truth.
+#
+# A name listed here is DECLARED. The fleet cron bridge may own it: a migrated
+# job is hosted on a user-scope systemd timer (fleet-bridge-<name>.timer) and
+# deliberately has NO row in ~/.hermes/cron/jobs.json. That is correct.
+#
+# NEVER create a Hermes cron for a name the bridge owns — it would have two
+# owners and run twice (docs/runbooks/cron-bridge-migration.md). Tools that
+# create or repair crons must skip bridged names; `cron_manifest.py --repair`
+# reports them as SKIPPED-BRIDGE on purpose.
+#
+# A name that is in NEITHER this file NOR jobs.json but still has a timer is an
+# UNDECLARED TIMER (stale unit or a gap below) — `fleet-doctor.py` reports it.
 version: 1
 crons:
 - name: agent-md-prune-apply

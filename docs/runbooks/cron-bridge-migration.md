@@ -5,6 +5,33 @@
 > **Status:** current since the S2a migration (2026-09-30), endpoint corrected
 > 2026-10-01.
 
+## The one rule — a bridged job has exactly ONE owner
+
+A migrated job is **owned by its systemd timer** and its Hermes `jobs.json` row
+is removed deliberately. Both of these are mistakes:
+
+- **Creating a Hermes cron for a bridged name** — it then has two owners and
+  runs twice. `cron_manifest.py --repair` did exactly this for 48 bridged names
+  (2026-11-16) and is now guarded (`skipped-bridge`); never re-add `--workdir`
+  or re-create these rows by hand. The installers and `check_drift` skip
+  bridged names for the same reason.
+- **Leaving the timer behind when retiring a job** — the generator only
+  *creates* units (no prune step), so a retired job keeps firing and delivering
+  with the cron gone from every listing (2026-10-02, `orch-task-board-digest`).
+
+`fleet-doctor.py` enforces both directions under **Cron bridge ownership**:
+
+- `DOUBLE OWNERSHIP` (**FAIL**) — timer *and* a `jobs.json` row. The unit's
+  `ExecStart` is self-contained (`--name/--script/--deliver` inline), so the
+  duplicate **Hermes row** is the side to drop.
+- `UNDECLARED TIMER` (INFO) — a unit whose name is in neither
+  `cron-manifest.yaml` nor `jobs.json`. Undetermined by construction: either a
+  stale timer to retire in both places, or a wanted job missing from the
+  manifest. It needs a human decision and is never auto-fixed.
+
+A third direction is covered separately by `check_cron_bridge_migration`: an
+eligible `no_agent` job with *no* unit at all (a migration gap).
+
 ## Why
 
 The Hermes `cronjob` scheduler only runs while the Hermes gateway process is
