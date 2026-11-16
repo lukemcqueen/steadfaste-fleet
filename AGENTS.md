@@ -137,10 +137,13 @@ default implementation model's to wing**:
   research, architecting, and planning. The default (flash/implementation) tier does
   NOT improvise these alone. Either hand the planning work to the Pro model, or draft
   it and have Pro review it to CLEAN **before** the first implementation slice.
-- **The "pro reviewer" IS a pinned Pro model** (`deepseek-v4-pro-0813` — Luke's
-  standing rule: *pro for design/planning/review, flash for implementation*). Run the
-  sanctioned, recorded reviewer — never a chat call:
-  `python3 ~/.steadfaste-fleet/scripts/adversarial-review.py --cycle-id <N> --material-file <plan.md> --review --reviewer-id deepseek-v4-pro-0813`.
+- **The reviewer is the current canonical fleet reviewer** — changeable at any
+  time, so no model is named here. Resolve it live (`ADVERSARIAL_REVIEWER_MODEL`
+  env, or `fleet_lib.models.REVIEWER_MODEL_DEFAULT`); Luke's standing rule: *a
+  strong pro model for design/planning/review, a cheap model for implementation*.
+  Run the sanctioned, recorded reviewer — never a chat call:
+  `python3 ~/.steadfaste-fleet/scripts/adversarial-review.py --cycle-id <N> --material-file <plan.md> --review`
+  (omit `--reviewer-id` to use the current canonical).
   Feed the reviewer a self-contained material file (goal → current reality → proposed
   approach → evidence pointers) and fold every finding before building.
 - **Already enforced as a gate:** non-trivial slices refuse to commit without a

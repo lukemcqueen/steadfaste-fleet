@@ -61,8 +61,12 @@ mechanisms that govern Hermes agents. Bypassing them is a security incident.
     is **never improvised by the default model alone**; the plan is
     independently pro-reviewed to CLEAN **before** implementation, and any
     complex change gets an independent review before it reaches the operator.
-    Sanctioned reviewer: `adversarial-review.py --cycle-id <N>
-    --material-file <plan.md> --review --reviewer-id deepseek-v4-pro-0813`.
+    Sanctioned reviewer: the current canonical fleet reviewer — changeable at any
+    time, never a hardcoded model here. Resolve it live
+    (`ADVERSARIAL_REVIEWER_MODEL` env, or `fleet_lib.models.REVIEWER_MODEL_DEFAULT`).
+    Run the sanctioned, recorded reviewer — never a chat call:
+    `adversarial-review.py --cycle-id <N> --material-file <plan.md> --review`
+    (omit `--reviewer-id` to use the current canonical).
 
 12. **Do the robust thing — no hack scripts, use the repo, make it better.**
     Same bar as AGENTS.md "Robust Over Hacky": prefer the durable fix; use
