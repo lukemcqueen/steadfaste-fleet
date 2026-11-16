@@ -20,12 +20,15 @@ def load_scan():
     return mod
 
 
+# Catalog prices are $/TOKEN (the live OpenRouter feed) while the config list
+# stores $/M = round($/token * 1e6, 6). The helpers keep this relationship so the
+# unit gap the scanner must bridge (price_changed / hard-cap) is exercised.
 SYNTH_CATALOG = {
     "fakeprov": {"models": {
-        "alpha": {"cost": {"input": 0.1, "output": 0.2}},   # blended 0.30
-        "beta":  {"cost": {"input": 0.05, "output": 0.10}},  # blended 0.15
-        "gamma": {"cost": {"input": 0.4, "output": 0.5}},    # blended 0.90
-        "zeta":  {"cost": {"input": 0.01, "output": 0.01}},  # blended 0.02 (unvetted cheap)
+        "alpha": {"cost": {"input": 0.0000001, "output": 0.0000002}},    # $/M 0.30
+        "beta":  {"cost": {"input": 0.00000005, "output": 0.0000001}},   # $/M 0.15
+        "gamma": {"cost": {"input": 0.0000004, "output": 0.0000005}},    # $/M 0.90
+        "zeta":  {"cost": {"input": 0.00000001, "output": 0.00000001}},  # $/M 0.02 (unvetted cheap)
     }}
 }
 
@@ -40,9 +43,12 @@ def _list_doc(beta_first=True):
             "hard": {"max_price_usd_per_m": 3.0, "whitelist_only": False},
         },
         "prices": {
-            "openrouter:fakeprov/alpha": {"in": 0.1, "out": 0.2},
-            "openrouter:fakeprov/beta": {"in": 0.05, "out": 0.10},
-            "openrouter:fakeprov/gamma": {"in": 0.4, "out": 0.5},
+            # cache_read is a real provenance field the committed list carries on
+            # every entry (cached-read pricing); it is NOT a fresh-token price the
+            # scan prices, so it must not make an unchanged model read as 'changed'.
+            "openrouter:fakeprov/alpha": {"in": 0.1, "out": 0.2, "cache_read": 0.0},
+            "openrouter:fakeprov/beta": {"in": 0.05, "out": 0.10, "cache_read": 0.0},
+            "openrouter:fakeprov/gamma": {"in": 0.4, "out": 0.5, "cache_read": 0.0},
         },
         "tiers": {"medium": {"coding": [f"openrouter:fakeprov/{head}", f"openrouter:fakeprov/{tail}"]}},
     }
@@ -51,9 +57,9 @@ def _list_doc(beta_first=True):
 def test_price_for_resolves_prefix_provider_bare():
     mod = load_scan()
     got = mod.price_for(SYNTH_CATALOG, "openrouter:fakeprov/alpha")
-    assert got == {"in": 0.1, "out": 0.2}
+    assert got == {"in": 0.0000001, "out": 0.0000002}  # catalog $/token
     # bare form without a routing prefix
-    assert mod.price_for(SYNTH_CATALOG, "fakeprov/gamma") == {"in": 0.4, "out": 0.5}
+    assert mod.price_for(SYNTH_CATALOG, "fakeprov/gamma") == {"in": 0.0000004, "out": 0.0000005}
     # unknown model -> empty
     assert mod.price_for(SYNTH_CATALOG, "openrouter:missing/nope") == {}
 
@@ -134,7 +140,7 @@ def test_get_catalog_falls_back_to_valid_jev_cache(tmp_path, monkeypatch):
     cat, src = mod.get_catalog()
     assert src == f"cache {cache}"
     # price_for resolves from the validated cache — not silently empty/missing
-    assert mod.price_for(cat, "openrouter:fakeprov/alpha") == {"in": 0.1, "out": 0.2}
+    assert mod.price_for(cat, "openrouter:fakeprov/alpha") == {"in": 0.0000001, "out": 0.0000002}
 
 
 def test_get_catalog_rejects_corrupt_and_misshapen_cache_with_reasons(tmp_path, monkeypatch):
@@ -176,12 +182,13 @@ def test_reorder_pool_unpriceable_sinks_to_end():
 
 def test_scan_violation_fails_closed(tmp_path, monkeypatch):
     mod = load_scan()
-    # catalog has a 'delta' priced over the list's hard cap (3.0/M)
+    # catalog has a 'delta' whose $/M (token * 1e6) is over the list's hard cap:
+    # token 0.000002 in + 0.000002 out -> $4.0/M > the $3.0/M cap.
     viol_catalog = {"fakeprov": {"models": {
-        "alpha": {"cost": {"input": 0.1, "output": 0.2}},
-        "beta":  {"cost": {"input": 0.05, "output": 0.10}},
-        "gamma": {"cost": {"input": 0.4, "output": 0.5}},
-        "delta": {"cost": {"input": 2.0, "output": 2.0}},   # 4.0/M blended > 3.0 cap
+        "alpha": {"cost": {"input": 0.0000001, "output": 0.0000002}},
+        "beta":  {"cost": {"input": 0.00000005, "output": 0.0000001}},
+        "gamma": {"cost": {"input": 0.0000004, "output": 0.0000005}},
+        "delta": {"cost": {"input": 0.000002, "output": 0.000002}},   # $/M 4.0 > 3.0 cap
     }}}
     doc = _list_doc(beta_first=True)
     doc["tiers"]["medium"]["coding"].append("openrouter:fakeprov/delta")
@@ -231,4 +238,41 @@ def test_scan_missing_model_fails_closed(tmp_path, monkeypatch):
     )
     assert any("not in the live catalog" in v for v in st["violations"]), (
         "the missing model must be recorded as a violation, not only as 'unpriceable'"
+    )
+
+
+def test_scan_ignores_sentinel_dynamic_pricing(tmp_path, monkeypatch):
+    """Providers list dynamic-pricing metas as sentinel -1/-1 (blended -2.0).
+
+    -2.0 is truthy in Python and '<' any real head, so a naive 'if pb and
+    pb < head_price' admits them as 'cheaper candidates'. A sentinel is not a
+    lower REAL price — it must never appear in the unvetted alert (it would be
+    reported to the operator for an A/B that can never run).
+    """
+    mod = load_scan()
+    cat = {"fakeprov": {"models": {
+        "alpha": {"cost": {"input": 0.0000001, "output": 0.0000002}},    # $/M 0.30
+        "beta":  {"cost": {"input": 0.00000005, "output": 0.0000001}},   # $/M 0.15 head
+        "gamma": {"cost": {"input": 0.0000004, "output": 0.0000005}},    # $/M 0.90
+    }}}
+    # dynamic-pricing sentinels under their own provider: -1/-1 -> blended -2.0
+    cat["switchprov"] = {"models": {
+        "auto":       {"cost": {"input": -1, "output": -1}},
+        "auto-beta":  {"cost": {"input": -1, "output": -1}},
+    }}
+    list_path = tmp_path / "jev-router-models.json"
+    list_path.write_text(json.dumps(_list_doc(beta_first=True)), encoding="utf-8")
+    state_path = tmp_path / "state.json"
+    monkeypatch.setattr(mod, "default_list", lambda: list_path)
+    monkeypatch.setattr(mod, "get_catalog", lambda: (cat, "test"))
+    monkeypatch.setattr(mod, "STATE_PATH", str(state_path))
+
+    rc = mod.main(["--json"])
+    st = json.loads(state_path.read_text(encoding="utf-8"))
+    # no violation in play; at most an apply (or nothing) — never a cap breach
+    assert rc in (0, 1)
+    alerted = [c["model"]
+               for cands in st["unvetted_cheaper_candidates"].values() for c in cands]
+    assert all("switchprov/" not in m for m in alerted), (
+        "sentinel -1/-1 models must not be reported as unvetted cheaper candidates"
     )

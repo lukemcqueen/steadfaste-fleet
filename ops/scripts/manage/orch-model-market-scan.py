@@ -80,6 +80,46 @@ def blended(price: dict) -> float | None:
         return None
 
 
+def per_m(price: dict | None) -> dict | None:
+    """Catalog $/token price -> the $/M value the list stores (x1e6, rounded 6dp).
+
+    The live OpenRouter feed prices per TOKEN while config/jev-router-models.json
+    (and the policy hard cap) are per MILLION tokens. A direct dict compare (the
+    old price_changed) or a blended-vs-cap test on raw catalog values was thus
+    comparing different units by a factor of 1e6 — making price_changed always
+    True (rc could never read 0 or 2) and the hard-cap check never fire. Converting
+    here to the same 6dp the apply round-trips restores both to the list's $/M
+    basis, so an unchanged model compares equal and an over-cap model trips."""
+
+    if not price:
+        return None
+    try:
+        return {"in": round(float(price.get("in") or 0) * 1e6, 6),
+                "out": round(float(price.get("out") or 0) * 1e6, 6)}
+    except (TypeError, ValueError):
+        return None
+
+
+def list_price_match(token: dict | None, listed: dict | None) -> bool:
+    """True when a catalog $/token price equals the list's $/M in+out on an
+    UNCHANGED model.
+
+    The committed list carries extra provenance keys per entry (e.g.
+    cache_read) that the scan does not price; comparing whole dicts would make
+    every model read as 'changed' even when its fresh-token price is identical,
+    so price_changed cannot ever return 0/2. Compare only the in/out the scan
+    prices, each on the $/M basis (see per_m)."""
+
+    pm = per_m(token)
+    if pm is None or not isinstance(listed, dict):
+        return False
+    try:
+        return (pm["in"] == round(float(listed.get("in") or 0), 6)
+                and pm["out"] == round(float(listed.get("out") or 0), 6))
+    except (TypeError, ValueError):
+        return False
+
+
 def default_list() -> Path:
     """The pricing list, repo checkout first, deployed copy second (like the pool tool)."""
     for candidate in (REPO_ROOT / "config" / "jev-router-models.json",
@@ -281,11 +321,11 @@ def main(argv=None) -> int:
         for model, price in prices_new.items():
             if model in rejected:
                 continue
-            b = blended(price)
-            if b is None:
+            bm = blended(per_m(price) or {})  # $/M (catalog $/token -> per-M basis)
+            if bm is None:
                 continue  # unpriceable -> already in missing_models; don't score as $0
-            if b > float(hard_cap):
-                violations.append(f"{model} is ${b:.3f}/M, above the ${float(hard_cap):.2f}/M hard cap")
+            if bm > float(hard_cap):
+                violations.append(f"{model} is ${bm:.3f}/M, above the ${float(hard_cap):.2f}/M hard cap")
 
     # 4b. A model the live catalog no longer lists is NOT a price move: we cannot
     #     verify it is servable, so the re-priced list must never be auto-applied.
@@ -316,7 +356,11 @@ def main(argv=None) -> int:
                     if not c:
                         continue
                     pb = float(c.get("input", 0) or 0) + float(c.get("output", 0) or 0)
-                    if pb and pb < head_price:
+                    # pb > 0: providers price dynamic-pricing metas as -1/-1
+                    # sentinels (blended -2.0), which is truthy and '< any head' —
+                    # a sentinel is not a lower REAL price and must never be
+                    # offered as a candidate for an A/B that cannot run.
+                    if pb > 0 and pb < head_price:
                         full = f"{provider}/{bare}"
                         if full in existing:
                             continue
@@ -329,9 +373,13 @@ def main(argv=None) -> int:
                      "vs_head_usd": round(head_price - pb, 4)}
                     for pb, full, i, o in cheaper[:5]]
 
-    # 6. Did prices or order change vs the committed list?
+    # 6. Did prices or order change vs the committed list? Compare on the SAME
+    #    $/M basis (catalog $/token converted via per_m) — a raw compare of
+    #    $/token against the list's $/M would be unequal for every model, so the
+    #    rc ladder could never return 0 (nothing to do) or 2 (alert only).
     order_changed = tiers_new != tiers_old
-    price_changed = any(prices_new.get(k) != v for k, v in prices_old.items())
+    price_changed = any(not list_price_match(prices_new.get(k), v)
+                        for k, v in prices_old.items())
     apply_pending = bool(order_changed or price_changed)
 
     # 7. Write state + signature for the cron gate.
