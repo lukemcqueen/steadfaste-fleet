@@ -59,6 +59,9 @@ date) — investigate those warnings; do not assume the enforcer is current.
 2. **`bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh`** — the sanctioned lock-free invocation (see ⚡ above)
 3. Doctor output is embedded in the update; fix every ❌ (score PENDING cycles, verify governance deployed)
 4. Re-run step 2 if the doctor reported failures, until it's clean (0 fail)
+   **Two FAILs are point-in-time reads that SELF-CLEAR — read their mechanism before looping a re-deploy:**
+   - `Bus stuck msgs` (a `<queue>` message in `processing`): PGMQ marks a read message `processing` for the visibility-timeout window; a handler/cron killed mid-read leaves it there until VT expiry re-exposes it to pending. Re-query the queue (`/api/pgmq/queue/inbox_<you>` shows `processing` vs `depth`) rather than re-deploying — it usually transitions to pending on its own and the check PASSes next run.
+   - `Orphan-cycle resolution` (a reaper-closed cycle "claims an abandoned task the same session still holds a live lock for"): right after an interrupted turn, the reaped orphan often shares YOUR reacquired lock's session+task (the lock file path reuses the session ID). It is an artifact of your own open lock — close the active cycle and the FAIL clears; do not hand-edit the DB row.
 5. **Triage the warnings — `0 fail` is the bar for the UPDATE, not a licence to ignore the rest.**
    The doctor prints `N undisposed` and names each warning/info nobody has decided about
    (`🧹 UNDISPOSED`). For each one: fix it, or record the decision in one command —
@@ -90,6 +93,11 @@ date) — investigate those warnings; do not assume the enforcer is current.
      skill drift vs harness) and fix or dispose per class, not one at a time. Triaging the text view
      alone under-reports and you close believing the list was a dozen long. (Keep the two `-e` flags
      separate: a quoted `"WARN|INFO"` alternation is write-class to the terminal classifier.)
+   - **`fleet-doctor.py --json` is NOT pure JSON — the doctor prints `[mcp-server] DEBUG:` lines to
+     stdout BEFORE the `{`.** A programmatic `json.load` of the raw file fails with
+     `Expecting value: line 1 column 2`; skip lines until the first line that starts with `{`, then
+     parse from there. The grep recipe above is immune to the prefix, which is another reason to
+     prefer it over parsing.
    - **`Repo sync` as the LAST undisposed item right after your OWN deploy is not a warning to
      disposition — a peer pushed during the deploy.** Re-pull once (`git pull --rebase origin main`,
      the post-merge hook deploys again) and it converges; on a busy stream this repeats until the
@@ -105,6 +113,12 @@ date) — investigate those warnings; do not assume the enforcer is current.
 6. Verify clean state
 
 **Do NOT push** during pull-latest. Local pipeline auto-commits stay local (see Pitfall 3).
+
+**A pull-latest `end_change` that warns `Review receipt NOT written — lock has no repo identity`
+is benign — do not loop begin_change→end_change to "fix" it.** The receipt binds a review to a
+push range; pull-latest never pushes, so nothing is refused. The warning only matters before an
+actual push of an always-review range — then re-run begin_change once with the repo known (or set
+FLEET_SESSION_REPO), close again, then push.
 
 ## Invoke the deploy so it survives the terminal timeout — background + log redirect
 
@@ -332,6 +346,32 @@ origin/main?), `git status -sb` (in sync?), `ps -eo pid,etime,args | grep
 fleet-update` (is the deploy still running?). If HEAD == origin/main and the deploy
 finished (doctor Deploy sync ✅, changed deploy-map files byte-identical), the pull
 is DONE — a re-pull is harmless but pointless, and the run already deployed.
+
+**A foreground timeout does not only kill the command — it can WEDGE the whole
+foreground terminal backend.** After a ~120s `git pull` timed out, EVERY
+subsequent foreground command (`date`, `echo ok`, `ps`, `git status`) returned exit
+130 "Command interrupted", even bare read primitives that needed no lock and no
+script. This is not the command at fault and is not Pitfall 19's "check with a
+working terminal" situation — the terminal itself is not taking calls. Recover by
+switching the MECHANISM, once:
+
+1. Run the next probe with `terminal(background=true)` — a background
+   `echo probe; git status --porcelain` returned clean even while every foreground
+   call was 130. Poll it with `process_manage(action='poll')`. That one background
+   success unblocked the session.
+2. Meanwhile, if the pull's verdict matters and you cannot rely on the terminal,
+   verify state READ-ONLY and WITHOUT a terminal: `read_file` on
+   `.git/refs/heads/main` and `.git/FETCH_HEAD` (does HEAD==origin? the pull
+   fast-forwards both), `read_file` on `~/.steadfaste-fleet/state/update-commit`
+   and `state/last-update.json` (did the post-merge deploy complete?) — the deploy
+   writes `"before": <sha>, "after": <sha>` and the state files pin the sha
+   exactly. This session those reads proved the 120s-timed-out pull had already
+   fast-forwarded AND deployed; the "timeout" was only the hook still draining, and
+   the wedged terminal was the only real anomaly.
+3. Only if the background probe ALSO refuses should you treat the session's
+   terminal as genuinely dead. A single `background=true` success means the
+   foreground backend was wedged and is now recoverable — subsequent foreground
+   commands returned clean.
 
 **The real trap is the autostash.** A timed-out `--autostash` pull can leave BOTH a
 stale `stash@{0}: autostash` AND a `UU <path>` unmerged entry, which then surface on
