@@ -52,6 +52,34 @@ warning, cron model overrides, model.default regressions after `hermes update`.
   `ops/install/cron-manifest.yaml`). A config.yaml default of deepseek-chat is
   the regression symptom.
 
+## What each tier is FOR — the tier decides which evidence qualifies a model
+
+The tier a model sits in determines the evidence that picks it, and using the wrong
+evidence selects a wrong model with full confidence:
+
+- **`medium`, and the session default, carry general work INCLUDING building.** Codegen
+  quality is the axis there (an A/B on hidden tests) because that tier writes code.
+- **`hard` / the pro tier is REVIEW OR PLANNING ONLY — an operator standing rule, not a
+  preference.** Nothing in this tier builds. So the qualifying evidence is the
+  plan/reviewer A/B, never a codegen score:
+  - **Recall is FLAT across reviewer models.** Every candidate in the reviewer A/B caught
+    every planted defect, so recall separates nothing and a "best coder" ranking is the
+    wrong input entirely.
+  - What actually decides: **latency against the review ceiling**, **cost per review**,
+    and **provider depth**. With equal recall, the cheap fast one is simply better.
+  - The measurement surface already exists — the plan-reviewer A/B runner beside
+    `docs/evidence/plan-reviewer-model-eval-*/`. EXTEND that eval for a new candidate
+    instead of arguing from structure: a slot picked on "1M ctx and 6 providers" with no
+    measured review recall is a guess wearing a table.
+- **Eligibility is a hard gate, and it is not just price or context.** A candidate must
+  serve `tool_calls` across MORE THAN ONE distinct provider. Count DISTINCT providers —
+  several endpoints under one provider is ONE upstream (the single-upstream trap). And
+  check tool support on EVERY endpoint, because endpoints can disagree: a model can clear
+  price, ctx and the whitelist bar and still be ineligible because routing picked the one
+  endpoint that cannot call tools. A reviewer that cannot reliably call tools cannot read
+  the diff it is reviewing. Note the whitelist's own `why` text claims reasoning + tool_call
+  without verifying either — verify it yourself.
+
 ## Diagnose (in order)
 
 1. **Truth for NEW sessions = config.yaml, not the banner.** Run

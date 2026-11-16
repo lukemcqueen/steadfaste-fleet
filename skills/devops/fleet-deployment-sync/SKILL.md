@@ -59,6 +59,42 @@ date) — investigate those warnings; do not assume the enforcer is current.
 
 **Use `fleet-update.sh` only when the delta engine skips files that should re-deploy** — plain run is the safe default.
 
+## Step 0 — clear governance debt BEFORE the pull (dead locks + orphan PENDING cycles)
+
+A pull-latest can be blocked before git is even involved: `git pull` and
+`begin_change` are both write-class, and the doctor FAILs on PENDING cycles — so
+leftovers nobody closed stop the whole operation. Clear them first, in this order.
+
+1. `check_lock` → read `locks[]`, not just your own lock. A lock whose owner
+   session has ENDED still reads LIVE while its heartbeat is inside its own TTL,
+   so "live" is not the same as "someone is working".
+2. **Call `check_lock` as few times as you can — the call REFRESHES heartbeats,
+   including other sessions' locks.** Each refresh pushes a dead lock's TTL out
+   another full window, which is also why `reclaim_dead_locks` then answers "no
+   dead locks": its predicate is heartbeat-past-TTL, never owner liveness. Decide
+   from the FIRST reading, and do not go hunting for a force/reclaim path.
+3. Confirm the owner is really gone before treating a lock as dead — `session_list`
+   shows the owner's `ended_at` and a process-tree read shows whether any runner
+   exists. That is evidence for your REPORT; the tool's verdict still governs.
+4. Score the orphaned cycles by CYCLE ID — `feedback_accept(cycle_id=<id>, ...)`.
+   A `task_id=` resolves only to YOUR session's current cycle, so it will not find
+   another session's leftover.
+5. `end_change(task_id=<t>)` releases a lock **only when its session id matches the
+   current governance session**; for another session's leftover it answers
+   "No governance session active. Nothing to release." Do not force it, do not
+   delete the lock file, do not race it — leave it to expire and report it.
+6. Expect the doctor's `Multi-session repo` warn while a dead lock coexists with
+   yours. That is a REAL condition that self-clears at TTL, so dispose it
+   `--as deferred` naming the dead session — never "fix" it by touching the lock,
+   and never report it as cleared.
+
+**A pull that CONFLICTS never deployed — do not read `rebase --continue` as "updated".**
+The post-merge hook fires on a successful merge/pull; a pull that stops on a conflict
+returns before it, and finishing the rebase by hand does not re-fire it. So after ANY
+conflicted pull, run the sanctioned `fleet-update.sh` explicitly and read its
+`UPDATE_EXIT` plus the doctor's `Overall:` line as the deploy verdict. A clean rebase
+says the HISTORY is right, nothing about whether the HOST was updated.
+
 ## The proper sequence (user directive, 2026-07-31)
 
 > "Whenever there's a governance mechanism change you NEED to fleet update as this is the proper path. no shortcuts."
@@ -868,6 +904,16 @@ git checkout --theirs docs/evidence/skill-drift-parity.txt
 git add docs/evidence/skill-drift-parity.txt
 GIT_EDITOR="true" git rebase --continue
 ```
+
+**During a REBASE the sides are INVERTED — `--theirs` is the commit being REPLAYED
+(your host's capture) and `--ours` is the upstream you are rebasing ONTO.** So the recipe
+above takes YOUR side, not origin's. That is the intended outcome (the capture describes
+THIS host's drift, and the deploy regenerates it anyway), but read the conflict hunk
+before choosing and say which side you took. What is forbidden either way is a
+HAND-MERGE: two snapshots of the same drift merged by hand fabricate a state neither
+host produced. And read both sides before discarding one — a side listing an
+`absent from repo` class the other does not is reporting real fleet debt, so carry that
+observation into your report instead of silently dropping it.
 
 ## Pitfall 25: A BACKGROUND `git pull` does not inherit the terminal session's workdir — cd into the repo or it dies with exit 128
 
