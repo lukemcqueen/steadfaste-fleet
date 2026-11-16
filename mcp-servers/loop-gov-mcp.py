@@ -9474,18 +9474,36 @@ def _write_daemon_stamp() -> None:
         "module": str(Path(__file__).resolve()),
         "sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
     }
+    # The MCP daemons spawn in sibling pairs (loop-governance + review) on the same
+    # tick. The old write_text read-modify-write raced between them -> a torn file
+    # (measured: only one sibling of each pair surviving in the stamp, and a corrupt
+    # trailing brace on Titus). Two guards, both needed:
+    #   1. fcntl.flock on a SIDE LOCK FILE serialises the read-modify-write so a
+    #      second daemon can't clobber the first as it reads/merges.
+    #   2. write to a temp in the SAME directory, then os.replace (atomic) — the
+    #      on-disk file is never torn; a reader always sees one complete document.
+    # fcntl is stdlib on macOS and Linux; the fleet runs both.
+    import fcntl
     try:
         DAEMON_STAMP.parent.mkdir(parents=True, exist_ok=True)
-        try:
-            data = json.loads(DAEMON_STAMP.read_text())
-        except Exception:
-            data = {}
-        if isinstance(data, dict) and "pid" in data and isinstance(data.get("sha256"), str):
-            data = {str(data["pid"]): data}       # legacy single-pid object -> map
-        if not isinstance(data, dict):
-            data = {}
-        data[pid] = entry                          # merge — never overwrite a sibling stamp
-        DAEMON_STAMP.write_text(json.dumps(data, indent=2) + "\n")
+        lock = DAEMON_STAMP.with_name(DAEMON_STAMP.name + ".lock")
+        with open(lock, "a+") as lf:
+            fcntl.flock(lf.fileno(), fcntl.LOCK_EX)
+            try:
+                try:
+                    data = json.loads(DAEMON_STAMP.read_text())
+                except Exception:
+                    data = {}                  # unreadable/corrupt: rebuild fresh, still atomically
+                if isinstance(data, dict) and "pid" in data and isinstance(data.get("sha256"), str):
+                    data = {str(data["pid"]): data}   # legacy single-pid object -> map
+                if not isinstance(data, dict):
+                    data = {}
+                data[pid] = entry                      # merge — never overwrite a sibling stamp
+                tmp = DAEMON_STAMP.with_name(DAEMON_STAMP.name + f".{pid}.tmp")
+                tmp.write_text(json.dumps(data, indent=2) + "\n")
+                os.replace(tmp, DAEMON_STAMP)          # atomic rename — never a torn file
+            finally:
+                fcntl.flock(lf.fileno(), fcntl.LOCK_UN)
     except Exception as e:  # never fatal: the doctor falls back to mtime and says so
         print(f"loop-governance: could not write the daemon stamp ({type(e).__name__}: {e}); "
               f"the doctor will fall back to mtime", file=sys.stderr)

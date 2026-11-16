@@ -411,8 +411,14 @@ def _daemon_start_epoch(pid: str) -> float | None:
     return None
 
 
-def _read_daemon_stamp() -> dict:
+def _read_daemon_stamp() -> tuple:
     """The daemon stamp as a PER-PID MAP, migrating a legacy single-pid object.
+
+    Returns ``(map, None)`` when the stamp reads clean, or ``({}, err)`` with the
+    reason when it is missing, unparsable, or the wrong shape — so a corrupt or
+    unreadable stamp is surfaced as an explicit COULD-NOT-VERIFY (never silently
+    passed off as "no daemon wrote a stamp", which the caller could misread as a
+    clean PASS).
 
     ``loop-gov-mcp.py`` writes ``{str(pid): {started, module, sha256}}``. A first
     generation wrote a single ``{pid, sha256}`` object, which the second of two
@@ -420,15 +426,16 @@ def _read_daemon_stamp() -> dict:
     2285405/2285456) — so the un-stamped sibling read "COULD NOT VERIFY" forever.
     Normalize either shape to the map so every daemon is content-verifiable.
     """
-    data = {}
     try:
         data = json.loads((Path.home() / ".steadfaste-fleet" / "state"
                            / "loop-gov-daemon.json").read_text())
-    except (OSError, json.JSONDecodeError):
-        data = {}
-    if isinstance(data, dict) and "pid" in data and isinstance(data.get("sha256"), str):
-        return {str(data["pid"]): data}          # legacy single-pid object -> map
-    return data if isinstance(data, dict) else {}
+    except (OSError, json.JSONDecodeError) as e:
+        return {}, f"stamp file unreadable: {type(e).__name__}: {e}"
+    if not isinstance(data, dict):
+        return {}, f"stamp file has shape {type(data).__name__}, expected a JSON object"
+    if "pid" in data and isinstance(data.get("sha256"), str):
+        return {str(data["pid"]): data}, None     # legacy single-pid object -> map
+    return data, None
 
 
 def check_stale_loop_gov_daemon(res: "Results") -> None:
@@ -498,7 +505,17 @@ def check_stale_loop_gov_daemon(res: "Results") -> None:
     # 2026-10-18, a deploy advanced the deployed module's mtime while its body stayed byte-identical
     # to the repo source, and this check called a CURRENT daemon stale — a warning that fired on
     # every deploy and could only be "fixed" by a restart that changed nothing.
-    stamp = _read_daemon_stamp()
+    stamp, stamp_err = _read_daemon_stamp()
+    if stamp_err:
+        # A corrupt/unreadable stamp hides which code each daemon LOADED. Surface it
+        # as an explicit WARN (rather than silently degrading to {} and falling back
+        # to a timestamp judgement that can even read as PASS for a stale daemon).
+        res.add("loop-gov daemon", "WARN",
+                f"COULD NOT VERIFY — {stamp_err}",
+                "A corrupt/unreadable daemon stamp hides which code each daemon loaded. "
+                "Repair the file (or delete it so the next daemon writes it fresh and "
+                "atomically); until then staleness cannot be content-checked.")
+        return
     stale, unverified = [], []
     for pid, mod_path, start, mod_mtime, mod_sha in daemons:
         rec = stamp.get(str(pid)) if isinstance(stamp, dict) else None
