@@ -1,0 +1,69 @@
+Doctor latency round 2 — 2026-11-16 (cycle doctor-latency-2)
+============================================================
+Measured with `python3 ops/scripts/manage/fleet-doctor.py --timing` (the flag
+added in the previous cycle). Goal: cut the remaining per-check subprocess
+latency without touching verdict semantics.
+
+BEFORE (start of this cycle)
+----------------------------
+Total 50.0s. Remaining slow checks (all subprocess/DB-bound, run sequentially):
+
+  check                          ms      %
+  check_task_db                 7097   14.2%
+  check_jev_layer               6596   13.2%
+  check_governance              5890   11.8%
+  check_skills_loadable         4689    9.4%   (these four ≈ 24.3s)
+
+AFTER (this cycle's two surgical fixes)
+--------------------------------------
+Total 38.3s (-23%). Per-check:
+
+  check_jev_layer          6596 -> 610   (-6.0s)  -- replaced the `hermes config
+                                        get model` subprocess (~8s of Hermes
+                                        plugin+tool startup; measured 8.09s
+                                        standalone) with a direct read of
+                                        config.yaml's `model:` block.
+                                        Bit-identical: hermes config get model
+                                        echoes that section verbatim and does
+                                        NOT resolve fallback_providers
+                                        (verified on moses: resolver -> openrouter:
+                                        qwen/qwen3-coder-30b-a3b-instruct, same
+                                        as the CLI).
+  check_skills_loadable    4689 -> 653   (-4.0s)  -- profile showed the cost was
+                                        PyYAML parsing ~383 SKILL.md frontmatters
+                                        (each parsed TWICE: safe_load + compose).
+                                        Now: C-accelerated CSafeLoader (383x2
+                                        parses 2.84s -> 0.31s, ~9x) and a bounded
+                                        frontmatter prefix read instead of the
+                                        whole (often multi-KB) file.
+
+Verification
+------------
+- check_jev_layer still WARN with correct model ("installed · routing off ·
+  15 pool(s) · current model openrouter:qwen/...") and check_skills_loadable
+  still "all 383 repo skills pass" + the published-pass WARN — verdicts unchanged.
+- 6 new model-config tests + 2 new skills regressions pass; existing 15
+  skills tests pass (23 total green).
+- doctor after deploy: 0 FAIL, Deploy sync pass.
+
+Remaining big checks (measured, deferred with rationale)
+--------------------------------------------------------
+  check_task_db   7019  -- 6 sequential `task-db.py` subprocesses (pending, add,
+                           list, update x2, save-end) each paying Python
+                           interpreter startup + connect. Collapsing to ONE
+                           task-db.py doctor-probe subcommand would save ~2.5s
+                           but requires modifying task-db.py (shared script; its
+                           cmd_add mints the row's UUID internally and only
+                           prints 8 chars, so the probe needs id-return plumbing);
+                           no hermetic test is possible for a live-DB roundtrip.
+                           DEFERRED — next fastest target.
+  check_governance 5784  -- 18 subprocess.run calls (profile); dominated by 3
+                           installer checks (`install-pi-mcp.sh --self-test /
+                           --check-tools`, `install-pi-integration.sh --check`)
+                           plus a venv yaml/mcp import probe. Parallelizing the
+                           independent probes would save ~1.5s but touches a
+                           FAIL-CLOSED security-critical check; not worth the
+                           regression risk for ~1.5s. DEFERRED.
+  check_harness_registry 5698 -- already parallelized last cycle (5 harness
+                           verifies in a ThreadPoolExecutor); this is the
+                           single slowest harness, inherent.

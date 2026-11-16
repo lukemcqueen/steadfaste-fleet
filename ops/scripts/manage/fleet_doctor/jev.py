@@ -18,7 +18,6 @@ from __future__ import annotations
 import json
 import os
 import shutil
-import subprocess
 from pathlib import Path
 
 CATALOG_CANDIDATES = [
@@ -92,30 +91,51 @@ def _catalog_prices() -> dict:
     return prices
 
 
+def _config_model(home: Path):
+    """(provider, default) from config.yaml's `model:` block — NO hermes subprocess.
+
+    Replaces the old `hermes config get model` subprocess (≈8s of Hermes plugin +
+    tool startup on first boot). `hermes config get model` echoes config.yaml's
+    `model:` section verbatim (default/provider/base_url/api_mode) and does NOT
+    resolve fallback_providers, so reading config.yaml is bit-identical in steady
+    state — verified against `hermes config get model` output on moses. YAML is
+    used when importable; otherwise a deterministic line-scan scoped to the
+    `model:` block (the indent check is what stops it from catching the
+    TOP-LEVEL fallback_providers' `model:`/`provider:` keys).
+    """
+    try:
+        text = (home / "config.yaml").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return "", ""
+    try:
+        import yaml as _yml
+        cfg = _yml.safe_load(text)
+        mdl = cfg.get("model") if isinstance(cfg, dict) else None
+        if isinstance(mdl, dict):
+            return str(mdl.get("provider") or ""), str(mdl.get("default") or "")
+    except Exception:  # noqa: BLE001 - fall back to the text scan below
+        pass
+    in_block = False
+    provider = default = ""
+    for line in text.splitlines():
+        if line.startswith("model:") and not line[:1].isspace():
+            in_block = True
+            continue
+        if not in_block:
+            continue
+        if line.strip() and not line[:1].isspace():
+            break  # left the model: block
+        s = line.strip()
+        if s.startswith("default:"):
+            default = s.split(":", 1)[1].strip().strip("'\"")
+        elif s.startswith("provider:"):
+            provider = s.split(":", 1)[1].strip().strip("'\"")
+    return provider, default
+
+
 def _current_model() -> str:
     """The model this host actually runs, as `provider:model` (best effort)."""
-    try:
-        out = subprocess.run(["hermes", "config", "get", "model"], capture_output=True,
-                             text=True, timeout=15).stdout.strip()
-    except (OSError, subprocess.SubprocessError):
-        return ""
-
-    provider = ""
-    default = ""
-    for line in out.splitlines():
-        line = line.strip()
-        if not line or ":" not in line:
-            continue
-        key, value = line.split(":", 1)
-        key = key.strip().lower()
-        value = value.strip()
-        if key == "provider":
-            provider = value
-        elif key == "default":
-            default = value
-        elif key == "model" and not default:
-            default = value
-
+    provider, default = _config_model(_hermes_home())
     if default and provider and ":" not in default:
         return f"{provider}:{default}"
     if default:

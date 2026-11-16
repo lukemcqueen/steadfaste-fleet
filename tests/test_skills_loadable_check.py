@@ -210,3 +210,28 @@ def test_check_is_read_only(monkeypatch, tmp_path):
     checks.check_skills_loadable(res)
     after = sorted(p.relative_to(repo) for p in repo.rglob("*"))
     assert before == after
+
+
+# ── perf-related regressions (2026-11-16): bounded frontmatter read + C loader ──
+
+def test_large_body_does_not_break_the_frontmatter_verdict(tmp_path):
+    """The check reads only a bounded frontmatter prefix, never the whole body.
+
+    A SKILL.md whose body dwarfs _SKILL_READ_BUDGET must still be judged purely
+    on its (small, valid) frontmatter — the body is irrelevant to the loader
+    rules, and reading it is what made this check ~5s over the full tree.
+    """
+    big = "x" * (checks._SKILL_READ_BUDGET * 2)
+    p = _skill(tmp_path, "devops/big", GOOD + big)
+    assert _defects(p) == []
+
+
+def test_duplicate_key_still_detected_with_the_c_loader(tmp_path):
+    """PyYAML silently keeps the LAST of a duplicated top-level key; the loader
+    rejects the file, so the check must report it. This walks the node tree the
+    C-accelerated loader composes (which is identical to the pure-python tree),
+    and pins the check's report in the exact direction the loader fails it."""
+    p = _skill(tmp_path, "devops/dup",
+               "---\nname: dup-skill\ndescription: first\nversion: 1.0.0\n"
+               "description: second\n---\n\n# D\n")
+    assert _defects(p) == ["duplicate mapping key(s): description"]
