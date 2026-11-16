@@ -19,7 +19,7 @@
     "rejected": [
       "openrouter:moonshotai/kimi-k2.7-code"
     ],
-    "rejected_reason": "5.47x the baseline ($4.100/M vs the list's own $0.750/M baseline at baseline_price_usd_per_m) for a medium coding turn; the suggested pool order put it first. Ratio computed from this file's prices (live 2026-11-16).",
+    "rejected_reason": "5.47x the baseline ($4.100/M vs the list's own $0.750/M baseline at baseline_price_usd_per_m) for a medium coding turn; the suggested pool order put it first. The ratio is computable from THIS FILE: 4.1 / 0.750 = 5.47, taking the price this file's own `rejected` entry records for kimi-k2.7-code (price_usd_per_m 4.1 = 0.60 in + 3.50 out per M) against baseline_price_usd_per_m. That price came from the live catalog scan committed at docs/evidence/model-market-apply-2026-11-16.state.json (live 2026-11-16); kimi is deliberately absent from the `prices` block because it is rejected, not routed.",
     "rule": "Every pool must LEAD with a model cheaper than the baseline. Every model in a SIMPLE pool is cheaper than the baseline. A medium pool may carry the baseline as the in-pool fallback. `hard` may lead dearer - that is the exception for very complex work - but only from the hard whitelist and never above $3.00/M."
   },
   "effort": {
