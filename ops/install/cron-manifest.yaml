@@ -1070,10 +1070,36 @@ crons:
 - name: orch-model-market-scan
   scope: orchestrator
   schedule: 0 8 * * *
-  script: manage/orch-model-market-scan.py
-  prompt: ''
+  script: ''
+  prompt: |-
+    Run the daily model-market scan and apply any price-driven change under governance.
+
+    STEP 0 — run the scan: python3 ~/.steadfaste-fleet/scripts/manage/orch-model-market-scan.py --json
+    Read its rc:
+    - rc==0: nothing changed — end NOW, silent (no delivery, no cycle).
+    - rc==2: NEW unvetted cheaper candidate(s) found (state file unvetted_cheaper_candidates) —
+      report them for a future A/B eval. NEVER auto-adopt them (they must be A/B-vetted first).
+      No config change, no cycle.
+    - rc==1: prices and/or pool order changed (apply_pending) — proceed to STEP 1.
+
+    STEP 1 — governed apply (open begin_change first):
+    1. Copy the refreshed prices + reordered tiers from ~/.steadfaste-fleet/state/model-market.json
+       into config/jev-router-models.json (the scan's output is the source of truth).
+    2. If the cheapest-vetted model for the SESSION DEFAULT or the REVIEWER changed, re-point
+       config.yaml model.default (hermes config set) and .env ADVERSARIAL_REVIEWER_MODEL to the
+       new head. Verify each surface actually resolved to the new model.
+    3. Rebuild the live router: python3 ops/scripts/manage/router-pools.py --write. Validate the
+       list: python3 ops/scripts/manage/router-pools.py --selftest (must PASS).
+    4. Run the doctor (0 fail) and the router/scanner tests (tests/test_jev_router_pools.py,
+       tests/test_model_market_scan.py) — all green.
+    5. Commit, deploy (fleet-update.sh), push. Confirm HEAD == origin/main.
+
+    Report: the per-model price delta (old -> new $/M), which pool heads re-ordered, doctor verdict,
+    and the unvetted-candidate list (if any). Never introduce a model not already in the vetted
+    candidate set — quality is preserved by only re-ordering approved models.
+    Quote real numbers from the scan output / live catalog, never assumed ones.
   skill: hermes-model-config
-  deliver: telegram:{{HOME_CHANNEL}}
+  deliver: origin
   workdir: ''
   no_agent: false
   model: ''
