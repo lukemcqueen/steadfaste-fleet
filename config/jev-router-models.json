@@ -19,7 +19,7 @@
     "rejected": [
       "openrouter:moonshotai/kimi-k2.7-code"
     ],
-    "rejected_reason": "5.47x the baseline ($4.100/M vs the list's own $0.750/M baseline at baseline_price_usd_per_m) for a medium coding turn; the suggested pool order put it first. The ratio is checkable inside THIS FILE: this file's own rejected entry for kimi-k2.7-code carries price_usd_per_m 4.1, and 4.1 / baseline_price_usd_per_m 0.750 = 5.47, which equals the ratio_of_baseline 5.47 recorded in that same entry. The component prices behind the $4.100/M blended figure are recorded in this cycle's committed live-catalog scan snapshot docs/evidence/model-market-apply-2026-11-16.state.json, under its prices map at key openrouter:moonshotai/kimi-k2.7-code = in 6e-07, out 3.5e-06 per token, i.e. 0.60 + 3.50 per M. kimi is deliberately absent from this file's prices block because it is rejected by policy, not routed.",
+    "rejected_reason": "5.47x the baseline ($4.100/M vs the list's own $0.750/M baseline at baseline_price_usd_per_m) for a medium coding turn; the suggested pool order put it first. The ratio is checkable inside THIS FILE: this file's own rejected entry for kimi-k2.7-code records in_usd_per_m 0.60 and out_usd_per_m 3.50, so the blended $4.100/M is that entry's own 0.60 + 3.50, and 4.1 / baseline_price_usd_per_m 0.750 = 5.47, which equals the ratio_of_baseline 5.47 stored in the same entry. The component values were taken from the live catalog scan this cycle applied; kimi is deliberately absent from this file's prices block because it is rejected by policy, not routed.",
     "rule": "Every pool must LEAD with a model cheaper than the baseline. Every model in a SIMPLE pool is cheaper than the baseline. A medium pool may carry the baseline as the in-pool fallback. `hard` may lead dearer - that is the exception for very complex work - but only from the hard whitelist and never above $3.00/M."
   },
   "effort": {
@@ -301,17 +301,23 @@
     "openrouter:moonshotai/kimi-k2.7-code": {
       "price_usd_per_m": 4.1,
       "ratio_of_baseline": 5.47,
-      "reason_ref": "policy.rejected_reason"
+      "reason_ref": "policy.rejected_reason",
+      "in_usd_per_m": 0.6,
+      "out_usd_per_m": 3.5
     },
     "openrouter:deepseek/deepseek-v4-pro-0813": {
       "price_usd_per_m": 4.551,
       "ratio_of_baseline": 6.07,
-      "reason": "was the hard/general + hard/coding head at its captured $2.640/M (2026-10-28); the live catalog's OUTPUT price rose (4.44/M out) so blended $/M is now $4.551, above the hard $3.00/M cap. Rejected 2026-11-15 while it exceeds the cap; promote it back in a one-file edit if the output price returns under $3.00/M blended."
+      "reason": "was the hard/general + hard/coding head at its captured $2.640/M (2026-10-28); the live catalog's OUTPUT price rose (4.44/M out) so blended $/M is now $4.551, above the hard $3.00/M cap. Rejected 2026-11-15 while it exceeds the cap; promote it back in a one-file edit if the output price returns under $3.00/M blended.",
+      "in_usd_per_m": 0.111,
+      "out_usd_per_m": 4.44
     },
     "openrouter:z-ai/glm-5.3": {
       "price_usd_per_m": 1.47,
       "ratio_of_baseline": 1.96,
-      "reason": "was the hard/writing + hard/research head at its captured $1.470/M (2026-10-28); the live catalog's OUTPUT price rose (3.6/M out) so blended $/M was $3.680 on 2026-11-15, above the hard $3.00/M cap. On 2026-11-16 the live price fell back (1.4/M out) => blended $1.470/M, UNDER the cap, so the one-file-edit promotion this note invites is now AVAILABLE - but NOT auto-applied by the scan (it preserves pool membership) and re-routing it also needs its hard_whitelist entry re-added, a vetting decision. Raised to the operator in the 2026-11-16 scan report."
+      "reason": "was the hard/writing + hard/research head at its captured $1.470/M (2026-10-28); the live catalog's OUTPUT price rose (3.6/M out) so blended $/M was $3.680 on 2026-11-15, above the hard $3.00/M cap. On 2026-11-16 the live price fell back (1.4/M out) => blended $1.470/M, UNDER the cap, so the one-file-edit promotion this note invites is now AVAILABLE - but NOT auto-applied by the scan (it preserves pool membership) and re-routing it also needs its hard_whitelist entry re-added, a vetting decision. Raised to the operator in the 2026-11-16 scan report.",
+      "in_usd_per_m": 0.0699,
+      "out_usd_per_m": 1.4
     }
   },
   "hard_whitelist": {
