@@ -16,23 +16,23 @@ from pathlib import Path
 SCRIPT = (Path(__file__).resolve().parents[1] / "ops" / "scripts" / "manage"
           / "jev-router-pools.py")
 
-CHEAP = "openrouter:qwen/qwen3.7-flash"          # 0.16/M
-BASE = "openrouter:deepseek/deepseek-v4.1-flash"  # 0.56/M
+CHEAP = "openrouter:openai/gpt-oss-20b"           # 0.16/M (verified reachable today)
+BASE = "openrouter:qwen/qwen3-coder-30b-a3b-instruct"  # 0.75/M (host's session default = jev baseline)
 DEAR = "openrouter:moonshotai/kimi-k2.7-code"     # 3.66/M
 FRONTIER = "openrouter:openai/gpt-5.3-codex"      # 15.75/M
 
 LIST = {
-    "captured": "2026-10-28",
+    "captured": "2026-11-16",
     "baseline": BASE,
-    "policy": {"simple": {"max_multiple_of_baseline": 1.0},
+    "policy": {"simple": {"max_multiple_of_baseline": 0.5},
                "medium": {"max_multiple_of_baseline": 1.0},
                "hard": {"max_multiple_of_baseline": None}},
     "tiers": {"simple": {"coding": [CHEAP, BASE]},
               "medium": {"coding": [BASE, CHEAP]},
               "hard": {"coding": [FRONTIER]}},
     "prices": {
-        CHEAP: {"in": 0.01, "out": 0.04},
-        BASE: {"in": 0.14, "out": 0.42},
+        CHEAP: {"in": 0.04, "out": 0.12},
+        BASE: {"in": 0.15, "out": 0.60},
         DEAR: {"in": 0.90, "out": 2.76},
         FRONTIER: {"in": 3.00, "out": 12.75},
     },
@@ -68,7 +68,7 @@ def test_matching_pools_report_no_findings(tmp_path):
 
     assert result.returncode == 0, result.stdout
     assert "no findings" in result.stdout
-    assert "$0.560/M" in result.stdout, "the baseline price is shown"
+    assert "$0.750/M" in result.stdout, "the baseline price is shown"
 
 
 def test_a_drifted_head_is_reported_with_its_price_delta(tmp_path):
