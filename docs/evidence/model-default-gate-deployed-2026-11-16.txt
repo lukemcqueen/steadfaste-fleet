@@ -1,0 +1,17 @@
+Running: bash docs/evidence/model-default-gate-deployed-2026-11-16.sh
+rc: 0
+when: 2026-11-16T11:21:41Z
+
+== 1. deployed checks.py carries the gate ==
+  PASS  deployed checks.py defines check_model_default
+== 2. deployed doctor runs (imports resolve) ==
+  PASS  deployed doctor executed (rc=1 — defined verdict code, not a crash)
+  PASS  no traceback in the deployed doctor run
+== 3. the deployed gate FIRES on a labelled fixture ==
+  PASS  deployed doctor reports the label:   ❌ Model default — model.default carries a Jev routing LABEL: openrouter:qwen/qwen3-coder-30b-a3b-instruct — the ...
+  PASS  the reported remedy is the executable bare-id fix
+== 4. the real home is silent (nothing to report) ==
+  PASS  real home: no 'Model default' line (silent, as designed)
+
+FAILED CLAIMS: 0
+sha256: 051dd193234dea6cc3568d8b4aff2aba721b4d2c8206eb6c7b00e8494c71f7c5
