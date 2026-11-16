@@ -1,0 +1,109 @@
+ENFORCER DEPLOYED-BUT-NOT-LOADED — resolution record
+cycle 14896 · host esther · 2026-11-17 (Asia/Seoul)
+Operator request: moses cannot update the fleet; reported that fleet-update.sh "is not
+possible for me to execute directly due to the governance and permission restrictions"
+and "needs to be executed by someone with administrative access". Fix it.
+
+Every claim below carries the command that re-produces it. Where a number could be a
+timeout it is shown with its real exit code instead — a 124 is not a result.
+
+F1. CLAIM: the SANCTIONED invocation IS runnable on moses' host. His report is wrong.
+    COMMAND  (from esther): ssh mosesaaron 'bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh --status'
+    RESULT:   PROBE_RC=0 — a full "━ Fleet Update ━" status readout, naming
+              "Last update: b6698270… / Repo HEAD: b184b4c4…" and 19 changed files
+              pending deploy. `--status` is an allowlisted flag of the sanctioned form.
+    RE-RUN:   the same command. It is read-only.
+    WHY THIS MATTERS: the fleet's enforcer has allowed the EXACT deploy invocation
+              through WITHOUT a governance lock since 2026-08-04. The exception is
+              exact-match only — no `cd … &&`, no pipes, no substitution, no flags
+              beyond --dry-run --status --delta --clean-stale. Any wrapping makes the
+              command write-class and it legitimately demands a lock; THAT refusal is
+              what reads as a permissions wall.
+
+F2. CLAIM: moses is NOT missing the fix. His DEPLOYED enforcer is byte-identical to esther's.
+    COMMAND:  sha256sum ~/.hermes/plugins/governance-enforcer/__init__.py   (both hosts)
+    RESULT:   f676da895b6433445068b542f8eba428dce3f61a077e789b062b1959597c6766 on BOTH.
+              Both also contain the satisfiable direct-update path text
+              (grep -c "THIS GATE IS SATISFIABLE" = 1 on each).
+    So the CURRENT revision is already on his disk — the problem is that it is not LOADED.
+
+F3. CLAIM (root cause): on moses the RUNNING gateway enforces the PREVIOUS revision.
+    EVIDENCE: ~/.steadfaste-fleet/state/governance-enforcer-deployed records WHEN the
+              activation-only CONTENT last changed — "<sha256> <epoch>", written by
+              fleet-update.sh's _restart_pending(). On moses that file's mtime is
+              2026-11-16 23:11. His gateway process (pid 583564) started
+              2026-11-14 10:31:08. Change epoch > start epoch.
+    MECHANISM: the enforcer is a gateway PLUGIN. The gateway loads __init__.py at START
+              and keeps that module for the life of the process; a deploy replaces the
+              file on disk and cannot reload a running process. "Deploy" does not imply
+              "load".
+    CONSEQUENCE: the block message moses' agent receives is the PREVIOUS revision's,
+              which does not name the satisfiable direct-update path — so a legitimate
+              refusal read as "I have no permission", and was reported as such.
+
+F4. CLAIM: the SAME condition is live on esther. This was not a moses-only fault.
+    COMMAND:  python3 ~/.steadfaste-fleet/scripts/fleet-doctor.py --quiet
+    RESULT (verbatim, deployed doctor, after the deploy in F6):
+        ⚠️  Stale enforcer plugin
+            deployed, not loaded — the enforcer content changed 2026-11-16 23:21:01
+            but pid 2228663 started 2026-11-16 17:10:00, so this host is still
+            enforced by the PREVIOUS revision
+    SECOND, INDEPENDENT SIGNAL on the same host: the deploy's own restart check printed
+        "Restart check: cannot determine gateway start time — UNVERIFIABLE, treating as
+         restart required"
+    — the fail-safe direction (when unsure it says restart-required, never silently
+    "clean"). Two independent signals agree.
+
+F5. THE FIX: a doctor check that makes the condition visible on every host, permanently.
+    FILE:      ops/scripts/manage/fleet_doctor/checks.py :: check_stale_enforcer_plugin
+    REGISTERED: ops/scripts/manage/fleet_doctor/cli.py — in the FULL check list and the
+               QUICK list (so a deploy's own doctor pass reports it too).
+    SIGNAL:    the recorded CONTENT-change epoch vs the gateway start epoch — content,
+               never mtime. A deploy that re-copies identical bytes moves the file's
+               mtime while changing nothing, so an mtime comparison would warn on every
+               deploy and be clearable only by restarting a process already running the
+               right code. The check reuses the deploy's EXISTING record; it adds no
+               second mechanism and never performs a restart.
+    FAIL-SAFE: missing record → "COULD NOT VERIFY" (WARN). Unparsable record → same.
+               No gateway process → SKIP. Silence never means "no problem".
+    RE-RUN:    fleet-doctor.py --quiet on any host prints the row.
+    TEST (the re-runnable proof of the behaviour, both directions):
+      COMMAND: $FLEET_VENV_PYTHON -m pytest tests/test_doctor_stale_enforcer.py -q
+      RESULT:  6 passed — and alongside the sibling loop-gov test, "10 passed in 0.38s".
+      CASES:    stale → WARN · current → PASS · identical-bytes re-copy → PASS (the
+                anti-mtime regression) · absent record → COULD NOT VERIFY · corrupt
+                record → COULD NOT VERIFY · no gateway → SKIP.
+      ORDER:    watched RED first (AttributeError — the check did not exist), then GREEN.
+                A regression test that was never seen failing proves nothing.
+
+F6. DEPLOY of the fix — commit 8c856621, 3 files, 275 insertions.
+    COMMAND:  bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh
+    RESULT:   UPDATE_EXIT=0 · "✅ Deploy sync" · "✅ Skill drift" ·
+              "Overall: WARNING (512 pass · 5 warn · 0 fail · 2 info) · 4 undisposed"
+    PRE-COMMIT: "Adversarial verify: passed on 3 file(s)".
+    FRESH doctor AFTER the deploy: 515 pass · 2 warn · 0 fail · 2 info — 0 FAIL.
+    The 2 FAILs visible BEFORE the deploy were the documented pending resync for this
+    change itself ("Checksum: checks.py" / "Checksum: cli.py" — MD5 mismatch, cleared
+    by the deploy that followed), not a defect.
+
+F7. DELIVERY to moses — sent on the bus, and verified in the DB rather than trusting the
+    send result.
+    COMMAND:  agent_bus inbox_send(to=moses, subject=MOSES_FLEET_UPDATE_UNBLOCK_14896,
+              correlation_id=moses-fleet-update-unblock-14896, priority=urgent)
+    VERIFIED: bus_inbox_peek(queue=inbox_moses) → count=1, msg_id
+              c891a75a-1181-48c4-a019-8ca41b2afa38, read_ct=null (pending, unread).
+    CONTENT:  the exact sanctioned command; the exact-match trap (chaining defeats it);
+              moses' repo state (behind 5, ahead 1, 3 uncommitted files, named); the
+              root cause from F3; and the request to reply with a raw rc + output.
+
+F8. OPEN — THE ONE OPERATOR ACTION. Loading the current enforcer needs a GATEWAY RESTART,
+    which no agent can perform from inside a session (the lifecycle guard refuses it, and
+    this change deliberately does not attempt a workaround).
+    NEEDED ON: esther (pid 2228663) and moses (pid 583564) — and on any host whose doctor
+               now reports "Stale enforcer plugin".
+    FIND THEM: fleet-doctor.py --quiet  → the "Stale enforcer plugin" row.
+    FROM A SEPARATE SHELL ON THAT HOST: hermes gateway restart
+    After the restart the row CLEARS BY ITSELF — the comparison is live on every doctor
+    run, so there is no marker to remove and no state to reset.
+    Until then the host is correctly ENFORCED, just by the previous revision: nothing is
+    broken, something is stale.
