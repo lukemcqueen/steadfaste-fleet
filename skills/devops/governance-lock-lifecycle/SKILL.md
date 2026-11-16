@@ -211,6 +211,40 @@ alive), so the lock outlives every retry. Releases:
 Diagnose before concluding: read the lock FILE and check `repo_path` / `repo_slug`; empty or absent
 identifies this class in one read.
 
+**An unscoped lock blocks NOTHING — prove that before concluding you are stuck.** The cheap,
+decisive test is `check_repo_lock(repo_path=<your checkout>)`: `covered: false` with
+`unscoped_locks: 1` and `other_locks[]` naming the file means the live lock does not govern your
+tree, so `begin_change` on that repo is legitimately available and work proceeds alongside it.
+`check_lock` alone cannot settle this — its `active` field only answers "do *I* hold a lock".
+
+**`reclaim_dead_locks` needs the TTL, not proof of death.** Its staleness predicate is
+heartbeat-past-the-lock's-own-TTL AND no commit by that agent, so a lock whose owner is PROVABLY
+gone (no matching pid, and nothing in the agent log for that session since it stalled) is still
+reported as "no dead locks — … live, or being written right now" until the TTL elapses. Do not wait
+it out inside the session and never `rm` the file: the TTL purge removes it and resolves its cycle
+UNSCORED, which is the clean ending. State the expiry, and record the underlying defect separately —
+a lock minted from a cwd that is not the repo (a cron job with no `workdir`) governs nothing, so its
+own write gate was VACUOUS while it ran.
+
+**Fix that at the mint site — but NOT by giving an LLM cron a `workdir`.** The tempting repair
+(`workdir` on the live job AND its installer/manifest) is a REGRESSION for any LLM-driven cron: a
+cron with a workdir becomes an exclusive TERMINAL_CWD writer and starves the next job in its window
+until it times out. `cron-job-management` carries that rule and the incident that removed the
+workdirs fleet-wide — **LLM crons get NO workdir; only `no_agent` scripts may set one.** An LLM
+cron's unanchored cwd is therefore a FACT to work around, not a bug to fix by anchoring it. The real
+defect is on the RESOLVER side: the slug resolves from the host-canonical repo while the recorded
+`repo_path` stays EMPTY, so the lock is correctly NAMED and governs nothing — which is why
+`check_repo_lock` reports `covered: false` for a lock whose slug looks right. Fix it where the path
+is DECIDED (record the canonical path when the slug came from the canonical fallback, or have the
+writer pass its repo explicitly), and verify by reading `repo_path` back off a lock minted by that
+caller — never by reading the calling code. Until that lands, report it plainly: the run's gate was
+vacuous, the lock blocks nothing, and the TTL purge is the clean ending.
+
+**The doctor names the leftover itself** — a `Legacy lock (<file>.json)` WARN whose check name
+INCLUDES the parenthetical filename. Pass that whole string to `--disposition`; a bare `"Legacy
+lock"` is refused with "no check named … in this run". Confirm the real spelling from the doctor's
+own output before disposing.
+
 Mint sites: any writer that builds a FRESH lock state instead of re-writing one that already carries
 the repo. Re-writers inherit the repo fields, so all 14 other lock-write call sites are unaffected —
 and when you fix one fresh-state writer, pin it with a test asserting the state it hands to the writer

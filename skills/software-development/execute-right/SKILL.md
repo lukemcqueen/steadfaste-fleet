@@ -138,6 +138,20 @@ Discovery fallback (always): `skills_list(category=...)` for the domain +
 load any `related_skills` a loaded skill names. A skill you never load can
 never save you.
 
+**The write-time domain-skill prompt is NOT a substitute for Phase 0a.** That
+prompt is triggered by `write_file` / `patch`, so a bulk edit applied through
+`execute_code` (a scripted line-based rewrite, a `sed`-style replace, a
+programmatic YAML/field edit) never fires it — the change lands BEFORE the
+governing skill is ever loaded, and nothing warns you. Measured: a
+manifest+installer edit applied by script tripped no prompt, and the domain
+skill, loaded later only because an unrelated `write_file` demanded it, turned
+out to carry a standing rule that made the entire change a regression. So load
+the domain skill from the Operation axis BEFORE the first edit of the change,
+not when a gate finally names it; and when a late prompt does arrive, treat it
+as a signal that edits are already on disk and must be re-checked against what
+that skill says before you proceed — reverting a scripted edit is cheap, and a
+regression re-introduced into a system that deliberately removed it is not.
+
 **1. Search for existing resources — 3+ different terms.** One search is not
 a survey; if nothing matches term-1 you haven't proven the gap. Batch:
 `search_files` over the repo + deployed trees, `skills_list()`, cron list.

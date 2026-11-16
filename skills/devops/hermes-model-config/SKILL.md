@@ -104,6 +104,24 @@ warning, cron model overrides, model.default regressions after `hermes update`.
   a governed apply that re-points the session/reviewer default only if the
   vetted head changed. So a manual re-price is the exception; let the scan
   drive it and verify with `router-pools.py --selftest`.
+- **Read the scan's exit code as the CONTRACT, not a hint:** `0` nothing to do,
+  `1` a price/order move is pending, `2` an unvetted cheaper candidate was
+  found, `3` **could not verify — nothing may be auto-applied**. `3` is also
+  what an id the live catalog no longer serves must produce: an unpriceable
+  model belongs in `missing_models` AND in the violation set that gates the
+  run. Without that gate a vanished id rides the ordinary apply path (its
+  absent price reads as "changed"), gets sorted silently to the BACK of its
+  pool, and stays in the list — and in `model.default` — indefinitely. When you
+  touch that ladder, keep the availability condition feeding it: a condition
+  that is measured but never consulted is a report, not a gate. `missing_models`
+  is therefore load-bearing — do not treat it as a decorative field.
+- **Ids in the pricing list carry a ROUTING LABEL — strip it before any provider
+  call.** Entries are written `openrouter:<provider>/<model>`, the same shape
+  `~/.hermes/jev/routing.json` holds, and a request built from the label
+  verbatim is answered `… is not a valid model ID` for a model that IS live.
+  Diagnose that error by checking the live catalog FIRST: if the id is priced
+  there, the LABEL is the bug, not the model, and the fix is on the consumer's
+  side (strip the `label:` prefix, then split on the FIRST `/`).
 
 ## Verify end-to-end (mandatory)
 

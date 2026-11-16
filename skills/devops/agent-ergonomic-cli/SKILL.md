@@ -159,12 +159,36 @@ explicitly:
    retries a query that can never succeed or trusts an answer that was never obtained.
    The same rule covers absence of configuration: "no provider is configured" is its own
    outcome with its own code, never an empty result set.
+
+   **The same trap hides in the LOADER: a function that wraps its parse or its `import` in a
+   bare `except: return []` makes "could not read the input" byte-identical to "the input is
+   empty" — and every mode built on it then reports SUCCESS.** A manifest reader whose `import
+   yaml` sits inside that except reports `0 declared, 0 drifted` and exits 0, so its `--check`
+   passes and its `--repair` is a SILENT NO-OP indistinguishable from "nothing to do", while the
+   same command under an interpreter that HAS the dependency reports the real count and the real
+   drift. Never swallow a missing dependency into an empty result: let it raise and exit on the
+   could-not-verify code, and have any destructive mode assert the loaded count is non-zero
+   BEFORE it acts. The observable signature of the swallowed case is an output that lists every
+   item as an ORPHAN — the live objects exist, the reader's view is empty, and that is a
+   different finding from a real one.
 8. **Results on stdout, everything else on stderr.** Metadata about the result (byte
    size, cache state, degraded sources, counts) belongs on stderr so stdout stays
    pipeable: `tool fetch URL > page.txt` must yield the payload alone. In a protocol mode
    (MCP/JSON-RPC over stdio) stdout carries the protocol and NOTHING else — one stray
    print corrupts the stream, and the client then reports a protocol error unrelated to
    the real bug, which is the most expensive way to hide a `println!`.
+   9.  **A consumer that deliberately MERGES the two streams must not then parse them as one.**
+   Merging stdout+stderr is a legitimate choice when the consumer judges *what ran* — a
+   failure line may arrive on either stream, so a checker wanting the whole story joins them.
+   But a merged string is no longer a document: a JSON payload now arrives with the producer's
+   stderr notice attached (trailing it, or LEADING it, since an unbuffered stderr line can
+   overtake a block-buffered stdout), and `json.loads(merged)` dies on `Extra data` — reporting
+   a perfectly readable result as unverifiable. Two rules for the merged case: parse tolerantly
+   (`json.JSONDecoder().raw_decode` from the first `{` returns the first value and ignores
+   whatever follows), and when a consumer reads a *verdict* from the TAIL of a merged stream,
+   strip the producer's known diagnostic prefixes first or the notice itself becomes the
+   verdict. Stay fail-closed in the other direction: a merged view with NO parseable object
+   must still report could-not-verify, never become a silent pass.
 
 Sibling rule for the adapter side: one implementation, per-host adapters that add
 no semantics — see the `cross-agent-design` skill.
