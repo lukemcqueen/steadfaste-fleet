@@ -101,7 +101,10 @@ def _config_model(home: Path):
     state — verified against `hermes config get model` output on moses. YAML is
     used when importable; otherwise a deterministic line-scan scoped to the
     `model:` block (the indent check is what stops it from catching the
-    TOP-LEVEL fallback_providers' `model:`/`provider:` keys).
+    TOP-LEVEL fallback_providers' `model:`/`provider:` keys). Both the yaml
+    path and the no-yaml line-scan are pinned by tests/test_doctor_model_config.py
+    (test_line_scan_fallback_scopes_to_the_model_block forces the ImportError
+    path and asserts fallback_providers keys are never read as the running model).
     """
     try:
         text = (home / "config.yaml").read_text(encoding="utf-8", errors="replace")

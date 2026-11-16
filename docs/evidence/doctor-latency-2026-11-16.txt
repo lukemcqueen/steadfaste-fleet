@@ -46,6 +46,24 @@ Verification
   skills tests pass (23 total green).
 - doctor after deploy: 0 FAIL, Deploy sync pass.
 
+LIVE RECORD POINTER — the bit-identical claim (ADV-2-3), captured on moses 2026-11-16
+------------------------------------------------------------------------------------
+`hermes config get model` (BEFORE the change, the CLI this replaced):
+  default: qwen/qwen3-coder-30b-a3b-instruct
+  provider: openrouter
+  base_url: https://openrouter.ai/api/v1
+  api_mode: chat_completions
+
+New `_config_model(_hermes_home())` (AFTER the change):
+  provider: openrouter
+  default: qwen/qwen3-coder-30b-a3b-instruct
+  combined: openrouter:qwen/qwen3-coder-30b-a3b-instruct
+
+Same provider:model in steady state. Note `hermes config get model` echoes the
+config.yaml `model:` section and does NOT resolve fallback_providers (whose
+`deepseek/deepseek-v4-flash-0731` entry is NOT what the CLI prints), so no
+fallback resolution is lost by reading the same block directly.
+
 Remaining big checks (measured, deferred with rationale)
 --------------------------------------------------------
   check_task_db   7019  -- 6 sequential `task-db.py` subprocesses (pending, add,

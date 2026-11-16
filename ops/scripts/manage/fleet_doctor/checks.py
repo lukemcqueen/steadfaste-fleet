@@ -4927,6 +4927,12 @@ def _skill_defects(path, yaml_mod):
     capped at 1024 chars and name at 64, so a conforming frontmatter is always
     well under _SKILL_READ_BUDGET; a frontmatter that somehow exceeds it is
     reported as unterminated, which is correct for a file that large.
+
+    Verdicts are pinned in both directions by
+    tests/test_skills_loadable_check.py: test_large_body_does_not_break_the_
+    frontmatter_verdict (bounded read accepts a >2x-budget body) and
+    test_duplicate_key_still_detected_with_the_c_loader (the CSafeLoader node
+    walk still reports a duplicated key).
     """
     try:
         with open(path, "rb") as f:
