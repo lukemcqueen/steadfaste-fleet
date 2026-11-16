@@ -3691,11 +3691,20 @@ main() {
     _CM_JSON="${TMPDIR:-/tmp}/cron-manifest-check.$$.json"
     _CM_ERR="${TMPDIR:-/tmp}/cron-manifest-check.$$.err"
     if python3 "$_cm" --check --json >"$_CM_JSON" 2>"$_CM_ERR"; then
-      _cm_out="$(cat "$_CM_JSON" 2>/dev/null || true)"
-      if [[ "$_cm_out" == *'"drifted": []'* && "$_cm_out" == *'"missing": []'* \
-            && "$_cm_out" == *'"installerNotInManifest": []'* ]]; then
+      # Parse + validate the check result. Skip ONLY when JSON loads AND all
+      # three classes are empty. A read/parse failure (json.load raises,
+      # non-zero) falls through to full reconcile with a warn — never silently
+      # skipped, never trusted on a truncated/partial output.
+      if out="$(python3 -c '
+import json, sys
+d = json.load(open(sys.argv[1]))
+print("in-sync" if (d.get("drifted") == [] and d.get("missing") == []
+                    and d.get("installerNotInManifest") == []) else "")
+' "$_CM_JSON" 2>>"$_CM_ERR")" && [[ "$out" == "in-sync" ]]; then
         _CRON_NEEDS="in-sync"
         info "Crons already in sync with manifest — skipping reconcile"
+      else
+        warn "cron_manifest --check: drift/missing/installer-only or unreadable output — running full reconcile (not skipping)"
       fi
     else
       _cm_rc=$?
