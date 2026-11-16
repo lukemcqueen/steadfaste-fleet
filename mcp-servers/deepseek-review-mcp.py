@@ -75,7 +75,7 @@ try:
     from fleet_lib.models import get_reviewer_model
     DEFAULT_MODEL = get_reviewer_model()
 except Exception:  # noqa: BLE001 — fail-safe fallback if fleet_lib absent
-    DEFAULT_MODEL = "deepseek/deepseek-v4-pro-0813"
+    DEFAULT_MODEL = "xiaomi/mimo-v2.6-pro"
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _ENV_FILE_PATHS = [

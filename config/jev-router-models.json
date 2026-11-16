@@ -1,7 +1,7 @@
 {
   "source": "models.dev, read through `jev models list` (cache: ~/.cache/jev/models_dev.json)",
   "captured": "2026-11-15",
-  "baseline": "openrouter:deepseek/deepseek-v4-flash-0731",
+  "baseline": "openrouter:qwen/qwen3-coder-30b-a3b-instruct",
   "policy": {
     "simple": {
       "max_multiple_of_baseline": 0.5,
@@ -138,7 +138,8 @@
     "medium": {
       "general": [
         "openrouter:deepseek/deepseek-v4-flash",
-        "openrouter:deepseek/deepseek-v4-flash-0731"
+        "openrouter:deepseek/deepseek-v4-flash-0731",
+        "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
       ],
       "vision": [
         "openrouter:z-ai/glm-5.3-flash",
@@ -146,7 +147,8 @@
       ],
       "coding": [
         "openrouter:deepseek/deepseek-v4-flash",
-        "openrouter:deepseek/deepseek-v4-flash-0731"
+        "openrouter:deepseek/deepseek-v4-flash-0731",
+        "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
       ],
       "writing": [
         "openrouter:mistralai/mistral-small-24b-instruct-2501",
@@ -164,9 +166,9 @@
         "openrouter:thinkingmachines/inkling-small"
       ],
       "coding": [
+        "openrouter:xiaomi/mimo-v2.6-pro",
         "openrouter:qwen/qwen3.5-122b-a10b",
-        "openrouter:minimax/minimax-m3",
-        "openrouter:z-ai/glm-4.7"
+        "openrouter:minimax/minimax-m3"
       ],
       "vision": [
         "openrouter:xiaomi/mimo-v2.6-pro",

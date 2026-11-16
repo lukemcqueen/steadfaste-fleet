@@ -133,7 +133,7 @@ misconfigured or unreachable reviewer can only make closing harder.
 
 **All agents configure the reviewer the SAME way (2026-10-07):**
 `ADVERSARIAL_REVIEW_BACKEND=llm` with
-`ADVERSARIAL_REVIEWER_MODEL=deepseek/deepseek-v4-pro-0813` — the single canonical
+`ADVERSARIAL_REVIEWER_MODEL=xiaomi/mimo-v2.6-pro` — the single canonical
 reviewer. Keep the reviewer model DIFFERENT from the worker's model. The endpoint
 is `ADVERSARIAL_REVIEW_BASE_URL` (default OpenRouter, so a local or self-hosted
 endpoint can review). Name the credential with `ADVERSARIAL_REVIEW_API_KEY_ENV`;
