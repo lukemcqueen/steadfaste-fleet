@@ -1,0 +1,38 @@
+# Cron bridge double-ownership cleanup — moses (2026-11-16)
+
+## Symptom
+The doctor's `Cron bridge ownership` check flagged 54 crons as DOUBLE-OWNED: a
+fleet-bridge systemd timer AND a stale Hermes jobs.json row left after the job
+migrated to the timer (double-fire, Errno 17). Each such FAIL blocked pushes.
+
+## Fix
+For each of the 54 doubles, `hermes cron remove <id>` — drops ONLY the stale
+Hermes scheduler row; the systemd timer (the real owner) keeps running the cron
+(verified active after each removal). Non-destructive by design; the installer
+(`install-crons.sh`) skips bridged crons, so a fleet-update reinstall does NOT
+re-create the removed rows.
+
+Two of the 54 (`fleet-bus-failover-watchdog`, `orch-weekly-cost-report`) had a
+GENERATED-BUT-NOT-ENABLED bridge timer — the Hermes row was their live owner.
+After removing the stale row their bridge timers were enabled
+(`systemctl --user enable --now`) to complete the migration rather than orphan
+the cron; both verified active + enabled.
+
+## Verification (real captured runs)
+- Removal batch: 52 rows removed via `hermes cron remove`; each removal's
+  systemd `fleet-bridge-<name>.timer` verified still active afterwards.
+- 2 flagged rows (fleet-bus-failover-watchdog, orch-weekly-cost-report) had
+  disabled timers before removal -> timers installed (`enable --now`) and now
+  active + enabled.
+- Doctor: `python3 ops/scripts/manage/fleet-doctor.py --quiet`
+  -> "Cron bridge ownership" 54 FAIL -> 0 FAIL; overall
+  `⚠️  Overall: WARNING  (508 pass · 11 warn · 0 fail · 9 info)` (rc=1).
+  Remaining warns = pre-existing skill-drift / deploy-sync / repo-sync, none
+  caused by this change.
+- Fixer hermetic tests: `python3 -m pytest tests/test_fix_cron_bridge_duplicates.py -q` -> 5 passed.
+- Per-blob static gate at commit: adversarial-verify passed on all 3 files.
+
+## Fleet propagation
+`ops/scripts/manage/fix-cron-bridge-duplicates.py` (deploy-map registered in
+fleet-update.sh) ships to every host so each agent can idempotently self-clear
+its own doubles. Test: tests/test_fix_cron_bridge_duplicates.py.
