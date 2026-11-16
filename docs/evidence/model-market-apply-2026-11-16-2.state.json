@@ -1,0 +1,711 @@
+{
+  "captured": "live daily scan",
+  "catalog_source": "live",
+  "list": "<HOME>/.steadfaste-fleet/config/jev-router-models.json",
+  "prices": {
+    "openrouter:amazon/nova-lite-v1": {
+      "in": 6e-08,
+      "out": 2.4e-07
+    },
+    "openrouter:deepseek/deepseek-v4-flash": {
+      "in": 9e-08,
+      "out": 1.8e-07
+    },
+    "openrouter:deepseek/deepseek-v4-flash-0731": {
+      "in": 6e-08,
+      "out": 1.8e-07
+    },
+    "openrouter:deepseek/deepseek-v4-pro-0813": {
+      "in": 1.11e-07,
+      "out": 4.44e-06
+    },
+    "openrouter:deepseek/deepseek-v4.1-flash": {
+      "in": 5.07e-08,
+      "out": 2.028e-07
+    },
+    "openrouter:minimax/minimax-m3": {
+      "in": 3e-07,
+      "out": 1.2e-06
+    },
+    "openrouter:mistralai/mistral-small-24b-instruct-2501": {
+      "in": 5e-08,
+      "out": 8e-08
+    },
+    "openrouter:moonshotai/kimi-k2.7-code": {
+      "in": 6e-07,
+      "out": 3.5e-06
+    },
+    "openrouter:openai/gpt-oss-20b": {
+      "in": 1.8e-08,
+      "out": 9e-08
+    },
+    "openrouter:qwen/qwen3-coder-30b-a3b-instruct": {
+      "in": 1.5e-07,
+      "out": 6e-07
+    },
+    "openrouter:qwen/qwen3.5-122b-a10b": {
+      "in": 2.6e-07,
+      "out": 2.08e-06
+    },
+    "openrouter:qwen/qwen3.7-flash": {
+      "in": 3e-08,
+      "out": 1.3e-07
+    },
+    "openrouter:thinkingmachines/inkling-small": {
+      "in": 4.5e-07,
+      "out": 1.2e-06
+    },
+    "openrouter:xiaomi/mimo-v2.6-pro": {
+      "in": 4.35e-07,
+      "out": 8.7e-07
+    },
+    "openrouter:z-ai/glm-4.7": {
+      "in": 4e-07,
+      "out": 1.75e-06
+    },
+    "openrouter:z-ai/glm-5.3": {
+      "in": 6.99e-08,
+      "out": 1.4e-06
+    },
+    "openrouter:z-ai/glm-5.3-flash": {
+      "in": 3.99e-08,
+      "out": 7.84e-08
+    }
+  },
+  "tiers": {
+    "simple": {
+      "general": [
+        "openrouter:openai/gpt-oss-20b"
+      ],
+      "vision": [
+        "openrouter:z-ai/glm-5.3-flash"
+      ],
+      "coding": [
+        "openrouter:openai/gpt-oss-20b"
+      ],
+      "writing": [
+        "openrouter:openai/gpt-oss-20b"
+      ],
+      "research": [
+        "openrouter:openai/gpt-oss-20b"
+      ]
+    },
+    "medium": {
+      "general": [
+        "openrouter:deepseek/deepseek-v4-flash-0731",
+        "openrouter:deepseek/deepseek-v4-flash",
+        "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
+      ],
+      "vision": [
+        "openrouter:z-ai/glm-5.3-flash",
+        "openrouter:deepseek/deepseek-v4-flash-0731",
+        "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
+      ],
+      "coding": [
+        "openrouter:deepseek/deepseek-v4-flash-0731",
+        "openrouter:deepseek/deepseek-v4-flash",
+        "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
+      ],
+      "writing": [
+        "openrouter:mistralai/mistral-small-24b-instruct-2501",
+        "openrouter:deepseek/deepseek-v4-flash-0731",
+        "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
+      ],
+      "research": [
+        "openrouter:deepseek/deepseek-v4-flash-0731",
+        "openrouter:amazon/nova-lite-v1",
+        "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
+      ]
+    },
+    "hard": {
+      "general": [
+        "openrouter:minimax/minimax-m3",
+        "openrouter:thinkingmachines/inkling-small",
+        "openrouter:z-ai/glm-4.7"
+      ],
+      "coding": [
+        "openrouter:xiaomi/mimo-v2.6-pro",
+        "openrouter:minimax/minimax-m3",
+        "openrouter:qwen/qwen3.5-122b-a10b"
+      ],
+      "vision": [
+        "openrouter:xiaomi/mimo-v2.6-pro",
+        "openrouter:minimax/minimax-m3",
+        "openrouter:thinkingmachines/inkling-small"
+      ],
+      "writing": [
+        "openrouter:minimax/minimax-m3",
+        "openrouter:thinkingmachines/inkling-small",
+        "openrouter:z-ai/glm-4.7"
+      ],
+      "research": [
+        "openrouter:minimax/minimax-m3",
+        "openrouter:thinkingmachines/inkling-small",
+        "openrouter:z-ai/glm-4.7"
+      ]
+    }
+  },
+  "order_changed": false,
+  "price_changed": true,
+  "apply_pending": true,
+  "missing_models": [],
+  "violations": [],
+  "unvetted_cheaper_candidates": {
+    "simple/general": [
+      {
+        "model": "nvidia/switchyard",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-code",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-beta",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/fusion",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      }
+    ],
+    "simple/vision": [
+      {
+        "model": "nvidia/switchyard",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-code",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-beta",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/fusion",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      }
+    ],
+    "simple/coding": [
+      {
+        "model": "nvidia/switchyard",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-code",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-beta",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/fusion",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      }
+    ],
+    "simple/writing": [
+      {
+        "model": "nvidia/switchyard",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-code",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-beta",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/fusion",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      }
+    ],
+    "simple/research": [
+      {
+        "model": "nvidia/switchyard",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-code",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-beta",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/fusion",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      }
+    ],
+    "medium/general": [
+      {
+        "model": "nvidia/switchyard",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-code",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-beta",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/fusion",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      }
+    ],
+    "medium/vision": [
+      {
+        "model": "nvidia/switchyard",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-code",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-beta",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/fusion",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      }
+    ],
+    "medium/coding": [
+      {
+        "model": "nvidia/switchyard",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-code",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-beta",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/fusion",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      }
+    ],
+    "medium/writing": [
+      {
+        "model": "nvidia/switchyard",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-code",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-beta",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/fusion",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      }
+    ],
+    "medium/research": [
+      {
+        "model": "nvidia/switchyard",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-code",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-beta",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/fusion",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      }
+    ],
+    "hard/general": [
+      {
+        "model": "nvidia/switchyard",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-code",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-beta",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/fusion",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      }
+    ],
+    "hard/coding": [
+      {
+        "model": "nvidia/switchyard",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-code",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-beta",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/fusion",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      }
+    ],
+    "hard/vision": [
+      {
+        "model": "nvidia/switchyard",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-code",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-beta",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/fusion",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      }
+    ],
+    "hard/writing": [
+      {
+        "model": "nvidia/switchyard",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-code",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-beta",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/fusion",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      }
+    ],
+    "hard/research": [
+      {
+        "model": "nvidia/switchyard",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-code",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/auto-beta",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      },
+      {
+        "model": "openrouter/fusion",
+        "blended": -2.0,
+        "in": -1.0,
+        "out": -1.0,
+        "vs_head_usd": 2.0
+      }
+    ]
+  },
+  "signature": "790572a653802045"
+}

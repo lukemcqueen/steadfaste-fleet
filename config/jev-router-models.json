@@ -207,8 +207,8 @@
       "cache_read": 0.11
     },
     "openrouter:deepseek/deepseek-v4.1-flash": {
-      "in": 0.14,
-      "out": 0.42,
+      "in": 0.0507,
+      "out": 0.2028,
       "cache_read": 0.012
     },
     "openrouter:minimax/minimax-m3": {
@@ -252,8 +252,8 @@
       "cache_read": 0.03
     },
     "openrouter:openai/gpt-oss-20b": {
-      "in": 0.075,
-      "out": 0.3,
+      "in": 0.018,
+      "out": 0.09,
       "cache_read": 0.03
     },
     "openrouter:mistralai/mistral-small-24b-instruct-2501": {
@@ -272,13 +272,13 @@
     "basis": "blended $/M = catalog cost.input + cost.output, the SAME basis the doctor's cost guard uses; cache_read is carried but not counted",
     "baseline": "openrouter:qwen/qwen3-coder-30b-a3b-instruct = 0.150 in + 0.600 out = $0.750/M",
     "source": "~/.cache/jev/models_dev.json (models.dev); the filtered extract this list was built from is committed at docs/evidence/jev-router-pools-2026-10-28/catalog-prices.json",
-    "baseline_change_note_2026-11-16": "re-anchored from openrouter:deepseek/deepseek-v4-flash-0731 ($0.357/M) to qwen3-coder-30b-a3b-instruct ($0.750/M) on Luke's 2026-11-15 directive (matching the session/worker default switch in hermes config). Pool heads stay compliant: simple ceiling relaxed to 0.5 x $0.750 = $0.375, and every simple head is AT OR UNDER it: FOUR of the five sit exactly AT it (simple/general, /coding, /writing and /research all lead openai/gpt-oss-20b = 0.075 in + 0.300 out = $0.375 = 0.50x, admitted because the ceiling test is `<=`), and only simple/vision is strictly under (z-ai/glm-5.3-flash = $0.118 = 0.16x). Medium ceiling 1.0 x $0.750 = $0.750 and every medium head is strictly under it (dearest $0.240 = 0.32x). The previous baseline-change note (2026-10-28) describes the original v4-flash-0731 anchor.",
+    "baseline_change_note_2026-11-16": "re-anchored from openrouter:deepseek/deepseek-v4-flash-0731 ($0.357/M) to qwen3-coder-30b-a3b-instruct ($0.750/M) on Luke's 2026-11-15 directive (matching the session/worker default switch in hermes config). Pool heads stay compliant: simple ceiling relaxed to 0.5 x $0.750 = $0.375, and every simple head is AT OR UNDER it: FOUR of the five sit exactly AT it (simple/general, /coding, /writing and /research all lead openai/gpt-oss-20b = 0.075 in + 0.300 out = $0.375 = 0.50x, admitted because the ceiling test is `<=`), and only simple/vision is strictly under (z-ai/glm-5.3-flash = $0.118 = 0.16x). Medium ceiling 1.0 x $0.750 = $0.750 and every medium head is strictly under it (dearest $0.240 = 0.32x). The previous baseline-change note (2026-10-28) describes the original v4-flash-0731 anchor. (The gpt-oss-20b figures in THIS note are as of the re-anchor; the price_refresh_note_2026-11-16 below records later same-day catalog moves - gpt-oss-20b is now 0.018 in + 0.09 out = $0.108/M = 0.144x baseline, still within the 0.5x simple ceiling.)",
     "heads": {
-      "simple/general": "openrouter:openai/gpt-oss-20b = 0.075 in + 0.3 out = $0.375/M",
+      "simple/general": "openrouter:openai/gpt-oss-20b = 0.018 in + 0.09 out = $0.108/M",
       "simple/vision": "openrouter:z-ai/glm-5.3-flash = 0.0399 in + 0.0784 out = $0.118/M",
-      "simple/coding": "openrouter:openai/gpt-oss-20b = 0.075 in + 0.3 out = $0.375/M",
-      "simple/writing": "openrouter:openai/gpt-oss-20b = 0.075 in + 0.3 out = $0.375/M",
-      "simple/research": "openrouter:openai/gpt-oss-20b = 0.075 in + 0.3 out = $0.375/M",
+      "simple/coding": "openrouter:openai/gpt-oss-20b = 0.018 in + 0.09 out = $0.108/M",
+      "simple/writing": "openrouter:openai/gpt-oss-20b = 0.018 in + 0.09 out = $0.108/M",
+      "simple/research": "openrouter:openai/gpt-oss-20b = 0.018 in + 0.09 out = $0.108/M",
       "medium/general": "openrouter:deepseek/deepseek-v4-flash-0731 = 0.06 in + 0.18 out = $0.240/M",
       "medium/vision": "openrouter:z-ai/glm-5.3-flash = 0.0399 in + 0.0784 out = $0.118/M",
       "medium/coding": "openrouter:deepseek/deepseek-v4-flash-0731 = 0.06 in + 0.18 out = $0.240/M",
@@ -290,7 +290,7 @@
       "hard/writing": "openrouter:minimax/minimax-m3 = 0.3 in + 1.2 out = $1.500/M",
       "hard/research": "openrouter:minimax/minimax-m3 = 0.3 in + 1.2 out = $1.500/M"
     },
-    "price_refresh_note_2026-11-16": "prices + tier order refreshed from the live daily scan (orch-model-market-scan.py, the live OpenRouter /models catalog), applied under governance from state/model-market.json. cache_read is carried unchanged (not part of the blended $/M basis)."
+    "price_refresh_note_2026-11-16": "prices + tier order refreshed from the live daily scan (orch-model-market-scan.py, the live OpenRouter /models catalog), applied under governance from state/model-market.json. cache_read is carried unchanged (not part of the blended $/M basis). SECOND refresh same day (evening scan, signature 790572a653802045): deepseek/deepseek-v4.1-flash 0.140/0.420 -> 0.0507/0.2028 $/M and openai/gpt-oss-20b 0.075/0.300 -> 0.018/0.090 $/M (blended 0.560 -> 0.2535 and 0.375 -> 0.108 $/M); all other prices and every pool order unchanged, so no head moved and no default was re-pointed."
   },
   "candidates": {
     "openrouter:deepseek/deepseek-v4.1-flash": "priced only, NOT routed: within budget, promoted by a one-file edit",
