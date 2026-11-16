@@ -15,6 +15,7 @@ import subprocess
 import sys
 import time
 import uuid
+import concurrent.futures
 
 from .immutability import immutable_remediation, is_file_immutable
 from datetime import datetime, timedelta, timezone
@@ -1165,35 +1166,36 @@ def _check_changed_script_execution(res):
   """
   import datetime as _dt
   import subprocess as _sp
+  changed = {}
   try:
     repo = str(FLEET_REPO)
     since = _dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(days=CHANGED_SCRIPT_WINDOW_DAYS)
+    # ONE git invocation instead of a subprocess per changed file. A 30-day
+    # window of ops/scripts churn is hundreds of files; the old per-file
+    # `git log -1 --format=%ct -- <file>` spawned ~360 git processes (~13s).
+    # `--pretty=format:%ct` heads each commit and `--name-only` lists its
+    # files; commits come newest-first, so the first stamp seen for a file is
+    # its latest commit time.
     out = _sp.run(
         ["git", "-C", repo, "log", f"--since={since.isoformat()}",
-         "--name-only", "--pretty=format:", "--", "ops/scripts/"],
-        capture_output=True, text=True, timeout=20).stdout
+         "--name-only", "--pretty=format:%ct", "--", "ops/scripts/"],
+        capture_output=True, text=True, timeout=30).stdout
   except Exception as e:
     res.add("Script run evidence", "SKIP", f"git scan failed: {e}")
     return
 
-  changed = {}
-  git_fail = []
+  cur_ts = None
   for line in out.splitlines():
     line = line.strip()
-    if not (line.endswith(".py") or line.endswith(".sh")) or "/" not in line:
+    if not line:
       continue
-    base = line.rsplit("/", 1)[-1]
-    try:
-      ct = _sp.run(["git", "-C", repo, "log", "-1", "--format=%ct", "--", line],
-                   capture_output=True, text=True, timeout=10).stdout.strip()
-      if ct:
-        changed.setdefault(base, int(ct))
-    except Exception as e:
-      git_fail.append(f"{base} ({type(e).__name__})")
-  if git_fail:
-    res.add("Script run evidence", "WARN",
-        f"git log failed for {len(git_fail)} changed file(s): " + "; ".join(git_fail[:5]),
-        "Fix the git error (e.g. repo lock, bad object) so run-evidence can be checked")
+    if line.isdigit():
+      cur_ts = int(line)
+      continue
+    if cur_ts is not None and (line.endswith(".py") or line.endswith(".sh")) and "/" in line:
+      base = line.rsplit("/", 1)[-1]
+      changed.setdefault(base, cur_ts)
+
   if not changed:
     res.add("Script run evidence", "PASS",
         f"no ops/scripts changes in the last {CHANGED_SCRIPT_WINDOW_DAYS} days")
@@ -6344,6 +6346,8 @@ def check_harness_registry(res) -> None:
     res.add(name, "WARN", "COULD NOT VERIFY — the registry declares no harnesses",
             "Restore the missing entries in ops/install/harnesses/registry.yaml")
     return
+  # Resolve presence sequentially (fast, filesystem/PATH) — SKIP/WARN first.
+  run_map = {}
   for h in harnesses:
     if not isinstance(h, dict):
       continue
@@ -6363,21 +6367,40 @@ def check_harness_registry(res) -> None:
               "the doctor cannot tell whether it is installed",
               f"Add `presence:` for {hname} to ops/install/harnesses/registry.yaml")
       continue
-    rc, out = _run_harness_verify(hname)
-    lines = _cli_own_lines(out)
-    artifacts = [l for l in lines if l.startswith("artifact:")]
-    verdict = lines[-1] if lines else f"exit {rc}"
-    tail = f"{artifacts[-1]}; {verdict}" if artifacts else verdict
     fix = (f"Run: bash $HOME/.steadfaste-fleet/scripts/fleet harness verify {hname}   "
            "(then apply the install step the registry declares for it)")
-    if rc == 0:
-      res.add(label, "PASS", f"{detail}; {tail}")
-    elif rc == 3:
-      res.add(label, "WARN",
-              f"COULD NOT VERIFY — {hname} is installed but nothing on this host could "
-              f"verify it: {tail}", fix)
-    else:
-      res.add(label, "WARN", tail, fix)
+    run_map[hname] = (label, detail, fix)
+
+  if not run_map:
+    return
+
+  # The per-harness `fleet harness verify <name>` is a full interpreter +
+  # presence + wiring check (multi-second each). Five harnesses were being
+  # verified SEQUENTIALLY (~15s); they are independent subprocesses, so run
+  # them concurrently. res.add all happens back on this thread after the
+  # pool, so the shared Results list is never touched from worker threads.
+  with concurrent.futures.ThreadPoolExecutor(max_workers=min(6, len(run_map))) as ex:
+    fut = {ex.submit(_run_harness_verify, hn): (hn, label, detail, fix)
+           for hn, (label, detail, fix) in run_map.items()}
+    for f in concurrent.futures.as_completed(fut):
+      hn, label, detail, fix = fut[f]
+      try:
+        rc, out = f.result()
+      except Exception as e:
+        res.add(label, "WARN", f"verify raised {type(e).__name__}: {e}", fix)
+        continue
+      lines = _cli_own_lines(out)
+      artifacts = [l for l in lines if l.startswith("artifact:")]
+      verdict = lines[-1] if lines else f"exit {rc}"
+      tail = f"{artifacts[-1]}; {verdict}" if artifacts else verdict
+      if rc == 0:
+        res.add(label, "PASS", f"{detail}; {tail}")
+      elif rc == 3:
+        res.add(label, "WARN",
+                f"COULD NOT VERIFY — {hn} is installed but nothing on this host could "
+                f"verify it: {tail}", fix)
+      else:
+        res.add(label, "WARN", tail, fix)
 
 
 def check_harness_doc_conflicts(res):

@@ -86,6 +86,15 @@ def _flag_value(flag: str) -> str:
     return ""
 
 
+def _print_timings(timings):
+    """Print per-check wall-clock, slowest first, with share of total."""
+    total = sum(t for _, t in timings) or 1e-9
+    print("\n  ── Per-check timing (doctor %i checks) ──" % len(timings))
+    print(f"  {'check':<40} {'ms':>8} {'%':>6}   total {total:.1f}s")
+    for name, dt in sorted(timings, key=lambda x: -x[1]):
+        print(f"  {name:<40} {dt*1000:8.0f} {100*dt/total:6.1f}%")
+
+
 def main():
     args = set(sys.argv[1:])
     res = Results()
@@ -95,6 +104,7 @@ def main():
     do_watch = "--watch" in args
     do_bus_alert = "--bus-alert" in args
     do_quick = "--quick" in args
+    do_timing = "--timing" in args
     compact = "--quiet" in args
     list_dispositions = "--dispositions" in args
     want_disposition = _flag_value("--disposition")
@@ -235,11 +245,17 @@ def main():
                 print("  ═══════════════════════════════════════════════════\n")
                 time.sleep(30)
     else:
+        timings = [] if do_timing else None
         for fn in all_checks:
+            t0 = time.perf_counter()
             fn(res)
+            if timings is not None:
+                timings.append((fn.__name__, time.perf_counter() - t0))
         if do_bus_alert:
             dispatch_bus_alerts(res)
         res.print_summary(compact=compact)
+        if timings:
+            _print_timings(timings)
 
         if not res.json_mode and (res.warn_count > 0 or res.fail_count > 0):
             print("  ═══════════════════════════════════════════════════")
