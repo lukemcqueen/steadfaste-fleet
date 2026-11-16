@@ -431,6 +431,14 @@ rm -f ~/.steadfaste-fleet/scripts/<old>.py ~/.steadfaste-fleet/scripts/<old>-har
 python3 ~/steadfaste-fleet/ops/scripts/manage/fleet-doctor.py --quiet | grep 'Stale deploy'  # must be empty
 ```
 
+**A RETIRED script is the same class as a renamed one** — when the repo DELETES a tool
+(an upstream `chore(...): retire …` commit), the deployed copy becomes a `Stale deploy`
+orphan flagged on the next doctor run, and the same triple check applies (SOURCE header
+points at a gone repo path → source not tracked → not in the deploy map → no live callers)
+before `rm`. Remove it, exactly like a rename-orphan — do NOT `--disposition` it: a retired
+tool's old copy is genuinely dead, and dispositioning it hides the debt. A pull that brought
+the retire commit in flags it on the same deploy; clear it in that cycle.
+
 Do NOT `--disposition "Stale deploy: …"` a rename-orphan — a disposition is for a
 file that legitimately stays (installed by a kit, host-owned); a renamed tool's old
 copy is genuinely dead and dispositioning it just hides the debt. **Fix the sweep, not
