@@ -12,7 +12,9 @@ Hermes scheduler row; the systemd timer (the real owner) keeps running the cron
 installer (`install-crons.sh`) skips a bridged cron when its timer is ENABLED
 (present in timers.target.wants/) — both of the half-migrated timers below were
 enabled as part of this fix, so a fleet-update reinstall does NOT re-create the
-removed rows for any of the 54.
+removed rows — the 2 half-migrated timers were enabled here, and the other 52
+were verified ACTIVE (systemd active implies enabled), so the installer skips
+all of them.
 
 Two of the 54 (`fleet-bus-failover-watchdog`, `orch-weekly-cost-report`) had a
 GENERATED-BUT-NOT-ENABLED bridge timer — the Hermes row was their live owner.
@@ -31,7 +33,7 @@ the cron; both verified active + enabled.
   `⚠️  Overall: WARNING  (508 pass · 11 warn · 0 fail · 9 info)` (rc=1).
   Remaining warns = pre-existing skill-drift / deploy-sync / repo-sync, none
   caused by this change.
-- Fixer hermetic tests: `python3 -m pytest tests/test_fix_cron_bridge_duplicates.py -q` -> 5 passed.
+- Fixer hermetic tests: `python3 -m pytest tests/test_fix_cron_bridge_duplicates.py -q` -> 7 passed.
 - Per-blob static gate at commit: adversarial-verify passed on all 3 files.
 
 ## Fleet propagation
