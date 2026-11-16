@@ -1,0 +1,66 @@
+Fleet pull + update — 2026-11-17 (cycle 14886)
+Operator request: "pulll latest fleet and update"
+Host: esther (orchestrator / hot backup)
+
+MEASURED RESULTS
+
+1. Pre-state (this session, before the cycle's own commit)
+   HEAD bc6f185c · origin/main 031ac455 · behind 5, ahead 2
+   dirty tree: 3 modified files (reconciler drift + machine-generated parity capture)
+
+2. Reconciler backport converged and committed (Pitfall 30: the reconciler writes
+   the repo tree but does not commit, so the drift blocks the next pull)
+   commit 2cb474e0 — skills/devops/fleet-deployment-sync/references/doctor-warning-remedies.md
+   and skills/devops/steadfaste-fleet-repo-deploy/SKILL.md, 67 insertions
+   adversarial-verify.py --level A2 --gate on both files: rc=0, GATE_PASSED (no critical/high)
+   tree clean after the commit
+
+3. Pull
+   git pull --rebase origin main
+   -> CONFLICT (content) docs/evidence/skill-drift-parity.txt — machine-generated
+      capture regenerated on both sides (the documented Pitfall 24 class)
+   -> resolved by taking the REPLAYED side (this host's own capture: 3 stranded-in-place,
+      0 absent-from-repo) rather than origin's peer-host capture (2 stranded, 34 absent);
+      never hand-merged two captures of the same drift
+   -> git rebase --continue rc=0
+   HEAD 2cb474e0 · behind 0, ahead 3
+
+4. Deploy (the sanctioned invocation)
+   bash <HOME>/steadfaste-fleet/ops/scripts/fleet-update.sh
+   UPDATE_EXIT=0
+   doctor (embedded in the deploy): Overall: WARNING (511 pass · 5 warn · 0 fail · 2 info) · 4 undisposed
+   Deploy sync: OK (deployed revision matches HEAD)
+
+5. Post-deploy verification (fresh runs, not the deploy snapshot)
+   lsattr on the enforcement files — the immutable flag is RE-APPLIED on all three:
+     <HOME>/.hermes/plugins/governance-enforcer/__init__.py  -> ----i---------e-------
+     <HOME>/.steadfaste-fleet/scripts/hermes-plugin-lock      -> ----i---------e-------
+     <HOME>/.steadfaste-fleet/hooks/post-merge                -> ----i---------e-------
+   hermes plugins list | grep -i governance -> governance-enforcer, enabled
+   FRESH doctor: rc=1  Overall: WARNING (514 pass · 2 warn · 0 fail · 2 info) · 1 undisposed
+     The 3 "Service (...)" warns present in the DEPLOY SNAPSHOT read PASS on the fresh run.
+     That is the transient class documented in the committed reference
+     fleet-deployment-sync/references/doctor-warning-remedies.md — verified live here.
+   Remaining warn/info after the fresh run:
+     [WARN] Script run evidence  — orch-model-market-scan.py changed upstream, not yet
+            run through the scheduler (already dispositioned deferred, owner esther)
+     [WARN] Multi-session repo   — 2 live locks (see below); dispositioned deferred here
+     [INFO] PENDING cycles       — this cycle's own lock, clears at end_change
+     [INFO] Cron bridge ownership — undeclared timer local-clickhouse-log-cleanup
+            (already dispositioned deliberate, owner esther)
+   disposition "Multi-session repo" --as deferred --owner esther -> recorded; 0 undisposed
+   git status -sb -> clean; behind 0
+
+GOVERNANCE
+  Two PENDING cycles left behind by sessions that had already ENDED were scored and closed
+  (both created by begin_change and never closed): 14880 recover-stranded-skills and
+  14885 fix-model-fallback-label — scored MOVE_ON with notes recording exactly what each
+  did and did not complete. That released 14885's lock. One lock remains:
+  20261116_120352_a100c2aa (owner session ended); it persists to its own TTL by the
+  documented no-reclaim/no-race rule, which is why "Multi-session repo" is deferred rather
+  than "fixed".
+
+NOT DONE (deliberate, and why)
+  - No push: pull-latest policy — local commits stay local.
+  - No model.default / roster change: the model-replacement decision is parked pending
+    operator confirmation and is NOT part of this cycle.
