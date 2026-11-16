@@ -720,10 +720,10 @@ create_cron "orch-restic-backup" "43 2 * * 0" \
 # The reviewer model is the current canonical fleet reviewer, resolved at
 # runtime from fleet_lib.models.get_reviewer_model() (honours the
 # ADVERSARIAL_REVIEWER_MODEL env override) — changeable at any time, never a
-# hardcoded id here. INDEPENDENCE =
-# difference nor orchestrator-side trigger — a worker records their own plan
-# review for the plan-review gate via the sanctioned lock-free write, per
-# operator directive 2026-10-30).
+# hardcoded id here. Independence = context isolation (fixed prompt + distinct
+# model), not model-driven or orchestrator-side trigger; a worker records their
+# own plan review for the plan-review gate via the sanctioned lock-free write,
+# per operator directive 2026-10-30.
 
 # ── 5. Backlog Driver (F-023) ──────────────────────────────
 printf "${CYAN}  5. Backlog Driver${RESET}\n"
