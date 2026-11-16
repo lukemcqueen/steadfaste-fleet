@@ -3514,10 +3514,13 @@ main() {
   # gate — the agent cannot begin_change. Register BOTH role-distinct servers
   # from the IMMUTABLE deployed copy (P1-A hardening: the repo working tree is
   # user-writable). Idempotent; mirrors the tasks block above and the doctor's
-  # --fix command (mcp_names.py).
+  # --fix command (mcp_names.py). macOS-safe: hermes mcp + grep -q only, no
+  # GNU-only flags. Registration contract: hermes mcp add <name> --command
+  # <deploy-venv-python3> --args "<deployed loop-gov-mcp.py> --role <name>".
   if command -v hermes >/dev/null 2>&1; then
-    local lg_venv="${HOME}/.steadfaste-fleet/venv/bin/python3"
-    local lg_server="${HOME}/.steadfaste-fleet/tools/loop-governance/loop-gov-mcp.py"
+    local _lg_dep="${FLEET_DEPLOY_HOME:-${HOME}/.steadfaste-fleet}"
+    local lg_venv="${_lg_dep}/venv/bin/python3"
+    local lg_server="${_lg_dep}/tools/loop-governance/loop-gov-mcp.py"
     if [[ -x "$lg_venv" && -f "$lg_server" ]]; then
       for _lg in "loop-governance:loop-governance" "review:review"; do
         local _lg_name="${_lg%%:*}" _lg_role="${_lg##*:}"
@@ -3525,14 +3528,20 @@ main() {
           : # already registered
         else
           info "Registering ${_lg_name} MCP server…"
-          if hermes mcp add "${_lg_name}" --command "$lg_venv" --args "$lg_server --role ${_lg_role}" 2>/dev/null; then
-            info "  ✓ ${_lg_name} MCP registered (restart the gateway to load tools)"
+          if _lg_out=$(hermes mcp add "${_lg_name}" --command "$lg_venv" --args "$lg_server --role ${_lg_role}" 2>&1); then
+            if hermes mcp list 2>/dev/null | grep -q "${_lg_name}"; then
+              info "  ✓ ${_lg_name} MCP registered (restart the gateway to load tools)"
+            else
+              warn "  ${_lg_name} mcp add reported success but is not in 'hermes mcp list' — restart the gateway, then re-run this update"
+            fi
           else
-            warn "hermes mcp add ${_lg_name} failed — run: python3 ${FLEET_DEPLOY_HOME}/scripts/fleet-doctor.py --fix"
+            warn "  hermes mcp add ${_lg_name} failed (${_lg_out}) — run: python3 ${_lg_dep}/scripts/fleet-doctor.py --fix"
           fi
         fi
       done
-      unset _lg _lg_name _lg_role
+      unset _lg _lg_name _lg_role _lg_out
+    else
+      warn "  loop-governance MCP deploy missing at ${_lg_dep} (need venv python3 + tools/loop-governance/loop-gov-mcp.py) — agents cannot open governance locks until fleet-update deploys it"
     fi
   fi
 
