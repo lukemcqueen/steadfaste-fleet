@@ -1,0 +1,25 @@
+Running: bash docs/evidence/model-default-routing-label-2026-11-16.sh
+rc: 0
+when: 2026-11-16T11:10:39Z
+
+== 1. live model.default is a BARE id ==
+  PASS  model.default = qwen/qwen3-coder-30b-a3b-instruct (no label prefix)
+== 2. the label is not a model id; the bare one is ==
+  PASS  bare id present in live catalog (1 match)
+  PASS  zero 'openrouter:'-prefixed ids in the live catalog
+== 3. the 400 was real and live (captured in this host's log) ==
+  PASS  agent.log holds 266 'is not a valid model ID' line(s)
+  PASS  the 400 is recorded as 'not retryable' (no silent auto-repair)
+== 4. sessions show the before/after pair ==
+  PASS  newest session is bare, an older one carries the label (newest_bare=True older_labelled=True newest=qwen/qwen3-coder-30b-a3b-instruct)
+== 5. the check is wired into the doctor that runs it ==
+  PASS  check_model_default appears 2 times in cli.py (import + registry)
+== 6. the test battery is GREEN ==
+  PASS  9 passed
+== 7. the live host is now silent (healthy value reports nothing) ==
+  PASS  live host verdicts: [] (silent)
+== 8. anti-vacuity: the same check FIRES on a labelled fixture ==
+  PASS  labelled fixture -> exactly one FAIL (the gate is load-bearing)
+
+FAILED CLAIMS: 0
+sha256: 046e98968b2457bd37fe8b43707a97b59e712750a1b686d5111919ed72f0379c

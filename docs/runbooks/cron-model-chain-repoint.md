@@ -109,7 +109,11 @@ hermes config set fallback_providers.1.model <model-id>   # dotted path indexing
 1. **Read back** the env keys and the pin state — confirm the values, not the edit
    command's exit code.
 2. **Check the main model** that unpinned jobs will follow:
-   `hermes config get model.default` / `model.provider`.
+   `hermes config get model.default` / `model.provider`. The value must be a
+   BARE id: a `<label>:<provider>/<model>` routing label (e.g.
+   `openrouter:qwen/qwen3-coder-30b-a3b-instruct`) is answered `is not a valid
+   model ID` (HTTP 400) and every run silently follows a `fallback_providers`
+   model instead — the doctor's `Model default` check FAILs on it.
 3. **Fire one real job** and inspect its delivery header:
    ```bash
    # via the cron MCP: action='run', job_id=<id>

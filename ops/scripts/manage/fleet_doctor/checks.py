@@ -59,6 +59,8 @@ if str(_scripts_dir) not in sys.path:
     sys.path.insert(0, str(_scripts_dir))
 from fleet_lib.env import get as fleet_env_get
 
+from .jev import config_model_state
+
 log = logging.getLogger(__name__)
 
 from .config import (
@@ -1738,6 +1740,72 @@ def check_scripts(res):
       res.add(f"Script content ({name})", "FAIL",
           f"{script} — deployed copy differs from repo source",
           f"REQUIRED: Run: fleet-update.sh to resync")
+
+
+# ── Model default: a routing LABEL is not a model id ─────────────────────────
+# `config/jev-router-models.json` and ~/.hermes/jev/routing.json key their
+# entries as `<label>:<provider>/<model>`, e.g.
+# `openrouter:qwen/qwen3-coder-30b-a3b-instruct`. That label is Jev's routing
+# currency, NOT a model id a provider accepts: sent verbatim it is answered
+# `... is not a valid model ID` (HTTP 400, `not retryable` — observed live on
+# this host 2026-11-16 in agent.log). Hermes does NOT fail loudly, because the
+# request then falls through to `fallback_providers` — so every new session
+# silently runs a DIFFERENT model than config.yaml asks for, and nothing
+# reports it.
+#
+# The writer is the daily `orch-model-market-scan` cron: its STEP 1.2 re-points
+# `config.yaml model.default` at "the new head", and every head in the Jev list
+# is a label. Nothing consulted the shape of the value that reached config.yaml:
+# `fleet_doctor.jev._current_model` merely TOLERATES a colon in `default` (it
+# skips the provider prefixing and returns the value as-is), so the cost guard
+# stayed green while the host was broken.
+#
+# A colon ALONE is not the tell — an Ollama tag (`qwen2.5:3b`) is a legitimate
+# default (the ollama-setup skill sets exactly that), so firing on any colon
+# would FAIL every local-model host forever. The two PROVABLE tells are:
+#   (a) a colon followed by a provider-qualified `org/model` id, and
+#   (b) a value carrying this host's OWN provider as a prefix.
+def is_routing_label(value: str, provider: str = "") -> bool:
+    """Is `value` a Jev routing label rather than a bare model id?"""
+    if not value or ":" not in value:
+        return False
+    if provider and value.startswith(f"{provider}:"):
+        return True
+    _, _, rest = value.partition(":")
+    return "/" in rest
+
+
+def bare_model_id(value: str) -> str:
+    """`openrouter:qwen/qwen3-coder-30b-a3b-instruct` -> `qwen/qwen3-coder-30b-a3b-instruct`."""
+    _, _, rest = value.partition(":")
+    return rest or value
+
+
+def check_model_default(res) -> object:
+    """Model default must be a BARE model id, never a Jev routing label.
+
+    Silent when healthy (the healthy value needs no report) and silent when
+    there is no Hermes config at all; FAIL when the label is found, because the
+    cost is a silently mis-modeled host, not a crash.
+    """
+    exists, provider, default = config_model_state()
+    if not exists:
+        return res  # no config.yaml on this host — nothing to govern
+    if not default:
+        res.add("Model default", "WARN",
+                "COULD NOT VERIFY — config.yaml exists but yields no model.default",
+                "inspect the `model:` block (`hermes config get model.default`)")
+        return res
+    if is_routing_label(default, provider):
+        res.add("Model default", "FAIL",
+                f"model.default carries a Jev routing LABEL: {default} — the label is "
+                f"routing currency, not a model id, so the provider answers 'is not a "
+                f"valid model ID' (HTTP 400) and every new session silently runs a "
+                f"fallback_providers model instead",
+                f"hermes config set model.default {bare_model_id(default)}   "
+                f"(strip the `label:` prefix; the provider belongs in model.provider)")
+        return res
+    return res
 
 
 def classify_bridge_ownership(unit_names: set, declared: set, live: set) -> list:

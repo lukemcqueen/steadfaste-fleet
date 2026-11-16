@@ -136,6 +136,24 @@ def _config_model(home: Path):
     return provider, default
 
 
+def config_model_state(home: Path | None = None) -> tuple:
+    """(config.yaml exists?, provider, default) — the ONE reader for the model block.
+
+    A public seam over `_config_model` so another check can resolve the same
+    block WITHOUT importing a private name and without growing a second
+    YAML + line-scan parser that could drift from this one.
+
+    `exists` is not decoration: it lets a caller separate "no Hermes config on
+    this host" (nothing to govern — stay silent) from "config present but no
+    `default`" (anomalous — a fail-closed check must say COULD NOT VERIFY
+    rather than pass). `_config_model` alone returns ("", "") for both.
+    """
+    h = home if home is not None else _hermes_home()
+    exists = (h / "config.yaml").is_file()
+    provider, default = _config_model(h)
+    return exists, provider, default
+
+
 def _current_model() -> str:
     """The model this host actually runs, as `provider:model` (best effort)."""
     provider, default = _config_model(_hermes_home())

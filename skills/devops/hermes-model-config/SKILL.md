@@ -122,6 +122,20 @@ warning, cron model overrides, model.default regressions after `hermes update`.
   Diagnose that error by checking the live catalog FIRST: if the id is priced
   there, the LABEL is the bug, not the model, and the fix is on the consumer's
   side (strip the `label:` prefix, then split on the FIRST `/`).
+- **Never WRITE the label into config.yaml — it is not a model id, and the host
+  degrades SILENTLY.** `model.default` holds the BARE id
+  (`qwen/qwen3-coder-30b-a3b-instruct`); the provider lives in `model.provider`.
+  A label there is answered `… is not a valid model ID` (HTTP 400, not
+  retryable), and because Hermes then falls through to `fallback_providers`,
+  every new session runs a DIFFERENT model than configured while nothing
+  reports it — measured 2026-11-16: a host 400'd on every turn for hours (17:07,
+  17:10, 17:21, 17:28 in agent.log) with the banner looking fine. The writer is
+  the daily `orch-model-market-scan` STEP 1.2 (its "new head" is a label), and
+  `fleet_doctor.jev._current_model` merely TOLERATES a colon in `default`, so
+  the cost guard stayed green through it. The doctor's `Model default` check now
+  FAILs on a label; fix with `hermes config set model.default <bare-id>` and
+  verify against the LIVE surface — the new `sessions` row's `model` column must
+  equal the bare id (a fixture proves nothing here).
 
 ## Verify end-to-end (mandatory)
 
