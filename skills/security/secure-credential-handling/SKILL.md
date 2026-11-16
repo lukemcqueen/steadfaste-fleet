@@ -63,6 +63,41 @@ Three layers protect against credential leaks in `terminal()` commands:
 
 Set `SKIP_SECRET_SCAN=1` to bypass the pre-commit detector (emergencies only).
 
+### A clean detector run is not evidence until you have seen it FIRE
+
+`secret-leak-detector.sh` prints nothing and exits 0 when it finds nothing, so its
+output cannot distinguish "no leaks" from "the scan never matched anything".
+Before reporting a change as leak-clean, run a deliberate violation as a POSITIVE
+CONTROL and watch it go non-zero.
+
+Build the control from the detector's OWN documented patterns (its header lists
+them) — most obvious-looking probes match NONE of them. A bare
+`echo "ghp_..."` line is not a finding: that pattern requires a PIPE to a
+sensitive tool. One that does block is the inline-credential rule, `curl -u
+"<user>:<literal>"`: assemble the literal at RUN time so the committed text is not
+itself a violation — a PASTED literal is BLOCKED by this very rule, which is exactly
+how you know the control fired:
+
+```bash
+curl -u "svc:${CONTROL_PW}" https://your-domain.com/peek   # CONTROL_PW=<literal> → BLOCKED, exit 1
+```
+
+So rc=0 with no output means clean ONLY once the control has fired. Report the
+two together ("scan clean; control blocks as expected") — a bare "clean" is an
+unverified claim, and the probe you invented is a hypothesis about the detector,
+not a measurement of your change.
+
+### Secrets never live inside a URL
+
+A config that carries credentials as userinfo in its URL (`scheme://user:pass@host`)
+leaks them into every log line that echoes the URL, and bypasses the dedicated
+auth field entirely. When you read a URL from a config, strip the authority
+(`authority="${URL#*://}"; authority="${authority%%/*}"`) and REFUSE an `@` in
+it. Note this shape also trips the repo's PII scanner, which reads the userinfo as
+a private host name — that guard false-positives on any authority-shaped
+`x:y at host` text, so assemble such a value from fragments in a fixture and
+report the false positive rather than deleting the test.
+
 ## Pitfalls
 
 ### printf with literal secret

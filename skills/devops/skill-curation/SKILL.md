@@ -105,7 +105,12 @@ and a merged skill serves better than two overlapping ones.
    to the repo path (the whole dir, `references/` included) and commit it in
    the same run. Check for drifted pairs at the **start** of a pass too: drift
    means a previous run's lesson is still unlanded, and re-deriving it instead
-   of propagating it duplicates the work. Verify with `diff` — the only
+   of propagating it duplicates the work. **A drift WARN that REAPPEARS within hours of a
+   correct backport is usually NEW content, not your regression** — the lesson miner keeps writing
+   fresh lessons into the DEPLOYED copy, so the pair re-diverges without anyone touching the repo.
+   Diff the file before suspecting yourself: when the deployed-only lines are lessons you never
+   wrote (or wrote only in prose), the drift is the miner's output and the answer is the ordinary
+   backport. Do not re-diagnose the class or re-run the earlier fix. Verify with `diff` — the only
    acceptable difference is the deploy header.
 
    **Measure drift by CONTENT, never by mtime.**

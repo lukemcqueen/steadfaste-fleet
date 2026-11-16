@@ -45,3 +45,29 @@ wrapper.write_text(
 ```
 
 One extra process hop in the test is cheap; a CRITICAL finding on the fixture is not.
+
+## 5. Long reviews and missing rows
+
+The runner prints nothing on its success path, so "no output" is ambiguous, and a
+review slow enough to hit a tool's per-call timeout is KILLED before it writes a
+row. The cycle is then left with NO review — which looks identical to a review that
+ran and returned clean.
+
+- Run the invocation as a BACKGROUND process writing to a log file, then poll. Do
+  not hold a foreground tool call open on a model round-trip; a long review exceeds
+  it and the abort costs the whole round.
+- The DB is the only thing that settles it: read `adversarial_reviews` for the
+  cycle and treat **0 rows as "no review happened"** — re-run, never assume clean.
+  Read it with python's `sqlite3` in read-only mode
+  (`file:$HOME/.steadfaste-fleet/data/loop-governance.db?mode=ro`).
+- `findings_json` can be an EMPTY list while `summary` carries the prose findings.
+  Parse `summary` for verdict and severities, or a FINDINGS review reads as clean.
+- `--reviewer-id` is REQUIRED for `--review`; the call is refused without it.
+
+### Folding a finding costs one test, not one paragraph
+
+A finding can be severity `info` and still name a real gap — and it can also be a
+MISREADING of your code. Resolve both the same cheap way: write the test that
+drives the exact shape the finding describes. If it PASSES, the hypothesis was
+wrong and is now pinned by executable proof; if it FAILS, you found a real bug.
+Editing prose explains nothing and leaves the claim unverifiable.

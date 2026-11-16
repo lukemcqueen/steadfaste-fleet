@@ -158,7 +158,44 @@ To check watchdog health (manual smoke run — note this does NOT update the cro
 ```bash
 python3 ~/.steadfaste-fleet/scripts/agent-cron-quality-watchdog.py; echo "exit=$?"
 ```
-Exit 0 + no alerts = clean. To refresh the scheduler's health record after a fix, run the cron via the scheduler (`cronjob action='run' job_id=<watchdog-id>`), then run the doctor:
+**A silent run is NOT proof the defect is gone.** The tick dedups an unchanged issue set
+(`StateTracker("cron-quality").evaluate(...)`), so once an issue set has been reported, every
+identical later run is silent BY DESIGN — delivery is suppressed, detection is not. After a fix,
+``exit 0`` may mean "deduped", not "clean". Measure detection directly with the harness below
+before believing either verdict; this is the false-green shape that makes a fixed watchdog and a
+broken one look identical.
+
+To refresh the scheduler's health record after a fix, run the cron via the scheduler
+(`cronjob action='run' job_id=<watchdog-id>`), then run the doctor:
 ```bash
 python3 ~/steadfaste-fleet/ops/scripts/manage/fleet-doctor.py --quiet
 ```
+
+## Testing a change to the watchdog
+
+The checks live inside `main()` with no seam, so drive the real script rather than
+reimplementing its logic in a test. `scripts/drive-watchdog-main.py <script>` loads a
+watchdog by path with the dedup tracker stubbed to always alert, so it prints exactly what
+the script DETECTS against live state:
+
+```bash
+python3 scripts/drive-watchdog-main.py ~/.steadfaste-fleet/scripts/agent-cron-quality-watchdog.py
+```
+
+- **Compare BEFORE and AFTER on the same real data.** Run it against the deployed (pre-fix)
+  copy and the repo copy: `4 issues` → `(no issues detected)` is the proof, it needs no
+  fixtures, and it reproduces the reported alert text verbatim.
+- **Put the script's own directory on `sys.path` in any harness.** The watchdog does
+  `from hermes_tz import format_timestamp`, which resolves from `ops/scripts` on the cron's
+  path but not from a bare interpreter. Without it every import raises `ModuleNotFoundError`
+  and each claim reads EMPTY — a wall of failures against a correct fix. Fix the probe first.
+- **Unit-test the predicates with the VERBATIM failing payload as the fixture**, copied out of
+  the real `## Response` section rather than paraphrased, plus the wrapping/case variants.
+- **Drive `main()` end-to-end too** — monkeypatch the module-level path constants
+  (`CRON_JOBS_FILE`, `CRON_OUTPUT_DIR`, `FALLBACK_CONFIG_FILE`) at a tmp dir holding a fixture
+  run, catch `SystemExit`, and assert BOTH directions: the healthy case prints NOTHING (and
+  exits 0), and a genuine defect still prints.
+- **When you widen a no-op or token matcher, assert the direction you did NOT widen.** The
+  leak class must still fail — a matcher test that only proves the new acceptance is the shape
+  that lets real garbage through. Strip only the recognised annotation/metadata; never accept
+  "any trailing content".

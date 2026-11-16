@@ -218,13 +218,34 @@ tree, so `begin_change` on that repo is legitimately available and work proceeds
 `check_lock` alone cannot settle this — its `active` field only answers "do *I* hold a lock".
 
 **`reclaim_dead_locks` needs the TTL, not proof of death.** Its staleness predicate is
-heartbeat-past-the-lock's-own-TTL AND no commit by that agent, so a lock whose owner is PROVABLY
-gone (no matching pid, and nothing in the agent log for that session since it stalled) is still
-reported as "no dead locks — … live, or being written right now" until the TTL elapses. Do not wait
-it out inside the session and never `rm` the file: the TTL purge removes it and resolves its cycle
-UNSCORED, which is the clean ending. State the expiry, and record the underlying defect separately —
-a lock minted from a cwd that is not the repo (a cron job with no `workdir`) governs nothing, so its
-own write gate was VACUOUS while it ran.
+heartbeat-past-the-lock's-own-TTL AND no commit by that agent, so a lock whose owner is provably
+gone is still reported as "no dead locks — … live, or being written right now" until the TTL
+elapses. Do not wait it out inside the session and never `rm` the file: the TTL purge removes it and
+resolves its cycle UNSCORED, which is the clean ending. State the expiry, and record the underlying
+defect separately — a lock minted from a cwd that is not the repo (a cron job with no `workdir`)
+governs nothing, so its own write gate was VACUOUS while it ran.
+
+**Never prove a lock's owner is dead by grepping a PROCESS LIST for the session id.** A Hermes agent
+runs inside the shared gateway process, so its cmdline never carries the conversation's session id —
+`pgrep <session-id>` (or any pid-name match) returns NOTHING while that session is alive and
+mid-work. Reading that emptiness as "owner gone" is how a live lock gets deleted: the run then
+finished an hour later and closed its own cycles, having had its lock removed underneath it. Liveness
+evidence must come from the lock's OWN `heartbeat_at`/`ttl_seconds`, plus the agent log and commits
+authored by that agent (*Judging a lock dead*) — absence from a process list is evidence of nothing.
+
+**A doctor remediation that DELETES state is a CLAIM to verify, not an instruction to follow.** The
+`Legacy lock (<file>.json)` check prints `Remove: rm -f <file>` as its REQUIRED ACTION while deciding
+legacy-ness from the FILENAME ALONE — a recognised session-id namespace vs a descriptive slug, with
+NO liveness check — so a false positive there deletes a live session's lock, and doing so also
+converts that run's PENDING cycle from "expected (lock held)" into a host-wide leak FAIL (*Removing a
+lock and resolving its cycle are ONE step*). Before acting on it, read the lock's own `heartbeat_at`
+and `ttl_seconds`: a heartbeat inside its own TTL means LIVE, whatever the check called it. The id
+namespace is wider than a hand-rolled pattern tends to know — besides the Hermes timestamp id and
+`sess_<hex>`, the runtime mints `local-<sha256>` session ids that are real session keys in
+`loop-governance.db` and the `skills-*` stores, so a `.governance-local-<64hex>.json` lock belongs to
+a LIVE session and is never a legacy slug. Generalise the fix rather than the instance: a check that
+prescribes a destructive remedy must gate on liveness (heartbeat past its own TTL), never on a name
+pattern, and must withhold the remedy when liveness cannot be established.
 
 **Fix that at the mint site — but NOT by giving an LLM cron a `workdir`.** The tempting repair
 (`workdir` on the live job AND its installer/manifest) is a REGRESSION for any LLM-driven cron: a

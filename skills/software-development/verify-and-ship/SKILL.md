@@ -66,6 +66,32 @@ complex, treat it as moderately complex.
    bar), say so and mark the gap:
    `↗ Independent review NOT possible — own-work only, treat claims as UNVERIFIED`.
 
+**Read the verdict back from the STORE — the runner prints nothing on its success path, and an
+EMPTY reply can still record a verdict.** Both look like a review from the command's output, so
+the DB is the only place to settle it:
+- `adversarial_reviews` carries ONE current row per cycle (`cycle_id, reviewer_id,
+  reviewer_model, verdict, findings_json, summary`), with superseded rows in
+  `adversarial_reviews_history`; `review_calls` records `prompt_tokens / completion_tokens /
+  `reasoning_tokens` per call. Query both. Never report "no review ran" — or "CLEAN" — from stdout.
+- **The row's `verdict` column reads `FINDINGS` whenever ANY finding exists — including info-only
+  findings whose JSON verdict is `CLEAN`.** So take the verdict AND the severities from the JSON you
+  parse out of `summary`; the column alone cannot tell you whether you are blocked. A finding whose
+  own `recommendation` says it is a property of the reviewer's window (the window cannot see the
+  diff, the sibling `docs/evidence/` file, or git history) is non-blocking — fix the change, not the
+  window, fold it if a cheap fold exists, and do NOT re-roll the reviewer over it.
+- **`completion_tokens` equal to the caller's `max_tokens`, with the content empty, means the
+  reviewer reasoned to the cap and answered NOTHING** — yet a verdict may still be recorded from
+  that empty reply, which is not a review. The signature is in `review_calls` (reasoning tokens at
+  or near the cap). Re-run the same invocation with the reasoning effort turned down for that call
+  (`REVIEWER_PLAN_REASONING_EFFORT=none`); the same material then completes in a few hundred
+  tokens. Material SIZE is not the lever — a 6 KB prompt burns the cap exactly like a 60 KB one —
+  so do not shrink the material to work around it. Disclose the override in the material AND in the
+  close note: it is still an independent read, and the operator needs to know which knob was turned.
+- **`--re-review` SUPERSEDES the current verdict**, so a diagnostic re-run replaces a good review
+  with whatever the new reply contained. Do not experiment on a cycle holding a real verdict; and
+  when you do re-review, the material must be a full rewrite of the FINAL state (see the folding
+  rule above) — never a folding note appended under the old description.
+
 **Two hard rules:**
 - An independent review MUST happen before the solution reaches the user. If
   you are one tool call from submitting with no review done, stop and get one.
@@ -161,6 +187,14 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   description appear anywhere; embed the ACTUAL committed file verbatim for the
   lines the reviewer must verify (the constants a guard imports, the filter logic);
   let the folding note state only what changed and why.
+  **Enumerate EVERY edit the range contains in the material's change list —
+  prose, doc and evidence edits included.** The window sees only the material,
+  so a fix you genuinely made but never listed reads as scope-drift ("the write
+  is described but absent from the change"), and that finding costs a round the
+  diff had already answered. When a finding's remedy is deliberately DEFERRED,
+  say so AND record it as a tracked issue in the cycle (`record_issue`) — an
+  unrecorded deferral reads as a dropped finding, while a recorded one shows the
+  reviewer the deferral is governed.
 - Name the cycle for the diff it will CONTAIN, not the instruction that started
   it; sized so the close review can read it (blob count, not line count).
 - grep the repo for the old name/term; check cron jobs.json; cron install
@@ -197,6 +231,31 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   notify) instead of waiting on a handle the restart invalidated.
 - Changing a DEFAULT CONSTANT breaks hardcoded old literals in tests — sweep
   both shapes (fixture AND assertion), run to prove both moved.
+- **An assertion that something is EMPTY must compare to the empty value.**
+  `assert fn()` is always FALSE when the case under test is "nothing reported",
+  so the test calls itself "silent" while passing exactly when the code is
+  WRONG — it only ever goes green on a false positive. Write
+  `assert fn() == []`, and treat a test named for silence whose body asserts
+  truthiness as an inverted assertion, not a passing test.
+- **A regression test whose failing mechanism you SIMULATE needs an
+  anti-vacuity sibling.** When the test must fabricate the condition it protects
+  against (a hostile `sys.path`, a stub module, an injected env var, a poisoned
+  config), nothing yet proves the fabrication CREATES the condition — a green
+  then means the simulation was inert. Add one sibling test asserting the stub
+  really does reproduce the failure, so the pair shows the fix is load-bearing.
+  This is Phase 1.5's "assert the baseline reproduces the defect" applied to a
+  unit test, and it is the difference between a regression test and a decoration.
+- **A test that guards a whole-interpreter condition must run in a SUBPROCESS.**
+  Once `sys.modules` holds a module, an in-process test of import/loader
+  behaviour passes on the already-correct module and proves nothing; run the
+  import in a child interpreter whose FIRST action is the hostile setup.
+- **Exercise a NEW check on the DEPLOYED path before claiming it works,** and
+  treat its own "COULD NOT VERIFY" output as a bug report about the check. A
+  check written against the repo layout can be structurally unable to run where
+  it ships — a module it imports that the deploy never copies, a path derived
+  from `__file__` depth that resolves differently. A fail-closed check announces
+  this instead of passing, which is the only reason the defect is findable; the
+  fix belongs in the check, never in the message.
 
 **Phase 1.5 — adversarial verification (mandatory, no bypass):**
 - Static gate per changed script: `adversarial-verify.py --file <f> --level
@@ -204,7 +263,18 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   fleet_doctor/, enforcer, tests. Critical/high → block. No --no-verify.
 - Pin before/after comparisons to an immutable revision (the RANGE BASE —
   `git merge-base origin/main HEAD`), name both shas in the artifact; assert
-  the baseline reproduces the defect or the comparison proves nothing.
+  the baseline reproduces the defect or the comparison proves nothing. **Put
+  that assertion INSIDE the verifier, not in prose** — read the pre-fix file
+  straight out of git (`git show <base>:<path> > <tmp>/<same-basename>.py`) and
+  drive the SAME probe at it, so the before-claim is re-runnable by anyone and
+  the reviewer's "the RED run is not replayable" info finding is disposed by
+  construction. Two traps that cost a round each: `mktemp` returns a
+  SUFFIX-LESS path and loading a module from it yields empty output, so give
+  the temp file the real `.py` name; and a probe FIXTURE must satisfy the
+  code's PRE-EXISTING invariants or your control case measures a different
+  rule (a synthetic pool head priced EQUAL to the baseline trips the
+  'head not below baseline' rule and looks exactly like over-firing — fix the
+  fixture, never the code). Recipe: `references/evidence-verifier-recipes.md`.
 - A captured check transcript carries its EXIT CODE and WARNING COUNT.
 - Evidence scripts are READ-ONLY — never repair what they measure; never
   commit a query's output before seeing it return rows.
@@ -215,6 +285,34 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   lives only in the close note is filed unverified-claim and refuses the
   close. Run the checks, capture real output (command + its own rc, measured
   unpiped) into `docs/evidence/`, commit it in the SAME cycle.
+  - `ops/scripts/make-evidence.sh <out> -- <command...>` writes exactly that shape (timestamp,
+    the command, its own BARE rc, sha256) and `--verify <out>` recomputes the hash, so prefer it
+    to a hand-assembled log; `-k` keeps the file when the command exits non-zero. Normalise this
+    host's home prefix to `<HOME>` on every emitted line (`sed "s|$HOME|<HOME>|g"`) — the repo is
+    public and the PII gate refuses a literal home path in a committed file. Put the whole capture
+    behind a runnable verifier script whose OWN exit code is the NUMBER OF FAILED CLAIMS (never a
+    trailing `echo`, which always exits 0), so `rc=0` carries information a reader can trust.
+  - **In the verifier itself, CAPTURE a command's output before grepping it — `set -o pipefail` makes a
+    `cmd | grep -q <expected>` claim FAIL even when grep matched.** The pipeline's status is the
+    leftmost non-zero, so a command that legitimately exits non-zero (the doctor exits 1 on warnings,
+    a linter exits 1 on findings) turns a passing claim red and sends you hunting a defect in the
+    artifact that is not there. Assign first (`out="$(cd "$REPO" && "$PY" <cmd> 2>&1 || true)"`), then
+    grep the variable; where a claim is genuinely ABOUT the exit code, assert that code explicitly
+    rather than inheriting it through a pipe. This is the Q4 "probe the probe" rule at the level of
+    mechanics: a failing claim is a hypothesis about your probe until you have seen it fail for the
+    right reason and fixed it.
+  - **Run the verifier's commands with the PROJECT's interpreter, not a bare `python3`.** A bare
+    interpreter lacks the suite's dependencies, so "the tests pass" fails for a reason unrelated to the
+    change. Resolve the fleet venv once at the top (`PY="${FLEET_VENV_PYTHON:-$HOME/.steadfaste-fleet/venv/bin/python}";
+    [ -x "$PY" ] || PY=python3`) and use `"$PY"` everywhere.
+  - **The PII gate refuses a literal home path in ANY file you write, fixtures included** — not just in
+    emitted evidence lines. A test fixture holding `/home/<name>/repo` is blocked at write time, so use
+    a neutral path (`/srv/example-repo`) or `Path.home()` in fixtures and generated data.
+  - **Normalise the body BEFORE the hash, or repair it after.** The recorded sha256 covers
+    everything except the final `sha256:` line, so a `sed` that rewrites a home prefix AFTER the
+    capture leaves `--verify` failing on otherwise-correct content. Repair is three commands on
+    that same file: `sed -i '$d'` (drop the stale hash line), recompute, re-append
+    `sha256: <hash>`, then run `make-evidence.sh --verify <out>` and show the `OK`.
 - ONE note, ONE run — every number in the close note must come from the SAME
   run as the committed artifact beside it.
 - **The 'unverified-claim' reviewer loop terminates with a COMMITTED test, not
@@ -276,6 +374,11 @@ workflow change → AGENTS.md/SOUL.md.
   LAST, after the push.
 - Deploy, THEN push — that order, nothing committed in between (deploy-map
   files must match deployed tree). Run the doctor after deploy.
+  **Evidence that can only be captured POST-deploy is the exception that proves
+  the order:** push the code first, then record the deployed-path exercise and
+  commit that evidence AFTER the push. The rule forbids commits BETWEEN deploy
+  and push (which would desync the deploy-map), not after it — and the evidence
+  still lands before the close, which is what the close gate requires.
 - Verify the landing: `verify-landed.py --repo . --base <previous tip>`
   (receipt + deploy-map copies + origin equals tip).
 - Pushed — `git log --oneline -1 origin/main` shows your commit; load

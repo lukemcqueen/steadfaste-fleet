@@ -465,6 +465,12 @@ does not apply.
       already origin/main … nothing to push`, which is the tell that the push had already
       succeeded on the receipt alone. Only take a lock when the bare push actually refuses, and
       then check the push range rather than assuming the missing lock is the cause.
+      **The receipt-only path also presumes you can ISSUE a lone push, and some harnesses cannot.**
+      The carve-out is shape-based, so a wrapper that is itself write-class — a `code`/shell wrapper
+      around the command, a pipe, a redirect — never qualifies no matter what it runs, and the
+      refusal is the generic gate-2 text that reads like a missing receipt. If your harness cannot
+      produce a lone `git push`, open a publish cycle deliberately for the push and say so in its
+      note; there is no receipt-only shortcut available to that shape.
     - **Pushing from outside the repo: use the terminal tool's `workdir`, never `cd … &&`.**
       `cd /path/to/repo && git push` is refused as a compound (write-class) command, and the
       refusal is the generic gate-2 text, so it reads like a missing lock. Set the tool's
@@ -738,6 +744,13 @@ does not apply.
      the running deploy has exited (it is a background process — poll it), then
      deploy once more and push. Rule: never patch a file the deploy is about to
      copy.
+   - **The deploy also replaces the script bash is CURRENTLY EXECUTING, so a run can abort with a
+     bash SYNTAX ERROR inside the deployed copy of itself.** bash reads a script incrementally by
+     byte offset; when a deploy rewrites that file mid-run, the reader resumes at a stale offset and
+     reports `syntax error near unexpected token` at a line that is perfectly valid. Do not diagnose
+     a corrupt script: `bash -n` BOTH the repo and the deployed copy (both pass), then re-run — and
+     fix the ORDER (deploy first, or let the running deploy exit before invoking a gate that itself
+     deploys).
    - **`Checksum: <file>` rows on files OUTSIDE your diff are usually unrelated
      deploy↔repo drift, and ONE dogfood clears all of them — do not chase which host
      wrote them.** The pre-push doctor compares repo source to the deployed copy, so
@@ -748,11 +761,23 @@ does not apply.
      `✅ DOGFOOD PASSED`, then re-push. Dogfood re-deploys the whole registered tree,
      so one run retires every drifted file in the same pass; only if a drifted file
      is one you ARE shipping do you need the race remedy above.
+   - **That clearing is INVALIDATED by anything that moves the tree afterwards — including the
+     rebase you do to resolve the very push it was meant to unblock.** Measured: dogfood passed,
+     the push was refused because peers had landed, the rebase brought their commits in, and the
+     SAME bare `Checksum:` lines came back — the newly-rebased files are undeployed again. Order it
+     fetch/rebase FIRST, then dogfood, then push; or just re-run dogfood after every rebase. A
+     dogfood pass is evidence about the tree it ran on, and says nothing about any later tree.
 7. **DOCS AUDIT blocks a new doc that is not in `docs/DOCS-INDEX.md`.** Adding
    (or moving) a file under `docs/` fails the commit with `<file> changed but
    docs/DOCS-INDEX.md was not updated`. Add the index row in the SAME commit; the
    index also dictates WHICH directory a doc belongs in (cycle/decommission
-   evidence goes under `docs/evidence/`, not a scratch or reports path). Two more
+   evidence goes under `docs/evidence/`, not a scratch or reports path).
+   **Read the hook's own exemption list before adding rows — it is a `case` list, and the
+   audit only ever fires on `docs/**.md`.** `docs/evidence/*`, `docs/design/*`,
+   `docs/templates/*.plist` and the CODE_OF_CONDUCT/CONTRIBUTING/SECURITY/THIRD_PARTY_LICENSES
+   files are skipped, and a doc ALREADY present in the index needs no touch when edited. So a
+   dated capture under `docs/evidence/` — and any `.txt` there, which the `.md` glob never
+   matched — commits with no index row at all: adding one is noise, not compliance. Two more
    gates hit on the same writes: a hardcoded `/home/<user>/` path in a new doc or
    test (use `$HOME` / `Path.home()`), and a GENERATED file edited by hand — such a
    file carries a "do NOT edit by hand" banner plus its own `--check` test

@@ -190,6 +190,46 @@ SystemExit!`, and OTHER files in the same run fail to COLLECT, because a module-
   correct deploy. Remove exactly those two lines (`^(# SOURCE:.*\n)(# Do NOT edit.*\n)\n?`,
   `re.M`) and let the shebang through.
 
+## Deploy ≠ IMPORT SHAPE: a deploy-root file can shadow a STDLIB module
+
+A file named after a stdlib module, sitting in a directory that anything adds to
+`sys.path`, breaks EVERY tool that imports that module — and only in the layout
+where that directory is the sys.path root.
+
+- **Case:** the deploy places the bus's `queue.py` at the DEPLOY ROOT (a
+  `register "core/…/queue.py" "<deploy-home>/queue.py"` row, load-bearing: the
+  deployed gateway expects it there). A check module then does
+  `sys.path.insert(0, Path(__file__).resolve().parents[2])` — which is
+  `<repo>/ops/scripts` in-repo but **the deploy home when deployed**. So
+  `import queue` resolved to the bus module and every
+  `concurrent.futures.ThreadPoolExecutor(...)` died with
+  `AttributeError: module 'queue' has no attribute 'SimpleQueue'`.
+- **It never reproduces in-repo**, because the repo tree has no TOP-LEVEL
+  `queue.py` (it lives under `core/`). That asymmetry is the signature of this
+  whole class: `parents[N]` depth arithmetic means a path root DIFFERS between
+  the two layouts, so a failure that is "impossible" locally only ever appears
+  deployed. Assume in-repo parity is not evidence for a path-derived root.
+- **Fix by pinning the stdlib module in `sys.modules` BEFORE any `sys.path`
+  insert**, loading it from `sysconfig.get_paths()["stdlib"]` via
+  `importlib.util.spec_from_file_location`. Once `sys.modules["queue"]` holds the
+  real module, later path changes cannot shadow it, and the fix stops depending
+  on import order or CWD. Fail closed if the stdlib file will not load —
+  continuing silently leaves the shadow in place and breaks the consumer far
+  from its cause.
+- **Do not "fix" it by moving the file.** The deploy destination is load-bearing
+  for the gateway, so changing where it lands is the invasive shared change, and
+  the last resort — not the first.
+- **A `manage/` module is NOT deployed.** `ops/scripts/manage/<x>.py` styles
+  itself as a sibling import, but the deploy map does not copy it, so
+  `import <x>` raises `ModuleNotFoundError` on every deployed host while working
+  perfectly in-repo — the same layout asymmetry. Read the canonical artifact it
+owns (a `<FLEET_REPO>/…` path) instead of importing the module, and say so in a
+  comment: whoever wrote the import reasonably assumed it would ship.
+- **Diagnose by asking which tree the failing import came from.** Print the
+  resolved module (`queue.__file__`) and reproduce from BOTH layouts; a
+  single-layout repro cannot distinguish "the code is wrong" from "this layout
+  is not the one that ships."
+
 ## Deploy ≠ LOADED: make the new code PROVE it ran
 
 `lstart > mtime` is necessary but NOT sufficient — a process can start after a

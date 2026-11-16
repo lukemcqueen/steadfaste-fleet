@@ -104,6 +104,30 @@ Discovered tangential issue mid-task?
 │  └─ Yes → NOTE it. Do not fix. Report after completing the main task.
 └─ Did you already fix it without asking and user noticed?
    └─ Confess the scope error. Do NOT revert the fix. Ask "keep or revert?"
+
+### Survey the CLASS before deciding the scope
+
+A report names ONE instance; that is a TICKET, not the class. Before deciding what
+is in or out of scope, spend one search finding every other place the same
+MECHANISM appears — then the scope decision is about a measured set rather than the
+single file you happened to be handed.
+
+- Grep for the mechanism, not the symptom: the shape that made the bug possible
+  (a hand-rolled config reader, an unvalidated parse, a raw extraction of a value
+  that then reaches an API or an auth header) across the whole tree — not for the
+  file name you were given.
+- A finding whose own recommendation is phrased in the plural ("scripts that do
+  X") has already told you it is a class: treat the named file as the sample.
+- Then size the fix by BLAST RADIUS, and say the split out loud:
+  - siblings that are non-live code (scripts, docs, tests) → fix them in the same
+    change; they are the same bug, not a new project.
+  - a sibling that would RECONFIGURE A LIVE SERVICE (a daemon, a pusher on remote
+    hosts, anything whose behaviour the operator notices on next use) → name it
+    with the plan and let them fund it. Report the class as a set:
+    "fixed N; M live services follow the same pattern, plan attached."
+- Never close on a ranked list of things you MIGHT do. Either it is fixed, or it is
+  a named change the operator must choose to fund — and the difference is blast
+  radius, not effort.
 ```
 
 ## Restoring a Reverted Good Change

@@ -58,6 +58,14 @@ warning, cron model overrides, model.default regressions after `hermes update`.
 4. **Check the whole repo for the convention:** `grep -rn '<model-id>'
    ~/steadfaste-fleet --include='*.sh' --include='*.yaml' --include='*.py'` —
    install scripts/manifests show the intended per-role model split.
+5. **The session runs a model nobody configured → suspect a FALLBACK, not the
+   config.** An id the provider rejects does NOT raise: Hermes falls through
+   `fallback_providers`, the run still reports healthy, and the banner looks
+   fine. The only traces are the rejection in the log — `grep -nE 'is not a
+   valid model ID|BadRequestError' ~/.hermes/logs/agent.log` — and a `sessions`
+   row whose `model` differs from the model the turns actually used. Trust the
+   log over the banner AND over the config: the config states the intent, the
+   log states what ran.
 
 ## Fix
 
@@ -134,8 +142,13 @@ warning, cron model overrides, model.default regressions after `hermes update`.
   `fleet_doctor.jev._current_model` merely TOLERATES a colon in `default`, so
   the cost guard stayed green through it. The doctor's `Model default` check now
   FAILs on a label; fix with `hermes config set model.default <bare-id>` and
-  verify against the LIVE surface — the new `sessions` row's `model` column must
-  equal the bare id (a fixture proves nothing here).
+  verify against the LIVE surface, not a fixture.
+- **When DETECTING a label, never fire on "any colon".** An Ollama tag
+  (`qwen2.5:3b`, which `hermes config set model.default qwen2.5:3b` legitimately
+  writes) contains a colon, so a colon-alone test flags every local-model host
+  forever — a permanent false alarm is worse than no gate. The tells are a colon
+  followed by a provider-qualified `org/model` id, or the value carrying this
+  host's own `model.provider` as a prefix; assert the tag case in the tests.
 
 ## Verify end-to-end (mandatory)
 
@@ -146,6 +159,12 @@ warning, cron model overrides, model.default regressions after `hermes update`.
    billing_base_url FROM sessions WHERE id='<session-id>';"`
    ⚠️ sessions table has `model` + `billing_provider` — there is NO `provider`
    column; `billing_provider` is the provider.
+   ⚠️ `model` records the id the session was CONFIGURED with, NOT proof the
+   provider accepted it: a row naming a routing label or an unknown id can have
+   400'd on every turn and run a fallback model underneath. Prove ACCEPTANCE
+   from the log (`grep -n 'is not a valid model ID' ~/.hermes/logs/agent.log`
+   must not name that id) and read the model a turn really used off its own log
+   line (`conversation turn: session=<id> model=<model>`).
 3. Re-check the cron overrides still pin the cron-only model where intended.
 
 ## Provider latency / "why is it slow, what should we switch to" triage

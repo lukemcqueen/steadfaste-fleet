@@ -30,6 +30,13 @@ REMOVE the matching Hermes entry** — `hermes cron list` to find the job's `id`
 then `hermes cron remove <id>` (always list first; never guess IDs). A live
 timer + a live `cronjob` tick = the job runs twice.
 
+**For bulk removal prefer the `cronjob_manage` tool over the CLI loop.**
+`action='remove', job_id=<id>` per job, all issued in ONE batched tool-call
+block, removes them together and returns each removed job — reserving the slow
+CLI path below for a host without the tool (a non-orchestrator has no `cronjob`).
+Either way, verify the result in `jobs.json` (the row field is `id`, not
+`job_id`): "removed" in a message is not evidence, and the file is.
+
 **Batch-removing Hermes entries is slow per call — budget for it.** `hermes
 cron remove` costs ~3–4s per job (CLI startup + scheduler write), so a 50–60
 entry migration crosses the terminal's default foreground timeout mid-loop and
@@ -78,6 +85,26 @@ Full per-host procedure, the 3-part verification, and pitfalls:
   run can never recreate one and hand the bridge a second owner.
 - **Doctor** — `fleet_doctor/checks.py::_bridge_owned_jobs()` excludes bridged
   names from the expected-cron, orphan and extra scans.
+- **Doctor, ownership** — `Cron bridge ownership` enforces the one-owner rule in
+  the directions the migration checks do not cover, and reports by NAME:
+  `DOUBLE OWNERSHIP` (a timer AND a `jobs.json` row — FAIL, the job runs twice)
+  and `UNDECLARED TIMER` (declared in neither manifest nor `jobs.json` — INFO,
+  undetermined by construction). Read its per-verdict remedy strings: each
+  direction has a different fix, and the wrong one creates a second owner.
+
+**Verify a unit is SELF-CONTAINED before removing its Hermes row.** The
+mechanical reason removal is the safe side is that the generated `ExecStart`
+carries the job inline — `--name <job> --script <file> --deliver <target>` — and
+the runner never reads `jobs.json`:
+
+```bash
+grep ExecStart ~/.config/systemd/user/fleet-bridge-<job>.service
+grep -c 'jobs.json' ops/scripts/fleet-bus-bridge-run.py    # expect 0
+```
+
+Confirm BOTH before a bulk removal. It also shows the bridge delivers exactly as
+Hermes did (same `notify()` lib, same target, same silent-when-clean contract),
+so the user loses no delivery — only the duplicate one.
 - **Manifest** — `cron_manifest.py::check_drift()` skips bridged names, so a
   migrated job is not reported as "declared in manifest, absent from live jobs"
   (that FAIL blocks the pre-push deploy-sync gate).
@@ -235,8 +262,11 @@ Use `references/systemd-timer-oncalendar.md` — the correct syntax variants and
 - **Completion is a THREE-way check: two owners and zero owners are both failures.** "The timers are active" proves nothing on its own, and the disjointness check above catches only the first mode. Audit all three and report the counts, not a boolean:
   1. **double-run** — timer active AND the job still present in `jobs.json` → two owners, it fires twice.
   2. **orphaned job (the mode nothing reports)** — no timer owns it AND it is gone from `jobs.json` → **silently stopped**. A remove-the-Hermes-row migration creates this whenever a timer was never actually enabled; no scheduler is left looking, so nothing flags it. Detect it by name-set difference, never by counting.
-  3. **orphan timer** — a `fleet-bridge-*.timer` unit whose job no longer exists in `jobs.json`.
+  3. **undeclared timer** — a `fleet-bridge-*.timer` whose job is declared NOWHERE. **`jobs.json` alone cannot decide this**: a migrated job is *deliberately* absent from `jobs.json` (the timer is its owner), so "unit, no `jobs.json` row" is the NORMAL migrated shape, not an orphan. The discriminator is the manifest — a migrated job is still declared in `cron-manifest.yaml`, a retired one had its entry dropped — and even then the verdict is UNDETERMINED, because a wanted job can simply be missing from the manifest. **Never report it as retired.** Resolve it by inspecting the JOB, not the name: does its script still exist in the repo, and does the deploy/installer still reference it? Script gone and unreferenced → retire the unit in both places. Script present and wanted → it is a manifest GAP: declare it.
+     - **A per-host job must NOT be declared in the shared manifest.** Some jobs are deliberately local ("NOT in repo, created per-host", preserved across deploys by an explicit keep-list). Adding one to `cron-manifest.yaml` makes every other host expect a job it does not have — a new defect created by "fixing" a report. Leave it undeclared and note why; the INFO is the honest reading.
 
   Practical form: build the name set from `timers.target.wants/fleet-bridge-*.timer` and the name set from `jobs.json`, then assert `overlap == 0` **and** that every job you intended to migrate lands in exactly one of the two sets.
 - **The raw `jobs.json` row field is `id`, not `job_id`.** The `cronjob` tool and `hermes cron` CLI address `job_id`, but the file uses `id` — a mass-removal loop reading `j['job_id']` gets `None` for every row, removes nothing, and still prints one success-shaped line per job.
 - **`systemctl --user enable` does NOT start the timer if `timers.target` was already reached** — it only drops the `timers.target.wants/` symlink. On a host already past boot (the normal cron/install context, no DBus session), a fresh `enable` leaves the unit `enabled-but-inactive`, silently never firing. Real case (2026-10-02): all 61 fleet-bridge timers were `enabled` but inactive — the wants symlinks were created after `timers.target` had been reached, no start was issued, and every stale-mycortex-source watchdog showed nothing out of place until the sensor flagged 7 stale sources. Fix: `systemctl --user start timers.target` — starts every wanted-but-inactive timer at once. Then verify with `systemctl --user list-timers --all | grep fleet-bridge` (count ACTIVE, not just ENABLED — `enabled` ≠ `active` for a timer).
+- **The ownership marker directory holds SYMLINKS, so a file-listing tool that skips symlinks reports ZERO bridged jobs.** `timers.target.wants/` contains `lrwxrwxrwx` links, not regular files: `search_files` in either mode (and other ripgrep-backed listings) returns `total_count: 0` there. A 0 from those probes reads as "this host has no bridge at all" — the opposite of the truth, and precisely the reading that would "justify" re-creating every bridged job as a Hermes cron, double-owning all of them. Count them with a listing that shows links: `ls ~/.config/systemd/user/timers.target.wants/ | grep -c '^fleet-bridge-'` or `ls -la`; the unit FILES (`~/.config/systemd/user/fleet-bridge-*.timer`) are regular files and do list normally, so a nonzero file count beside a zero symlink count is the tell that you probed the wrong way.
+- **Do not verify "is it running" by grepping for a literal `ACTIVE`/`waiting` string.** `list-timers` prints blank NEXT/LEFT cells for an idle timer rather than a keyword, so `grep -c 'waiting\|ACTIVE'` returns 0 on a perfectly healthy set. Read the LAST column instead — a real firing records `N min/s/h ago` — and treat a long gap as correct for a long cadence (a weekly job legitimately shows `2 days ago`); `--all` is what includes the inactive ones you are trying to rule out. A probe that reports "0 active" while 60 timers carry a recent LAST will send you re-enabling a healthy bridge.
