@@ -199,3 +199,36 @@ def test_scan_violation_fails_closed(tmp_path, monkeypatch):
     st = json.loads(state_path.read_text(encoding="utf-8"))
     assert st["violations"], "expected a violation to be recorded"
     assert any("hard cap" in v for v in st["violations"])
+
+
+def test_scan_missing_model_fails_closed(tmp_path, monkeypatch):
+    """A listed model absent from the live catalog must FAIL CLOSED (3).
+
+    Measured defect this pins: an id that had vanished from the catalog was only
+    printed as 'unpriceable : [...]' and left the exit code untouched — the rc
+    ladder weighed violations/apply/alerts but never `missing` — so the run
+    reported a routine price apply (1). Meanwhile reorder_pool() silently sank
+    the dead id to the back of its pool, and nothing removed it from the list or
+    from the host's model.default. A model the fleet cannot serve is not a price
+    move: it is a could-not-verify.
+    """
+    mod = load_scan()
+    doc = _list_doc(beta_first=True)          # beta head, already cheapest
+    doc["tiers"]["medium"]["coding"].append("openrouter:fakeprov/ghost")
+    doc["prices"]["openrouter:fakeprov/ghost"] = {"in": 0.02, "out": 0.02}
+    list_path = tmp_path / "jev-router-models.json"
+    list_path.write_text(json.dumps(doc), encoding="utf-8")
+    state_path = tmp_path / "state.json"
+    monkeypatch.setattr(mod, "default_list", lambda: list_path)
+    monkeypatch.setattr(mod, "get_catalog", lambda: (SYNTH_CATALOG, "test"))
+    monkeypatch.setattr(mod, "STATE_PATH", str(state_path))
+
+    rc = mod.main(["--json"])
+    st = json.loads(state_path.read_text(encoding="utf-8"))
+    assert st["missing_models"] == ["openrouter:fakeprov/ghost"]
+    assert rc == 3, (
+        "a model absent from the live catalog must fail closed, not ride a normal apply"
+    )
+    assert any("not in the live catalog" in v for v in st["violations"]), (
+        "the missing model must be recorded as a violation, not only as 'unpriceable'"
+    )

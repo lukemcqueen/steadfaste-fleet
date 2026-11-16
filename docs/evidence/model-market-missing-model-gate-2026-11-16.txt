@@ -1,0 +1,53 @@
+Running: bash docs/evidence/model-market-missing-model-gate-2026-11-16.sh
+rc: 0
+when: 2026-11-16T08:32:03Z
+
+repo   : <HOME>/steadfaste-fleet
+python : <HOME>/.steadfaste-fleet/venv/bin/python
+
+  PASS  regression test test_scan_missing_model_fails_closed present
+  PASS  suite green: 9 passed in 0.21s ===============================
+
+  PASS  a model absent from the live catalog fails CLOSED and is named: {
+  "rc": 3,
+  "signature": "0d63e0cf56b34547",
+  "apply_pending": true,
+  "order_changed": false,
+  "price_changed": true,
+  "catalog_source": "synthetic",
+  "violations": 1,
+  "unvetted_candidates": 0,
+  "missing_models": [
+    "openrouter:fakeprov/ghost"
+  ]
+}
+rc=3 missing=['openrouter:fakeprov/ghost'] violations=['openrouter:fakeprov/ghost is not in the live catalog (no price) — cannot verify it is servable']
+  PASS  no missing model -> unchanged, no over-firing: {
+  "rc": 0,
+  "signature": "242d61edfbc2c4c1",
+  "apply_pending": false,
+  "order_changed": false,
+  "price_changed": false,
+  "catalog_source": "synthetic",
+  "violations": 0,
+  "unvetted_candidates": 0,
+  "missing_models": []
+}
+rc=0 missing=[] violations=[]
+  PASS  pre-fix 038b8f3a5de0da5f8c1b4e0c41c2b415b4540a1a reproduces the defect (rc 1, dead id on the apply path): {
+  "rc": 1,
+  "signature": "0d63e0cf56b34547",
+  "apply_pending": true,
+  "order_changed": false,
+  "price_changed": true,
+  "catalog_source": "synthetic",
+  "violations": 0,
+  "unvetted_candidates": 0,
+  "missing_models": [
+    "openrouter:fakeprov/ghost"
+  ]
+}
+rc=1 missing=['openrouter:fakeprov/ghost'] violations=[]
+
+failed claims: 0
+sha256: 0a02ec15e18e6542247371ffbd828748bc95bc50fefe9a9b9ab0cbb74c8cc73f

@@ -35,9 +35,10 @@ EXIT CODES:
   1 = prices/order changed → an apply is warranted (report the delta).
   2 = quality alert only: new unvetted cheaper candidate(s) found, no apply pending.
   3 = could not verify — no catalog/cache readable, OR the re-priced list breaches
-      an invariant (a model over the hard $/M cap, or a head not below baseline /
-      ceiling) so it CANNOT be auto-applied. Violations fail closed to this code;
-      they are listed in state/model-market.json for the operator, never applied.
+      an invariant (a model over the hard $/M cap, a head not below baseline /
+      ceiling, or a listed model ABSENT from the live catalog) so it CANNOT be
+      auto-applied. Violations fail closed to this code; they are listed in
+      state/model-market.json for the operator, never applied.
 
 This script only WRITES the state file; it does not commit, push, deploy, or edit
 config/jev-router-models.json. Applying a pending change is the orchestrator
@@ -285,6 +286,17 @@ def main(argv=None) -> int:
                 continue  # unpriceable -> already in missing_models; don't score as $0
             if b > float(hard_cap):
                 violations.append(f"{model} is ${b:.3f}/M, above the ${float(hard_cap):.2f}/M hard cap")
+
+    # 4b. A model the live catalog no longer lists is NOT a price move: we cannot
+    #     verify it is servable, so the re-priced list must never be auto-applied.
+    #     Without this, a vanished id was only printed as 'unpriceable : [...]'
+    #     while the exit code still reported a routine apply (1 = apply_pending,
+    #     because prices_new.get(k) is None != the old price), and reorder_pool()
+    #     sank it to the back of its pool — leaving a dead id in the list AND in
+    #     the host's model.default, with no gate anywhere in between.
+    for model in missing:
+        violations.append(
+            f"{model} is not in the live catalog (no price) — cannot verify it is servable")
 
     # 5. NEW unvetted cheaper candidates: catalog models cheaper than a pool head
     #    that are not already routed/candidate/rejected. Quality gated: report only.

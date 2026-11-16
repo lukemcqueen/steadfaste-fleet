@@ -1,0 +1,24 @@
+Running: python3 ops/scripts/quality/adversarial-verify.py --file ops/scripts/manage/orch-model-market-scan.py --level A4 --gate
+rc: 0
+when: 2026-11-16T08:32:03Z
+
+
+── ops/scripts/manage/orch-model-market-scan.py ──
+   Level: A4
+   Attack Surface:
+     ⚠️ Inputs: 14 item(s)
+     ⚠️ State: 7 item(s)
+     ⚠️ Dependencies: 10 item(s)
+     ✅ Concurrency: 0 item(s)
+   Functions: 1
+     - load_json(path)
+   Fuzz inputs generated: 9
+
+📊 Summary: 1 file(s), 10 finding(s)
+   🟡 Medium: 1
+   ⚪ Info: 9
+
+🟡 Medium findings — fix before shipping.
+
+✅ GATE_PASSED — no critical/high findings
+sha256: 72147d0363a9f61ba225e4bbbc782505ac4cf2e7bf9bbee23e177ac163f783ff
