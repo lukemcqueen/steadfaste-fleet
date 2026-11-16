@@ -12,10 +12,10 @@ artifact with the PRICES attached:
 
 This tool validates the live pools against it, or rebuilds them from it.
 
-    jev-router-pools.py                 --check: drift, unlisted models, $ delta
-    jev-router-pools.py --check --json
-    jev-router-pools.py --write         rebuild $HERMES_HOME/jev/routing.json
-    jev-router-pools.py --refresh       re-price the list from the catalog
+    router-pools.py                 --check: drift, unlisted models, $ delta
+    router-pools.py --check --json
+    router-pools.py --write         rebuild $HERMES_HOME/jev/routing.json
+    router-pools.py --refresh       re-price the list from the catalog
 
 Exit codes: 0 = matches the list (or was written), 1 = findings, 3 = could not verify.
 
