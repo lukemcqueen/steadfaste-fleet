@@ -21,7 +21,7 @@ the secret in a session.
 
 Fleet-owned copy landed by operator decision 2026-11-11 (Luke) — the change
 reverses the earlier "never copy the server into steadfaste-fleet" rule; this
-file is now source-of-record. See docs/external/mcp-deepseek-review.md.
+file is now source-of-record. See docs/external/mcp-adversarial-review.md.
 
 Tools:
     review              — send a plan/memo to DeepSeek for adversarial review
@@ -65,7 +65,7 @@ MODELS_URL = "https://openrouter.ai/api/v1/models"
 
 # Canonical fleet reviewer — the model is the CURRENT canonical reviewer
 # (a cost-controlled winner, changeable at any time); do not pin a specific id
-# here. See docs/external/mcp-deepseek-review.md.
+# here. See docs/external/mcp-adversarial-review.md.
 # DRY (2026-11-13, cycle 8265): the default resolves through fleet_lib.models
 # (the single source) so changing the reviewer is a one-line edit there, and
 # a host env ADVERSARIAL_REVIEWER_MODEL is honored.

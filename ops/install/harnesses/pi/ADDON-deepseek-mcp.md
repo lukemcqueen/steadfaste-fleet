@@ -35,7 +35,7 @@ That is `install-pi-mcp.sh` — the one file that owns `~/.pi/agent/mcp.json`. I
 server from that config, backs the file up first, and treats an ABSENT server as a PASS: the
 entry is host-optional, so a host without it is not a fault. Only the tool NAME is changed —
 the foreign entry itself is preserved, exactly as `--remove` preserves it.
-See [`../../../docs/external/mcp-deepseek-review.md`](../../../docs/external/mcp-deepseek-review.md).
+See [`../../../docs/external/mcp-adversarial-review.md`](../../../docs/external/mcp-adversarial-review.md).
 
 **NOT part of the fleet suite, and NOT installed by `install-pi-mcp.sh`.** Some hosts
 register it by hand; others do not. Neither state is a fault.

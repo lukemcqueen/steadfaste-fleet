@@ -272,7 +272,7 @@ def test_committer_can_write_own_component_not_spine():
         ("ops/scripts/manage/record-review.py", True),      # writer: spine
         ("tests/test_x.py", False),                          # tests: open to committer
         ("ops/install/harnesses/pi/ADDON-deepseek-mcp.md", False),  # harness: open
-        ("docs/external/mcp-deepseek-review.md", False),     # docs: open
+        ("docs/external/mcp-adversarial-review.md", False),     # docs: open
         ("skills/x/SKILL.md", False),  # committer-writable since 2026-11-12 (Luke)
         ("plugins/x/__init__.py", True),
         (".github/workflows/ci.yml", True),

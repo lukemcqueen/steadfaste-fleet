@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 SCRIPT = (Path(__file__).resolve().parents[1] / "ops" / "scripts" / "manage"
-          / "jev-router-pools.py")
+          / "router-pools.py")
 
 CHEAP = "openrouter:openai/gpt-oss-20b"           # 0.16/M (verified reachable today)
 BASE = "openrouter:qwen/qwen3-coder-30b-a3b-instruct"  # 0.75/M (host's session default = jev baseline)

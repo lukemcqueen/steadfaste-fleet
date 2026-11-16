@@ -1048,7 +1048,8 @@ register "ops/scripts/manage/fix-cron-skills-toolset.py" "${FLEET_DEPLOY_HOME}/s
 # re-running it IS the upgrade path. WARNs rather than installs by itself.
 register "ops/scripts/manage/install-jev-layer.sh" "${FLEET_DEPLOY_HOME}/scripts/manage/install-jev-layer.sh"
 register "ops/scripts/manage/jev-shadow-report.py" "${FLEET_DEPLOY_HOME}/scripts/manage/jev-shadow-report.py"
-register "ops/scripts/manage/jev-router-pools.py"   "${FLEET_DEPLOY_HOME}/scripts/manage/jev-router-pools.py"
+register "ops/scripts/manage/router-pools.py"   "${FLEET_DEPLOY_HOME}/scripts/manage/router-pools.py"
+register "ops/scripts/manage/orch-model-market-scan.py" "${FLEET_DEPLOY_HOME}/scripts/manage/orch-model-market-scan.py"
 register "config/jev-router-models.json"             "${FLEET_DEPLOY_HOME}/config/jev-router-models.json"
 register "ops/scripts/manage/agent-push-metrics.sh"     "${FLEET_DEPLOY_HOME}/scripts/agent-push-metrics.sh"
 register "ops/scripts/manage/cron-cost-metrics.py"      "${FLEET_DEPLOY_HOME}/scripts/cron-cost-metrics.py"

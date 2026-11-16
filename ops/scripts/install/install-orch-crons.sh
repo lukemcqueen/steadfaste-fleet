@@ -401,6 +401,7 @@ if $UNINSTALL; then
     "orch-task-morning-pass" \
     "orch-bus-worker" \
     "orch-autonomy-digest" \
+    "orch-model-market-scan" \
     "orch-restic-backup"; do
     remove_cron "$job" || _uninstall_failed=1
   done
@@ -454,6 +455,44 @@ create_cron "orch-weekly-cost-report" "0 9 * * 1" \
   "telegram:${TELEGRAM_HOME_CHANNEL}" \
   "" \
   "true"
+
+# Daily model-market scan (LLM, orchestrator): re-prices the shared router list
+# from the live catalog, re-orders pools cheapest-first within the vetted set,
+# and (by governance cycle) commits + deploys + pushes when prices move; alerts
+# on NEW unvetted cheaper candidates for a future A/B (never auto-adopts them).
+create_cron "orch-model-market-scan" "0 8 * * *" \
+  "" \
+  "Run the daily model-market scan and apply any price-driven change under governance.
+
+STEP 0 — run the scan: python3 ~/.steadfaste-fleet/scripts/manage/orch-model-market-scan.py --json
+Read its rc:
+- rc==0: nothing changed — end NOW, silent (no delivery, no cycle).
+- rc==2: NEW unvetted cheaper candidate(s) found (state file unvetted_cheaper_candidates) —
+  report them for a future A/B eval. NEVER auto-adopt them (they must be A/B-vetted first).
+  No config change, no cycle.
+- rc==1: prices and/or pool order changed (apply_pending) — proceed to STEP 1.
+
+STEP 1 — governed apply (open begin_change first):
+1. Copy the refreshed prices + reordered tiers from ~/.steadfaste-fleet/state/model-market.json
+   into config/jev-router-models.json (the scan's output is the source of truth).
+2. If the cheapest-vetted model for the SESSION DEFAULT or the REVIEWER changed, re-point
+   config.yaml model.default (hermes config set) and .env ADVERSARIAL_REVIEWER_MODEL to the
+   new head. Verify each surface actually resolved to the new model.
+3. Rebuild the live router: python3 ops/scripts/manage/router-pools.py --write. Validate the
+   list: python3 ops/scripts/manage/router-pools.py --selftest (must PASS).
+4. Run the doctor (0 fail) and the router/scanner tests (tests/test_jev_router_pools.py,
+   tests/test_model_market_scan.py) — all green.
+5. Commit, deploy (fleet-update.sh), push. Confirm HEAD == origin/main.
+
+Report: the per-model price delta (old -> new $/M), which pool heads re-ordered, doctor verdict,
+and the unvetted-candidate list (if any). Never introduce a model not already in the vetted
+candidate set — quality is preserved by only re-ordering approved models.
+Quote real numbers from the scan output / live catalog, never assumed ones." \
+  "hermes-model-config" \
+  "" \
+  "origin" \
+  "" \
+  "false"
 
 # Daily task board digest — RETIRED 2026-10-02 (Luke: "please remove them as
 # they are done"). The cron is gone; the script stays (fleet board / commands.py
@@ -678,9 +717,10 @@ create_cron "orch-restic-backup" "43 2 * * 0" \
 # returns CLEAN; a reviewer outage refuses the close. See
 # docs/design/independent-adversarial-verifier.md. The reviewer prompt is the
 # FIXED committed template (docs/templates/adversarial-reviewer-prompt.md).
-# The reviewer model is pinned in loop-gov-mcp.py
-# (ADVERSARIAL_REVIEWER_MODEL, default deepseek-v4-pro-0813 — independence =
-# context isolation + fixed prompt + recorded reviewer_id/model, NOT model
+# The reviewer model is the current canonical fleet reviewer, resolved at
+# runtime from fleet_lib.models.get_reviewer_model() (honours the
+# ADVERSARIAL_REVIEWER_MODEL env override) — changeable at any time, never a
+# hardcoded id here. INDEPENDENCE =
 # difference nor orchestrator-side trigger — a worker records their own plan
 # review for the plan-review gate via the sanctioned lock-free write, per
 # operator directive 2026-10-30).

@@ -1067,6 +1067,17 @@ crons:
   no_agent: false
   model: ''
   provider: ''
+- name: orch-model-market-scan
+  scope: orchestrator
+  schedule: 0 8 * * *
+  script: manage/orch-model-market-scan.py
+  prompt: ''
+  skill: hermes-model-config
+  deliver: telegram:{{HOME_CHANNEL}}
+  workdir: ''
+  no_agent: false
+  model: ''
+  provider: ''
 - name: orch-weekly-cost-report
   scope: orchestrator
   schedule: 0 9 * * 1

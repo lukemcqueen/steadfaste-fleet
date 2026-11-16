@@ -40,7 +40,7 @@ FAILs (WARNs while routing is off) when a simple/medium pool leads with a model
 >1.5x dearer than the host's current model — first-fit wins, so it is real money.
 
 Fix: rebuild from the committed policy `python3
-ops/scripts/manage/jev-router-pools.py --write`, then verify the bare run (==
+ops/scripts/manage/router-pools.py --write`, then verify the bare run (==
 `--check`) prints "no findings" and the doctor reads Jev PASS.
 
 A peer re-routing the config on THEIR host does NOT update YOUR routing.json —
