@@ -19,7 +19,7 @@
     "rejected": [
       "openrouter:moonshotai/kimi-k2.7-code"
     ],
-    "rejected_reason": "4.88x the baseline ($3.660/M vs $0.750/M) for a medium coding turn; the suggested pool order put it first. Ratio computed from this file's prices.",
+    "rejected_reason": "4.88x the baseline ($3.660/M vs the list's own $0.750/M baseline at baseline_price_usd_per_m) for a medium coding turn; the suggested pool order put it first. Ratio computed from this file's prices.",
     "rule": "Every pool must LEAD with a model cheaper than the baseline. Every model in a SIMPLE pool is cheaper than the baseline. A medium pool may carry the baseline as the in-pool fallback. `hard` may lead dearer - that is the exception for very complex work - but only from the hard whitelist and never above $3.00/M."
   },
   "effort": {
