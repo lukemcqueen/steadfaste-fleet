@@ -12,6 +12,21 @@ Patterns, pitfalls, and portability guidance for shell scripts in the Steadfaste
 
 ## Bash Pitfalls
 
+### `sed -i` on a symlinked config replaces the link with a regular file
+
+GNU `sed -i` (and `perl -pi`) write a NEW file at the target path instead of
+editing through the symlink, so a config that is meant to be a SYMLINK to a
+canonical file becomes a standalone copy — the link is gone, the canonical is
+untouched, and the two now diverge silently. On a fleet where the doctor checks
+“`~/.env` is the sanctioned symlink”, editing the deployed-path copy this way
+turns a PASS into `fleet env` FAIL, and your edit to the *wrong* (non-canonical)
+file changes nothing the runtime reads. Edit the CANONICAL target directly, or
+resolve the symlink first (`‘readlink -f’` on the link to find the real file);
+after any in-place edit of a presumed-symlink, verify with `ls -la` that it is
+STILL a symlink and its target carries your change. When a config's value got
+changed but “nothing took effect”, check whether you edited a symlink-target
+copy instead of the canonical.
+
 ### Derive a script's repo root from an exported REPO fallback, not only `$0`
 
 A script that derives its repo root from `$0` (`cd "$(dirname "$0")/../../.."`)

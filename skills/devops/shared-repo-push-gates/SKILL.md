@@ -24,7 +24,9 @@ two sides adding rows — resolve to the UNION, then `GIT_EDITOR=true git rebase
 **The deploy-sync check runs before the push.** `Deploy sync ❌` with several `Checksum: <file>`
 lines means the deployed tree is behind the repo — typical after a rebase pulled in a peer's edits.
 The gate prints its own remedy (`bash ~/.steadfaste-fleet/scripts/fleet-dogfood.sh --force`); run it,
-never hand-copy files into the deploy tree.
+never hand-copy files into the deploy tree. It runs pull → deploy → doctor → verify and takes
+7+ minutes — background it with notify (`background=true, notify=true`) because a foreground
+call with a normal timeout is killed mid-deploy, leaving the gate still blocked and the run half-done.
 
 **ORDER: close, then push BARE — do not open a cycle to "hold the lock" while you push.**
 `end_change` releases the lock and a CLEAN receipt bound to the tip authorises the push on its own,
@@ -1002,6 +1004,7 @@ written while every code path looked correct.
   check plus the local SHA ("committed locally, not yet pushed"), and wait for the
   operator's explicit authorization — the doctor's `CLAUDE.md (dev repos)` reconcile
   stays WARN until then. Never bypass the gate or delete the check to silence it.
+- **An EXPIRED deferred disposition re-surfaces as a doctor FAIL and blocks the push — renew it with the doctor's OWN command; recording a decision is not a bypass.** The doctor's `--disposition "<check>" --as deferred --owner <you> --reason "<why>"` stores a standing decision that EXPIRES, and once expired the check reads STALE/FAIL again and blocks every push on the host until renewed. Renew by re-issuing the exact command the doctor prints for that check (the disposition records against the check's registered name). Legitimate because it records a decision the operator already made; the prohibited moves are deleting the check or weakening it to stop the warning.
 - The dogfood gate auto-runs fleet-update; its pull step failing with
   "cannot pull with rebase: You have unstaged changes" is a second
   fingerprint of the concurrent tree.

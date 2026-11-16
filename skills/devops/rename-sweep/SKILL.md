@@ -314,6 +314,26 @@ treat that as part of the deliverable, not a follow-up.
   them automatically — never `checkout`/`stash` the peer's working tree away,
   and never commit their edits alongside your sweep. After the rebase,
   `git status` should still show their edits uncommitted.
+- **When history has DIVERGED and your local base carries a local-only commit whose content already
+  landed on origin, `git pull --rebase` fails on that commit — replay only your task commits with
+  `git rebase --onto`.** Classify the split before touching anything: `git merge-base --is-ancestor
+  <your-base> origin/main` (is your base even on origin?), and read both directions — `git log --oneline
+  HEAD..origin/main` (what the sibling brought) vs `git log --oneline origin/main..HEAD` (what you
+  uniquely have). A reconciler/chore commit can live ONLY on your side while origin received the same
+  content through a sibling's differently-shaped commit; replaying it conflicts with no purpose. Skip
+  it: `git rebase --onto origin/main <that-commit> main` replays everything AFTER the fork-point (your
+  real task commits) and drops the superseded one — do NOT reach for merge. Verify with
+  `git rev-parse HEAD origin/main` that only your intended commits sit ahead. `git pull --rebase`
+  ALSO refuses outright when a peer/reconciler left an uncommitted churn file in the tree — `git stash
+  push -- <that one file>`, rebase, `git stash pop`, and never commit the peer's capture yourself.
+- **Attribute a shared-repo commit to a sibling only after verifying the identity — git author is
+  metadata, the agent registry is the identity.** An author `<name>@hermes.local` marks a fleet Hermes
+  agent, but "sibling peer" specifically means a registered host; before telling the user "sibling X
+  did Y", confirm X is in the operative agent registry (`ops/install/deploy/agent-registry*.json` —
+  role + hostname + platform) and that the author matches that agent. Two DIFFERENT siblings can land
+  topically-adjacent commits on the same shared config (one depins a reviewer in docs, another
+  re-anchors the same JSON); attribute each commit to its actual author rather than lumping them under
+  a single label, since the resolution may need to honor one and reconcile the other.
 - **Fence corruption is pre-existing, not yours**: the pre-commit fence
   check may flag an unbalanced file you merely touched. Verify at HEAD
   (`git show HEAD:<file> | grep -c '^```'`) before fixing; a dangling
@@ -424,6 +444,8 @@ treat that as part of the deliverable, not a follow-up.
   `--no-renames` (`git diff --cached --name-only --no-renames`) so deletions
   are included, then verify after the commit that `git ls-tree HEAD
   -- <old-dir>` is empty and `git status` is clean.
+- **A `git commit --only -- <pathspec>` on a RENAME is only atomic when the pathspec names BOTH the old and new paths — listing just the source name commits the deletion and leaves the new file staged-but-absent from HEAD.** Rename detection pairs a delete+add, but `--only` builds a temporary index from the named paths: a pathspec containing only `ops/scripts/manage/old.py` carries the deletion and NOT the add of `new.py`, so the commit lands "delete old" while `new.py` stays staged and the tree is broken (its consumers point at a file HEAD lacks). List old and new together in the same `--` list; then verify with `git show HEAD:<new-path> >/dev/null` (not `git status`) that the new file is actually in HEAD, and `git log --stat -1` that the pair reads as a 100% rename, not delete+orphan-add.
+- **A renamed FILE and the TEST that targets it must land in the SAME commit, or the TDD Iron-Law gate refuses the later one.** If a rename is split across two commits — a test updated to reference `new.py` in commit A, then `new.py` itself added in commit B — commit B triggers "TDD IRON LAW VIOLATION — new production code without a test", because the gate requires the test file in the SAME diff as the new file. Make the rename atomic (file + test + refs in ONE commit); if you already split it, `git reset --soft` back and re-commit as one pathspec commit listing both rename paths plus the test.
 - **A launcher or executable moved into a subdirectory needs its self-relative module resolution
   changed in the SAME commit.** See `shell-scripting` → "Moving an executable": without it the
   script silently runs a different tree's module through its known-path fallback, and every test

@@ -295,7 +295,7 @@ rules for a skip-class: `references/review-gate-spend.md`.
   surface that selects it — code default + `.env.example` + agent-facing
   skills/docs + tests (both the fixture/label literal AND the assertion literal)
   — because an env override beats the code default and a stale doc makes agents
-  re-apply the expensive id. Check the fleet-wide surfaces cold before calling it
+  agents re-apply the expensive id. Check the fleet-wide surfaces cold before calling it
   done. Full procedure: `references/pinning-model-defaults.md`.
 - **A test that asserts the CANONICAL by LITERAL is a landmine — resolve the expected value
   from the source of truth, never hardcode the id.** The session that re-anchored the reviewer
@@ -313,6 +313,24 @@ rules for a skip-class: `references/review-gate-spend.md`.
   not a model id), and let the fallback path raise if fleet_lib is unavailable AND the env var is
   unset rather than defaulting to a literal. Point docs at "the current canonical reviewer", not
 to a pinned id that will be replaced.
+- **In any price/re-rank tool, a "no price" sentinel must be NULL, never 0.0 — 0.0 is the cheapest-first winner.**
+  A `blended()` that coerces an unpriceable or corrupt price entry to $0.00 sorts that model to the
+  HEAD of every pool (cheapest-first) and makes it the cheapest baseline for the "new cheaper
+  unvetted candidate" comparison — silently reordering the router on bad data while the model is
+  simultaneously listed in `missing`. Return `None` for an absent/malformed price, sort unpriceable
+  members to the END of the pool (never head), carry them in the `missing` list, and guard the
+  hard-cap and head-invariant checks against that `None` (skip — already reported) rather than
+  comparing `None > cap` and throwing.
+- **A reprice tool's exit codes must match main() and the violations path must be TESTED — an invariant
+  breach fails CLOSED, never as a normal apply or a quality alert.** If the docstring promises
+  0/1/2/3 but main() returns the alert code for a violation (a model over the hard cap) that is
+  neither an apply nor a candidate alert, the cron mis-reads a blocking state as reviewable noise.
+  Violations → the "could not verify" (fail-closed) code whether or not an apply is pending, document
+  it, and add a hermetic test driving a routed-over-cap fixture to that code so the contract cannot
+  drift. Validate the catalog/CACHE fallback shape against what `price_for` indexes
+  (`{provider:{models:{bare:{cost:...}}}}`) and record every rejected source (network, unparsable
+  cache, wrong-shape cache) with its reason — otherwise a corrupt or absent cache silently returns
+  "nothing to do" instead of failing loudly.
 
 ## Verification
 
