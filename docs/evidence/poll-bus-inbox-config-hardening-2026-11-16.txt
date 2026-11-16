@@ -1,0 +1,19 @@
+Running: bash docs/evidence/poll-bus-inbox-config-hardening-2026-11-16.sh
+rc: 0
+when: 2026-11-16T10:34:19Z
+
+== range base: dcc787c42a2a4e77f7d16fff2dcde39850967d12
+== interpreter: <HOME>/.steadfaste-fleet/venv/bin/python
+PASS  1. both credential fields are read through conf_value() (no bare awk substitution)
+PASS  2. bash -n clean
+============================== 16 passed in 7.34s ==============================
+PASS  3. battery passes on the CURRENT script
+========================= 13 failed, 3 passed in 7.34s =========================
+PASS  4. the same battery FAILS at the pre-fix revision (baseline reproduces the defect)
+PASS  5. duplicated key refused with the FIELD named (was: curl (3) URL rejected, no field)
+PASS  6. a CRLF conf yields no stray CR in the value (was: CR echoed into the URL)
+PASS  7. no credential-shaped literal in either changed file
+PASS  8. A4 adversarial gate passes
+--
+failed claims: 0
+sha256: 15196ddb71d6ef974915ba851aaa0bcd65e2877d650b7bc0643efb2d8dd0ac17
