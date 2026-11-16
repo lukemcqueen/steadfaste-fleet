@@ -21,6 +21,37 @@ from .immutability import immutable_remediation, is_file_immutable
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+# ── Pin the STDLIB `queue` BEFORE the sys.path insert below ──────────────────
+# The insert below adds `parents[2]`, which on a deployed host IS the deploy
+# root (~/.steadfaste-fleet) — and the deploy places the bus's queue.py there
+# (`register "core/fleet_bus/queue.py" "${FLEET_DEPLOY_HOME}/queue.py"`,
+# load-bearing: the deployed gateway expects it). With that directory ahead of
+# the stdlib, `import queue` resolves to the bus module and every
+# concurrent.futures.ThreadPoolExecutor dies with
+#   AttributeError: module 'queue' has no attribute 'SimpleQueue'
+# (check_harness_registry, DEPLOYED path only — the in-repo tree has no
+# top-level queue.py, which is exactly why it never reproduced from the repo
+# root). Load the stdlib module explicitly and pin it in sys.modules so the
+# shadow is inert no matter where sys.path later points.
+def _pin_stdlib_queue() -> None:
+    import importlib.util
+    import sysconfig
+    current = sys.modules.get("queue")
+    if current is not None and hasattr(current, "SimpleQueue"):
+        return
+    std = Path(sysconfig.get_paths()["stdlib"]) / "queue.py"
+    spec = importlib.util.spec_from_file_location("queue", str(std))
+    if spec is None or spec.loader is None:
+        # Fail closed and loudly: silently continuing would leave the shadow in
+        # place and break ThreadPoolExecutor later, far from the cause.
+        raise ImportError(f"cannot load the stdlib queue module from {std}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    sys.modules["queue"] = module
+
+
+_pin_stdlib_queue()
+
 # Ensure ops/scripts (parent-of-parent) is importable so fleet_lib resolves
 # regardless of CWD or import context (mirrors fleet-doctor.py's bootstrap).
 _scripts_dir = Path(__file__).resolve().parents[2]
@@ -1771,8 +1802,15 @@ def check_cron_bridge_ownership(res) -> object:
                 "no fleet-bridge units installed — nothing to check")
         return res
     try:
-        import cron_manifest as _cm     # sibling module, ops/scripts/manage
-        declared = {str(r.get("name", "")) for r in _cm.load_manifest(_cm.MANIFEST_PATH)}
+        import yaml
+        # Read the canonical manifest directly. `import cron_manifest` cannot
+        # work here: that module lives in ops/scripts/manage/ and is NOT
+        # deployed, so on a deployed host it raised ModuleNotFoundError and this
+        # check could only ever say COULD NOT VERIFY (measured 2026-11-16).
+        _manifest = FLEET_REPO / "ops" / "install" / "cron-manifest.yaml"
+        if not _manifest.exists():
+            raise FileNotFoundError(_manifest)
+        declared = {str(r.get("name", "")) for r in (yaml.safe_load(_manifest.read_text()) or {}).get("crons", [])}
         declared.discard("")
     except Exception as exc:            # noqa: BLE001 — never swallow: say so
         # Fail closed on the CLAIM, not on the world: without the manifest we

@@ -38,6 +38,28 @@ crons:
   no_agent: true
   model: ''
   provider: ''
+- name: agent-hermes-update
+  scope: universal
+  schedule: 23 22 * * *
+  script: agent-hermes-update.sh
+  prompt: ''
+  skill: ''
+  deliver: local
+  workdir: ''
+  no_agent: true
+  model: ''
+  provider: ''
+- name: agent-remediate-apply
+  scope: universal
+  schedule: '*/10 * * * *'
+  script: agent-remediate-apply.py
+  prompt: ''
+  skill: ''
+  deliver: origin
+  workdir: ''
+  no_agent: true
+  model: ''
+  provider: ''
 - name: agent-auto-save-sessions
   scope: universal
   schedule: every 360m
