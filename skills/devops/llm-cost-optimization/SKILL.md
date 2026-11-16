@@ -295,7 +295,7 @@ rules for a skip-class: `references/review-gate-spend.md`.
   surface that selects it — code default + `.env.example` + agent-facing
   skills/docs + tests (both the fixture/label literal AND the assertion literal)
   — because an env override beats the code default and a stale doc makes agents
-  agents re-apply the expensive id. Check the fleet-wide surfaces cold before calling it
+  re-apply the expensive id. Check the fleet-wide surfaces cold before calling it
   done. Full procedure: `references/pinning-model-defaults.md`.
 - **A test that asserts the CANONICAL by LITERAL is a landmine — resolve the expected value
   from the source of truth, never hardcode the id.** The session that re-anchored the reviewer
