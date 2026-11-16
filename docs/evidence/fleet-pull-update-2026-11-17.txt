@@ -64,3 +64,53 @@ NOT DONE (deliberate, and why)
   - No push: pull-latest policy — local commits stay local.
   - No model.default / roster change: the model-replacement decision is parked pending
     operator confirmation and is NOT part of this cycle.
+
+
+=== SECOND RUN, same day — cycle 14889 (operator re-requested the same task) ===
+
+1. Pull: NOTHING TO PULL. After `git fetch origin`: behind=0, ahead=4, tree CLEAN.
+   This run therefore re-synced the host rather than importing new history, and the
+   real work was the skill-drift item below.
+
+2. Deploy (sanctioned invocation; full transcript to one stamped scratch log, by the
+   stamp-bound-once pattern):
+   UPDATE_EXIT=0 · `Deploy sync` ✅ · doctor `Overall: WARNING (510 pass · 8 warn ·
+   0 fail · 2 info) · 4 undisposed`.
+
+3. That snapshot's undisposed items were NOT waved through — each was resolved:
+   - `Service (Dashboard)`, `Service (Langfuse)`, `Service (Agent Bus)`: TRANSIENT.
+     A fresh idle `fleet-doctor.py` reads ✅ / ✅ / ✅ for all three. This is the class
+     already recorded in
+     `skills/devops/fleet-deployment-sync/references/doctor-warning-remedies.md`
+     ("`Service (...)` warns right after a deploy are usually TRANSIENT … do NOT
+     triage or disposition them off the deploy snapshot"), re-confirmed live here.
+   - `Skill drift: devops/fleet-deployment-sync`: REAL, and fixed in this cycle (4).
+
+4. Skill-drift backport (the real defect). `reconcile-stranded-skills.py` with no
+   flag (the bare run IS the report — it has no --dry-run) printed two PURE
+   SUPERSETS, so nothing repo-only was dropped and the apply was lossless:
+     SUPERSET devops/fleet-deployment-sync/SKILL.md    (+46, -0) safe to apply
+     SUPERSET devops/hermes-model-config/SKILL.md      (+28, -0) safe to apply
+   The deployed copies carried lessons the repo lacked. Applied, then committed:
+     - 6ad2c9d0 fix(skills): backport the two stranded superset lessons into the repo
+     - f46588df docs(evidence): regenerate the skill-drift-parity capture
+   Re-verified AFTER the apply (re-runnable, not asserted): the reconciler re-run
+   reads "Nothing stranded: repo and deployed trees agree on content" (stranded: 0),
+   and `cmp` reports the repo and deployed copies IDENTICAL for both files.
+   The detector's own VERDICT still prints FAIL — that is the separate "absent from
+   repo" class (never-committed + dropped-from-repo deployed reference files), the
+   documented two-number outcome. Read both: verdict FAIL, stranded 0.
+
+5. Re-deploy AFTER the commits, so the deployed revision matches the moved HEAD:
+   UPDATE_EXIT=0 · `Deploy sync` ✅ · `Overall: WARNING (511 pass · 5 warn ·
+   0 fail · 2 info)` — and `Skill drift` is absent, which is the fix landing.
+
+6. Fresh idle confirmation run: `Overall: WARNING (513 pass · 3 warn · 0 fail ·
+   2 info)`. Every residual WARN/INFO is already decided: `Script run evidence`
+   (deferred, owner esther), `Multi-session repo` (deferred, owner esther, naming the
+   ended session), `Cron bridge ownership` (deliberate, owner esther), and
+   `PENDING cycles` — this cycle's own lock, which clears at end_change.
+
+NOT DONE (this run, deliberately): still no push (pull-latest policy), still no
+model.default / roster change (parked on the operator).
+
