@@ -490,7 +490,7 @@ candidate set — quality is preserved by only re-ordering approved models.
 Quote real numbers from the scan output / live catalog, never assumed ones." \
   "hermes-model-config" \
   "" \
-  "origin" \
+  "telegram:${TELEGRAM_HOME_CHANNEL}" \
   "" \
   "false"
 
