@@ -107,18 +107,44 @@ def _expand_placeholders(value: str) -> str:
 
 
 # ── Manifest loading ───────────────────────────────────────────────────
+class ManifestLoadError(RuntimeError):
+    """The manifest could not be READ or PARSED.
+
+    Deliberately distinct from "the manifest declares nothing": an interpreter
+    without PyYAML, or a malformed document, must never look like a manifest
+    with zero crons. That was the silent no-op class (issue #291) where
+    ``--repair`` printed ``0 declared, 0 drifted``, exited 0, repaired nothing
+    and every line of output read like a healthy no-op.
+    """
+
+
 def load_manifest(path: Optional[Path] = None) -> list[dict]:
-    """Load cron definitions from the manifest. Returns [] on error."""
+    """Load cron definitions from the manifest.
+
+    Returns [] ONLY when the file genuinely does not exist — an honest absence.
+    A missing parser dependency or an unparsable/malformed document raises
+    ManifestLoadError: those are failures to READ, not a manifest with no crons.
+    """
     p = path or MANIFEST_PATH
     if not p.exists():
         return []
     try:
         import yaml
+    except Exception as e:
+        raise ManifestLoadError(
+            f"cannot read manifest {p}: PyYAML is unavailable in this interpreter "
+            f"({type(e).__name__}: {e}). Run under an interpreter that has it, e.g. "
+            f"<deploy-home>/venv/bin/python — an empty read here would silently "
+            f"no-op every repair."
+        ) from e
+    try:
         doc = yaml.safe_load(p.read_text())
-    except Exception:
-        return []
+    except Exception as e:
+        raise ManifestLoadError(f"cannot parse manifest {p}: {type(e).__name__}: {e}") from e
     if not isinstance(doc, dict) or not isinstance(doc.get("crons"), list):
-        return []
+        raise ManifestLoadError(
+            f"manifest {p} has no 'crons' list — refusing to read it as an empty "
+            f"manifest (that would make --repair look like a clean no-op)")
     return doc["crons"]
 
 
@@ -306,6 +332,15 @@ def _hermes_cmd() -> str:
 def repair_cron(cron: dict, dry_run: bool = False) -> tuple[str, str]:
     """Create or update a live cron to match the manifest. Returns (action, detail)."""
     name = cron.get("name", "")
+    # A bridge-owned cron is absent from Hermes BY DESIGN — its systemd timer is
+    # the owner and it is not expected in jobs.json. check_drift() already
+    # refuses to report such a name as missing; this guard is what makes the
+    # REPAIRER agree with the checker. Without it a blanket --repair created
+    # every one of them (48 on esther, all bridge-owned, 2026-11-16).
+    if name and name in _bridge_owned():
+        return ("skipped-bridge",
+                f"{name}: owned by the fleet cron bridge (systemd timer) — not in "
+                f"Hermes by design; nothing to repair")
     live = load_live_jobs()
     desired = desired_state(cron)
     hermes = _hermes_cmd()
@@ -425,7 +460,10 @@ def main() -> int:
     ap.add_argument("--check", action="store_true", help="exit 1 if any drift/missing")
     ap.add_argument("--json", action="store_true", help="machine-readable output")
     ap.add_argument("--list-in-scope", action="store_true", help="list crons in scope for this host")
-    ap.add_argument("--repair", action="store_true", help="create missing + edit drifted crons")
+    ap.add_argument("--repair", action="store_true",
+                    help="edit drifted crons; create missing ones. Bridge-owned crons "
+                         "(systemd timers, absent from Hermes by design) are SKIPPED, "
+                         "never created — the same set --check refuses to report.")
     ap.add_argument("--dry-run", action="store_true", help="with --repair: show what would change")
     ap.add_argument("--scope", choices=[SCOPE_UNIVERSAL, SCOPE_ORCHESTRATOR, SCOPE_OPT_IN],
                     help="with --repair: only repair this scope")
@@ -443,7 +481,8 @@ def main() -> int:
             print(json.dumps(results, indent=2))
         else:
             for r in results:
-                if r["action"] in ("updated", "created", "would-edit", "would-create"):
+                if r["action"] in ("updated", "created", "would-edit", "would-create",
+                                   "skipped-bridge"):
                     print(f"{r['action'].upper()} {r['detail']}")
                 elif r["action"] == "error":
                     print(f"ERROR {r['detail']}")

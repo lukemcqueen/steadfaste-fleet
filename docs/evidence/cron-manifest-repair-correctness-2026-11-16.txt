@@ -1,0 +1,17 @@
+Running: bash docs/evidence/cron-manifest-repair-correctness-2026-11-16.sh
+rc: 0
+when: 2026-11-16T08:52:47Z
+
+repo   : /home/esther/steadfaste-fleet
+python : /home/esther/.steadfaste-fleet/venv/bin/python
+
+  PASS  invariant test present: test_repair_never_creates_what_check_refuses_to_report
+  PASS  cron suites green: 17 passed in 0.86s ==============================
+
+  PASS  live --repair --dry-run creates 0 crons (was 48) — creates=0 skips=56 errors=0
+  PASS  bridge-owned crons are SKIPPED and VISIBLE, not silently dropped (56 named)
+
+  PASS  load_manifest fails closed on an unparsable manifest (issue #291 fixed)
+
+failed claims: 0
+sha256: de9e65b7912d96044ba4f91a992f439d57be24f9f541c3b4bc301ec0a34fa94b
