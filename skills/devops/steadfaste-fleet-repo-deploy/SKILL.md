@@ -123,6 +123,17 @@ log's first line, not the exit code:
   directory, and the script's repo check rejects it. Deploy from the primary
   working tree (or set `REPO_DIR=`); a session worktree can hold the work and
   push, but it cannot deploy.
+- **`fleet-update mutex held: another deploy is running (<lock>)` — the refusal is
+  CORRECT, not a stale file to clear.** The mutex is a live `fcntl.flock` held for the
+  WHOLE run (`ops/scripts/lib/fleet-update-mutex.py --guard`, which re-invokes the script
+  as its own child under the held fd), so it cannot go stale — and a lock file's mere
+  existence or age tells you nothing about whether it is held. A stale-looking empty
+  lock file is the NORMAL resting state. Probe instead of guessing: a non-blocking
+  `fcntl.flock(fd, LOCK_EX|LOCK_NB)` says free-or-held, and a `/proc/*/fd` scan for the
+  lock's inode says WHICH process holds it. Corroborate from independent evidence that a
+  deploy really was in flight — its own log with its exit code, the deploy manifest and
+  enforcer-marker mtimes — then simply relaunch. Never delete the lock to "clear" it, and
+  never re-run with a bypass.
 
 **After ANY failed deploy, check the enforcement files before doing anything
 else** — a run that dies after unlocking leaves them modifiable. `sudo -n
@@ -494,6 +505,30 @@ is deployed → repo, NOT repo → deployed (that would erase the lessons):
 Do not "fix" drift by deleting the deployed copy or re-deploying over it —
 both discard the lessons the doctor is pointing you at.
 
+**The verifiers assert IDENTITY, so the order is commit → deploy → re-verify, and a red
+verifier BEFORE the deploy is expected — not a failed recovery.** `reconcile-stranded-
+skills.py` and the drift-parity check compare content or hashes, so (a) any line that
+lives only in the repo once your commit lands — a provenance note is the usual one — reads
+as `still stranded` / `CHECKS FAILED` until the deploy copies it across, and (b) the
+stranded count can RISE after the recovery for that same reason (the deployed copy now
+"would drop" your new lines). Deploy, then re-run the verifier; only a red verifier AFTER
+a deploy means the recovery failed. Regenerate the committed parity capture in that same
+after-deploy pass — a capture written before it records the pre-fix FAIL and is stale the
+moment the fix lands, while the claim beside it reports green.
+
+- **`reconcile-stranded-skills.py` is report-first and applies only the pure-superset
+  class.** Its REVIEW class lists every line that taking the deployed side would DROP;
+  read those DROPs and confirm each is superseded IN PLACE (a corrected recipe, a reflow,
+  a claim a later session disproved) before hand-merging. A dropped line that is still
+  true is a lesson the deployed copy would erase.
+- **Recover the skill's `references/` too.** A repo SKILL.md that routes to a reference
+  file only the deployed tree holds is a dangling route the fleet never receives, and the
+  detector reports that as its own class (path dropped-from-repo / never-committed).
+- **Merge a provenance note, never stack a second one.** A file that already carries a
+  provenance block gets its new facts added INTO that block, so the file keeps exactly one
+  provenance record a reader can trust — two notes saying overlapping things is how a
+  backport starts to read like it was authored here.
+
 ## Publishing a new skill to the fleet (end-to-end)
 
 Skills reach every agent only through the repo: identify → vet → copy →
@@ -552,6 +587,13 @@ If a just-pushed correction turns out to be the wrong direction (e.g. you
 removed an uninstall-array entry that was serving legacy cleanup), supersede
 it with a new commit in the same session — a known-wrong commit on main
 propagates to every host on their next pull.
+
+**`--amend` is not available to you, so "supersede" always means a NEW commit.** The
+repo hook refuses `git commit --amend` even WITH a pathspec: an amend uses the shared
+index and rewrites whatever HEAD happens to be, which in a shared tree may not be your
+commit. The refusal states exactly that and offers no bypass flag, so land the tiny
+follow-up commit — a one-line fix, a message correction — rather than trying to fold it
+back into the commit before it.
 
 **Before re-pushing into a contested area, check whether upstream still contains your
 change.** Peers work the same defects from the same symptoms, so a fix can be landed

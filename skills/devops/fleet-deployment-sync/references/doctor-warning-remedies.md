@@ -59,3 +59,28 @@ lesson. Reconcile the deployed side back to the repo (pure supersets; hand-merge
 by PHRASE, never by line), regenerate the parity capture fresh, commit. See
 fleet-deployment-sync's "stranded deployed-only skills" section and
 `shared-repo-push-gates` for the full class.
+
+## `Service (...)` warns right after a deploy are usually TRANSIENT
+
+A `fleet-update.sh` run's embedded doctor can print `⚠ Service (Dashboard)` /
+`Service (Langfuse)` / `Service (Agent Bus)` simply because those services are
+momentarily down while the deploy restarts them. Do NOT triage or disposition them
+off the deploy snapshot: run a FRESH `fleet-doctor.py` and they normally read PASS
+again. Only a Service warn that survives a fresh run is a real item to fix or dispose.
+
+## `fleet-doctor.py --json` is not parseable as-is — strip the DEBUG prefix
+
+The dump leads with non-JSON lines (`[mcp-server] DEBUG: Initializing server '…'`), so
+`json.load` dies with `Expecting value: line 1 column 2`. Parse from the first brace:
+
+```python
+raw = open(f).read()
+d = json.loads(raw[raw.index('{'):])   # first '{' starts the real payload
+```
+
+Step 5 of the sequence tells you to grep this dump for WARN/INFO — grep the whole file
+(the DEBUG lines do not match) but parse from that offset. Remember also that the JSON
+renders only the LIVE check's disposition, so an already-disposed check reads
+`disposition: null` here; the TEXT renderer, which honours
+`~/.steadfaste-fleet/state/doctor-dispositions.json`, is authoritative for the
+"N undisposed" count.
