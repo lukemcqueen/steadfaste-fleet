@@ -8,10 +8,12 @@ adversarial reviews. Only the pi registration (the `deepseek` entry in
 ~/.pi/agent/mcp.json) may point at either copy; this file is what fleet-update
 deploys. Do not fork it further — extend THIS file, rebuild on top of it.
 
-Default model: deepseek/deepseek-v4-pro-0813 (canonical fleet reviewer; the
-cost-controlled pin chosen over plain v4-pro — input $0.111/M vs ~$0.90/M on
-OpenRouter, 2026-11-11). Plain deepseek/deepseek-v4-pro and
-deepseek/deepseek-chat-v3 are NOT used anywhere here as defaults.
+Reviewer model: resolved at startup from the fleet canonical
+(`fleet_lib.models.get_reviewer_model()`, which honours the
+`ADVERSARIAL_REVIEWER_MODEL` env override). No model name is baked into this
+script — the reviewer is changeable per day via that env var or the canonical.
+If fleet_lib is unavailable the script falls back to the env var alone and
+refuses to start if it is unset.
 
 The OPENROUTER_API_KEY is resolved ONCE at startup — env var first, then a
 ~/.steadfaste-fleet/.env, then a repo-local .env — so the agent never handles
@@ -74,8 +76,13 @@ try:
             break
     from fleet_lib.models import get_reviewer_model
     DEFAULT_MODEL = get_reviewer_model()
-except Exception:  # noqa: BLE001 — fail-safe fallback if fleet_lib absent
-    DEFAULT_MODEL = "xiaomi/mimo-v2.6-pro"
+except Exception:  # noqa: BLE001 — fail closed: no hardcoded model, resolve from env
+    DEFAULT_MODEL = os.environ.get("ADVERSARIAL_REVIEWER_MODEL")
+    if not DEFAULT_MODEL:
+        raise SystemExit(
+            "deepseek-review-mcp.py: fleet_lib unavailable and ADVERSARIAL_REVIEWER_MODEL "
+            "unset — set the reviewer model in the environment"
+        )
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _ENV_FILE_PATHS = [

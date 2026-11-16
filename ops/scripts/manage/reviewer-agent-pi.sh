@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # reviewer-agent-pi.sh — Read-only adversarial-review backend using the pi coding
-# agent (deepseek/deepseek-v4-pro-0813 via OpenRouter by default; override with
-# REVIEWER_PI_MODEL — a reviewer should use the strongest available model, not
-# the cheap/fast default).
+# agent. The reviewer model is NOT baked in: it is read from
+# ADVERSARIAL_REVIEWER_MODEL (required — a reviewer should use the strongest
+# available model, not the cheap/fast default), so it is changeable per day.
 #
 # Pluggable adversarial reviewer "agent" backend: the close-gate shells out to
 # this command with the review prompt on STDIN and reads findings JSON from
@@ -19,11 +19,10 @@
 set -euo pipefail
 
 # DRY (2026-11-13, cycle 8265): honor the same consistent env var the python
-# surfaces read first; fall back to the canonical reviewer id (no openrouter/
-# prefix — the model id is provider-free, pi adds its own routing prefix).
-# The literal here is the last fallback only; the single true source is
-# fleet_lib/models.py.
-MODEL="${ADVERSARIAL_REVIEWER_MODEL:-deepseek/deepseek-v4-pro-0813}"
+# surfaces read first (no openrouter/ prefix — the model id is provider-free,
+# pi adds its own routing prefix). No hardcoded fallback: the model must be
+# changeable per day, so an unset var fails closed with a clear message.
+MODEL="${ADVERSARIAL_REVIEWER_MODEL:?reviewer-agent-pi.sh: ADVERSARIAL_REVIEWER_MODEL is unset — set the reviewer model in the environment}"
 
 # pi needs the OpenRouter credential to reach the model.
 if [[ -z "${OPENROUTER_API_KEY:-}" && -f "${HOME}/.hermes/.env" ]]; then
