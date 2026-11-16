@@ -736,6 +736,16 @@ does not apply.
      the running deploy has exited (it is a background process — poll it), then
      deploy once more and push. Rule: never patch a file the deploy is about to
      copy.
+   - **`Checksum: <file>` rows on files OUTSIDE your diff are usually unrelated
+     deploy↔repo drift, and ONE dogfood clears all of them — do not chase which host
+     wrote them.** The pre-push doctor compares repo source to the deployed copy, so
+     other sessions' skill/deploy writes (or an older deployed revision) can make a
+     handful of files you never touched disagree: the gate lists them as bare `❌
+     Checksum:` lines. They are not your change and not a merge problem — run
+     `bash ~/.steadfaste-fleet/scripts/fleet-dogfood.sh --force`, confirm it ends
+     `✅ DOGFOOD PASSED`, then re-push. Dogfood re-deploys the whole registered tree,
+     so one run retires every drifted file in the same pass; only if a drifted file
+     is one you ARE shipping do you need the race remedy above.
 7. **DOCS AUDIT blocks a new doc that is not in `docs/DOCS-INDEX.md`.** Adding
    (or moving) a file under `docs/` fails the commit with `<file> changed but
    docs/DOCS-INDEX.md was not updated`. Add the index row in the SAME commit; the

@@ -244,3 +244,18 @@ showed) — otherwise the next reader reintroduces it as "obviously true".
 
   Fix the describing row in the SAME commit — a stale claim in the index an implementer reads
   sends them to the wrong place, which is worse than a missing entry.
+- **Authorization text goes stale when a name-list becomes a capability (de-naming).**
+  Replacing a hardcoded `IN ('moses','esther')`-style allowlist with a role-membership check
+  (`pg_has_role(..., 'cap', 'MEMBER')`) makes every AGENT-FACING surface that named the old
+  authorities wrong at once — tool descriptions, CLI output strings, docstrings, and skill prose
+  all drift independently. This stale kind is the most harmful: it is not merely wrong, it sends
+  WORKERS into route-padding (a surviving "only moses/esther may verify" claim makes a designated
+  verifier believe it must hand off to an orchestrator nobody needs). When a schema/code change
+  de-names WHO may act: (1) read the CURRENT schema/code for the real authority predicate before
+  asserting anything; (2) sweep every surface with a SMALL set of distinct stale phrases (the old
+  name-list and its "hand to X" fallback typically cover the whole class of hits); (3) re-grep
+  after and report zero; (4) pin the corrected wording with a REQUIRED/FORBIDDEN needle guard test
+  so a re-introduction fails loudly. A doc or skill that contradicts its OWN later section (an old
+  bullet still saying "X allowlist inside the function, refusal is permanent" right beside a
+  current "designated verifier needs no grant" block) is the tell that the schema evolved but the
+  prose did not — fix the old bullet IN PLACE, never append an "UPDATE:" note under it.

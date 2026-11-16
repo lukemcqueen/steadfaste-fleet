@@ -178,6 +178,18 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
 - Run the FULL suite WITHOUT `-x`/`--maxfail` when triage is the goal: a
   first-failure stop hides the other reds you need to separate pre-existing
   from introduced, so the report answers nothing about the rest of the change.
+- **A red test right after a `pull --rebase` onto a peer's parallel commit is
+  often the PEER'S OLDER TEST FILE still on disk, not your regression.** When a
+  peer lands a commit that also edits the tests (e.g. a guard test re-pointed to
+  derive its expected value from the code while your tree still holds its
+  first-pass version hardcoding the old literal), the mid-flight rebase leaves
+  the stale test in place and it fails against your CORRECT code — signature: the
+  assertion compares the new correct value to the old literal. Do NOT "fix" the
+  code; `git fetch` + rebase onto the newest origin (which carries the peer's
+  fixed test) and re-run — it goes green. Same class: a `git stash pop` after a
+  rebase can conflict in a PIPELINE-MANAGED file (a generated evidence/drift
+  artifact an auto-commit on origin already updated) — take the origin version
+  (`git checkout HEAD -- <f>`), not your stale local copy, then drop the stash.
 - A suite a prior session reported 'still running' may be a ghost — the
   background process died with that session and the notification never comes.
   Check for a captured log artifact; if none exists, re-run into a log file

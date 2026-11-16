@@ -14,13 +14,25 @@ platforms: [linux, macos]
 deepseek-chat/deepseek-flash questions, `⚠ Deprecated .env settings detected`
 warning, cron model overrides, model.default regressions after `hermes update`.
 
-## Fleet model convention (verified on the fleet owner's host, 2026-08-18)
+## Fleet model convention (the MECHANISM is the rule — the ids move)
 
-- **Regular sessions = `deepseek-v4-flash`** — set in `config.yaml`
-  `model.default` (provider `deepseek`, base_url `https://api.deepseek.com/v1`).
-  This is operator-owned config — set it with `hermes config set model.default
-  <model>`; no fleet installer writes it (the env-driven
+- **Regular sessions run whatever `config.yaml model.default` says.** Read it
+  with `hermes config get model.default`; never assume an incumbent id and
+  never trust a doc/skill that names one (this section used to name a model;
+  it rots). This is operator-owned config — set it with `hermes config set
+  model.default <model>`; no fleet installer writes it (the env-driven
   `install-model-default.sh` writer was removed 2026-09-09).
+- **Never hardcode a model id in a script, doc, or skill — resolve it.** The
+  canonical reviewer lives in `ops/scripts/fleet_lib/models.py`
+  (`REVIEWER_MODEL_DEFAULT`), resolved at runtime by `get_reviewer_model()` and
+  overridable by the `ADVERSARIAL_REVIEWER_MODEL` env var; a consumer that
+  cannot resolve it must FAIL CLOSED, never default silently. Point docs and
+  agent-instructions at "the current canonical reviewer" (or the resolver),
+  never a pinned id — a pinned id makes the next reader re-apply a model the
+  operator already replaced. When the default moves, sweep the old id out of
+  docs + comments + tests in the SAME change, and make any guard test DERIVE its
+  expected value from `get_reviewer_model()` rather than a literal so it cannot
+  re-rot.
 - **`deepseek-chat` is LLM-cron-ONLY.** It must never be the session default.
   Crons pin it per-job: `"model": "deepseek-chat"` in `~/.hermes/cron/jobs.json`
   (see `LLM_CRON_MODEL=deepseek-chat` in `ops/scripts/install-crons.sh` and
@@ -71,6 +83,27 @@ warning, cron model overrides, model.default regressions after `hermes update`.
   (see the pricing-list-policy reference of the system-one-judgment skill).
   The selftest checks EVERY model in a pool and catches the stranded fallback
   the tests miss.
+- **The config's DOCUMENTED fields go stale SILENTLY while the tests stay
+  green.** Enforcement reads `prices[baseline]` LIVE, so `derivation.heads`,
+  `candidates`, and `baseline_price_usd_per_m` can contradict reality (a head
+  listed as model A while the pool order actually leads with model B) and
+  nothing fails. Recompute `derivation.heads` FROM `tiers` + `prices` (first
+  model in each pool) — never hand-edit — and re-check `candidates` (a model
+  promoted into a routed pool is no longer a mere candidate).
+- **Re-anchoring is a two-part change that must move together:** the
+  enforcement-visible `baseline` field AND the baseline test that asserts it
+  equals the host's session default — a half-migrated config (baseline moved,
+  the test still pinning the old model) is exactly the drift that test exists
+  to catch. Prove it with `router-pools.py --selftest` plus the router pool
+  tests; the selftest checks every pool member, not just the head.
+- **The fleet AUTOMATES the re-order** — the daily `orch-model-market-scan`
+  cron re-prices from the live catalog, re-orders each pool cheapest-first
+  WITHIN the pre-vetted set (it never introduces a new model = quality
+  preserved), flags new unvetted cheaper candidates as A/B alerts (`rc=2`,
+  never auto-adopted), and on a price/order change (`rc=1 apply_pending`) does
+  a governed apply that re-points the session/reviewer default only if the
+  vetted head changed. So a manual re-price is the exception; let the scan
+  drive it and verify with `router-pools.py --selftest`.
 
 ## Verify end-to-end (mandatory)
 

@@ -1,0 +1,102 @@
+Running: bash docs/evidence/skills-backport-2026-11-16.sh
+rc: 0
+when: 2026-11-16T07:09:12Z
+
+$ python3 ops/scripts/manage/reconcile-stranded-skills.py
+Detector verdict: PASS · stranded: 0
+Nothing stranded: repo and deployed trees agree on content.
+rc=0
+
+=== check-skill-drift-parity.py (the counts behind the verdict) ===
+$ python3 ops/scripts/manage/check-skill-drift-parity.py
+| Stranded in place (path in repo, content only deployed) | 0 |
+| Absent from the repo (deployed under a repo-owned skill) | 0 |
+|   ↳ path dropped from repo history | 0 |
+|   ↳ path never committed | 0 |
+| Files in sync | 1009 |
+| Skipped (Hermes defaults, or repo ahead) | 542 |
+**Verdict: PASS**
+rc=0
+
+=== check-skill-drift-parity.py --check (freshness of the committed artifact) ===
+$ python3 ops/scripts/manage/check-skill-drift-parity.py --check
+artifact matches the live derivation
+rc=0
+
+=== fleet-doctor.py (Skill drift / Harness registry / Overall) ===
+$ python3 ops/scripts/manage/fleet-doctor.py
+  ⚠️  Repo clean  [deferred (esther, since 2026-11-16)] — 2 uncommitted change(s)
+  ⚠️  Harness registry  [deferred (esther, since 2026-10-25)] — COULD NOT VERIFY — the registry view was not parseable (Extra data: line 68 column 1 (char 2977))
+  ✅ Skill drift — 385 skills in sync, 154 Hermes defaults skipped
+  ⚠️  Overall: WARNING  (511 pass · 2 warn · 0 fail · 1 info)
+rc=1   # NON-ZERO is expected: the doctor exits 1 while any warn stands
+
+=== git status --short ===
+$ git status --short
+?? docs/evidence/skills-backport-2026-11-16.sh
+?? docs/evidence/skills-backport-2026-11-16.txt
+rc=0
+$ git status --porcelain --untracked-files=no   # the tracked-file claim
+(clean — no tracked file modified)
+
+=== git show --stat (the backport commit) ===
+$ git show --stat feda5157
+commit feda515742c611265962634399312916771d2299
+Author: esther-agent <esther@hermes.local>
+Date:   Mon Nov 16 16:01:30 2026 +0900
+
+    fix(skills): backport deployed-newer lessons + a deployed-only reference to the repo
+    
+    The doctor's `Skill drift` check reported 6 skills whose deployed copy was
+    newer than the repo source — lessons written on the deployed tree and never
+    copied back — plus one reference file deployed under a repo-owned skill dir
+    that the repo did not carry at all. Direction was verified per file (difflib
+    line delta, and the repo-only lines checked to be superseded) before copying:
+    
+    - devops/git-push-gate-failures        pure superset (+35, -0)
+    - software-development/verify-and-ship  pure superset (+12, -0); adds the
+      "a red test right after a pull --rebase is often the PEER'S older test file"
+      lesson
+    - devops/cron-job-management           +1 new bullet (the doctor's
+      Cron-manifest-drift FAIL prescribes cron_manifest.py --repair, which
+      rewrites the LIVE job FROM the manifest — diagnose before repairing) plus a
+      markup fix on the NAME-SCOPED bullet; nothing dropped
+    - devops/rename-sweep                  the stale-deploy-residue bullet is
+      expanded in place (deploy copies but never prunes)
+    - devops/sweep-verification            adds the retired-tool "THREE surfaces"
+      bullet and "score BEFORE close, never in the same batch"; the replaced line
+      is the shorter superseded form
+    - devops/hermes-model-config           de-pins the session-default convention
+      (read model.default, never assume an id) and states the reviewer-resolution
+      rule; the dropped lines named the old pinned id
+    - skills/devops/cross-agent-design/references/fleet-gateway-parity.md
+      never committed; backported so the repo owns it
+    
+    Also carries two uncommitted working-tree lessons (dogfood clears unrelated
+    Checksum rows; de-naming makes authorization prose stale) and the regenerated
+    docs/evidence/skill-drift-parity.txt.
+    
+    Verified:
+    - reconcile-stranded-skills.py      -> stranded: 0
+    - check-skill-drift-parity.py       -> Verdict: PASS, rc=0 (0 stranded,
+      0 absent from repo, 1009 in sync)
+    - fleet-doctor Skill drift          -> "385 skills in sync" (was 6 drifted)
+    
+    FLEET-Session: 20261116_120352_a100c2aa
+
+ docs/evidence/skill-drift-parity.txt               |  48 ++--------
+ skills/devops/cron-job-management/SKILL.md         |   3 +-
+ .../references/fleet-gateway-parity.md             | 102 +++++++++++++++++++++
+ skills/devops/git-push-gate-failures/SKILL.md      |  35 +++++++
+ skills/devops/hermes-model-config/SKILL.md         |  43 ++++++++-
+ skills/devops/rename-sweep/SKILL.md                |  11 ++-
+ skills/devops/shared-repo-push-gates/SKILL.md      |  10 ++
+ skills/devops/sweep-verification/SKILL.md          |  14 ++-
+ .../documentation-auditing/SKILL.md                |  15 +++
+ .../software-development/verify-and-ship/SKILL.md  |  12 +++
+ 10 files changed, 242 insertions(+), 51 deletions(-)
+rc=0
+
+=== VERDICT ===
+claims failed: 0   (0 means every claim above held)
+sha256: 5b8cde3ec4c41856240038d83a8f1457cd4d501db971b4397d3c4960c9f28636

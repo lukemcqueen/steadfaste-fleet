@@ -86,6 +86,14 @@ committing). Prefer the repo's existing artifact extension (`.txt` here) and che
      `ops/scripts/fleet-update.sh` and stat each source path. One missing source means
      either a leftover line to drop or a file to restore — never leave it standing, and
      re-run the doctor (it exits FAIL, so the push is blocked too).
+     **A retired tool leaves THREE surfaces: the deployed copy, its `deploy-manifest.tsv`
+     row, and (in the repo) the file + its test.** The manifest at
+     `~/.steadfaste-fleet/deploy-manifest.tsv` gets a row per `register()` call, so removing
+     only the `register()` line and the source file still leaves the deployed copy AND its
+     manifest row lingering (deploy never prunes). Belt-and-braces: `rm` the deployed copy,
+     `sed -i '/<tool>/d'` the manifest row, and re-run `fleet-update.sh` (it regenerates the
+     manifest from the surviving `register()` lines). Prove retirement with the repo tree,
+     the deployed tree, AND the manifest all showing 0 hits.
    - **Deployed SKILLS are preserved, not pruned.** A skill deleted from the repo stays
      deployed, and the next deploy reports it as a stale "deployed-only skill" instead of
      deleting it (the deploy cannot tell an orphan from a local skill someone depends on).
@@ -266,6 +274,10 @@ discovering them in a later grep.
    cron provider, run the scheduling surface (`hermes cron list`) and confirm no
    fallback warning, which is the only proof the default is really in charge.
 7. Report: verified-clean surfaces, what was removed, what was kept (counts),
-   flagged items. Score + close cycle.
+   flagged items. Score + close cycle. **Score BEFORE close, never in the same
+   parallel batch.** Call `feedback_accept` on the cycle and wait for its
+   confirmation, THEN `end_change`; firing both in one batch lets `end_change` race
+   ahead and it refuses with "cycle is NOT scored — it was never closed out" (AGENTS.md
+   RULE 2: score before moving on), leaving the lock held and forcing a retry.
 
 Session detail (legacy-brain sweep, 2026-08-21): `references/legacy-brain-sweep-2026-08-21.md`

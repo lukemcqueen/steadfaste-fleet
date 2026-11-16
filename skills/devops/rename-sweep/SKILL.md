@@ -142,8 +142,15 @@ Deleting files breaks things that assert their existence:
   the line and any update/stub functions that call them).
 - **Skills referencing the deleted skill** (governance-sentinel listed
   legacy-system-maintenance) — reword or drop the pointer.
-- **Deployed copies**: after deploy, `rm` stale deployed artifacts the
-  doctor flags ("Remove: …" in REQUIRED ACTIONS).
+- **Deployed copies**: the deploy COPIES registered files and never DELETES a
+  renamed-away one, so a `git mv` leaves the OLD-named file sitting in
+  `~/.steadfaste-fleet/scripts/…` and the doctor's `Stale deploy: <old path> —
+  not in any register() mapping` lingers (as UNDISPOSED) until you `rm` it.
+  Before removing, prove nothing still points at it — `grep -rn '<basename>'
+  ops/scripts/fleet-update.sh` shows only the NEW name in the register map, and
+  a repo-wide grep finds no live reference — then `rm` the residue; the check
+  clears on the next doctor run. Never `rm` a deployed file that IS registered
+  (the next deploy restores it and you have learned nothing).
 
 **Not every occurrence is a LIVE reference — committed RECORDS must survive the sweep.**
 Evidence captures, transcripts and dated reports quote the old path as the thing that WAS run at

@@ -177,6 +177,41 @@ To yield to the peer's already-pushed version, use `git checkout --ours
 empty for the duplicated file) before amending. Prefer the peer's version
 when it is identical-or-better and already public.
 
+**When you and a peer are performing the SAME directive (e.g. de-pin a model
+id, rename a term), compute the overlap before resolving — it is usually one
+file.** `git show <my-sha> --name-only | grep -v '^$'` vs the same for the
+peer's commit; the INTERSECTION is the only true conflict, and everything in
+"only mine" replays cleanly. Resolve just the overlapping file, keeping the
+UNION of both wordings in one copy: a naive conflict-block stripper keeps BOTH
+sides as duplicate lines (and leaves a stray `<<<<<<< HEAD`), then
+`git rebase --continue`. Both agents landing the same directive is not a
+conflict to be won — the peer's already-pushed version wins on identical
+files, your change rides on top.
+
+**A failing test the moment a rebase lands is often the WRONG copy of the
+test, not broken code.** Right after `git pull --rebase` over a peer's
+overlapping change, pytest runs against the WORKING TREE, which mid-merge may
+still hold the peer's OLDER version of a committed test. If that older test
+hardcodes the pre-change value (e.g. `CANONICAL = deepseek-v4-pro-0813`)
+while the code now returns the new canonical (mimo), the DRY assertion fails
+red and reads as a real regression. It is not: pull the latest origin (whose
+commit carries the peer's FIXED version of that test) and re-run. Before
+debugging code a failing test names, check what the on-disk file actually
+asserts and how it resolves its expectation (`grep -n CANONICAL tests/…`) —
+a test that resolves its reference from the canonical at import never rots
+this way, so prefer that shape in tests you write.
+
+**After a rebase that was interrupted — a failed `--continue`, an ABORT, or a
+tool/harness outage mid-merge — establish ground truth with `git reflog`
+before touching anything.** `HEAD@{0}: rebase (abort)` tells you the rebase
+never landed and HEAD is back at your pre-rebase commit; an empty
+`git status --short --branch` (no `UU`, no `ahead N`) and no
+`.git/rebase-merge` dir means nothing is half-applied. Knowing HEAD vs
+`origin/main` (diverged N each) and whether a rebase is actually in progress
+stops you from re-stashing, rebuilding, or force-pushing on a wrong guess —
+especially when an earlier tool-output outage made several recovery commands
+run blind.
+
 **Orphaned `<<<<<<< HEAD` after a hand-resolved conflict:** when you resolve a
 conflict block by keeping only the top side (e.g. a patch whose delete starts
 at the `=======`/`>>>>>>>` boundary), the leading `<<<<<<< HEAD` line survives
