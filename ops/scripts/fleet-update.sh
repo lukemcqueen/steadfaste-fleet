@@ -529,6 +529,10 @@ register "ops/scripts/manage/agent-skill-drift-reconcile.sh" "${FLEET_DEPLOY_HOM
 register "ops/scripts/manage/agent-governance-auditor.py"            "${FLEET_DEPLOY_HOME}/scripts/agent-governance-auditor.py"
 register "ops/scripts/manage/purge-stale-governance-locks.py" "${FLEET_DEPLOY_HOME}/scripts/purge-stale-governance-locks.py"
 register "ops/scripts/manage/backfill-legacy-reaper-cycles.py" "${FLEET_DEPLOY_HOME}/scripts/backfill-legacy-reaper-cycles.py"
+# Cron bridge double-ownership fixer (the doctor's check_cron_bridge_migration
+# flags a Hermes jobs.json row left behind after migration; the systemd timer is
+# the real owner). Reaches every host so each agent can self-clear its doubles.
+register "ops/scripts/manage/fix-cron-bridge-duplicates.py" "${FLEET_DEPLOY_HOME}/scripts/manage/fix-cron-bridge-duplicates.py"
 # prune-soul-profiles.py removed — profiles no longer in repo
 # soul-merge.py / soul-sync-all.sh removed 2026-11-04 (SOUL.md decoupled —
 # Hermes-owned, not fleet-managed). docs/templates/SOUL.md stays as reference.
