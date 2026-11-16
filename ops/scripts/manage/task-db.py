@@ -82,6 +82,7 @@ clear "requires v005" error and no events/notify are emitted.
 """
 
 import functools
+import io
 import json
 import os
 import platform
@@ -89,6 +90,7 @@ import re
 import subprocess
 import sys
 import uuid
+from contextlib import redirect_stdout
 from pathlib import Path
 
 # ── Config ────────────────────────────────────────────────────
@@ -1503,24 +1505,7 @@ def cmd_pending(repo: str | None = None, repo_path: str | None = None,
         if explain:
             print(unknown_repo_message("task_pending"), file=sys.stderr)
         return
-    raw = psql(PENDING_SQL_TEMPLATE.format(
-                   repo_clause=_repo_clause(resolved, include_untagged)),
-               _repo_params(resolved))
-    items = []
-    for line in raw.split("\n"):
-        row = parse_row(line)
-        if not row or row["status"] not in ("pending", "in_progress", "paused",
-                                            "blocked", "waiting"):
-            continue
-        item = {
-            "id": row["id"], "content": row["content"],
-            "agent_name": row["created_by"], "status": row["status"],
-            "session_id": row["session_id"], "priority": row["priority"],
-            "project": row["project"], "repo": row["repo"], "scope": row["scope"],
-            "kind": row["kind"], "parent_id": row["parent_id"],
-            "untrusted": row["source"] == "inbox",
-        }
-        items.append(item)
+    items = _pending_items(resolved, include_untagged)
     print(json.dumps(items, indent=2))
 
 
@@ -1650,6 +1635,120 @@ def cmd_save_end():
     )
     if pending and int(pending) > 0:
         print(f"⚠️  {pending} task(s) remain for next session.")
+
+
+def _pending_items(resolved, include_untagged: bool = False) -> list[dict]:
+    """Active/pending session rows for a resolved repo as item dicts.
+
+    Extracted from cmd_pending so the doctor's single-process probe can count
+    the same rows without re-spawning the interpreter. Behavior is identical:
+    the same PENDING_SQL query, the same status filter, the same item shape.
+    """
+    raw = psql(PENDING_SQL_TEMPLATE.format(
+                   repo_clause=_repo_clause(resolved, include_untagged)),
+               _repo_params(resolved))
+    items = []
+    for line in raw.split("\n"):
+        row = parse_row(line)
+        if not row or row["status"] not in ("pending", "in_progress", "paused",
+                                            "blocked", "waiting"):
+            continue
+        item = {
+            "id": row["id"], "content": row["content"],
+            "agent_name": row["created_by"], "status": row["status"],
+            "session_id": row["session_id"], "priority": row["priority"],
+            "project": row["project"], "repo": row["repo"], "scope": row["scope"],
+            "kind": row["kind"], "parent_id": row["parent_id"],
+            "untrusted": row["source"] == "inbox",
+        }
+        items.append(item)
+    return items
+
+
+def _find_probe_id(probe: str, resolved, include_untagged: bool = False) -> str | None:
+    """Locate a just-added doctor-probe row by its content (the list readback)."""
+    raw = psql(PENDING_SQL_TEMPLATE.format(
+                   repo_clause=_repo_clause(resolved, include_untagged)),
+               _repo_params(resolved))
+    for line in raw.split("\n"):
+        row = parse_row(line)
+        if row and row["content"] == probe:
+            return row["id"]
+    return None
+
+
+def _print_probe_json(ok: bool, results: list[dict]) -> None:
+    print(json.dumps({"ok": ok, "results": results}))
+
+
+def cmd_doctor_probe(repo: str | None = None):
+    """Single-process task-DB roundtrip for the doctor's check_task_db.
+
+    Runs the SAME write path the CLI's pending/add/update/save-end subcommands
+    use (task_upsert + the v005 transitions + task_archive_old) IN ONE process
+    and prints a single JSON object the doctor maps to verdicts. Collapses 6
+    interpreter startups into 1 (the health check went ~7.0s -> ~2s) while
+    still catching the F-04 class: if task_upsert no-ops, the readback cannot
+    find the row and the probe reports write_probe FAIL.
+    """
+    probe = f"doctor-probe {uuid.uuid4().hex[:8]}"
+    results: list[dict] = []
+
+    # 1. connectivity — same pending read cmd_pending uses.
+    try:
+        resolved = resolve_repo_for_query("--repo", repo, None, None)
+        if resolved is None:
+            results.append({"check": "connectivity", "part": "connectivity",
+                            "status": "FAIL",
+                            "msg": "task-db.py pending returned no output (repo unresolved)"})
+            _print_probe_json(False, results)
+            return
+        items = _pending_items(resolved)
+        results.append({"check": "connectivity", "part": "connectivity",
+                        "status": "PASS",
+                        "msg": f"Postgres reachable, {len(items)} pending item(s)"})
+    except SystemExit as _pe:
+        results.append({"check": "connectivity", "part": "connectivity",
+                        "status": "FAIL",
+                        "msg": f"task-db.py pending query failed: {_pe}"})
+        _print_probe_json(False, results)
+        return
+
+    # 2. write-probe: add via the REAL cmd_add (source=doctor-probe -> no notify).
+    # stdout of the helper is suppressed so the probe's JSON is the only stdout.
+    try:
+        with redirect_stdout(io.StringIO()):
+            cmd_add(probe, None, 0, None, resolved.slug, None, None, None, None,
+                    [], "doctor-probe")
+    except SystemExit as _ae:
+        results.append({"check": "write_probe", "part": "add", "status": "FAIL",
+                        "msg": f"task-db.py add did not confirm: {_ae}"})
+        _print_probe_json(False, results)
+        return
+
+    # 3. read the probe back (the RLS/list path).
+    probe_id = _find_probe_id(probe, resolved)
+    if not probe_id:
+        results.append({"check": "write_probe", "part": "readback", "status": "FAIL",
+                        "msg": "probe row added but not visible in task-db.py list — RLS or list path broken"})
+        _print_probe_json(False, results)
+        return
+
+    # 4. cleanup: pending -> in_progress -> completed -> archive (v005 matrix).
+    try:
+        with redirect_stdout(io.StringIO()):
+            cmd_update(probe_id, "in_progress")
+            cmd_update(probe_id, "completed")
+            psql("SELECT tasks.task_archive_old(?);", [PROFILE])
+    except SystemExit:
+        results.append({"check": "write_probe", "part": "cleanup", "status": "WARN",
+                        "msg": "add → start → complete → archive roundtrip OK (cleanup leaked a doctor-probe row)"})
+        _print_probe_json(True, results)
+        return
+
+    results.append({"check": "write_probe", "part": "cleanup", "status": "PASS",
+                    "msg": "add → start → complete → archive roundtrip OK"})
+    _print_probe_json(True, results)
 
 
 def cmd_prune(older_than: str):
@@ -1913,6 +2012,9 @@ def main():
         include_inbox = _has("--include-inbox")
         cmd_restore(sys.argv[2] if len(sys.argv) > 2 and not sys.argv[2].startswith("--") else "/dev/stdin",
                     include_inbox)
+
+    elif command == "doctor-probe":
+        cmd_doctor_probe(_flag("--repo"))
 
     elif command == "save-end":
         cmd_save_end()

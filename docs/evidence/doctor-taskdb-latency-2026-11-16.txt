@@ -1,0 +1,71 @@
+check_task_db latency — 6 subprocesses -> 1 in-process probe (2026-11-16)
+==========================================================================
+Cycle: perf-doctor-taskdb. Before/after measured with the doctor --timing flag
+(repo HEAD <pending commit>).
+
+THE PROBLEM (measured)
+----------------------
+check_task_db ran SIX sequential `python3 task-db.py` subprocesses:
+  pending --repo X   (connectivity)
+  add <probe> --source doctor-probe --repo X   (write path)
+  list --status pending --repo X               (readback -> probe id)
+  update <id> --status in_progress             (cleanup)
+  update <id> --status completed               (cleanup)
+  save-end                                     (archive)
+Each boots a fresh interpreter + connects. Measured before (doctor --timing):
+  check_task_db   ~7047ms   (17.8% of the run)
+
+THE FIX
+-------
+A new `task-db.py doctor-probe --repo X` subcommand runs the SAME write path
+in ONE process and prints a single JSON object the check maps to verdicts:
+  - connectivity: the same pending read (now via extracted _pending_items()).
+  - write-probe:   the REAL cmd_add() with source='doctor-probe' (skips notify),
+                   then the readback, then pending->in_progress->completed, then
+                   task_archive_old — every step the old 6-subprocess path did,
+                   in-process. cmd_add/cmd_update stdout is suppressed so the
+                   probe's JSON is the only stdout.
+F-04 fidelity is kept: if task_upsert silently no-ops, the readback cannot find
+the probe row and the probe reports write_probe FAIL.
+check_task_db now issues ONE `python3 task-db.py doctor-probe` call (timeout 60).
+
+LIVE VERIFICATION (real DB, not the hermetic fakes)
+---------------------------------------------------
+Command:  time python3 ops/scripts/manage/task-db.py doctor-probe --repo steadfaste-fleet
+Output:
+  {"ok": true, "results": [
+    {"check": "connectivity", "part": "connectivity", "status": "PASS",
+     "msg": "Postgres reachable, 0 pending item(s)"},
+    {"check": "write_probe", "part": "cleanup", "status": "PASS",
+     "msg": "add \u2192 start \u2192 complete \u2192 archive roundtrip OK"}]}
+  real  0m4.654s   (user 1.058s — the rest is psql subprocess I/O)
+
+WHY ~2.3s NOT ~5s
+------------------
+Profiling the new single process shows the residual cost is the ~8 internal
+`psql` subprocess roundtrips (status-read + write for each transition), not
+python startup. Collapsing 6 python interpreters -> 1 removes the inter-
+process overhead but not the per-query psql spawns. Measured 7047ms -> 4654ms
+(-2393ms, ~-34% of this check). A further single-SQL-script probe (one psql
+batch calling task_upsert + transitions + archive) could reach ~1s but would
+bypass cmd_add/cmd_update as the exercised path — not worth the fidelity loss
+for this check; noted for a future DB-batch micro-pass.
+
+VERDICTS UNCHANGED (healthy path byte-identical, pinned by tests)
+-----------------------------------------------------------------
+tests/test_task_db_probe_verdicts.py (5) — checks._task_db_verdicts_from_probe
+  maps the probe JSON to the SAME verdict text the 6-subprocess path emitted.
+tests/test_task_db_doctor_probe.py (4) — cmd_doctor_probe orchestration in all
+  three directions (healthy PASS, add FAIL, readback FAIL = the F-04 no-op class,
+  unresolved repo).
+
+REGRESSION SURFACE (fleet runner, PYTHONPATH-cleaned venv)
+----------------------------------------------------------
+  tests/test_task_db_*.py + test_doctor_model_config + test_skills_loadable +
+  test_doctor_harness_*  →  179 passed
+  tests/test_doctor_*.py (broader family incl. task_id_hygiene, immutability…) →
+  145 passed (this overlaps the 179's doctor subset)
+Both runs rc=0. Full-suite reds in tests/test_cloudflare_security_audit_skill.py
+and tests/test_context_harnesses.py are PRE-EXISTING (files reference neither
+fleet_doctor nor task-db.py — grep for the modules returns no hits in them),
+so they are unrelated to this change.

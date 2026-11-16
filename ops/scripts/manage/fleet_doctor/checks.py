@@ -5410,13 +5410,67 @@ def check_skill_stubs(res):
                 "Most are 9a9efa91 truncated imports — replace with full copies from agent caches")
 
 
+# Per-phase remedy for the doctor-probe results (the msg text comes from
+# task-db.py; the remedy is doctor-domain, kept here only).
+_TASK_PROBE_REMEDY = {
+    "connectivity": ("Check mycortex Postgres is running: "
+                     "sg docker -c 'docker ps | grep mycortex-postgres'"),
+    "add": "Schema may be missing/read-only — run fleet-update.sh, check tasks.schema_version",
+    "readback": "Check tasks.tasks RLS policies and tasks.task_list()",
+    "cleanup": "Check tasks.task_archive_old / task transitions (fleet-update.sh)",
+}
+
+
+def _task_db_verdicts_from_probe(out):
+    """Map the task-db.py `doctor-probe` JSON to check verdict rows.
+
+    Mirrors check_task_db's original per-phase verdicts (byte-for-byte on the
+    healthy PASS rows; the FAIL rows carry the same prefix + remedy) so the
+    collapse from 6 subprocesses to 1 cannot drift what the doctor reports.
+    `out` is the raw stdout of `task-db.py doctor-probe --repo <name>` ("" when
+    the process produced nothing). Returns a list of res.add() arg tuples.
+    """
+    if not out:
+        return [("Task DB connectivity", "FAIL",
+                 "task-db.py pending returned no output",
+                 _TASK_PROBE_REMEDY["connectivity"])]
+    try:
+        data = json.loads(out)
+    except (json.JSONDecodeError, TypeError):
+        return [("Task DB connectivity", "FAIL",
+                 f"task-db.py output not valid JSON: {out[:200]}",
+                 "Check mycortex Postgres: sg docker -c 'docker exec "
+                 "mycortex-postgres psql -U mycortex -d mycortex -c \"SELECT 1\"'")]
+    if not isinstance(data, dict) or not isinstance(data.get("results"), list):
+        return [("Task DB connectivity", "FAIL",
+                 f"task-db.py doctor-probe malformed: {out[:200]}",
+                 "Check task-db.py deployment (fleet-update.sh)")]
+    rows = []
+    for r in data["results"]:
+        name = ("Task DB connectivity" if r.get("check") == "connectivity"
+                else "Task DB write-probe")
+        if r.get("status") == "PASS":
+            rows.append((name, "PASS", r.get("msg", "")))
+        else:
+            remedy = _TASK_PROBE_REMEDY.get(r.get("part")) or _TASK_PROBE_REMEDY["readback"]
+            rows.append((name, r.get("status", "FAIL"), r.get("msg", ""), remedy))
+    return rows
+
+
 def check_task_db(res):
     """Check that task-db.py exists, reaches Postgres, AND can write.
 
     Write-probe (design task-workflow.md §8 L2): seed a source='doctor-probe'
-    row through the LIVE task-db.py add path, read it back via list, then
-    complete+archive it. Catches the F-04 class — a CLI that prints valid
-    JSON while writes silently no-op (the old todo-db.py rc=0 bug).
+    row through the LIVE task-db.py write path, read it back, then complete +
+    archive it. Catches the F-04 class — a CLI that prints valid JSON while
+    writes silently no-op (the old todo-db.py rc=0 bug).
+
+    Latency: this check used to run SIX `python3 task-db.py` subprocesses
+    (pending, add, list, update x2, save-end) sequentially — ~7.0s of
+    interpreter startup. task-db.py now has a `doctor-probe` subcommand that
+    runs the same write paths IN ONE process and prints a single JSON object;
+    this check calls it once. Behavior/verdicts are unchanged (the probe still
+    exercises task_upsert + the v005 transitions + task_archive_old).
     """
     task_script = FLEET_DEPLOY_HOME / "scripts" / "task-db.py"
     if not task_script.is_file():
@@ -5425,66 +5479,13 @@ def check_task_db(res):
             "Run: fleet-update.sh to deploy task-db.py")
         return
 
-    # Connectivity — `pending` must return valid JSON. The repo is named
+    # One in-process roundtrip instead of six subprocesses. The repo is named
     # EXPLICITLY: task queries are repo-scoped (cycle 12593) and this probe runs
-    # from a cron/agent cwd that need not be a git repo — an unresolvable repo
-    # returns [] by design, which would read as "database unreachable".
-    out = run_bg(["python3", str(task_script), "pending",
-                  "--repo", FLEET_REPO.name], timeout=15)
-    if not out:
-        res.add("Task DB connectivity", "FAIL",
-            "task-db.py pending returned no output",
-            "Check mycortex Postgres is running: sg docker -c 'docker ps | grep mycortex-postgres'")
-        return
-    try:
-        data = json.loads(out)
-        count = len(data) if isinstance(data, list) else 0
-    except (json.JSONDecodeError, TypeError):
-        res.add("Task DB connectivity", "FAIL",
-            f"task-db.py output not valid JSON: {out[:200]}",
-            "Check mycortex Postgres: sg docker -c 'docker exec mycortex-postgres psql -U mycortex -d mycortex -c \"SELECT 1\"'")
-        return
-    res.add("Task DB connectivity", "PASS", f"Postgres reachable, {count} pending item(s)")
-
-    # Write-probe — the actual roundtrip proof. The repo is named EXPLICITLY on
-    # BOTH sides: the row is therefore tagged with the canonical repo AND the
-    # read-back is scoped to that same repo. Since 2026-10-19 a scoped query is
-    # STRICT (own repo only, untagged rows excluded), so an untagged probe row
-    # read back with a scoped list would now be invisible and the doctor would
-    # report a broken write path that is in fact healthy.
-    probe = f"doctor-probe {uuid.uuid4().hex[:8]}"
-    add_out = run_bg(["python3", str(task_script), "add", probe,
-                      "--source", "doctor-probe",
-                      "--repo", FLEET_REPO.name], timeout=20)
-    if not add_out or "added" not in add_out.lower():
-        res.add("Task DB write-probe", "FAIL",
-            f"task-db.py add did not confirm: {add_out[:200] or '(no output)'}",
-            "Schema may be missing/read-only — run fleet-update.sh, check tasks.schema_version")
-        return
-
-    # Read the probe back — same explicit repo as the add above.
-    list_out = run_bg(["python3", str(task_script), "list", "--status", "pending",
-                       "--repo", FLEET_REPO.name], timeout=20)
-    probe_id = None
-    for line in (list_out or "").splitlines():
-        if probe in line:
-            probe_id = line.split()[0]
-            break
-    if not probe_id:
-        res.add("Task DB write-probe", "FAIL",
-            "probe row added but not visible in task-db.py list — RLS or list path broken",
-            "Check tasks.tasks RLS policies and tasks.task_list()")
-        # best-effort cleanup: archive pending rows for this profile
-        run_bg(["python3", str(task_script), "save-end"], timeout=15)
-        return
-
-    # Cleanup via the normal lifecycle: start → complete → archive (self-expiring).
-    # v005 transition matrix forbids pending → completed (must start first),
-    # so the probe walks in_progress first.
-    run_bg(["python3", str(task_script), "update", probe_id, "--status", "in_progress"], timeout=15)
-    run_bg(["python3", str(task_script), "update", probe_id, "--status", "completed"], timeout=15)
-    run_bg(["python3", str(task_script), "save-end"], timeout=15)
-    res.add("Task DB write-probe", "PASS", "add → start → complete → archive roundtrip OK")
+    # from a cron/agent cwd that need not be a git repo.
+    out = run_bg(["python3", str(task_script), "doctor-probe",
+                  "--repo", FLEET_REPO.name], timeout=60)
+    for verdict in _task_db_verdicts_from_probe(out):
+        res.add(*verdict)
 
 
 def check_task_lifecycle_v2(res):
