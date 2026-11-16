@@ -3563,6 +3563,18 @@ def register(ctx):
                     "After the change, score and release:\n"
                     '  mcp__review__feedback_accept(task_id="<task>", note="verified: ...")\n'
                     '  mcp__loop_governance__end_change(task_id="<task>")\n\n'
+                    "THIS GATE IS SATISFIABLE — the lock is the normal procedure, not a wall.\n"
+                    "If an operator asked you directly to update the fleet, YOU are expected\n"
+                    "to perform it through this ceremony — do not defer to an orchestrator:\n"
+                    "  1. (if not done) skill_view all always-section skills — that is gate 1\n"
+                    "  2. begin_change(task_id='fleet-update', description='operator-requested update')\n"
+                    "  3. git pull --rebase origin main && bash ops/scripts/fleet-update.sh\n"
+                    "  4. confirm the doctor reports 0 FAIL, then close:\n"
+                    "     feedback_accept(task_id='fleet-update', note='verified: 0 FAIL')\n"
+                    "     end_change(task_id='fleet-update')\n"
+                    "Full procedure: docs/runbooks/agent-fleet-update.md\n"
+                    "Report to the orchestrator ONLY if begin_change is genuinely absent from\n"
+                    "your tool list (the `review` MCP case below) — otherwise this is yours.\n\n"
                     "If that tool is NOT in your tool list, the review MCP server (named `review`) is\n"
                     "not registered on this host — a host setup problem, not something to work\n"
                     "around. Check it lock-free: hermes mcp list\n"
