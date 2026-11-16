@@ -19,6 +19,7 @@ from .checks import (
     check_dev_repo_agents,
     check_dev_repo_claude,
     check_restart_pending,
+    check_stale_enforcer_plugin,
     check_user_template,
     check_skills,
     check_crons,
@@ -170,6 +171,7 @@ def main():
         check_review_provenance,
         check_task_model_integrity,
         check_stale_loop_gov_daemon,
+        check_stale_enforcer_plugin,
         check_task_id_hygiene,
         ]
 
@@ -179,6 +181,7 @@ def main():
             check_dev_repo_agents,
             check_dev_repo_claude,
             check_restart_pending,
+            check_stale_enforcer_plugin,
             check_crons,
             check_scripts,
             check_services,

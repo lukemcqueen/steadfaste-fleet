@@ -581,6 +581,101 @@ def check_stale_loop_gov_daemon(res: "Results") -> None:
                 f"running module is current ({len(daemons)} daemon(s) verified by content hash)")
 
 
+# The gateway process that LOADS the enforcer plugin, as `ps -eo pid,args` renders
+# it: a direct module invocation (`hermes_cli.main gateway`) or the wrapper whose
+# argv ends in a bare `gateway run`. More than one process can match on a host, and
+# each loads its own copy of the plugin at start, so every match is judged rather
+# than only the first.
+_GATEWAY_ARGV_MARKERS = ("hermes_cli.main gateway", "gateway run")
+
+
+def check_stale_enforcer_plugin(res: "Results") -> None:
+    """Warn when the running gateway enforces a PREVIOUS enforcer revision.
+
+    The enforcer is a gateway PLUGIN: the gateway loads `__init__.py` at START and
+    keeps that module for the life of the process. `fleet-update.sh` deploys a new
+    copy to disk, and its `_restart_pending()` already records WHEN the
+    activation-only content last changed — `<combined sha256> <epoch>` in
+    `state/governance-enforcer-deployed` — but that record is only ever read to
+    print a transient deploy banner. Once the log scrolls away the condition is
+    invisible: the host looks fully deployed while every session on it is still
+    answered by the OLD enforcement code.
+
+    Measured 2026-11-17 (moses): the enforcer content changed 2026-11-16 23:11 while
+    the gateway had started 2026-11-14 10:31, so the agent was refused by the
+    pre-change block message. That message read as a permission wall, and the agent
+    reported to the operator that `fleet-update.sh` "needs someone with
+    administrative access" — while the sanctioned invocation was in fact allowed and
+    worked. Nothing on the host said "deployed, not loaded".
+
+    Signal: the recorded CONTENT-change epoch vs the gateway's start epoch. Content
+    is the authority, never mtime: a deploy rewrites files whose bytes did not
+    change, so an mtime comparison would warn on every deploy and be clearable only
+    by restarting a process already running the right code. A missing or unparsable
+    record is COULD NOT VERIFY, never a silent PASS. The fix is an operator restart,
+    so this is a WARN — nothing is broken, the new code is simply not loaded yet.
+    """
+    name = "Stale enforcer plugin"
+    try:
+        ps = subprocess.run(["ps", "-eo", "pid,args"], capture_output=True,
+                            text=True, timeout=10).stdout
+    except (subprocess.TimeoutExpired, OSError) as e:
+        res.add(name, "SKIP", f"could not scan processes: {type(e).__name__}")
+        return
+    gateways = []
+    for line in ps.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(("grep", "PID")):
+            continue
+        parts = line.split(None, 1)
+        if len(parts) != 2:
+            continue
+        pid, args = parts[0], parts[1]
+        if not any(marker in args for marker in _GATEWAY_ARGV_MARKERS):
+            continue
+        start = _daemon_start_epoch(pid)
+        if start is not None:
+            gateways.append((pid, start))
+    if not gateways:
+        res.add(name, "SKIP", "no running hermes gateway found to compare")
+        return
+    state = FLEET_DEPLOY_HOME / "state" / "governance-enforcer-deployed"
+    try:
+        raw = state.read_text(encoding="utf-8", errors="replace").strip()
+    except OSError as e:
+        res.add(name, "WARN",
+                f"COULD NOT VERIFY — no content-change record at {state.name} ({type(e).__name__})",
+                "The deploy records when activation-only content last changed, and without "
+                "that record enforcer staleness cannot be judged. Run: "
+                "bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh")
+        return
+    fields = raw.split()
+    try:
+        change_epoch = float(fields[1])
+    except (IndexError, ValueError):
+        res.add(name, "WARN",
+                f"COULD NOT VERIFY — {state.name} is not '<sha256> <epoch>' (read {raw[:60]!r})",
+                "Repair or delete the record so the next deploy rewrites it; until then "
+                "enforcer staleness cannot be judged.")
+        return
+    stale = [(pid, start) for pid, start in gateways if start < change_epoch]
+    if stale:
+        when_changed = datetime.fromtimestamp(change_epoch).strftime("%Y-%m-%d %H:%M:%S")
+        detail = "; ".join(
+            f"pid {pid} started {datetime.fromtimestamp(start).strftime('%Y-%m-%d %H:%M:%S')}"
+            for pid, start in stale)
+        res.add(name, "WARN",
+                f"deployed, not loaded — the enforcer content changed {when_changed} but "
+                f"{detail}, so this host is still enforced by the PREVIOUS revision",
+                "Run from a separate shell: hermes gateway restart  — the gateway loads the "
+                "enforcer plugin at start, so the current revision is not in play until that "
+                "process cycles. (Nothing is broken: the previous revision is enforcing.)")
+        return
+    res.add(name, "PASS",
+            f"running gateway loaded the current enforcer revision "
+            f"({len(gateways)} process(es) checked)")
+
+
 def check_task_id_hygiene(res: "Results") -> None:
   """Task ids must not carry control characters (a continuation line).
 
