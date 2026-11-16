@@ -1134,7 +1134,8 @@ def cmd_report(task_id: str, evidence: str | None = None, no_notify: bool = Fals
     task_id = _resolve_uuid(task_id)
     ok = psql("SELECT tasks.report_done(?::uuid, ?);", [task_id, evidence])
     if ok.strip() == "t":
-        print(f"✅ Reported {task_id[:8]}... → review (awaiting orchestrator verify)")
+        print(f"✅ Reported {task_id[:8]}... → review (awaiting verification; "
+              f"a designated verifier can close non-own slices directly)")
     else:
         print(f"❌ Could not report {task_id[:8]}... — not in_progress "
               f"or not your work", file=sys.stderr)
@@ -1143,7 +1144,8 @@ def cmd_report(task_id: str, evidence: str | None = None, no_notify: bool = Fals
 
 def cmd_verify(task_id: str, approve: bool, note: str | None = None,
                no_notify: bool = False):
-    """v4: ORCHESTRATOR-ONLY — verify a review slice (completed or failed)."""
+    """v4/v8: verify a review slice (completed or failed) — a core orchestrator,
+    a designated verifier of work they did not create, or a per-slice grant holder."""
     _require_v4("verify")
     task_id = _resolve_uuid(task_id)
     ok = psql("SELECT tasks.verify_slice(?::uuid, ?, ?);",
@@ -1153,14 +1155,16 @@ def cmd_verify(task_id: str, approve: bool, note: str | None = None,
         print(f"✅ Verified {task_id[:8]}... → {verdict}"
               + (f" note={note}" if note else ""))
     else:
-        print(f"❌ Verify refused — only orchestrators (moses/esther) may "
-              f"verify, or slice is not in review", file=sys.stderr)
+        print(f"❌ Verify refused — no verification authority for this slice "
+              f"(core orchestrator, designated verifier of work you did not "
+              f"create, or a recorded per-slice grant), or it is not in review",
+              file=sys.stderr)
         sys.exit(1)
 
 
 def cmd_verify_grant(task_id: str, verifier: str, note: str,
                      expires_in_hours: int | None = None) -> None:
-    """v6: ORCHESTRATOR-ONLY (DB-enforced) — record a per-slice verify grant.
+    """v6/v8: record a per-slice verify grant (core-orchestrator-only, DB-enforced).
 
     The single-host verify dead-end fix: a slice in `review` on a WORKER host
     can only be verified by a session on that host, and (before v017) only a
@@ -1169,7 +1173,7 @@ def cmd_verify_grant(task_id: str, verifier: str, note: str,
     audit trail); the named verifier's OWN task_verify/verify_slice call then
     honors it for that slice only, and the row is consumed on the first verify
     decision. Self-delegation is impossible: authorize_verify refuses any
-    caller without the tasks_verifier capability.
+    caller without the tasks_orchestrator capability.
     """
     _require_v6("verify-grant")
     task_id = _resolve_uuid(task_id)
@@ -1195,8 +1199,8 @@ def cmd_verify_grant(task_id: str, verifier: str, note: str,
         print(f"✅ Verify-grant {task_id[:8]}... → verifier {verifier}{span}\n"
               f"   note: {note}")
     else:
-        print(f"❌ Verify-grant refused — only orchestrators (moses/esther) may "
-              f"authorize verification", file=sys.stderr)
+        print(f"❌ Verify-grant refused — only a core orchestrator "
+              f"(tasks_orchestrator) may authorize verification", file=sys.stderr)
         sys.exit(1)
 
 
@@ -1388,7 +1392,7 @@ def cmd_list_board(repo: str | None = None, repo_path: str | None = None,
         _params,
     )
     if review.strip():
-        print("  In review (awaiting orchestrator verify):")
+        print("  In review (awaiting verification):")
         for line in review.splitlines():
             parts = line.split("||")
             if len(parts) >= 2:

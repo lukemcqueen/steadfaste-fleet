@@ -39,6 +39,8 @@ REQUIRED = {
         "permission denied for function verify_slice",
     "task_verify states nothing runs it automatically": "NOTHING RUNS THIS AUTOMATICALLY",
     "task_verify tells the agent what to DO instead": "hand the slice id",
+    "task_verify tells a designated verifier to verify directly, no hand-off":
+        "NON-OWN review slices DIRECTLY",
     "task_report says review is not completion": "does NOT reach completed",
     "task_report tells the agent to follow up, not wait": "rather than wait",
 }

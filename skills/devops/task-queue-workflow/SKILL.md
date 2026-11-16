@@ -29,7 +29,7 @@ Two tiers, not role-locked domains (Luke 2026-08-24):
   Strategy/research/verification/case-study authoring are orchestrator work.
 - **Every other agent = a general worker** — may claim and execute ANY slice
   (build, refactor, research, docs, infra). No role-lock.
-- A worker may claim any pending slice; **only the orchestrator may verify**.
+- A worker may claim any pending slice; **an orchestrator or a designated verifier (of work it did not create) may verify** — see the review bullet below.
 
 ## Lifecycle
 
@@ -40,19 +40,26 @@ pending → (claim) → in_progress → (report) → review → (verify) → com
 
 - `review` = worker-done-AWAITING-VERIFICATION. **Not done, and nothing completes it for you.**
   Verification is enforced in the DB rather than by convention: `tasks.verify_slice` is SECURITY
-  DEFINER with a moses/esther allowlist INSIDE the function, and no other profile holds EXECUTE on
-  it — so a worker's `permission denied for function verify_slice` is permanent. It is not a retry
-  hint, and it is not a signal that someone else is about to act. The scheduled orchestrator pass
-  is what drains the queue, so **confirm that pass exists on the host** (`hermes cron list`) rather
-  than assuming the documented schedule is installed: where it is absent, paused, or never fires,
-  the slice sits in `review` indefinitely. So follow up in the SAME breath as the report — name the
-  slice id and its evidence to moses/esther (bus, or escalate for a decision only the operator
-  holds) — instead of stopping at `report` and waiting. A slice stuck >24h in review gets
+  DEFINER and admits a caller only through `tasks.verify_capable_for` — a CORE orchestrator
+  (`tasks_orchestrator`, moses/esther by default), a **DESIGNATED verifier** (holds
+  `tasks_verifier`, granted by the operator's `TASKS_VERIFIER_ROLES`) of work it did NOT create,
+  or the holder of a live per-slice verify_grant (the only route for your OWN work). A caller with
+  none of these sees a hard refusal (`permission denied for function verify_slice` or a false
+  return) — not a retry hint and not a signal someone else is about to act. **No scheduled job
+  verifies slices**, so confirm the drain exists on the host (`hermes cron list`) rather than
+  assuming it: where it is absent, paused, or never fires, a slice sits in `review` indefinitely.
+  **A designated verifier closes a NON-OWN review slice DIRECTLY (`task_verify` /
+  `task-db.py verify`) — no orchestrator hand-off, no ask.** Only your OWN slice (or a
+  non-verifier) needs a core orchestrator: follow up in the SAME breath as the report — name the
+  slice id and its evidence to an orchestrator (bus, or escalate for a decision only the operator
+  holds) — or have the operator record a verify grant (`task-db.py verify-grant`) so a verifier's
+  session can close it. Never stop at `report` and wait. A slice stuck >24h in review gets
   auto-re-queued by the handler's stale sweep (Arm 3) — never auto-completed.
 - **A description that names WHO may run a tool, without naming WHAT refused the caller or what to
   do next, invites the reader to assume a passive actor will do it.** Agent-facing text (tool
-  descriptions, check messages, warnings) must state the enforcement and the next ACTION: "only the
-  orchestrator may run this, and no job does it automatically — report, then hand the slice over",
+  descriptions, check messages, warnings) must state the enforcement and the next ACTION: "an
+  orchestrator or a designated verifier may run this, and no job does it automatically — a
+  designated verifier verifies non-own work directly, otherwise report and hand the slice over",
   never a bare label like "ORCHESTRATOR-ONLY". An agent that reads the label as "someone will pick
   this up" stops working on a slice nobody is coming for.
 - **The tasks store is HOST-LOCAL, so a peer's stuck slice is NOT yours to verify.** The grants are
@@ -75,7 +82,7 @@ pending → (claim) → in_progress → (report) → review → (verify) → com
   STILL refusing its own slices. The per-slice grant remains the only route for verifying your own
   work. For a host with no verifier route at all, escalate to the operator.
 - **Widening WHO may verify WAS the schema decision, made at v017/v018 — capability + recorded
-  grants, never a config tweak.** `is_orchestrator` is now `pg_has_role(p_role, 'tasks_verifier',
+  grants, never a config tweak.** `is_orchestrator` is now `pg_has_role(p_role, 'tasks_orchestrator',
   'MEMBER')` (the NOLOGIN role is granted by default to the orchestrator reader roles; the old
   moses/esther name list is gone — adding a permanent verifier is a GRANT, a data operation, via
   the operator's `TASKS_VERIFIER_ROLES` env). `verify_slice` EXECUTE is widened to every profile
@@ -94,7 +101,7 @@ task-db.py list --claimable                    # the worker queue: pending slice
 task-db.py claim <slice-id>                    # atomic pending→in_progress, assignee=me (self-only)
 task-db.py unclaim <slice-id> --reason "<gap>" # return to pending (blocker, tool gap) — never fake progress
 task-db.py report <slice-id> --evidence "<test output / measured numbers>"
-                                               # in_progress→review, awaiting orchestrator verify
+                                               # in_progress→review, awaiting verification (designated verifier / orchestrator)
 ```
 
 - Execute the orchestrator's PLAN (written in the slice content), don't
@@ -259,13 +266,15 @@ derivation CHECK and RLS path, and every orchestrator plan restates the rule.
   path and a raw `UPDATE tasks.tasks SET status='completed', "column"='done'` — the raw path is the
   one the trigger actually gates. Assert the ROW STATE afterwards as well as the rc: a refusal that
   still changed the row is not a refusal.
-- **A non-orchestrator probe role needs its own grants, and an honest worker cannot call
-  `verify_slice` at all.** v009 grants `claim_slice`/`unclaim_slice`/`report_done` BY NAME to each
-  profile role and `verify_slice` to moses/esther only, so a scratch `mycortex_reader_<probe>` that
-  is merely a member of `mycortex_reader` gets `permission denied for function claim_slice` until you
-  grant those three explicitly, while its `verify_slice` refusal is `permission denied` rather than
-  `false`. Assert BOTH layers — grant it temporarily to observe the in-function allowlist return
-  `false`, then revoke — or the test reports the wrong mechanism.
+- **A non-orchestrator or scratch probe role needs explicit grants.** The six
+  profile roles (`esther`/`moses`/`titus`/`joseph`/`kustos`/`gisu`) have EXECUTE
+  on `verify_slice` (v017 widened it from esther/moses-only). A scratch role
+  (`mycortex_reader_<probe>`) that is merely a member of `mycortex_reader` gets
+  `permission denied` until you grant `claim_slice`/`unclaim_slice`/`report_done`/
+  `verify_slice` explicitly. Once granted, `verify_slice` refuses by returning
+  `false` (the capability check inside), not `permission denied`. Assert BOTH
+  layers — grant temporarily to observe the in-function return `false` with your
+  caller, then revoke — or the test reports the wrong mechanism.
 - **Claim is self-only** — `p_assignee` must equal `profile_of(session_user)`;
   you can claim only FOR YOURSELF, never assign work to others.
 - **A claimed slice can't be re-claimed** — the single claimer holds it until

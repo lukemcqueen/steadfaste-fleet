@@ -5,11 +5,14 @@ bounce the rest, and NEVER rubber-stamp. An operator who can't verify must get
 a clear exit-3 message, not a silent pass.
 
 WHY. A worker submits evidence (task_report) and the slice goes to `review`.
-Only an orchestrator profile can move review->completed: the DB function
-`tasks.verify_slice(uuid, boolean, text)` is SECURITY DEFINER with a
-moses/esther allowlist INSIDE, and EXECUTE is granted only to roles
-`mycortex_reader_esther`/`mycortex_reader_moses`. Nothing is scheduled to run
-it, so slices sit in review forever. This sweep drains them — but only when
+A core orchestrator (`tasks_orchestrator`), a DESIGNATED verifier (`tasks_verifier`
+of work they did not create), or a per-slice grant holder may move review→completed,
+gated by the `tasks.verify_capable_for` predicate inside the function (v018+).
+Nothing is scheduled to run it, so slices sit in review forever. The sweep probes
+`has_function_privilege` as a quick pre-flight — in the current schema v018+ EXECUTE
+is granted to all six profile roles, so this gate only fires for scratch roles;
+a profile role with no capability receives a `false` return from `verify_slice`,
+not a permission denial. This sweep drains review slices — but only when
 the evidence is real.
 
 WHAT IS PINNED
