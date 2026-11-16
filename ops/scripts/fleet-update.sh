@@ -3507,6 +3507,35 @@ main() {
     fi
   fi
 
+  # ── Ensure loop-governance + review MCP servers registered (ALL agents) ──
+  # Every agent must be able to open a governance lock (begin_change) on its
+  # own host. If only the tasks MCP is registered, a DIRECT update request
+  # ("pull latest fleet and update") is blocked with no way to satisfy the
+  # gate — the agent cannot begin_change. Register BOTH role-distinct servers
+  # from the IMMUTABLE deployed copy (P1-A hardening: the repo working tree is
+  # user-writable). Idempotent; mirrors the tasks block above and the doctor's
+  # --fix command (mcp_names.py).
+  if command -v hermes >/dev/null 2>&1; then
+    local lg_venv="${HOME}/.steadfaste-fleet/venv/bin/python3"
+    local lg_server="${HOME}/.steadfaste-fleet/tools/loop-governance/loop-gov-mcp.py"
+    if [[ -x "$lg_venv" && -f "$lg_server" ]]; then
+      for _lg in "loop-governance:loop-governance" "review:review"; do
+        local _lg_name="${_lg%%:*}" _lg_role="${_lg##*:}"
+        if hermes mcp list 2>/dev/null | grep -q "${_lg_name}"; then
+          : # already registered
+        else
+          info "Registering ${_lg_name} MCP server…"
+          if hermes mcp add "${_lg_name}" --command "$lg_venv" --args "$lg_server --role ${_lg_role}" 2>/dev/null; then
+            info "  ✓ ${_lg_name} MCP registered (restart the gateway to load tools)"
+          else
+            warn "hermes mcp add ${_lg_name} failed — run: python3 ${FLEET_DEPLOY_HOME}/scripts/fleet-doctor.py --fix"
+          fi
+        fi
+      done
+      unset _lg _lg_name _lg_role
+    fi
+  fi
+
   deploy_nginx_configs
 
   # Deploy system scripts to /usr/local/sbin/ (root-owned, NOPASSWD-safe)
