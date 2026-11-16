@@ -1,0 +1,46 @@
+Doctor performance measurement — 2026-11-16 (cycle doctor-timing-instrumentation)
+=================================================================================
+Measured with the new `fleet-doctor.py --quiet --timing` flag (added this cycle),
+on moses. The --timing flag prints each check's wall-clock (perf_counter), slowest
+first, with share of total, so future optimizations are measured not guessed.
+
+Command: python3 ops/scripts/manage/fleet-doctor.py --quiet --timing
+
+BEFORE (sequential baseline)
+----------------------------
+Total: 74.7s over 54 checks. 75% of the wall-clock was concentrated in 6 checks,
+all subprocess/DB/network-bound and run sequentially:
+
+  check                     ms       %
+  check_harness_registry  15518    20.8%   <-- 5 x `fleet harness verify` subprocess, SEQUENTIAL
+  check_crons             13227    17.7%   <-- 362 x `git log -1 --format=%ct -- <file>` subprocess
+  check_task_db            9262    12.4%   <-- 3 x `python3 task-db.py` + Postgres (write-probe)
+  check_jev_layer          7420     9.9%   <-- `hermes config get model` subprocess + catalog fetch
+  check_governance         6044     8.1%
+  check_skills_loadable    5035     6.7%
+  ... (48 other checks)   ~14100   ~25%
+
+AFTER (this cycle's two surgical fixes)
+--------------------------------------
+Total: 50.0s (-33%). Root-cause fixes, not output changes:
+
+  check_crons              895   (was 13227)  -- 362 'git log -1' subprocesses collapsed to ONE
+                                                'git log --name-only --pretty=format:%ct'
+                                                via _changed_scripts_from_git_log()
+  check_harness_registry  5837   (was 15518)  -- 5 harness verifies now run concurrently via
+                                                ThreadPoolExecutor (bounded by the single
+                                                slowest harness)
+
+Verification
+------------
+- 15 harvest-registry/loop tests pass, including the new ThreadPoolExecutor
+  exception path (verify that raises -> WARN, no crash, no shared-state race).
+- New tests/test_doctor_changed_script_parse.py covers the collapsed git-log
+  parser (digit filenames, blank lines, non-.py/.sh filtering, newest-first
+  latest-timestamp rule, empty input).
+- doctor --quiet after deploy: 507 pass / 16 warn / 0 fail (Deploy sync pass).
+- Harness verdicts unchanged: same 5 PASS + 1 SKIP before and after.
+
+Remaining slow checks (next optimization targets, out of scope this cycle):
+check_task_db (3 subprocesses + Postgres write-probe), check_jev_layer (hermes
+config subprocess + catalog fetch), check_governance, check_skills_loadable.

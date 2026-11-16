@@ -1148,6 +1148,35 @@ def _check_cron_prompt_stale_refs(res, registered):
 
 CHANGED_SCRIPT_WINDOW_DAYS = 7
 
+def _changed_scripts_from_git_log(out: str) -> dict:
+  """Map basename -> latest commit-ts for ops/scripts files, from ONE git log run.
+
+  Consumes `git log --since=... --name-only --pretty=format:%ct -- ops/scripts/`.
+  Each commit is headed by its Unix timestamp (all-digits); the lines after it
+  until the next timestamp are the files that commit touched. Commits are
+  newest-first, so the first stamp seen for a file is its LATEST commit time
+  (setdefault keeps it; a later, older commit listing the same file is ignored).
+  Only .py/.sh files inside a directory (the line contains '/') are kept —
+  matching the old per-file filter exactly. Blank lines between commits are
+  skipped. A bare all-digit LINE is a timestamp (a real file path always has
+  '/' and a non-empty extension), which is why a dir-less digit-only name is
+  not representable — the same limitation the old parser had.
+  """
+  changed: dict = {}
+  cur_ts = None
+  for line in out.splitlines():
+    line = line.strip()
+    if not line:
+      continue
+    if line.isdigit():
+      cur_ts = int(line)
+      continue
+    if cur_ts is not None and (line.endswith(".py") or line.endswith(".sh")) and "/" in line:
+      base = line.rsplit("/", 1)[-1]
+      changed.setdefault(base, cur_ts)
+  return changed
+
+
 def _check_changed_script_execution(res):
   """Warn when an ops/scripts file changed in the repo but its cron job on
   THIS host has not run since the change (the dogfooding guard).
@@ -1184,17 +1213,7 @@ def _check_changed_script_execution(res):
     res.add("Script run evidence", "SKIP", f"git scan failed: {e}")
     return
 
-  cur_ts = None
-  for line in out.splitlines():
-    line = line.strip()
-    if not line:
-      continue
-    if line.isdigit():
-      cur_ts = int(line)
-      continue
-    if cur_ts is not None and (line.endswith(".py") or line.endswith(".sh")) and "/" in line:
-      base = line.rsplit("/", 1)[-1]
-      changed.setdefault(base, cur_ts)
+  changed = _changed_scripts_from_git_log(out)
 
   if not changed:
     res.add("Script run evidence", "PASS",

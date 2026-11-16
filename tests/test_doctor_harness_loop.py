@@ -225,6 +225,32 @@ def test_a_registry_view_that_is_not_json_is_could_not_verify(monkeypatch, tmp_p
     assert calls == [], calls
 
 
+def test_harness_verify_raising_is_a_warn_not_a_crash(monkeypatch, tmp_path):
+    """The ThreadPoolExecutor must surface a worker exception as a WARN, never crash.
+
+    The per-harness verifies run concurrently; a verify that raises (not just
+    returns rc!=0) must be caught and reported, and the shared Results list must
+    not end up with a duplicate/missing entry for that harness.
+    """
+    regdir = _registry(tmp_path)
+    monkeypatch.setattr(checks, "HOME", tmp_path)
+
+    def fake_list():
+        return 0, _registry_view(regdir)
+
+    def boom(name):
+        raise RuntimeError("harness plumbing exploded")
+
+    monkeypatch.setattr(checks, "_run_harness_list", fake_list)
+    monkeypatch.setattr(checks, "_run_harness_verify", boom)
+    res = Results()
+    checks.check_harness_registry(res)          # must not raise
+    e = _entry(res, "present-harness")
+    assert e["status"] == "WARN", e
+    assert "RuntimeError" in e["detail"], e
+    assert "harness verify present-harness" in e["fix"], e
+
+
 # ── the uber test: the REAL doctor, through its own dispatch, on THIS host ──────
 
 def _doctor_json(env_extra: dict | None = None) -> dict:
