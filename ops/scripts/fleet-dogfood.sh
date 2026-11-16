@@ -62,6 +62,7 @@ done
 [[ -f "$DOCTOR" ]] || { echo "❌ doctor not found at $DOCTOR"; exit 1; }
 
 echo "━━━ fleet-dogfood ━━━"
+_TOT0=$SECONDS
 
 # Capture the current governance session's task_id BEFORE deploy: the
 # deploy step (fleet-update.sh) purges governance locks (known
@@ -88,6 +89,7 @@ if [[ -z "$DOCTOR_ONLY" ]]; then
   #    hardcoding 'main' pulls the stale pre-rewrite history, re-triggering a
   #    stuck interactive rebase (unmerged files) that breaks the deploy sync.
   echo "▶ 1/4 pull latest"
+  _P0=$SECONDS
   _DEFAULT_BRANCH=$(git -C "$REPO" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's#refs/remotes/origin/##' || echo "main")
   # ── Fail-closed relock (Luke 2026-10-02) ──
   # This script runs the deploy, which unlocks the immutable enforcement files.
@@ -127,10 +129,14 @@ if [[ -z "$DOCTOR_ONLY" ]]; then
       fi
     })
 
+  echo "   ✓ pull: $((SECONDS - _P0))s"
+
   # 2. Deploy — sync deployed files to repo source
   if [[ -f "$UPDATE" ]]; then
     echo "▶ 2/4 deploy"
-    bash "$UPDATE" ${FORCE:-} 2>&1 | sed 's/^/   /'
+    _P0=$SECONDS
+    bash "$UPDATE" ${FORCE:-} 2>&1 | awk '{ print "   " $0; fflush() }'
+    echo "   ✓ deploy: $((SECONDS - _P0))s"
   else
     echo "⚠️  update script not found — skipping deploy (doctor-only state)"
   fi
@@ -140,12 +146,14 @@ fi
 
 # 3. Doctor — full state verification
 echo "▶ $([ -z "$DOCTOR_ONLY" ] && echo 3/4 || echo 2/2) doctor"
+_DOCTOR0=$SECONDS
 if [[ -n "$QUIET" ]]; then
   DOCTOR_OUT=$(cd "$(dirname "$DOCTOR")" && python3 "$(basename "$DOCTOR")" --quiet 2>&1)
 else
   DOCTOR_OUT=$(cd "$(dirname "$DOCTOR")" && python3 "$(basename "$DOCTOR")" 2>&1)
 fi
 echo "$DOCTOR_OUT" | sed 's/^/   /'
+echo "   ✓ doctor: $((SECONDS - _DOCTOR0))s"
 
 # 4. Verify — FAIL means the dogfood cycle failed. A real failure is any
 #    ❌ check line that is NOT the "Overall: FAILING" summary line.
@@ -173,5 +181,6 @@ if [[ "${_DOGFOOD_FAILS:-0}" -gt 0 ]]; then
 fi
 
 echo ""
+echo "   (total dogfood: $((SECONDS - _TOT0))s — pull/deploy/doctor above)"
 echo "✅  DOGFOOD PASSED — deployed state verified clean."
 exit 0
