@@ -298,7 +298,9 @@ def test_the_baseline_is_the_model_the_host_actually_runs():
     """Luke 2026-10-28: the default model is the anchor. The multipliers and the
     doctor's cost guard are anchored to the baseline, so a baseline that is not the model we
     run makes every 'x cheaper' claim compare against the wrong thing.
-    Re-anchored 2026-11-15 to qwen3-coder-30b (the approved session default)."""
+    Re-anchored to qwen3-coder-30b (the approved session default — see
+    docs/evidence/worker-model-effort-ab-2026-11-13/ and the operator's 2026-11-15
+    approval). This test reads config/jev-router-models.json (same commit range)."""
     doc = _config()
     assert doc["baseline"] == "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
     assert doc["prices"][doc["baseline"]]["in"] + doc["prices"][doc["baseline"]]["out"] < 1.0

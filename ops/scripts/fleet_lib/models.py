@@ -102,7 +102,10 @@ def get_model(env_var: str, default: str) -> str:
 # backend all resolve their default here; changing the reviewer (e.g. to a
 # cheaper model) is a ONE-LINE edit to the constant, not 5 files. The env var
 # ADVERSARIAL_REVIEWER_MODEL is honored first everywhere.
-REVIEWER_MODEL_DEFAULT = "xiaomi/mimo-v2.6-pro"  # canonical reviewer (A/B 2026-11-13: equal recall, ~6x cheaper, fastest)
+# canonical reviewer — winner of docs/evidence/plan-reviewer-model-eval-2026-11-13/
+# (equal recall, ~6x cheaper, fastest) and docs/evidence/codegen-pro-models-2026-11-13/
+# (6/6 at the lowest measured cost). Change it via ADVERSARIAL_REVIEWER_MODEL.
+REVIEWER_MODEL_DEFAULT = "xiaomi/mimo-v2.6-pro"
 
 
 def get_reviewer_model() -> str:
