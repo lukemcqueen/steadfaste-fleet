@@ -7,6 +7,14 @@ author: Steadfaste Fleet
 license: MIT
 platforms: [linux, macos]
 ---
+<!-- Backport provenance (deployed -> repo), 2026-11-16: the lessons below were
+     authored earlier the SAME DAY in the DEPLOYED copy on this host (a session
+     written to the deployed tree, which the repo copy did not share) during the
+     model-servability / selector-value work. They are copied into the repo so the
+     deploy carries them fleet-wide. Every repo-only line this supersedes was
+     checked by phrase match: each is superseded IN PLACE (a corrected acceptance
+     recipe and a corrected latency claim), not lost. -->
+
 <!-- renamed from skills/devops/cortex-deployment-sync/SKILL.md in the cortex-to-fleet sweep; content predates the range (commit 353c3d54) -->
 
 
@@ -55,7 +63,16 @@ date) — investigate those warnings; do not assume the enforcer is current.
 
 > "Whenever there's a governance mechanism change you NEED to fleet update as this is the proper path. no shortcuts."
 
-1. `git pull --rebase origin main` — resolve conflicts (see Pitfall 2). If unstaged changes block the rebase, use `git pull --rebase --autostash origin main`.
+1. `git pull --rebase origin main` — resolve conflicts (see Pitfall 2).
+   A refusal (`cannot pull with rebase: You have unstaged changes` / `Your index contains
+   uncommitted changes`) says the TREE IS DIRTY — which is a DIFFERENT fault from being
+   BEHIND, and the two need opposite responses. Discriminate before acting: `git fetch
+   origin` then `git rev-list --left-right --count HEAD...origin/main`. A `0 0` means
+   there is nothing to pull and the dirty index is the WHOLE blocker, so a pull fix
+   cannot clear it. `--autostash` is only for a genuinely-behind host whose local edits
+   are not its own deliverable — when the dirt is reconciler drift, CONVERGE it by
+   committing (Pitfall 30) rather than stashing a lesson the fleet still needs, and note
+   that committing into a clean tree also unblocks the next pull.
 2. **`bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh`** — the sanctioned lock-free invocation (see ⚡ above)
 3. Doctor output is embedded in the update; fix every ❌ (score PENDING cycles, verify governance deployed)
 4. Re-run step 2 if the doctor reported failures, until it's clean (0 fail)

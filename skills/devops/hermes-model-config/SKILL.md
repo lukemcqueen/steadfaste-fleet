@@ -11,7 +11,15 @@ platforms: [linux, macos]
      lessons the repo lacked. Every repo-only line it would drop was checked by phrase
      match and is a reflow or a deliberate CORRECTION, so the direction is
      deployed -> repo. Everything below is the deployed lesson copied verbatim, plus this
-     note; it was NOT authored in the backport range that landed it. -->
+     note; it was NOT authored in the backport range that landed it.
+     SECOND backport the same day (2026-11-16, model-servability / selector-value
+     work): further lessons again lived only in the deployed copy — the
+     upstream-servability mechanism (now references/model-upstream-servability.md),
+     the CORRECTED acceptance recipe (`Fallback activated` + `Turn ended: …
+     model=<SERVED>`, NOT the `conversation turn:` line, which prints the
+     CONFIGURED model), and the CORRECTED latency claim (percentiles are
+     auth-only; the free feed gives availability). Repo-only lines dropped in this
+     pass were checked by phrase match and are superseded IN PLACE, not lost. -->
 
 # Hermes Model & Provider Config
 
@@ -71,9 +79,45 @@ warning, cron model overrides, model.default regressions after `hermes update`.
    row whose `model` differs from the model the turns actually used. Trust the
    log over the banner AND over the config: the config states the intent, the
    log states what ran.
+6. **A model that IS live, priced and correctly written can still be UNservable
+   — check the UPSTREAMS, not just the id.**
+   `curl -s https://openrouter.ai/api/v1/models/<author>/<slug>/endpoints` and
+   count DISTINCT PROVIDERS, not endpoints — several endpoints under ONE
+   provider (`endpoints=2`, both `Amazon Bedrock`) is the same single-provider
+   fragility as `endpoints=1`, so reading the endpoint count alone lets it pass
+   as healthy. A single upstream is a single point of incompatibility: `400 'Provider returned error'
+   provider_name='Amazon Bedrock'` with `raw: "User messages cannot contain
+   reasoning content. Please remove the reasoning content and try again."`
+   means the model is served only by Bedrock, which rejects the reasoning
+   Hermes replays — so EVERY turn 400s and rides the fallback chain while the
+   banner stays clean. The catalog id lookup (`/api/v1/models`) proves
+   PRESENCE; only the endpoints call proves SERVABILITY. Mechanism and why no
+   config knob fixes it: `references/model-upstream-servability.md`.
 
 ## Fix
 
+- **Decide the OWNER before touching the value.** On a fleet host the session
+  default is not free-standing: the Jev list's `baseline` must equal it, and the
+  daily `orch-model-market-scan` cron owns re-pointing both. Check
+  `config/jev-router-models.json` → `baseline`; when it names this host's model,
+  the AUTOMATED process owns the change — run that job rather than hand-writing
+  the config: `cronjob_manage action=list` to find the job id (never guess one),
+  then `cronjob_manage action=run` with that id; pass your diagnosis in the
+  transient `prompt` (that fire only, never persisted) so the job's own STEP 1.2
+  decides with the facts, and do NOT poll — its outcome re-enters the
+  conversation. Note the job runs on the MAIN model, so a broken default
+  surfaces in its transcript too. A hand `hermes config set` is for a bare host
+  with no such owner, or to repair a label — the operator will reject a
+  hand-switch of a fleet-owned value even when the new value is right, because
+  the point is that the process, its gates and its invariants move together.
+  **Decide the owner BEFORE the first write, not after the objection.** If you
+  already hand-wrote a fleet-owned value, REVERT it in the same session — set it
+  back to the list's `baseline` (bare id) and read it back both ways (`hermes
+  config get` AND the file on disk) — then hand the decision over by running the
+  owning job. Leaving your value standing while the process supposedly "decides"
+  IS the hack the operator objects to, and defending it invites the same
+  correction again. Choosing no value yourself is the deliverable; a revert is
+  not a new model decision.
 - `hermes config set model.default <model-id>` — **NEVER hand-edit
   config.yaml** (stray indent breaks the live gateway; hermes-agent hard
   invariant). Agent file-write tools refuse the file outright
@@ -96,6 +140,23 @@ warning, cron model overrides, model.default regressions after `hermes update`.
   (see the pricing-list-policy reference of the system-one-judgment skill).
   The selftest checks EVERY model in a pool and catches the stranded fallback
   the tests miss.
+- **A cheaper baseline is not a local edit — it cascades through the ceilings.**
+  Ceilings are MULTIPLES of the baseline (`simple: 0.5`) and the simple rule is
+  asserted for EVERY member of a simple pool, not just its head. A baseline
+  below twice the dearest simple member therefore forces that member out of
+  every simple pool, which re-picks those heads, which changes what the cheap
+  tier runs fleet-wide. Compute that cascade BEFORE proposing a re-anchor, and
+  treat any change to a ceiling multiple or to the vetted set as a POLICY call:
+  state the concrete consequence and let the operator decide — never restructure
+  the cheap tier on your own initiative just to make `--selftest` pass.
+  So answer an "is there a cheaper default?" question by computing that cascade
+  FIRST: count how many vetted models sit AT the current baseline price point
+  (usually exactly one, so "no third option" is the common truthful answer),
+  then note that any cheaper baseline evicts the dearest simple member from
+  EVERY simple pool. The honest options are therefore (a) a model already in the
+  list at or above the price the ceilings require (state the multiple it costs),
+  (b) a NEW model that must first pass A/B vetting to hold the same price point,
+  or (c) a policy change to the ceiling multiple — never a silent swap.
 - **The config's DOCUMENTED fields go stale SILENTLY while the tests stay
   green.** Enforcement reads `prices[baseline]` LIVE, so `derivation.heads`,
   `candidates`, and `baseline_price_usd_per_m` can contradict reality (a head
@@ -116,7 +177,38 @@ warning, cron model overrides, model.default regressions after `hermes update`.
   never auto-adopted), and on a price/order change (`rc=1 apply_pending`) does
   a governed apply that re-points the session/reviewer default only if the
   vetted head changed. So a manual re-price is the exception; let the scan
-  drive it and verify with `router-pools.py --selftest`.
+  drive it and verify with `router-pools.py --selftest`. The three surfaces, in
+  the order you use them: a BARE run (`router-pools.py`, == `--check`) is the
+  read-only drift check and prints `no findings — every pool matches the list`
+  against the live `$HERMES_HOME/jev/routing.json`; `--write` projects the list
+  into that live routing (the sanctioned rebuild — `--refresh` re-prices the
+  list itself); `--selftest` must PASS and checks every pool member, not just
+  the head. Run the detector first (`orch-model-market-scan.py --json`) and read
+  its exit code as the contract before touching either.
+- **The selector is automatic on PRICE only — acceptance is not an input, so a
+  broken-but-cheapest head never moves.** Its re-point trigger is
+  `order_changed`: a model that is still the cheapest vetted candidate keeps
+  head position and stays in `model.default` indefinitely while every turn 400s,
+  because nothing in the ladder measures whether the model ANSWERS.
+  `missing_models` means "absent from the catalog at a price" — it is NOT a
+  servability verdict. Extend the existing ladder rather than adding a parallel
+  one: the miss gate ALREADY fails closed, so feed the same shape a head that is
+  detected unservable, demote it out of head position, and re-point the default
+  to the next cheapest model that is ALREADY VETTED — never adopt an unvetted
+  model to fill the gap (that is an A/B quality decision, not a mechanical one).
+  Evidence shapes to key on and the gate gap to close:
+  `references/model-upstream-servability.md`.
+  **The operator's policy for that gate — do not re-litigate the weights:**
+  value, not price alone. Quality stays held by the PRE-VETTED set (a cheaper
+  unvetted model is an A/B decision, never an auto-adopt); PRICE orders within a
+  pool; AVAILABILITY is a hard ELIGIBILITY gate (no usable upstream, or a
+  configured-but-never-served model, is not eligible to head a pool and is a
+  MOVE trigger, not a warning); PERFORMANCE only VETOES a pathologically slow
+  head — "price beats speed … unless it's really slow" — measured from our own
+  paired turn logs, with provider percentiles as corroboration only when the
+  call is authenticated. So a broken-but-cheapest head MUST be movable: "it is
+  still the cheapest vetted head" is never a reason to leave it in
+  `model.default`.
 - **Read the scan's exit code as the CONTRACT, not a hint:** `0` nothing to do,
   `1` a price/order move is pending, `2` an unvetted cheaper candidate was
   found, `3` **could not verify — nothing may be auto-applied**. `3` is also
@@ -166,10 +258,23 @@ warning, cron model overrides, model.default regressions after `hermes update`.
    column; `billing_provider` is the provider.
    ⚠️ `model` records the id the session was CONFIGURED with, NOT proof the
    provider accepted it: a row naming a routing label or an unknown id can have
-   400'd on every turn and run a fallback model underneath. Prove ACCEPTANCE
-   from the log (`grep -n 'is not a valid model ID' ~/.hermes/logs/agent.log`
-   must not name that id) and read the model a turn really used off its own log
-   line (`conversation turn: session=<id> model=<model>`).
+   400'd on every turn and run a fallback model underneath.   Prove ACCEPTANCE
+   from the log: the ABSENCE of `Fallback activated` for that id in the window,
+   plus a rejection grep that must not name it
+   (`grep -nE 'is not a valid model ID|Provider returned error' ~/.hermes/logs/agent.log`).
+   ⚠️ Do NOT read the `conversation turn: session=<id> model=<model>` line as
+   what RAN — it prints the session's CONFIGURED model, so a turn that 400'd and
+   rode the fallback still logs the configured id (seen: turn lines naming the
+   configured model in the same seconds as `Fallback activated: <configured>
+   → <actual>` lines for that same turn). Prove ACCEPTANCE two ways, preferring
+   the second: `Fallback activated: <configured> → <actual>` (its arrow is a
+   UNICODE `→`, U+2192 — a grep for ASCII `->` matches none of them), and the
+   per-turn `Turn ended: reason=… model=<SERVED> api_calls=… session=<id>` line,
+   which POSITIVELY records the model that ANSWERED that turn. Pair it with the
+   `conversation turn:` line for the same session: configured != served means the
+   configured model did not serve, which is the acceptance verdict and needs no
+   error-text regex. The pair also yields turn DURATION (end minus start) — the
+   only per-model latency we own, since provider percentiles are auth-only.
 3. Re-check the cron overrides still pin the cron-only model where intended.
 
 ## Provider latency / "why is it slow, what should we switch to" triage
@@ -194,11 +299,19 @@ wrong-model regression), separate the THREE layers before concluding anything:
 3. **Model-side comparison** — for prices/context across candidates, hit the
    public model catalog (no auth needed):
    `curl -s https://openrouter.ai/api/v1/models` → `jq '.data[] | select(.id=="<id>") | [.id, (.context_length|tostring), .pricing.prompt, .pricing.completion]'`.
-   ⚠️ **The catalog does NOT expose throughput/latency for these models** —
-   `top_provider.throughput` / `.latency` come back null for many ids, so you
-   CANNOT rank candidates by measured speed from that feed. Real per-token
-   latency needs an AUTHENTICATED probe against the live endpoint; do not
-author a "switch to X it's faster" claim from the catalog alone.
+   ⚠️ **Ranking candidates by measured speed needs AUTH; the FREE feed gives you
+   AVAILABILITY instead — and a null must not be read as "no such data".** The
+   `/models` catalog's `top_provider.throughput` / `.latency` are null for many
+   ids, and the per-model `/endpoints` feed's `latency_last_30m` /
+   `throughput_last_30m` (p50/p75/p90/p99 objects; latency = time to first token)
+   are populated ONLY when the call is AUTHENTICATED — unkeyed they come back
+   null for every upstream, which is a property of the CALL, not evidence that
+   the provider publishes nothing. `status` and `uptime_last_5m/30m/1d` need no
+   auth and are the free performance fact: never author a "switch to X it's
+   faster" claim from an unauthenticated feed, and assert availability instead.
+   Field semantics, the reading that matters (DISTINCT PROVIDERS, never the
+   endpoint count) and how they arm a selection gate:
+   `references/model-upstream-servability.md`.
 
 **Measuring live latency requires the API key — and it is NOT in config.yaml.**
 `~/.hermes/config.yaml` carries `provider: openrouter` + `base_url` but
