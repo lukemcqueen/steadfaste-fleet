@@ -8,9 +8,11 @@ migrated to the timer (double-fire, Errno 17). Each such FAIL blocked pushes.
 ## Fix
 For each of the 54 doubles, `hermes cron remove <id>` — drops ONLY the stale
 Hermes scheduler row; the systemd timer (the real owner) keeps running the cron
-(verified active after each removal). Non-destructive by design; the installer
-(`install-crons.sh`) skips bridged crons, so a fleet-update reinstall does NOT
-re-create the removed rows.
+(verified active after each removal). Non-destructive by design. Durability: the
+installer (`install-crons.sh`) skips a bridged cron when its timer is ENABLED
+(present in timers.target.wants/) — both of the half-migrated timers below were
+enabled as part of this fix, so a fleet-update reinstall does NOT re-create the
+removed rows for any of the 54.
 
 Two of the 54 (`fleet-bus-failover-watchdog`, `orch-weekly-cost-report`) had a
 GENERATED-BUT-NOT-ENABLED bridge timer — the Hermes row was their live owner.
