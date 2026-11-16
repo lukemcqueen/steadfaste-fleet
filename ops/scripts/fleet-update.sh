@@ -3676,22 +3676,32 @@ main() {
   fi
 
   # ── Cron-reconcile fast gate (dogfood/deploy speedup) ──
-  # Verified safe: every cron install-crons.sh/install-orch-crons.sh creates
-  # is declared in cron-manifest.yaml (0 installer-only crons today, checked
-  # 2026-11-16). So when --check reports drifted AND missing both empty, no
-  # manifest-in-scope cron needs create/edit and no `hermes` CLI call is
-  # needed — skip the installers + manifest --repair entirely. Any drift or
-  # missing → gate falls through → full reconcile runs (fix propagation
-  # preserved). Orphans are ignored: the repair path never touches them.
+  # Skips install-crons.sh / install-orch-crons.sh / cron_manifest --repair
+  # when the manifest is fully in sync. The gate ENFORCES the invariant (not
+  # asserted in prose): _CRON_NEEDS is set to "in-sync" ONLY when the --check
+  # run returns rc 0 AND every check class is empty — drifted, missing, and
+  # installerNotInManifest (crons install-crons.sh creates with no manifest
+  # entry would otherwise be invisible to --check and survive the skip). Any
+  # failure or non-empty class falls through to the full reconcile, so fix and
+  # new-cron propagation are never skipped on a false or failed reading.
   _CRON_NEEDS=""
   _cm="${FLEET_DEPLOY_HOME}/scripts/manage/cron_manifest.py"
   [[ -f "$_cm" ]] || _cm="${REPO_DIR:-$HOME/steadfaste-fleet}/ops/scripts/manage/cron_manifest.py"
   if [[ -f "$_cm" && -f "${REPO_DIR:-$HOME/steadfaste-fleet}/ops/install/cron-manifest.yaml" ]]; then
-    _cm_out="$(python3 "$_cm" --check --json 2>/dev/null || true)"
-    if [[ "$_cm_out" == *'"drifted": []'* && "$_cm_out" == *'"missing": []'* ]]; then
-      _CRON_NEEDS="in-sync"
-      info "Crons already in sync with manifest — skipping reconcile"
+    _CM_JSON="${TMPDIR:-/tmp}/cron-manifest-check.$$.json"
+    _CM_ERR="${TMPDIR:-/tmp}/cron-manifest-check.$$.err"
+    if python3 "$_cm" --check --json >"$_CM_JSON" 2>"$_CM_ERR"; then
+      _cm_out="$(cat "$_CM_JSON" 2>/dev/null || true)"
+      if [[ "$_cm_out" == *'"drifted": []'* && "$_cm_out" == *'"missing": []'* \
+            && "$_cm_out" == *'"installerNotInManifest": []'* ]]; then
+        _CRON_NEEDS="in-sync"
+        info "Crons already in sync with manifest — skipping reconcile"
+      fi
+    else
+      _cm_rc=$?
+      warn "cron_manifest --check failed (rc=${_cm_rc:-?}) — running full reconcile (not skipping)"
     fi
+    rm -f "$_CM_JSON" "$_CM_ERR"
   fi
 
   # Install/update universal crons (idempotent — skips existing)
