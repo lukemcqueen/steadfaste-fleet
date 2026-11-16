@@ -6219,6 +6219,12 @@ def _harness_cli():
                if c.is_file()), None)
 
 
+# Diagnostics the `fleet` CLI's interpreter resolver writes to stderr on every
+# invocation. `_run_hc` merges the streams, so these can land in the middle of a
+# command's own output; callers that read a verdict from it must skip them.
+_CLI_DIAGNOSTIC_PREFIXES = ("python-with-module:",)
+
+
 def _run_hc(*args):
   """Run `fleet <args...>`, returning (rc, combined output). No interpreter is chosen here:
   the CLI resolves its own, and its exit 3 = could not verify is passed through untouched.
@@ -6232,6 +6238,21 @@ def _run_hc(*args):
   except (OSError, subprocess.TimeoutExpired) as e:
     return 1, f"could not run {cli}: {e}"
   return p.returncode, ((p.stdout or "") + (p.stderr or "")).strip()
+
+
+def _cli_own_lines(out):
+  """The `fleet` CLI's OWN output lines, with interpreter-resolver diagnostics removed.
+
+  `_run_hc` merges stdout and stderr into one string on purpose — the caller
+  judges what RUNS, and a failure line may be on either stream. But the
+  interpreter resolver writes a fixed notice to stderr on EVERY invocation
+  ("python-with-module: ignoring inherited PYTHONPATH/PYTHONHOME ..."), so a
+  caller that reads a verdict from the tail of the merged text reads that notice
+  as the verdict. Drop the diagnostics the resolver is known to emit; anything
+  else is the command's own output and is kept.
+  """
+  return [l for l in (out or "").splitlines()
+          if not l.startswith(_CLI_DIAGNOSTIC_PREFIXES)]
 
 
 def _run_harness_list():
@@ -6305,7 +6326,15 @@ def check_harness_registry(res) -> None:
             "(then fix what it reports)")
     return
   try:
-    data = json.loads(out[out.index("{"):])
+    # The JSON OBJECT is the registry. `_run_hc` merges stderr into the same
+    # string on purpose (the `verify` path reads the tail of it for its error
+    # line), so the interpreter resolver's notice can trail the object — e.g.
+    # "python-with-module: ignoring inherited PYTHONPATH/PYTHONHOME ...". A plain
+    # json.loads over that merged text dies with "Extra data", which reported a
+    # perfectly readable registry as unverifiable. raw_decode stops at the end of
+    # the first value and ignores what follows; a view with NO parseable object
+    # still raises and is reported unverifiable below.
+    data, _ = json.JSONDecoder().raw_decode(out[out.index("{"):])
   except Exception as exc:                        # never let an unreadable view crash the run
     res.add(name, "WARN", f"COULD NOT VERIFY — the registry view was not parseable ({exc})",
             "Run: bash $HOME/.steadfaste-fleet/scripts/fleet harness list --json")
@@ -6335,7 +6364,7 @@ def check_harness_registry(res) -> None:
               f"Add `presence:` for {hname} to ops/install/harnesses/registry.yaml")
       continue
     rc, out = _run_harness_verify(hname)
-    lines = out.splitlines() if out else []
+    lines = _cli_own_lines(out)
     artifacts = [l for l in lines if l.startswith("artifact:")]
     verdict = lines[-1] if lines else f"exit {rc}"
     tail = f"{artifacts[-1]}; {verdict}" if artifacts else verdict
