@@ -1,0 +1,25 @@
+Running: /Users/luke/.steadfaste-fleet/venv/bin/python ops/scripts/manage/orch-model-market-scan.py
+rc: 1
+when: 2026-11-16T15:19:37Z
+
+model market scan: captured from live (live daily scan)
+  signature      : 2845ebb1441ccb3e
+  apply_pending  : True (prices True, order False)
+  violations     : none
+  NEW cheaper unvetted candidates (quality-alert, NOT auto-adopted):
+    simple/general: scaledown/summarize ($0.0/M), scaledown/extract ($0.0/M), mistralai/mistral-nemo ($0.0/M), inclusionai/ling-3.0-tiny ($0.0/M), meta-llama/llama-3.1-8b-instruct ($0.0/M)
+    simple/vision: scaledown/summarize ($0.0/M), scaledown/extract ($0.0/M), mistralai/mistral-nemo ($0.0/M), inclusionai/ling-3.0-tiny ($0.0/M), meta-llama/llama-3.1-8b-instruct ($0.0/M)
+    simple/coding: scaledown/summarize ($0.0/M), scaledown/extract ($0.0/M), mistralai/mistral-nemo ($0.0/M), inclusionai/ling-3.0-tiny ($0.0/M), meta-llama/llama-3.1-8b-instruct ($0.0/M)
+    simple/writing: scaledown/summarize ($0.0/M), scaledown/extract ($0.0/M), mistralai/mistral-nemo ($0.0/M), inclusionai/ling-3.0-tiny ($0.0/M), meta-llama/llama-3.1-8b-instruct ($0.0/M)
+    simple/research: scaledown/summarize ($0.0/M), scaledown/extract ($0.0/M), mistralai/mistral-nemo ($0.0/M), inclusionai/ling-3.0-tiny ($0.0/M), meta-llama/llama-3.1-8b-instruct ($0.0/M)
+    medium/general: scaledown/summarize ($0.0/M), scaledown/extract ($0.0/M), mistralai/mistral-nemo ($0.0/M), inclusionai/ling-3.0-tiny ($0.0/M), meta-llama/llama-3.1-8b-instruct ($0.0/M)
+    medium/vision: scaledown/summarize ($0.0/M), scaledown/extract ($0.0/M), mistralai/mistral-nemo ($0.0/M), inclusionai/ling-3.0-tiny ($0.0/M), meta-llama/llama-3.1-8b-instruct ($0.0/M)
+    medium/coding: scaledown/summarize ($0.0/M), scaledown/extract ($0.0/M), mistralai/mistral-nemo ($0.0/M), inclusionai/ling-3.0-tiny ($0.0/M), meta-llama/llama-3.1-8b-instruct ($0.0/M)
+    medium/writing: scaledown/summarize ($0.0/M), scaledown/extract ($0.0/M), mistralai/mistral-nemo ($0.0/M), inclusionai/ling-3.0-tiny ($0.0/M), meta-llama/llama-3.1-8b-instruct ($0.0/M)
+    medium/research: scaledown/summarize ($0.0/M), scaledown/extract ($0.0/M), mistralai/mistral-nemo ($0.0/M), inclusionai/ling-3.0-tiny ($0.0/M), meta-llama/llama-3.1-8b-instruct ($0.0/M)
+    hard/general: scaledown/summarize ($0.0/M), scaledown/extract ($0.0/M), mistralai/mistral-nemo ($0.0/M), inclusionai/ling-3.0-tiny ($0.0/M), meta-llama/llama-3.1-8b-instruct ($0.0/M)
+    hard/coding: scaledown/summarize ($0.0/M), scaledown/extract ($0.0/M), mistralai/mistral-nemo ($0.0/M), inclusionai/ling-3.0-tiny ($0.0/M), meta-llama/llama-3.1-8b-instruct ($0.0/M)
+    hard/vision: scaledown/summarize ($0.0/M), scaledown/extract ($0.0/M), mistralai/mistral-nemo ($0.0/M), inclusionai/ling-3.0-tiny ($0.0/M), meta-llama/llama-3.1-8b-instruct ($0.0/M)
+    hard/writing: scaledown/summarize ($0.0/M), scaledown/extract ($0.0/M), mistralai/mistral-nemo ($0.0/M), inclusionai/ling-3.0-tiny ($0.0/M), meta-llama/llama-3.1-8b-instruct ($0.0/M)
+    hard/research: scaledown/summarize ($0.0/M), scaledown/extract ($0.0/M), mistralai/mistral-nemo ($0.0/M), inclusionai/ling-3.0-tiny ($0.0/M), meta-llama/llama-3.1-8b-instruct ($0.0/M)
+sha256: 31fc9b759c4436728e841312cf997feaa665f6936406b0ca7573633f9f44abaa
