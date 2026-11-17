@@ -180,7 +180,7 @@ to `${FLEET_DEPLOY_HOME}` (normally `~/.steadfaste-fleet`) and the mapping is
 | `ops/scripts/judgment.py` | `scripts/judgment.py` |
 | `ops/offline/hermes_paths.py` | `offline/hermes_paths.py` |
 
-Of the same 391 `${FLEET_DEPLOY_HOME}/` `register()` calls (396 in total with the `${HOME}/` shapes), **253 follow no rule at all** — the first two rows
+Of the same 392 `${FLEET_DEPLOY_HOME}/` `register()` calls (397 in total with the `${HOME}/` shapes), **253 follow no rule at all** — the first two rows
 above both live under `ops/scripts/manage/` and deploy to different depths.
 
 So a component that *guesses* — strip `ops/`, strip a subdir, try a short list of

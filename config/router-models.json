@@ -5,7 +5,7 @@
   "policy": {
     "simple": {
       "max_multiple_of_baseline": 0.5,
-      "note": "ALWAYS cheaper than the baseline, every model in the pool, not just the head; ceiling 0.5x, asserted for every simple pool by tests/test_router_pools.py"
+      "note": "ALWAYS cheaper than the baseline, every model in the pool, not just the head; ceiling 0.5x, asserted for every simple pool by tests/test_router_pools.py::test_every_model_in_a_simple_pool_is_cheaper_than_the_baseline (the every-model claim, not just the head) and tests/test_router_pools.py::test_simple_pools_respect_their_own_ceiling (the 0.5x ceiling)"
     },
     "medium": {
       "max_multiple_of_baseline": 1.0,
