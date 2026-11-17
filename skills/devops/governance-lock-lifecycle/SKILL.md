@@ -171,6 +171,12 @@ claims below are asserted by the committed, re-runnable test
   concluding none exists, and when the lock FILE says active while `active` says false, **the file is
   right** — the close will succeed. Do not re-acquire and do not open a carrier cycle; that false
   negative manufactures the very extra cycle you were trying to avoid.
+- **`is_mine` / `lock_is_mine: false` does NOT mean the lock belongs to a peer.** That field compares
+  the lock's recorded session id against the CALLER's, and a session id is not stable across a long
+  conversation — a lock you are still holding reads `is_mine: false` once it was minted under an
+  earlier turn of the same session. Match the lock's `task_id` (and `repo_path`) against the work you
+  are doing before standing down: waiting on a "peer" that is your own earlier id stalls the task
+  pointlessly, and re-acquiring mints a SECOND lock under the same task.
 - **The lock's repo identity is legible in `repo_path`.** A lock stamped from a git repo carries a
   NON-EMPTY `repo_path`; one opened where the cwd is NOT a repo (a plain working copy, a deploy dir)
   has nothing stamped, so it inherits the host-canonical slug with `repo_path` EMPTY. Two locks can
@@ -455,9 +461,58 @@ mtime predates the daemon start, i.e. after a gateway restart that follows
 the last deploy. So: read the WARN as a deploy artifact, not stale code;
 clear it with `hermes gateway restart` after the final deploy; and never
 hand-edit or fabricate the stamp file — the check is only meaningful if
-the daemon itself wrote it. Root cause is the single-slot stamp: the
+the daemon itself wrote it. Root cause is the single-slot stamp; the
 durable fix is a per-pid stamp map so every daemon is verified by content
-and the byte-identical rewrite stops re-warning.
+and the byte-identical rewrite stops re-warning. **That fix has landed** —
+the stamp is now a per-pid map (`pid` → `module` + `sha256` + `started`), so
+the doctor can content-verify every daemon and the mtime comparison is only a
+fallback for a daemon with no stamp entry. The SAME flaw survives in the lock
+watchdog's secondary path, which still compares start time against mtime — see
+below.
+
+### Pitfall 11b: The lock WATCHDOG's "pre-deploy code" line is a deploy artifact — its REASON string is the measurement
+
+`agent-loop-gov-lock-watchdog.py` is alert-only by operator directive (never auto-kill) and emits ONE
+line carrying TWO independent findings. Only the bracketed REASON says which one fired, and the rest
+of the line is fixed boilerplate that prints on BOTH paths:
+
+- **`[DB was write-blocked]`** — the PRIMARY signal: a real `BEGIN IMMEDIATE` on
+  `loop-governance.db` timed out (`busy_timeout` 10s, deliberately past `begin_change`'s 5s), so a
+  write txn has been stuck >10s. This is the deadlock, and the named pids are fd-holders of the DB.
+- **`[running pre-deploy code]`** — the SECONDARY path, emitted ONLY when the primary probe found
+  the DB **WRITABLE**. There is no deadlock and nothing to roll back; the daemons were merely older
+  than the module's mtime. Read the reason before proposing any remedy, and never quote the
+  "resolves itself once the daemon rolls its txn back" prose back as a finding — on this path it
+  describes a condition that was not measured.
+
+**Why the secondary path fires on a healthy host — it is a probe-subject mismatch, not stale code:**
+
+- It compares the daemon's start time against the **deployed** module's mtime, while the daemons
+  actually LOAD the module from the **repo** checkout — two different files. `fleet-update.sh`
+  force-rewrites the deployed copy on every run, so its mtime jumps ahead of every running daemon:
+after EVERY deploy, EVERY daemon in view reads "pre-deploy". A single 120 s grace window does not
+  help, because the deploy that just ran is by definition newer than every daemon.
+- **Verify by CONTENT before believing it.** The per-pid stamp already holds the `module` path and
+  `sha256` each daemon loaded — compare that sha against the live module's. Equal shas mean the
+  daemons ARE current and the flag is the heuristic's flaw. Check the sha the daemon recorded, not
+  the one you compute for the file you assume it read.
+- **A repo-vs-deployed `sha256` difference for a `.py`/`.sh` is expected, not drift** — the deploy
+  prepends a generated `# SOURCE: <repo-path>` header. Strip headers before comparing, and never
+  report a header-only difference as staleness.
+- **It re-alerts every session BY CONSTRUCTION.** The StateTracker suppression fingerprint is the
+  PID SET, and every Hermes session (gateway or cron worker) spawns its own loop-governance + review
+  pair — so each new session is a new fingerprint and a fresh alert with nothing wrong. Several
+  daemons "in view" is N sessions × 2 roles, not an accumulating leak; confirm liveness with `ps`
+  before treating the count as evidence.
+
+The durable fix belongs where the comparison is made: verify each daemon by CONTENT against the
+module IT recorded, never by mtime against a file it did not load. Until that lands, treat this line
+as a deploy artifact and KILL NOTHING — the alert-only design is what keeps the evidence readable.
+
+**Reading a peer host's live state:** use ONE clean command per call (`ssh <host> "ps -eo pid,lstart,cmd"`,
+`ssh <host> cat <state.json>`, `ssh <host> sha256sum <paths>`). A compound command is write-class to the
+classifier and needs a governance lock, so a multi-fact probe costs several calls — that is cheaper than
+opening a cycle on the peer, and the reply itself is the evidence.
 
 ## A close that never judges blobs is a DOWN reviewer — probe the credential before the gate
 
@@ -494,6 +549,24 @@ commit the fix (a partial `git commit -m msg -- <paths>` — the shared-index ho
 un-scoped bare commit), then re-issue `end_change`. The committed fix is judged on its own and the
 close continues from there. Do NOT re-roll the reviewer on unchanged material and do NOT open a
 carrier cycle — neither produces a different verdict.
+
+**A verdict-less reviewer REPLY is not a stored not-clean verdict — the close's message conflates them,
+so check the store before you plan around it.** A close can keep reporting one blob as uncovered while
+`blob_reviews` holds NO row for its sha (or for any of its historical shas) and the server log shows the
+reviewer "answered and judged nothing" for that file — a starved reasoning model returning null/partial
+content rather than a verdict. The usual cause is a deterministic CONFIG CEILING, not a flaky
+provider: the model spends its entire output budget on reasoning and returns no content, which no
+re-run can change — re-issuing the identical call cannot produce a different verdict. Turn the knob
+(lower the reviewer's reasoning effort, or raise its output cap; the plan-review client's knobs and
+its retry-versus-ceiling rules are in `adversarial-review-passoff`), then re-run once. The message wording ("already carries a not-clean verdict for its exact
+content") describes the opposite situation and sends you hunting a scope or content problem that does
+not exist; the STORE is the authority, so read it for the sha first. This failure is TRANSIENT and
+range-wide in effect (dozens of blobs, tiny files included, most clearing on the next pass), so the
+remedy is to re-issue the close — but a blob that keeps drawing the SAME reply against byte-identical
+content needs a genuinely new prompt: give it a real content change (an honest tightening of a long
+comment counts), commit it as a new blob, and close again. Do not enlarge the range, and do not reach
+for an override. Report the message/store disagreement as a defect in the close's diagnostics — a gate
+whose message asserts a stored verdict that does not exist is a one-way gate for anyone who believes it.
 
 **A reviewer finding on a TEST is often a real lesson: fix the test, not the production code.** The
 tell is a meaningful finding that names exact lines in the test file (e.g. a test mutates

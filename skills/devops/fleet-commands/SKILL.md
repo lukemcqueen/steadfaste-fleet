@@ -117,6 +117,30 @@ fleet exec gisu fleet-doctor.py --quiet
 
 **Escape hatch — EXEC also resolves an ABSOLUTE PATH as the command.** When `SCRIPTS_DIR/<command>` does not exist, the handler accepts a full filesystem path, so read-only system probes run without shipping a script: `{"command": "/usr/bin/ls", "params": ["-la", "/usr/local/sbin"]}`, `{"command": "/usr/bin/find", "params": ["/home/<user>", "-name", "*.orig"]}`, `{"command": "/usr/bin/printenv", "params": ["HOME"]}`. Bare names (`ls`, `find`) still fail — the path must be absolute. This also probes privilege state: `{"command": "/usr/bin/sudo", "params": ["-n", "true"]}` → exit 0 = NOPASSWD works, exit 1 `a password is required` = no silent elevation. Each EXEC round-trip costs one 5-min handler tick on client agents — batch the probes you can (send several EXECs in one pass, read results together), and remember the agent's HOME may not be what the registry suggests: `printenv HOME` first when a path lookup comes back "No such file or directory".
 
+**The `command` field is ONE TOKEN — a shell string is rejected before it leaves the box (2026-11-17).**
+The EXEC schema constrains `command` to `^[a-zA-Z0-9_./-]+$` (`ops/scripts/lib/handoff_schema.py`), so
+`fleet exec <agent> "<anything with a space>"` can never run. Either the quoted compound lands in the
+args slot and the command arrives EMPTY (`$.command: length 0 < minimum 1`; the target answers
+`No command specified`), or it is read as the command and fails the pattern outright
+(`$.command: does not match pattern '^[a-zA-Z0-9_./-]+$'`). Args are free-form; the command is not.
+`fleet exec joseph -- df -h /` works because `df` is the command and `-h`, `/` are its args —
+`--` separates the command from args that start with a dash, it does NOT introduce a raw shell.
+Anything genuinely compound belongs in a deployed script (escape hatch above).
+
+⚠️ **An `EXEC_RESULT` is not proof it answered YOUR send — match the `corr=`, and distrust a
+suspiciously FAST reply.** The client searches the live queue AND the archives, so an ARCHIVED result
+from an earlier failed call can be returned as the answer to a new correlation id. Observed
+2026-11-17: a valid send (`corr=exec-d739c64e41a2`) returned the byte-identical error of an unrelated
+earlier attempt after ~60s, while the NEXT exec — a single-token command — timed out with "Checked
+live queue AND archives for 300s and found no result". Both cannot be true of one host, so the fast
+reply was the stale archive. A result that arrives in far less than the target's tick interval, or
+that reports a `command` you did not send, is stale. (Tracked as governance issue #303.)
+
+⚠️ **The 300s wait equals the client handler's 5-minute tick** (`*/5 * * * *`), so a round trip is
+decided by where the send lands in the tick: a send just after one waits ~300s and loses by seconds.
+Treat a timeout on this path as TIMING until proven otherwise — confirm the peer another way (bus
+activity, `peek`) before reporting it down, or raise `--timeout` past the tick interval.
+
 It generates a `correlation_id`, sends the EXEC, then polls `inbox_moses` every 15s for up to 5min waiting for `EXEC_RESULT`.
 
 #### Schema-validated EXEC (S2)

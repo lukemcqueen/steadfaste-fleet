@@ -208,7 +208,7 @@ showed) — otherwise the next reader reintroduces it as "obviously true".
 - **Migration docs are not stale.** A file like `docs/migration-*.md` intentionally documents old paths as they were during the migration. Flag only the **actionable code blocks** within them, not the historical prose.
 - **Code blocks are actionable.** Even in a migration doc, a ````bash` code block with `bash src/scripts/fleet-update.sh` will **fail** if run. These are High severity.
 - **Line numbers shift between audits.** Files get edited. Search by pattern, not by line number from the previous report. A previous report that says "line 586" may now refer to completely different content.
-- **DOCS-INDEX.md lags behind file deletions.** When a doc file is deleted, the index often keeps its entry.
+- **DOCS-INDEX.md drifts in BOTH directions.** Deleting a doc leaves the index still linking it; ADDING one the index does not name is the same defect from the other side, and the pre-commit docs audit (`pre-commit-doc-audit.sh`) catches the second with `⚠ DOCS-INDEX.md was not updated` for a new file under a covered dir (e.g. `docs/plans/`). That audit WARNS and lets the commit land, so fix it in the SAME commit: extend the existing row for that DIRECTORY (name the new file plus one clause on what it scopes) rather than adding a new row.
 - **A reference by NUMBER is only as stable as the numbering.** A long doc that
   restarts numbering per section (`### 1.` under each topic heading) makes
   "see entry 18" resolve to two or three different places, and an inserted or

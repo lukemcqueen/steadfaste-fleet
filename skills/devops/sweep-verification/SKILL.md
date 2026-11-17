@@ -10,10 +10,16 @@ platforms: [linux, macos]
 
 # Sweep Verification — proving a removal is COMPLETE
 
+## When to Use
+
 Use when asked to "double check / make sure X is completely removed" after a
-rename or decommission sweep (legacy-brain → mycortex, service renames).
-Performing the sweep is `rename-sweep`'s job; THIS skill is
-the independent verification pass that finds the leftovers the sweep missed.
+rename or decommission sweep (legacy-brain → mycortex, service renames); when a
+deploy or installer keeps leaving files behind after renames and removals; or
+when an automated cleanup already exists but keeps missing things. Performing the
+sweep is `rename-sweep`'s job; THIS skill is the independent verification pass
+that finds the leftovers the sweep missed — plus the rules for making the cleanup
+itself safe to run unattended (see
+`references/provenance-based-reclamation.md`).
 
 ## Read the migration's own follow-up doc FIRST
 
@@ -80,6 +86,20 @@ committing). Prefer the repo's existing artifact extension (`.txt` here) and che
    `comm -13 <(ls repo-dir | sort) <(ls deployed-dir | sort)` — deployed-only
    extras are stale unless proven otherwise. Delete stale deployed files even
    though git status stays clean.
+   - **Manual `rm` is the FALLBACK; the class fix is PROVENANCE, not a
+     better-tuned scan.** A scan for "deployed files not in the register map"
+     cannot tell a destination WE deployed and later renamed from a file that
+     exists only on that host — and guessing wrong has destroyed a host-local
+     script, which is why such cleanups are deliberately warn-only. Record what
+     the deploy WROTE (an ownership inventory) and reclaim only
+     `old_inventory − this_deploy` — provably ours — by QUARANTINING (moving,
+     restorable) rather than deleting. Three ways this automation silently does
+     nothing, all worth checking before trusting any existing cleanup: it is
+     wired into a rare mode (`--force-all`) instead of the common deploy path;
+     it is scoped by file SUFFIX or one directory (`scripts/*.py|sh`) so
+     `config/*.json` and other destinations are invisible to it; it only warns.
+     Design, invariants, and test shape:
+     `references/provenance-based-reclamation.md`.
    - **Deleting a file without deleting its `register()` line is a doctor FAIL**
      (`Deploy source missing`). After the sweep, assert every registration still points
      at a real file: parse the `^register(?:_orch)?\s+"<source>"\s+"<dest>"` lines from
@@ -256,7 +276,32 @@ discovering them in a later grep.
     `ops/scripts/manage/reconcile-stranded-skills.py` (report first) copies pure supersets
     back into the repo as its own governed change.
 
-    ## Steps
+    20. **Never `.resolve()` a path when deciding what you OWN or CONTAIN.** Resolving
+    follows symlinks, so a managed tree's intentional `hook → registered-script`
+    symlink is rewritten into its TARGET — and a reclaimer then moves the live script
+    the hook points at, which is the exact loss the mechanism exists to prevent.
+    Normalise lexically (`os.path.abspath(os.path.normpath(p))`) on BOTH sides of the
+    containment check, and detect symlinks separately (`is_symlink()`) as themselves,
+    skipping them: a link's target is never yours to move. A negative test with a
+    symlink entry is what catches this — a happy-path suite never will.
+21. **Prove the NEGATIVE cases, or the suite certifies a dangerous tool.** A removal
+    mechanism needs tests asserting a file SURVIVED: host-local and `local-*` files
+    untouched, a path OUTSIDE the managed tree refused (a corrupt or hostile record
+    must not reach it), an absent or empty ownership record = no-op (never "everything
+    is an orphan"), `--dry-run` moves nothing, and a failed move leaves the ownership
+    record UN-ADVANCED (fail closed, so an unrecorded reclaim cannot become invisible).
+    Add a grep-level test that the caller invokes the mechanism OUTSIDE the rare-mode
+    block, and bound any source-window assertion by the next top-level `def` — never a
+    fixed character count, or the test silently stops testing the moment someone adds a
+    comment above the target line.
+22. **A diagnosis that prescribes a bare `rm` is itself a defect.** When a doctor or
+    audit check tells the operator to delete a file with no recovery path, fix the
+    REMEDY in the same pass as the detection: prescribe deciding by hand and moving the
+    file aside into a quarantine directory, and name the restorable path. This is the
+    same class as a remedy whose command cannot run (wrong interpreter, unreachable
+    path) — a remedy is part of the check's contract, not cosmetic text.
+
+## Steps
 
 1. Begin governance cycle (terminal needs a lock).
 2. Run the surface checklist (batch greps; count AND list).

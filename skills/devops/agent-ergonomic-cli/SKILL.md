@@ -127,6 +127,15 @@ explicitly:
    maintained beside the implementation is a second definition of the same thing
    and it drifts silently — a tool advertised with no handler is a dead entry an
    agent will call and fail on. Assert the invariant in a test.
+
+   **The same invariant binds FLAGS and MODES, not just tool names.** A usage line or
+   docstring advertising `--check`, `--json` or a subcommand that the argument parser
+   never registers hands every reader a documented invocation that exits 2 — and an
+   agent copies the documented form verbatim, so the interface is broken for exactly the
+   consumers it was written for. Keep ONE name per mode (a bare run and the documented
+   flag must resolve to the same mode, never two code paths), and RUN every invocation
+   your own docstring shows, once, before committing. A green suite will not notice:
+   tests that call the module's internals never pass through the argument parser.
 3. **Separate a checking exit code from a failure.** Generalize principle 6:
    `0` ran/allowed, `1` ran but the operation was REFUSED (a decision — a caller
    gating on the code must see it), `2` usage error, `3` the dependency is
@@ -251,6 +260,8 @@ child, not to your own stdout:
 - [ ] No interactive prompts — completable with flags alone
 - [ ] Next-step suggestions are complete commands with placeholders
 - [ ] `--help` per subcommand; `--version` bare + fast
+- [ ] Every invocation the docstring/usage advertises was RUN once (an advertised
+      flag missing from the parser exits 2 — invisible to tests that call internals)
 
 ## Sources
 

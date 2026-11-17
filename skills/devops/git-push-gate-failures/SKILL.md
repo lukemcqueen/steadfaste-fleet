@@ -58,6 +58,16 @@ check failed, it fell back to `systemctl --user`, and the dbus error
 deploy before `state/update-commit` was written. Fix: normalize the unit
 name (`[[ "$unit" == *.* ]] || unit="${unit}.service"`) before querying.
 
+**Stale deploy files are now reclaimed by PROVENANCE — never `rm` one by hand to clear a warning.**
+The deploy keeps an ownership inventory (`~/.steadfaste-fleet/state/deployed-files.txt`) and MOVES
+anything it no longer deploys into `~/.steadfaste-fleet/state/deploy-quarantine/<utc>/`, printing the
+exact restore command; the doctor's stale-deploy remedy says the same. Ownership is
+`(previous inventory) − (current deploy)`, so a file that was never in the inventory is NOT the
+deploy's to touch: the first run after this ships establishes the baseline and reclaims NOTHING by
+design, and files deployed before it existed stay put until an operator decides on them. Expect a
+newly orphaned path to become reclaimable only after it appears in a PRIOR inventory — do not read
+the first quiet run as the reclaimer being broken.
+
 ## 2. First push to a brand-new remote is rejected
 
 **Symptom:** `git push -u origin main` on a repo with an EMPTY remote fails
@@ -288,23 +298,12 @@ review receipt.` followed by `Expected receipt: <state>/.reviewed-<slug>-<tip>.j
 (which only records an LLM verdict row). So the order is **close, then push** — backwards from
 intuition, and by design: the review that used to land after the push now gates it.
 
-- **The per-blob pass has a budget (~15 blobs / 240s per close) and verdicts are keyed by blob
-  CONTENT.** A partial close is RESUMED by calling `end_change` again — it says "closing again
-  continues from here" — so on a multi-file range expect 2-3 calls rather than one. Fixing a file
-  after a FINDINGS verdict produces a NEW blob, judged on its own; re-close after every commit.
-- **Two paths through a close — SIMPLE in bulk, COMPLEX a few at a time.** One pass is one WAVE of
-  `BLOB_REVIEW_CONCURRENCY` = 4 reviewer calls (a close spends at most `BLOB_REVIEW_CAP_PER_CLOSE` = 15),
-  and a blob already judged is SKIPPED by content, never re-sent:
-  - **Many simple/same edits → pass them in ONE pass.** Similar small edits are judged together in the
-    wave, and a docs-only range (class **A0**) skips the model judge entirely — no call at all. Do not
-    split a range of simple edits across cycles; it drains in a single close.
-  - **Complex edits → a few per pass, then just close again.** Class **C** work is judged a few blobs at
-    a time and the next `end_change` continues from there, so a wide complex range is closed as a SERIES
-    of small closes. Do NOT split the range, and do NOT open extra cycles to push it — repeated
-    `end_change` until permitted is the supported path.
-  - Classes (`_review_class`, from the diff's path set only): **A0** every non-noise path is
-    documentation; **B** a code change that also carries a test delta (light judge); **C** everything
-    else — always-review/protected surface, untested code, or an unreadable path set (deep judge).
+- **One pass = one WAVE of 4 reviewer calls, at most 15 blobs per close, and verdicts are keyed by
+  blob CONTENT.** A partial close RESUMES on the next `end_change` (it says "closing again continues
+  from here"), so a wide range drains as a SERIES of closes: many SIMPLE or same-shaped edits pass in
+  ONE pass — a docs-only range (class **A0**) makes no model call at all — while complex work goes a
+  few blobs at a time. Do NOT split the range across cycles for this, and re-close after every commit.
+  Drain rules, the A0/B/C classes and the diagnostics: `references/review-receipt-gate.md`.
 - The receipt is bound to the RANGE (base…tip), but the gate also accepts ANY receipt whose
   `reviewed_blobs` cover every file the range changes — which is how a rebase that rewrote the tip
   can still push.
@@ -319,6 +318,29 @@ intuition, and by design: the review that used to land after the push now gates 
 - **Push as a LONE `git push`.** The enforcer refuses a compound push (`git push && git rev-parse …`,
   `git push | tail`, `cd X && git push`) because it cannot prove the shape; a CLEAN receipt can
   authorise a push with no active lock, but only for the bare command. Verify in a separate call.
+- **A close that keeps refusing because your description is NARROWER than the push range cannot be
+  fixed by re-closing.** The requirement is that the description cover every path in the range, or that
+  file reads as scope drift — and one session's range is usually several topics. Release the cycle
+  (`advance_task_state(new_state='cancelled', …)` — an already-scored cycle holds nothing and leaks no
+  PENDING row) and open ONE cycle whose description enumerates the range's areas by path. A fresh cycle
+  also RECOMPUTES the range, so it reports the true uncovered set rather than a stale one.
+- **Write a file's sibling contract INTO the file.** One review window judges one file, so state what
+  it loads or calls from a sibling in the SAME range, the commit providing that sibling (sha AND its
+  subject, so the pointer survives a history rewrite), and what happens when the dependency is ABSENT —
+  a clear refusal or a reported "unavailable", never a traceback. This pre-empts the recurring "leans
+  on a sibling the window cannot see" finding before it is raised.
+- **When ONE blob will not move, trust the STORE and the server log, not the close's message.** The
+  "already carries a not-clean verdict for its exact content" line is false for content that changed
+  since the verdict, and the same line prints when every reviewer call FAILED. Check the content-keyed
+  store by sha — `SELECT verdict FROM blob_reviews WHERE blob_sha='<git rev-parse HEAD:<path>>'` in
+  `~/.steadfaste-fleet/data/loop-governance.db`; NO row means never judged, so the verdict named
+  belongs to an earlier sha of that path. `grep "per-blob review" ~/.hermes/logs/mcp-stderr.log` gives
+  the real cause, and an unparseable reviewer reply is cleared by a genuine CONTENT change (a new sha
+  is a fresh prompt) — never by re-closing identical bytes.
+- **The receipt is a DOTFILE** — `<state>/.reviewed-<slug>-<tip>.json`. Find it with a file search
+  (`search_files (target='files')`) or read the server's `review receipt written` line in
+  `~/.hermes/logs/mcp-stderr.log`; a directory listing without hidden files reports "nothing" on a
+  receipt that exists. A close only PRINTS about a receipt when writing it FAILED.
 
 **The deploy chicken-and-egg — use a lock-carrier cycle, never an override.** The push gate also
 requires a doctor-clean DEPLOYED state, while the deploy (`fleet-dogfood.sh`) is a WRITE-class
@@ -358,6 +380,15 @@ things only. Ask "would another host want this?" — if yes, make it fleet-share
 The user: "if it isn't fleet shared, then what's the point?" (respond in kind,
 not by dodging the warning).
 
+## Finish the delivery (user preference)
+
+When the work is verified, LAND it — commit and push in the same session. A verified change handed
+back as "next steps" reads as not done, and the operator will say so bluntly: the gate ceremony is
+the work, not an obstacle to defer past. If a gate genuinely blocks (a refused close, a missing
+receipt, a doctor FAIL), say what is blocked and what clears it, then keep working the exits in that
+same session instead of parking the change. The inverse is not licensed: do not commit or push work
+you have not verified just to look finished — the rule is finish what you verified.
+
 ## Public-repo publishing discipline (user preference, 2026-09-01)
 
 When creating a PUBLIC repo (e.g. the omarchy-omar project), the user's hard
@@ -380,5 +411,9 @@ crawled; a leaked identifier is permanent. Practice:
 - `references/fine-grained-pat-capabilities.md` — fine-grained GitHub PAT
   format, create/push permission gaps (Administration vs Contents), and the
   browser-created-repo unblock.
+- `references/review-receipt-gate.md` — the review-receipt push gate in depth: the
+  close-then-push order, draining a wide range through per-blob review (waves, caps,
+  A0/B/C classes), the deploy-only lock-carrier cycle, and how to diagnose a close
+  that will not move one blob.
 - `shared-repo-push-gates` (sibling) — gate catalog + concurrent-session
   discipline; this skill is the diagnosis playbook for when a gate blocks.

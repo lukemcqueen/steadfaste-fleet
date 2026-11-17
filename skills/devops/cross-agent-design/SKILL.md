@@ -179,10 +179,21 @@ Rules, each of which is a bug that actually happened:
 
 1. **One implementation per capability.** Two implementations of one tool NAME
    is worse than none — the runtime picks one silently and the other becomes a
-   phantom. Enforce with a test.
+   phantom. Enforce with a test, and MOVE that test WITH the deletion: a handler
+   map still binding the removed private methods (`provider._tool_profile`, …)
+   fails on `AttributeError` the moment the duplicate goes, so the assertion must
+   become routing AT THE LAYER THAT OWNS each tool — the shared contract for every
+   shared name, the host-local method for the one extra. Assert the ABSENCE too:
+   a test that fails when a shared tool is redefined as a private method is what
+   stops the duplicate from creeping back.
 2. **The contract may not import a harness.** If it needs one, either extract it
    or declare it a **host-local extra** that names the reason (e.g. a tool that
-   needs the host's own LLM).
+   needs the host's own LLM). A test OF the host-bound module inherits that
+   coupling: it imports the harness (`agent.*`), so the fleet venv alone cannot
+   even COLLECT it — `ModuleNotFoundError: No module named 'agent'` means the
+   interpreter is wrong, not that the test is broken. Run it with the harness
+   runtime on the path (`PYTHONPATH=~/.hermes/hermes-agent <fleet venv>/bin/python3
+   -m pytest …`) and state which interpreter you exercised.
 3. **Schemas are DERIVED, never hand-written** — a hand-written schema list *is*
    a second definition and drifts immediately.
 4. **Never substitute a fallback implementation on failure.** Fail-open is for

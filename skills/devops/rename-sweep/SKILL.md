@@ -130,6 +130,15 @@ variable (`TEMPLATES_DIR.*skills\.yaml`), and for the joined-segment form
 (`"templates" */ *"skills\.yaml"`). Two consumers were dangling in a nine-reference sweep that
 otherwise verified clean; that grep is what found them.
 
+**A THIRD shape survives a path sweep: the BARE-IDENTIFIER import.** When the swept artifact is a
+MODULE, consumers that import the module NAME (`from pkg import mod`, `import mod`) carry the token
+as an identifier, not a path — no path pattern matches it, the file greps clean, and the damage only
+shows at import time: the module fails to COLLECT (`ImportError: cannot import name '<token>'`) and
+takes every test in that file down with it. Treat a collection error right after a sweep as this
+class's signature, and hunt the identifier forms explicitly — `grep -nE 'import <token>'` plus
+`\b<token>\.[a-z_]` for attribute usages — then fix the import AND every call site in that file.
+The residue grep for a renamed module must therefore cover the bare identifier, not only the path.
+
 ### 4. Deleted-artifact cross-reference sweep
 
 Deleting files breaks things that assert their existence:
@@ -170,6 +179,15 @@ than the repo layout — deploys flatten and nest differently, so `<deploy>/scri
 be wrong while `<deploy>/scripts/<x>.py` is right, in the same file. Sibling printed paths may be
 correct exactly as they stand: check each one instead of "tidying" the directory component off all
 of them.
+
+**A doc that ROUTES to a reference file is a live reference too — and a route to a file that was
+NEVER committed cannot be repaired by taking the deployed side.** When a skills doc points at its own
+`references/<name>.md`, an absent path is NOT the proof: it may be deployed-only, or deleted by the
+sweep you are running. Ask git instead — `git log --all --oneline -- '*<name>*'` printing nothing
+means the route has been dangling since it was written. Repoint it at the doc that actually covers
+that workflow (a sibling skill's reference is a legitimate target; the fleet already cross-references
+skills by name), and say in the commit message which doc now carries it. Never author content just
+to satisfy a pointer, and never drop the pointer as "stale" without naming its replacement.
 
 ### 5. Verification battery
 
@@ -240,7 +258,14 @@ with the sweep, in the same change:
    final release the legitimate keeps are: the converter/forwarder tool that must name the
    spelling it converts, comments describing the migration, and the names a runtime you do
    NOT own injects across the process boundary. Whitelist those BY NAME in the lint; every
-   other surviving token is residue. Report live surfaces separately from test/record ones
+   other surviving token is residue. **A vendor's name is only sacred in CONTENT.** When the swept
+   token belongs to a third-party product you do not own, our own FILE NAMES are still ours to
+   change: the vendor's CLI, plugin name and runtime paths must keep their spelling inside files
+   (that is the external contract — renaming them changes no vendor binary, it only breaks the
+   call), while a file of OURS named after the product should be renamed to what the file IS.
+   State which side of that line each survivor falls on, and expect the content count to stay
+   non-zero by design — a sweep reporting "0 residual tokens" on a host with a live vendor
+   integration has swept the wrong thing. Report live surfaces separately from test/record ones
    so one repo-wide count does not mix deliberate keeps with real stragglers.
 
 The user WILL ask "will agents be able to implement this?" if you skip 1–7 —
@@ -444,7 +469,7 @@ treat that as part of the deliverable, not a follow-up.
   `--no-renames` (`git diff --cached --name-only --no-renames`) so deletions
   are included, then verify after the commit that `git ls-tree HEAD
   -- <old-dir>` is empty and `git status` is clean.
-- **A `git commit --only -- <pathspec>` on a RENAME is only atomic when the pathspec names BOTH the old and new paths — listing just the source name commits the deletion and leaves the new file staged-but-absent from HEAD.** Rename detection pairs a delete+add, but `--only` builds a temporary index from the named paths: a pathspec containing only `ops/scripts/manage/old.py` carries the deletion and NOT the add of `new.py`, so the commit lands "delete old" while `new.py` stays staged and the tree is broken (its consumers point at a file HEAD lacks). List old and new together in the same `--` list; then verify with `git show HEAD:<new-path> >/dev/null` (not `git status`) that the new file is actually in HEAD, and `git log --stat -1` that the pair reads as a 100% rename, not delete+orphan-add.
+- **A `git commit --only -- <pathspec>` on a RENAME is only atomic when the pathspec names BOTH the old and new paths — listing just the source name commits the deletion and leaves the new file staged-but-absent from HEAD; naming just the NEW path is the mirror failure — the add commits while the retired path's deletion stays staged, so `git status --short` keeps showing `D  <old path>` and HEAD goes on serving the retired filename.** Rename detection pairs a delete+add, but `--only` builds a temporary index from the named paths: a pathspec containing only `ops/scripts/manage/old.py` carries the deletion and NOT the add of `new.py`, so the commit lands "delete old" while `new.py` stays staged and the tree is broken (its consumers point at a file HEAD lacks). List old and new together in the same `--` list; then verify all three — the new file IS in HEAD (`git show HEAD:<new-path> >/dev/null`), the retired path is GONE from it (`git ls-tree HEAD -- <old path>` empty), and `git status --short` is EMPTY. That last check is the only cheap tell: a non-empty status after a rename commit means the other half is still staged, while `git status` reads as "one rename" either way. `git log --stat -1` should read as a 100% rename, not delete+orphan-add.
 - **A renamed FILE and the TEST that targets it must land in the SAME commit, or the TDD Iron-Law gate refuses the later one.** If a rename is split across two commits — a test updated to reference `new.py` in commit A, then `new.py` itself added in commit B — commit B triggers "TDD IRON LAW VIOLATION — new production code without a test", because the gate requires the test file in the SAME diff as the new file. Make the rename atomic (file + test + refs in ONE commit); if you already split it, `git reset --soft` back and re-commit as one pathspec commit listing both rename paths plus the test.
 - **A launcher or executable moved into a subdirectory needs its self-relative module resolution
   changed in the SAME commit.** See `shell-scripting` → "Moving an executable": without it the
@@ -514,6 +539,14 @@ treat that as part of the deliverable, not a follow-up.
 - **A residue COUNT is inflated by every KEEP that CONTAINS the swept term — anchor the family pattern, and check the guard's CASE.** A swept term that is a SUBSTRING of a deliberately-kept sibling is the normal shape (`cortex` inside `mycortex`, `hc` inside a longer word), so a loose pattern counts the keep as residue and overstates the work: the family pattern `CORTEX_[A-Z0-9_]+` matches the `CORTEX_` inside `MYCORTEX_COMPOSE_DIR` and `_MYCORTEX_CACHE`. The fix is a left boundary a word character blocks — `\bCORTEX_`, equivalently `(?<![A-Za-z0-9_])CORTEX_` — because the character before that `C` is itself a word character, so the keep no longer matches. The same trap survives a negative-lookbehind guard whose CASE does not match the family's: a guard written `(?<!my)` never fires against the `MY` in `MYCORTEX_X`, silently re-inflating the count it was added to prevent. Report counts as `N raw - M keep-substring` and NAME the keep, so a reader can check the subtraction instead of trusting the total.
 - **"Where are we with the migration?" is answered by MEASURED SURFACES, never by a plan's status header.** A rename lands in commits, package dirs, unit names, cron entries and per-host env files; the plan / runbook / followups docs keep whatever status line they were written with (`Status: PLAN - not started`, `Release 2 - not yet`, `IN PROGRESS since <date>`) long after the landing, so reading them reports the migration backwards. Measure, then report with the source named: `git log --oneline` (did each sweep land, and when), the renamed package/script dirs, the unit names under `~/.config/systemd/user/`, the cron names in `jobs.json`, and a COUNT of the old spelling in each host's `.env` (grep names only, never values). Scope the answer to the hosts actually measured and say which ones you did not reach — a single-host measurement is not a fleet-wide claim.
   **A doc whose status header contradicts the landed state is a FINDING, not context** — the same class as a superseded "kept"/"deferred" row. Patch the header and any `not yet` / `not started` section in the sweep's own commit (see `references/env-namespace-rename.md` section 6), or the next reader re-derives work that is already done.
+- **Replace a measured FIGURE by VALUE across the whole file, never by the sentence you happened to
+  be editing — a doc that states the same count twice must move BOTH.** A doc test asserting the new
+  numbers asserts them where its own grep lands; a second paragraph carrying the OLD pair sails
+  through green, and the close reviewer files the contradiction as an inconsistency YOUR range
+  introduced. After any count change: `grep -n '<old value>' <doc>` and reconcile every hit, then
+  report how many occurrences you moved. Re-measure the underlying map with the doc test's OWN
+  parser rather than trusting the doc's arithmetic — a half-updated figure is exactly the failure
+  the test exists to prevent, and a passing test does not prove the doc is consistent.
 - **An exemption token is PER-LINE — it must sit on the same line as every reference it
   protects, and the sentence must stay on ONE physical line.** A lint that ignores lines carrying a date token (a migration-record line) judges
   each line independently: wrapping a long reference onto a continuation line moves the token
