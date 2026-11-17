@@ -9,16 +9,12 @@ WHAT IT LOADS, AND FROM WHERE — stated here because the review window for this
 test sees only this test, and it must not lean on a sibling that window cannot see:
 
   * It loads (rather than imports) `ops/scripts/manage/orch-model-market-scan.py`
-    by a path derived from this file's own location —
-    `Path(__file__).resolve().parents[1]` — so it resolves in the repo AND in a
-    deployed tree, and never depends on the caller's cwd or on `sys.path`.
-  * That sibling is provided in the same range by commit 4338f864
-    (`rename(router-layer): take the upstream product token out of our file names`),
-    which removed the upstream product token from our file names.
-  * If the sibling is ABSENT, a test that calls `load_scan()` fails loudly with
-    FileNotFoundError. That is intended: this test must not pass by skipping, and
-    nothing here touches the network or ambient state — so a failure means the
-    scanner changed, not the environment.
+    by a path derived from this file's own location — `Path(__file__).resolve().parents[1]`
+    — so it resolves in the repo AND in a deployed tree, never depending on cwd or `sys.path`.
+  * That sibling is provided in this same range by commit 4338f864
+    (`rename(router-layer): take the upstream product token out of our file names`).
+  * If the sibling is ABSENT, a test calling `load_scan()` fails loudly with
+    FileNotFoundError. Intended: this test must not pass by skipping.
 """
 import importlib.util
 import json
