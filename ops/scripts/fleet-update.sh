@@ -1053,6 +1053,7 @@ register "ops/scripts/manage/fix-cron-skills-toolset.py" "${FLEET_DEPLOY_HOME}/s
 register "ops/scripts/manage/install-router-layer.sh" "${FLEET_DEPLOY_HOME}/scripts/manage/install-router-layer.sh"
 register "ops/scripts/manage/router-shadow-report.py" "${FLEET_DEPLOY_HOME}/scripts/manage/router-shadow-report.py"
 register "ops/scripts/manage/router-pools.py"   "${FLEET_DEPLOY_HOME}/scripts/manage/router-pools.py"
+register "ops/scripts/manage/provider-policy.py" "${FLEET_DEPLOY_HOME}/scripts/manage/provider-policy.py"
 register "ops/scripts/manage/router-pools-seed.py" "${FLEET_DEPLOY_HOME}/scripts/manage/router-pools-seed.py"
 register "ops/scripts/manage/orch-model-market-scan.py" "${FLEET_DEPLOY_HOME}/scripts/manage/orch-model-market-scan.py"
 register "config/router-models.json"             "${FLEET_DEPLOY_HOME}/config/router-models.json"
