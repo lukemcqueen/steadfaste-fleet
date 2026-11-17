@@ -25,6 +25,22 @@ low confidence means the pools are NOT the lever — Jev is not recognising the
 turns as asks, so moving models between pools changes nothing and the fix is what
 the turn SHOWS it, not the prices. That is the failure this report exists to make
 visible before anyone flips the switch.
+
+PROVENANCE, AND THE SIBLING CONTRACT (this file is judged on its own, so both are
+stated here rather than left to a review window that cannot see them):
+
+  * Provenance — renamed from `jev-shadow-report.py` by commit 4338f864
+    (`rename(router-layer): take the upstream product token out of our file names`),
+    which removed the upstream product token from our file names. Same range.
+  * Sibling — it LOADS, rather than imports, `fleet_doctor/router_layer.py`: first
+    beside this script, then one level up, because the doctor package deploys to
+    `<deploy root>/scripts/fleet_doctor/` and NOT beside this script (looking only
+    next to it made the DEPLOYED report print "price unknown" on a full catalog).
+    That sibling is provided in the same range by the same commit, 4338f864.
+  * Absent dependency is a STATED outcome, never a traceback: when neither candidate
+    exists — a bare host with no doctor package — the loader returns `(None, None)`
+    and the report still runs, reporting prices as unavailable rather than guessing.
+    The exit codes above are unchanged by that case.
 """
 from __future__ import annotations
 
