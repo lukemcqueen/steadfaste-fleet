@@ -253,6 +253,19 @@ def test_simple_pools_respect_their_own_ceiling():
     assert not offenders, f"above the simple ceiling ({ceiling:g}x): {offenders}"
 
 
+def test_the_config_note_names_the_tests_that_assert_its_claims():
+    """ADV-14906: a pointer must be resolvable. policy.simple.note claimed the 0.5x
+    ceiling is 'asserted by tests/test_router_pools.py' — a FILE, not a test, so the
+    claim was unverifiable. It now names the two tests that assert its claims, and this
+    test proves both the naming and that those tests still exist in this file."""
+    note = _config()["policy"]["simple"]["note"]
+    src = Path(__file__).read_text()
+    for tid in ("test_every_model_in_a_simple_pool_is_cheaper_than_the_baseline",
+                "test_simple_pools_respect_their_own_ceiling"):
+        assert f"::{tid}" in note, f"policy.simple.note must name {tid}"
+        assert f"def {tid}(" in src, f"{tid} must exist in this file"
+
+
 def test_hard_routes_only_whitelisted_models():
     """Luke 2026-10-28: the hard tier is the exception for complex work, not a licence to
     spend 28x. Only models that fit the budget may be routed there."""
