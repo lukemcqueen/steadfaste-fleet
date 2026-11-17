@@ -149,10 +149,10 @@ These run on this machine but use `agent-*` naming. Not in repo installers (inte
 
 | Name | Schedule | Type | Deliver |
 |------|----------|------|---------|
-| `fleet-bus-workday` | `0 8,14,20 * * 1-5` | LLM | origin |
-| `fleet-bus-evening` | `0 20,22 * * 1-5` | LLM | origin |
-| `fleet-bus-overnight` | `0 23 * * 1-5` | LLM | origin |
-| `job-opportunity-scanner` | `0 7 * * *` | LLM | Telegram |
+| `fleet-bus-workday` | `21 8,20 * * *` | LLM | local |
+| ~~`fleet-bus-evening`~~ | ~~`0 20,22 * * 1-5`~~ | ~~LLM~~ | ~~origin~~ | ⚠️ **REMOVED 2026-11-07** — consolidated into `fleet-bus-workday` (2×/day) |
+| ~~`fleet-bus-overnight`~~ | ~~`0 23 * * 1-5`~~ | ~~LLM~~ | ~~origin~~ | ⚠️ **REMOVED 2026-11-07** — consolidated into `fleet-bus-workday` |
+| `local-job-opportunity-scanner` | `0 7 * * *` | LLM | origin + Telegram |
 
 ### Other crons — 8 crons
 
