@@ -80,8 +80,9 @@ is_orchestrator() {
     # Moses/Esther special case
     return 0
   else
-    # For other hosts, assume regular server (non-orchestrator);
-    # This allows easier detection on hosts without special markers
+    # Check if this host is a regular server (non-orchestrator);
+    # Allow easier detection on hosts without special markers
+    # For all non-orchestrator hosts, we want default to non-orchestrator behavior
     return 1
   fi
 }
