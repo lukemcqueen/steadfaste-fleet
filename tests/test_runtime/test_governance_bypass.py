@@ -121,6 +121,17 @@ class TestWriteToolsAlwaysRequireLock:
     def test_patch_requires_lock(self):
         assert _is_write_tool("patch", {}) is True
 
+    def test_memory_does_not_require_lock(self):
+        """`memory` is deliberately NOT write-class (operator decision 2026-11-17).
+
+        It writes a local MEMORY.md outside any git repo, so the governance lock
+        was an impossible-by-design demand: it cost a full cycle per memory write.
+        The inconsistency that settled it — mycortex, the fleet's actual memory
+        STORE, is an MCP tool and is never intercepted by this plugin at all, so
+        the gate covered the mirror but not the store.
+        """
+        assert _is_write_tool("memory", {}) is False
+
     def test_unknown_tool_does_not_require_lock(self):
         assert _is_write_tool("read_file", {}) is False
         assert _is_write_tool("web_search", {}) is False

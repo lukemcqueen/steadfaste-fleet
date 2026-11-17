@@ -4043,9 +4043,14 @@ def check_governance(res):
     # against the CONTRACT they actually live in.
     contract_path = FLEET_REPO / "ops" / "services" / "fleet-governance" / "write_class.py"
     contract_src = contract_path.read_text() if contract_path.exists() else ""
+    # NOTE: a "WRITE_TOOLS includes memory" marker lived here until 2026-11-17,
+    # when `memory` was deliberately un-gated (operator decision, Luke): it writes
+    # a local MEMORY.md OUTSIDE any git repo, so the lock was an impossible-by-design
+    # demand per write, while mycortex — the fleet's actual memory STORE — is an MCP
+    # tool this plugin never intercepts. The marker was RETIRED with that decision;
+    # its absence is intentional and must NOT be "fixed" by restoring the gate.
     checks = [
       ("WRITE_TOOLS includes execute_code", '"execute_code"' in enforcer_src),
-      ("WRITE_TOOLS includes memory", '"memory"' in enforcer_src),
       ("WRITE_TOOLS includes text_to_speech", '"text_to_speech"' in enforcer_src),
       ("CONDITIONAL_WRITE_TOOLS includes process", '"process"' in enforcer_src),
       ("WRITE_PROCESS_ACTIONS defined", "WRITE_PROCESS_ACTIONS" in enforcer_src),

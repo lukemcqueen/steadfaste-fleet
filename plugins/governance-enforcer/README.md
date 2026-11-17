@@ -766,7 +766,7 @@ is classified into one of three tiers:
 
 | Tier | Tools | What's Blocked |
 |------|-------|----------------|
-| **WRITE_TOOLS** | `write_file`, `patch`, `execute_code`, `memory`, `text_to_speech` | Tool use at all — requires governance lock unconditionally. Note: `execute_code` may also be blocked by Hermes' `approvals.cron_mode` before the enforcer's check fires — the block message you see depends on which system intercepts it first. Either way, the tool is correctly blocked. |
+| **WRITE_TOOLS** | `write_file`, `patch`, `execute_code`, `text_to_speech` | Tool use at all — requires governance lock unconditionally. `memory` was in this set until 2026-11-17 (operator decision): it writes a local MEMORY.md OUTSIDE any git repo, so the lock was an impossible-by-design demand per write — while mycortex, the fleet's actual memory STORE, is an MCP tool this plugin never intercepts. The gate covered the mirror, not the store. Note: `execute_code` may also be blocked by Hermes' `approvals.cron_mode` before the enforcer's check fires — the block message you see depends on which system intercepts it first. Either way, the tool is correctly blocked. |
 | **CONDITIONAL** | `terminal`, `cronjob`, `skill_manage`, `process`, `computer_use` | Specific write-type actions (see tables below) |
 | **READ-ONLY** | `read_file`, `search_files`, `session_search`, `skill_view`, `skills_list`, `clarify`, `vision_analyze`, `todo` | Nothing — always allowed |
 | **DELEGATION** | `delegate_task` | Not blocked — subagents have their own enforcer instance |

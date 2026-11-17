@@ -258,7 +258,7 @@ _TOOL_CASES = [
     ("write_file", {"path": "/tmp/x"}, True),
     ("patch", {"path": "/tmp/x"}, True),
     ("execute_code", {"code": "print(1)"}, True),
-    ("memory", {"action": "add"}, True),
+    ("memory", {"action": "add"}, False),  # ungated 2026-11-17: writes local MEMORY.md, not repo state
     ("text_to_speech", {"text": "hi"}, True),
     ("read_file", {"path": "/tmp/x"}, False),
     ("search_files", {"pattern": "x"}, False),
@@ -281,3 +281,8 @@ def test_write_tool_parity(tool_name, args, expect):
     got_enforcer = _ENFORCER._is_write_tool(tool_name, args)
     assert got_contract == got_enforcer, \
         f"parity break on {tool_name} {args}: contract={got_contract} enforcer={got_enforcer}"
+    # Assert the ABSOLUTE verdict as well. `expect` was previously unused, so the
+    # corpus could only catch the two implementations disagreeing — never a verdict
+    # they both got wrong together. A pin that cannot bite is not a pin.
+    assert got_enforcer is expect, \
+        f"verdict drift on {tool_name} {args}: expected {expect}, got {got_enforcer}"

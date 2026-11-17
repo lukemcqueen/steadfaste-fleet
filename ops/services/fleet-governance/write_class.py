@@ -32,12 +32,16 @@ from pathlib import Path
 from typing import Any, Dict
 
 # ── Tool-name write classification ──────────────────────────────────────────
+# MUST stay in lockstep with the enforcer's in-process set
+# (plugins/governance-enforcer/__init__.py) — tests/test_write_class_parity.py
+# asserts the two agree on a corpus, and asserts the ABSOLUTE verdict too.
+# `memory` was removed from both on 2026-11-17: it writes a local MEMORY.md
+# outside any git repo, so the lock was an impossible demand per write.
 
 WRITE_TOOLS = {
     "write_file",
     "patch",
     "execute_code",
-    "memory",
     "text_to_speech",
 }
 

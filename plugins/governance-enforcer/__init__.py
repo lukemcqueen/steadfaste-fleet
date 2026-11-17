@@ -1754,12 +1754,18 @@ def _has_governance_lock(hermes_session_id: str = "", target_repo: str = "") -> 
     return False
 
 
-# Tools that modify system state — require governance lock
+# Tools that modify system state — require governance lock.
+# `memory` was removed from this set on 2026-11-17 (operator decision, Luke): it
+# writes a local MEMORY.md that lives OUTSIDE any git repo, so gating it was an
+# impossible-by-design demand costing a full governance cycle per memory write —
+# while mycortex, the fleet's actual memory STORE, is an MCP tool this plugin does
+# not intercept at all. The gate covered the mirror and not the store. Do not
+# re-add it without reversing that call (and the doctor marker that was retired
+# with it in ops/scripts/manage/fleet_doctor/checks.py).
 WRITE_TOOLS = {
     "write_file",
     "patch",
     "execute_code",
-    "memory",
     "text_to_speech",
 }
 
