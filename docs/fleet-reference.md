@@ -34,7 +34,7 @@ Every agent in the fleet falls into one of three types. This determines which in
 | **Has Ollama** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Has mycortex** | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 
-> **Note on cronjob MCP tool availability:** Most non-orchestrator agents do not have the cronjob tool in any context. The macOS dev-agent (Titus) has it when running direct user sessions (Telegram DM, CLI) but not in cron/auto-remediation contexts. When running under a restricted toolset (e.g. cron), all non-orchestrator agents should route cron requests through Moses using the [cron-request-protocol](skills/devops/cron-request-protocol/SKILL.md).
+> **Note on cronjob MCP tool availability:** All agents have the cronjob MCP tool available in their contexts, including direct user sessions, cron jobs, and auto-remediation contexts. Agents may manage their own cron jobs directly using this tool, with orchestrators (Moses, Esther) available for assistance with complex cron changes or review requests.
 
 ### What this means for cron installs
 
@@ -43,7 +43,7 @@ Every agent in the fleet falls into one of three types. This determines which in
 | Run `install-crons.sh` | ✅ Creates all `agent-*` + bare crons | ✅ Creates all `agent-*` + bare crons |
 | Run `install-orch-crons.sh` | ✅ Creates `orch-*` crons (bus, fleet, health) | ❌ Guard blocks — exits with info message |
 | Run `fleet-doctor.py` | ✅ Validates all crons including `orch-*` | ✅ Validates only `agent-*` + bare crons, skips `orch-*` |
-| Create cron manually | ✅ Has `cronjob` MCP tool | ❌ Must request via inbox or edit `jobs.json` directly |
+|| Create cron manually | ✅ Has `cronjob` MCP tool | ✅ Can create, update, or remove cron jobs directly |
 
 ### Cron naming convention (enforced)
 

@@ -255,7 +255,7 @@ See [`docs/contact-protocol-how-to-reach-orchestrator.md`](docs/contact-protocol
 
 ## Agent Cron Management
 
-Only orchestrators (Moses, Esther) have `cronjob` MCP. Others request via `inbox_orchestrator` with subject `🔧 CRON: create|update|remove`.
+Agents may manage crons directly via `cronjob` MCP. Orchestrators (Moses, Esther) may also manage crons directly, and can assist with complex cron changes or review requests.
 
 Universal crons (60+): [`docs/fleet-reference.md`](docs/fleet-reference.md). **Skill Collection:** `agent-learning-collector` (6h) → `orch-skill-lifecycle` (daily 04:00).
 
