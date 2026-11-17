@@ -43,6 +43,11 @@ DEFAULT_EXPECTED = {
     "review": "loop-gov-mcp.py",
     "tasks": "task-mcp.py",
     "executor": "executor-mcp.py",
+    # The memory/session surface itself (mcp-servers/fleet-context-mcp.py). It was
+    # declared in ops/scripts/install/mcp-surface.inc.sh — the ONE definition of the
+    # fleet MCP surface — but absent from this map, so no host was ever told it was
+    # unwired: the audit simply did not cover it. 2026-11-17.
+    "fleet-context": "fleet-context-mcp.py",
 }
 ORCH_ONLY = {"agent-bus", "executor"}
 

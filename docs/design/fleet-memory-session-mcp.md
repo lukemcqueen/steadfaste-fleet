@@ -211,6 +211,17 @@ hermes mcp add fleet-context \
 Same wiring as `tasks` / `loop-governance`. No Hermes gateway required — the
 server reads `.env` + Postgres directly.
 
+**It is audited, not assumed.** `fleet-context` is a row in
+`ops/scripts/install/mcp-surface.inc.sh` (the ONE definition of the fleet MCP
+surface, sourced by every per-harness adapter) *and* in the doctor's
+`EXPECTED_MCP_SERVERS`, so a host where it is unwired gets a
+`MCP server (fleet-context)` failure rather than silence.
+`tests/test_mcp_wiring_artifact.py` pins the artifact against both the registry's
+`defaults.mcp_server` and the doctor's map, so a server declared in the artifact
+can no longer go unaudited — which is exactly how `fleet-context` went
+unreported until 2026-11-17. It is expected on ALL hosts, not orchestrator-only:
+`install-pi-mcp.sh` and `audit-pi-integration.sh` both require it.
+
 **2. The trigger — the harness calls this at a boundary, not the model:**
 ```bash
 python3 ~/steadfaste-fleet/ops/scripts/session-autocheckpoint.py \

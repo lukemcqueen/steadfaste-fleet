@@ -147,6 +147,12 @@ EXPECTED_MCP_SERVERS = {
     "review": "loop-gov-mcp.py",
     "tasks": "task-mcp.py",
     "executor": "executor-mcp.py",
+    # The memory/session surface itself (the fleet-context MCP server), declared in
+    # ops/scripts/install/mcp-surface.inc.sh — the ONE definition of the fleet MCP
+    # surface — but absent from this map until 2026-11-17, so the doctor never
+    # reported a host where it was unwired. It is NOT orchestrator-only:
+    # install-pi-mcp.sh and audit-pi-integration.sh both REQUIRE it on every host.
+    "fleet-context": "fleet-context-mcp.py",
 }
 
 # MCP servers deployed only on orchestrator hosts (register_orch in

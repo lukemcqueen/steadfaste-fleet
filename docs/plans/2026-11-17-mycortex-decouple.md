@@ -114,3 +114,20 @@ through the harness's own API → the deploy RUNS it → one doctor row):
 4. `grep -n "_tool_profile\|_tool_search\|_tool_context\|_tool_conclude"` in
    `plugins/mycortex-mem/__init__.py` returns nothing.
 5. `mem_profile`/`mem_search` still answer on Hermes (live probe).
+
+## Status — 2026-11-17
+
+| # | State | Evidence |
+|---|---|---|
+| 1 | met | `hermes mcp list` shows `fleet-context` on this host |
+| 2 | met | `tests/test_mcp_wiring_artifact.py` 4/4 — pins the artifact against the registry's `defaults.mcp_server` AND the doctor's map, and every announced harness against its install path |
+| 3 | partial | the doctor now reports `MCP server (fleet-context) — configured in config.yaml`; the per-harness projection LINE that `fleet-update.sh` prints was not re-verified in this pass |
+| 4 | met | `grep -n "_tool_profile\|_tool_search\|_tool_context\|_tool_conclude"` in `plugins/mycortex-mem/__init__.py` returns nothing |
+| 5 | met | `mem_profile` answered on this host after the deletion (shared dispatch path) |
+
+Acceptance #2 existed because the surface had no audit; it was UNMET and the gap
+was recorded as a governance issue when the plugin edit was committed. The
+doctor's map did not carry `fleet-context` at all, so the audit did not cover the
+very surface this plan is about — nothing ever reported it unwired. Both maps
+carry it as of 2026-11-17, pinned by the new test, which was proven to FAIL on the
+pre-fix map before being accepted.
