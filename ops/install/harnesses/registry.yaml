@@ -319,6 +319,26 @@ harnesses:
         verify:
           - 'claude mcp list shows fleet-context with the memory/session tools.'
           - 'In a Claude Code session call mem_context — the peer card must come back.'
+      skills:
+        adapter: deploy
+        register: ops/scripts/fleet-update.sh
+        why: |
+          Claude Code reads skills from the published agent-visible tree
+          (~/.agents/skills → the deployed fleet skills) exactly as Hermes does;
+          there is no per-session registration step. The deploy is the adapter,
+          so a broken skills surface is a deploy fault, not a registration fault.
+      governance:
+        adapter: mcp
+        register: ops/scripts/install/install-claude-governance.sh
+        from: loop-gov-mcp.py
+        requires: "claude-code with a user-scope mcpServers config"
+        why: |
+          install-claude-governance.sh registers the governance MCP servers
+          (loop-governance, review, tasks, executor, agent-bus) at USER scope in
+          ~/.claude.json so every Claude Code commit is governed — the same
+          one-server-per-role shape the Hermes config uses. Registration writes
+          through Claude's own config, never a raw edit of a security-sensitive
+          file.
       gateway:
         adapter: command
         register: ops/scripts/install/install-claude-mcp.sh

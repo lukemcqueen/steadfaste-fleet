@@ -547,8 +547,12 @@ git -C ~/steadfaste-fleet ls-files 'ops/scripts/<old>/<old>.py'   # empty = the 
 grep -c '<old>\.py' ~/steadfaste-fleet/ops/scripts/fleet-update.sh   # 0 = not registered = orphan
 
 # 4. Does anything LIVE still call the old name, or exec it?
-grep -rln '<old>\.py' ~/.steadfaste-fleet/scripts/ ~/.hermes/skills/ ~/steadfaste-fleet/skills/ \
-  | grep -vE '/<old>\.py$'      # hits are docs/comments only => safe
+#    Match the BASENAME with ANY extension — a sweep renames .sh installers and
+#    extension-less tools beside .py modules, and a '<old>\.py'-only grep reports
+#    "no references" for the non-.py orphans (a false safe). Exclude the stale
+#    file's own path from the results; the remaining hits are docs/comments/self-refs.
+grep -rlnE '<old>([._-]|$)' ~/.steadfaste-fleet/scripts/ ~/.hermes/skills/ ~/steadfaste-fleet/skills/ \
+  | grep -vE "/<old>(\.[a-z]+)?$"   # after excluding the stale file itself: docs/comments only => safe
 ```
 
 **A transition-compat ALIAS was kept during migration, then REMOVED when done (2026-11-12).**
