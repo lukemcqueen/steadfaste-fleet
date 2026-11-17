@@ -29,19 +29,17 @@ A file under no repo-owned skill dir is a Hermes default and stays skipped.
 
 | Measure | Value |
 |---|---|
-| Stranded in place (path in repo, content only deployed) | 3 |
+| Stranded in place (path in repo, content only deployed) | 1 |
 | Absent from the repo (deployed under a repo-owned skill) | 1 |
 |   ↳ path dropped from repo history | 0 |
 |   ↳ path never committed | 1 |
-| Files in sync | 1014 |
+| Files in sync | 1016 |
 | Skipped (Hermes defaults, or repo ahead) | 546 |
 
 **Verdict: FAIL**
 
 Stranded in place:
 - devops/cron-job-management/SKILL.md
-- devops/orch-skill-lifecycle/SKILL.md
-- workflow/task-orient/SKILL.md
 
 Absent from the repo (deployed under a repo-owned skill):
 - devops/cron-job-management/references/tiered-schedule-pattern.md (never-committed)

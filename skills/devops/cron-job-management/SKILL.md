@@ -21,7 +21,7 @@ Every cron name starts with a **group prefix** that determines install scope, do
 |--------|-------|-------------|-------------------|
 | `orch-` | Orchestrator-only (Moses, Esther). Bus infra, fleet watchdogs, health reports to Luke. | `install-orch-crons.sh` (in `ops/scripts/install/`) | `parse_orch_crons()` reads uninstall array from `install-orch-crons.sh` |
 | `agent-` | All agents with Hermes Agent. Remediation, monitoring, memory, knowledge, governance, scoring. | `install-crons.sh` (in `ops/scripts/`) | `parse_expected_crons()` reads uninstall array from `install-crons.sh` |
-| `local-` | This server only. Personal briefings, machine-specific maintenance. NOT in repo install scripts. | Created manually via `cronjob action='create' name='local-<name>'` | Silently excluded by doctor. Orphan crons show: rename to `local-<name>` to opt out. |
+| `local-` | This server only. Personal briefings, machine-specific maintenance. NOT in repo install scripts. | Created manually via `cronjob action='create' name='local-<name>'` | Excluded from the installer-array checks — but NOT invisible: a `local-` job BRIDGED to a systemd timer and declared in neither `cron-manifest.yaml` nor `jobs.json` IS reported as an undeclared timer (INFO, by design — see Pitfalls). Orphan crons show: rename to `local-<name>` to opt out. |
 
 ### Combining and nesting
 
