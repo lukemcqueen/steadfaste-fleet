@@ -40,7 +40,9 @@ copy of the harness knowledge):
 fleet harness list                       # every declared harness + its layer
 fleet harness show pi                    # why this layer, install, run, verify
 fleet harness install pi --dir <project> # do the file steps, print the DERIVED run line
-fleet harness verify pi                  # registry current? store reachable? artifact there?
+fleet harness verify pi                  # agent present? adapter installed + registered?
+                                          # (context/skills/governance), store reachable, artifacts?
+                                          # A declared gap reports DECLARED GAP, never a bare PASS.
 fleet harness add <name> --layer mcp --surface '...'   # scaffold a new entry
 ```
 

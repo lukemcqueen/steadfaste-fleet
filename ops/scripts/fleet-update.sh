@@ -513,6 +513,14 @@ register "ops/scripts/install/install-profile-reader-role.sh" "${FLEET_DEPLOY_HO
 register "ops/scripts/install/install-score-hook.sh"       "${FLEET_DEPLOY_HOME}/scripts/install-score-hook.sh"
 register "ops/scripts/install/install-claude-governance.sh" "${FLEET_DEPLOY_HOME}/scripts/install-claude-governance.sh"
 register "ops/scripts/install/install-pi-mcp.sh"           "${FLEET_DEPLOY_HOME}/scripts/install-pi-mcp.sh"
+# Harness MCP adapters — deployed AND run (see the "Harness MCP registration"
+# step near the end of main). Registering alone wires nothing.
+register "ops/scripts/install/install-hermes-mcp.sh"       "${FLEET_DEPLOY_HOME}/scripts/install-hermes-mcp.sh"
+register "ops/scripts/install/install-claude-mcp.sh"       "${FLEET_DEPLOY_HOME}/scripts/install-claude-mcp.sh"
+register "ops/scripts/install/install-codex-mcp.sh"        "${FLEET_DEPLOY_HOME}/scripts/install-codex-mcp.sh"
+register "ops/scripts/install/install-opencode-mcp.sh"     "${FLEET_DEPLOY_HOME}/scripts/install-opencode-mcp.sh"
+register "ops/scripts/install/install-fleet-mcp.sh"        "${FLEET_DEPLOY_HOME}/scripts/install-fleet-mcp.sh"
+register "ops/scripts/install/mcp-surface.inc.sh"          "${FLEET_DEPLOY_HOME}/scripts/mcp-surface.inc.sh"
 register "ops/scripts/fleet-dogfood.sh" "${FLEET_DEPLOY_HOME}/scripts/fleet-dogfood.sh"
 register "ops/scripts/pre-commit-score"            "${FLEET_DEPLOY_HOME}/scripts/pre-commit-score"
 # The reflexion gate's verifier — answers "did this session load skill X?" from
@@ -4073,6 +4081,23 @@ print("in-sync" if (d.get("drifted") == [] and d.get("missing") == []
     bash "${FLEET_DEPLOY_HOME}/scripts/install-bridge-killmode.sh" 2>&1 | sed 's/^/    /' || \
       warn "  install-bridge-killmode.sh failed (non-fatal)"
   fi
+
+  # ── Harness MCP registration (cross-agent-design rule 9) ────
+  # Copying an installer into the scripts dir wires NOTHING — the deploy must
+  # RUN it, or a harness sits "present but unwired" while everything reports
+  # green. Each adapter is idempotent and owns its own presence gate (a host
+  # without that coding agent is a no-op, not a failure) and fails closed:
+  # absent tokens stay absent and are reported by name. The adapters that are
+  # still declared gaps exit 0 with an explicit "NOT wired" line, so this loop
+  # is safe to run in full — the gap is VISIBLE, never silent.
+  for _harness_installer in install-hermes-mcp.sh install-pi-mcp.sh \
+                            install-claude-mcp.sh install-codex-mcp.sh \
+                            install-opencode-mcp.sh install-fleet-mcp.sh; do
+    if [[ -f "${FLEET_DEPLOY_HOME}/scripts/${_harness_installer}" ]]; then
+      bash "${FLEET_DEPLOY_HOME}/scripts/${_harness_installer}" 2>&1 | sed 's/^/    /' || \
+        warn "  ${_harness_installer} failed (non-fatal)"
+    fi
+  done
 
   # ── Clean stale governance locks ─────────────────────────
   # First pass: clean locks whose heartbeat has exceeded TTL

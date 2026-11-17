@@ -259,6 +259,30 @@ harnesses:
     verify:
       - 'hermes mcp list | grep fleet-context'
       - 'Call mcp__fleet_context__mem_context; the peer card must come back.'
+    capabilities:
+      context:
+        adapter: mcp
+        register: ops/scripts/install/install-hermes-mcp.sh
+        from: fleet-context-mcp.py
+        requires: "hermes-agent >= 0.15 (sessions-fleet key + hooks, injected into MCP children)"
+        why: |
+          One registration covers every server surface Hermes needs from the fleet
+          (fleet-context, agent-bus, tasks, executor). The installer is idempotent
+          and fails closed: absent tokens stay absent and are reported by name.
+      skills:
+        adapter: deploy
+        register: ops/scripts/fleet-update.sh
+        why: |
+          Hermes skills are the deployed tree symlinked into ~/.hermes/skills — there
+          is no per-session registration step. The deploy is the adapter, so a broken
+          skills surface is a deploy fault, not a registration fault.
+      governance:
+        adapter: plugin+mcp
+        register: ops/scripts/fleet-update.sh
+        why: |
+          The governance-enforcer plugin and the review/loop-governance MCP servers
+          are shipped by the deploy. Hooks are governed by the fleet's own hook
+          checks (check_governance, check_hook_drift) rather than a harness adapter.
     triggers:
       note: 'Harness side: ops/scripts/session-autocheckpoint.py at a boundary, or a cron.'
 
@@ -339,6 +363,15 @@ harnesses:
     verify:
       - 'codex mcp list shows fleet-context'
       - 'Call mem_context; the peer card must come back.'
+    capabilities:
+      context:
+        adapter: mcp
+        register: ops/scripts/install/install-codex-mcp.sh
+        from: fleet-context-mcp.py
+        why: |
+          Same shared server; registration is a [mcp_servers] entry in
+          ~/.codex/config.toml. The installer is idempotent and reports what it
+          added, already had, or could not add.
 
   - name: steadfaste-tui
     layer: none

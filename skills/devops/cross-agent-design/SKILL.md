@@ -259,6 +259,46 @@ nothing anywhere reports a fault:
 Procedure, predicates and the probe recipe:
 `enforcement-gate-migration > references/multi-harness-evidence-writer.md`.
 
+### The POLICY half of a capability — one artifact, projected per harness
+
+A standing rule the operator states (exclude this upstream, cap this spend, prefer
+this route) is a capability with N consumers like any other, and its FIRST fix is
+usually wrong in a specific way: it gets written straight into one harness's config
+file. That serves exactly ONE agent, teaches the fleet nothing, and the next agent to
+hit the same failure rediscovers it from scratch — the same "each host grows its own
+version" defect as a duplicated tool. Policy follows the same contract/adapter split
+as code:
+
+- **Policy is DATA in the ONE reviewable artifact**, beside the policy the fleet
+already keeps there — one entry per subject, each carrying a REASON, an EVIDENCE
+pointer and a SCOPE, enforced by that artifact's own `--selftest` so an unexplained
+exclusion cannot be committed. Read the artifact's existing blocks FIRST and extend
+the established shape (an `excluded` block that already demands reason+evidence sets
+the pattern); never open a second policy store.
+- **Each harness gets an adapter that projects the artifact through the harness's OWN
+api** — never by editing its config file behind its back, so the harness keeps owning
+its own lifecycle. Shell out to the host's own config command for the write half, and
+use a documented machine-readable form for the read half (`<host> config get <key>
+--json`) so the drift check needs no YAML dependency.
+- **The harness CLI's own warning is not the reader.** A `config set` printing "not a
+recognized config key — saved anyway" is its RECOGNITION TABLE, not the runtime. Grep
+the harness source for the key→behaviour mapping and verify what actually consumes it
+before believing either side; a CLI can disclaim a key its own client reads.
+- **Declare the gaps, and make them LOUD where it matters.** A harness with no
+verified knob gets an entry whose reason says the knob is UNVERIFIED — never an
+invented flag. Report it as a coverage FINDING when that harness is actually present
+on the host (it can still reach the excluded thing), and as information when absent.
+An unreadable harness is `could not verify`, never "matches".
+- **Test the COVERAGE, not just your entry:** parse the harness registry
+(`ops/install/harnesses/registry.yaml`) and assert every declared harness is either
+wired or explicitly declared as a gap — that test is what stops a new harness from
+silently inheriting no policy. Pin the artifact's schema, the projected key's NAME,
+and the fail-closed path in the same file.
+- **A structure assertion beats a wording assertion.** A test grepping a reason for
+the literal word "not" fails on a correct reason that says "no knob verified". Pin the
+STRUCTURAL invariant (a declared gap must not name a surface it cannot write) and let
+the reporting path carry the loud half.
+
 ### Choosing the implementation of a SHARED capability
 
 A capability both systems consume is a design decision before it is a build. Decide in this order,
@@ -299,6 +339,9 @@ Checklist before shipping anything agent-facing:
 - [ ] Linux **and macOS**
 - [ ] a **drift guard test**, not just a doc
 - [ ] the deploy **RUNS** the adapter where the harness is present, and the host doctor reports it
+- [ ] a standing POLICY is data in **one** artifact, projected per harness through that
+      harness's own api, with every unwired harness **declared** — never written into a
+      single harness's config file
 
 Reference: `docs/design/agent-interop.md`.
 

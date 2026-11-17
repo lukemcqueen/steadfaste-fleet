@@ -366,8 +366,55 @@ def judge_artifacts(h: dict) -> tuple[bool, int, int]:
     return ok, present, len(files)
 
 
+def harness_presence_line(h: dict) -> tuple[str, str]:
+    """('present'|'absent'|'undeclared', detail) from the registry's own `presence:`.
+
+    A harness is PRESENT when any declared probe holds: a `~/.pi/agent` style path
+    exists, or a `cmd:foo` is on PATH. Presence is what makes "unwired" a fault —
+    a host without the harness is not one.
+    """
+    probes = h.get("presence")
+    if probes is None:
+        return "undeclared", "the registry declares no `presence:` for it"
+    if not probes:
+        return "absent", "declares an empty presence list"
+    hits = []
+    for p in probes:
+        if isinstance(p, str):
+            path = Path(p.replace("~", str(Path.home()), 1))
+            hits.append((path.is_dir() or path.is_file(), p))
+        elif isinstance(p, dict) and "cmd" in p:
+            from shutil import which
+            hits.append((which(str(p["cmd"])) is not None, f"cmd:{p['cmd']}"))
+    for ok, label in hits:
+        if ok:
+            return "present", label
+    return "absent", f"none of { [l for _, l in hits] }"
+
+
+def adapter_verify(script: Path) -> tuple[str, bool]:
+    """Drive the per-harness adapter's OWN `--verify`.
+
+    The per-harness probe lives in the per-harness file: install-hermes-mcp.sh knows
+    how to ask Hermes whether the surface is registered; harness.py must not grow a
+    second opinion per harness. An adapter with no --verify is "could not verify",
+    never a pass.
+    """
+    try:
+        r = subprocess.run(["bash", str(script), "--verify"],
+                           capture_output=True, text=True, timeout=180)
+    except Exception as e:
+        return f"COULD NOT VERIFY — {type(e).__name__}: {e}", False
+    out = ((r.stdout or "") + (r.stderr or "")).strip()
+    tail = out.splitlines()[-1] if out else f"exit {r.returncode}"
+    if r.returncode == 0:
+        return f"registered — {tail}", True
+    return f"NOT WIRED — {tail}", False
+
+
 def cmd_verify(reg: dict, name: str | None) -> int:
     ok = True
+    declared_gap = False
 
     # 1. Registry + generated docs current
     gen = registry_dir() / "generate-harnesses.py"
@@ -414,6 +461,51 @@ def cmd_verify(reg: dict, name: str | None) -> int:
         ok = ok and _aok
         if _total == 0:
             print(f"artifact: {name} declares none — nothing to check")
+        # 4. WIRING — what "artifact present" can never answer: is the coding agent
+        #    here at all, is its adapter installed, and is the surface really
+        #    registered? A declared gap is REPORTED, never passed as a green.
+        layer = (h.get("layer") or "").strip()
+        status = (h.get("status") or "").strip()
+        if layer == "none" or status == "blocked":
+            why = (((h.get("why") or "declared unsupported").strip().splitlines()) or [""])[0]
+            print(f"wiring:  DECLARED GAP ({status or layer}) — {why}")
+            declared_gap = True
+        else:
+            declared_gap = False
+            kind, detail = harness_presence_line(h)
+            if kind == "absent":
+                print(f"agent:   absent — {detail}")
+                print("         a host without the harness is not a fault")
+            elif kind == "undeclared":
+                print(f"agent:   COULD NOT VERIFY — {detail}")
+                ok = False
+            else:
+                print(f"agent:   present — {detail}")
+                repo_root = registry_dir().parents[2]
+                caps = h.get("capabilities") or {}
+                for cap in ("context", "skills", "governance"):
+                    c = caps.get(cap) or {}
+                    script = c.get("register")
+                    label = f"{cap}:".ljust(12)
+                    if not script:
+                        print(f"{label}no adapter declared in the registry")
+                        ok = False
+                        continue
+                    sp = Path(str(script))
+                    if not sp.is_absolute():
+                        sp = repo_root / str(script)
+                    if not sp.is_file():
+                        sp = Path.home() / ".steadfaste-fleet" / "scripts" / Path(str(script)).name
+                    if not sp.is_file():
+                        print(f"{label}adapter MISSING — {script}")
+                        ok = False
+                        continue
+                    if cap == "context":
+                        msg, good = adapter_verify(sp)
+                        print(f"{label}{msg}")
+                        ok = ok and good
+                    else:
+                        print(f"{label}adapter present — {script}")
         run = derived_run_line(h) if h.get("layer") == "cli-extension" else None
         if run and not contract_tool_names():
             print("contract: tool surface not loadable — run line cannot be derived")
@@ -431,7 +523,10 @@ def cmd_verify(reg: dict, name: str | None) -> int:
         else:
             print(f"artifacts: {present}/{judged} present")
 
-    print("\nresult: " + ("PASS" if ok else "FAIL"))
+    if name and declared_gap:
+        print("\nresult: " + ("PASS (declared gap — nothing to wire)" if ok else "FAIL"))
+    else:
+        print("\nresult: " + ("PASS" if ok else "FAIL"))
     return 0 if ok else 1
 
 
