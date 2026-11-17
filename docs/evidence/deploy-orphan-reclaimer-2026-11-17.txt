@@ -15,11 +15,11 @@
   PASS  13 tests passed (count asserted)
 
 === end-to-end on a real sandbox deploy tree ===
-  | QUARANTINED /home/esther/.hermes/cache/scratch/tmp.rSxCfDOt6u/deploy/scripts/jev-old-thing.py
-  |   restore: mv '/home/esther/.hermes/cache/scratch/tmp.rSxCfDOt6u/deploy/state/deploy-quarantine/20261117T022449Z/scripts/jev-old-thing.py' '/home/esther/.hermes/cache/scratch/tmp.rSxCfDOt6u/deploy/scripts/jev-old-thing.py'
-  | preserved (local-*): /home/esther/.hermes/cache/scratch/tmp.rSxCfDOt6u/deploy/scripts/local-keep.sh
+  | QUARANTINED ~/.hermes/cache/scratch/tmp.rSxCfDOt6u/deploy/scripts/jev-old-thing.py
+  |   restore: mv '~/.hermes/cache/scratch/tmp.rSxCfDOt6u/deploy/state/deploy-quarantine/20261117T022449Z/scripts/jev-old-thing.py' '~/.hermes/cache/scratch/tmp.rSxCfDOt6u/deploy/scripts/jev-old-thing.py'
+  | preserved (local-*): ~/.hermes/cache/scratch/tmp.rSxCfDOt6u/deploy/scripts/local-keep.sh
   | inventory updated: 1 owned path(s)
-  | reclaimed 1 orphan(s) into /home/esther/.hermes/cache/scratch/tmp.rSxCfDOt6u/deploy/state/deploy-quarantine (restorable, not deleted)
+  | reclaimed 1 orphan(s) into ~/.hermes/cache/scratch/tmp.rSxCfDOt6u/deploy/state/deploy-quarantine (restorable, not deleted)
   PASS  reclaim exited 0
   PASS  reclaimer reported a quarantine — it really executed
   PASS  host-local local-keep.sh SURVIVED (the invariant that makes this safe unattended)

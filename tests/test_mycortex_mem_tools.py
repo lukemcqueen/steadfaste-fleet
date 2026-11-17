@@ -76,21 +76,25 @@ def test_handle_tool_call_routes_all_advertised_tools(provider):
     otherwise the executor routes to the provider and dies on a missing
     handler.
 
-    mem_* is the provider's own surface; session_* lives in the shared
-    context_tools module (the provider only re-advertises it), so it is
-    routed there, not through a private provider method.
+    DECOUPLED: `mem_reasoning` is the ONE host-local tool — it calls this host's
+    own LLM, which is exactly why the host-neutral surface deliberately does not
+    ship it. Every other advertised tool (the mem_* family that any coding agent
+    reaches through the same contract, plus the session_* seam) is owned by
+    `ops/services/mycortex-mem/context_tools.py` and dispatched there.
     """
-    handlers = {
-        "mem_profile": provider._tool_profile,
-        "mem_search": provider._tool_search,
-        "mem_context": provider._tool_context,
-        "mem_reasoning": provider._tool_reasoning,
-        "mem_conclude": provider._tool_conclude,
-    }
+    # One implementation, one place: a shared tool redefined as a private method
+    # is the duplication this decouple removed, so its return fails here.
+    duplicated = [m for m in ("_tool_profile", "_tool_search", "_tool_context", "_tool_conclude")
+                  if hasattr(provider, m)]
+    assert not duplicated, f"shared tool(s) defined a second time on the provider: {duplicated}"
+    assert callable(provider._tool_reasoning), "the host-local extra lost its handler"
+
     shared = set(_context_tools().HANDLERS)
     for schema in provider.get_tool_schemas():
         name = schema["name"]
-        if name.startswith("mem_"):
-            assert name in handlers, f"no provider handler for {name}"
+        if name == "mem_reasoning":
+            assert name not in shared, (
+                "mem_reasoning must stay host-local — it needs this host's LLM"
+            )
         else:
             assert name in shared, f"no shared handler for {name}"

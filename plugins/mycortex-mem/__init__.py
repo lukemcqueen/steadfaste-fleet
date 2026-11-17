@@ -572,55 +572,6 @@ class MycortexMemMemoryProvider(MemoryProvider):
         if self._prefetch_thread and self._prefetch_thread.is_alive():
             self._prefetch_thread.join(timeout=5.0)
 
-    def _tool_profile(self, args: dict) -> str:
-        peer_name = args.get("peer", "user")
-        card = args.get("card")
-        peer_id = self._resolve_peer_id(peer_name)
-        if not peer_id:
-            return tool_error(f"Peer '{peer_name}' not found")
-        if card is not None:
-            escaped = json.dumps(list(card))
-            self._pg.run_sql(
-                f"UPDATE mycortex_mem.profiles SET card = '{_esc(escaped)}'::jsonb, "
-                f"updated_at = now() WHERE peer_id = '{peer_id}';",
-                role="mycortex_mem_writer",
-            )
-            return json.dumps({"result": f"Card updated for peer '{peer_name}'", "card": card})
-        current = self._get_card(peer_name)
-        if not current:
-            current = "(no card yet — accumulates over time)"
-        return json.dumps({"card": current, "peer": peer_name})
-
-    def _tool_search(self, args: dict) -> str:
-        query = args.get("query", "")
-        peer_name = args.get("peer", "user")
-        limit = min(int(args.get("limit", 5)), 20)
-        if not query:
-            return tool_error("query is required")
-        words = re.findall(r"\w+", query.lower())
-        if not words:
-            return json.dumps({"result": "No relevant messages found."})
-        peer_id = self._resolve_peer_id(peer_name)
-        if not peer_id:
-            return json.dumps({"result": "No messages found."})
-        conditions = " OR ".join(f"LOWER(m.content) LIKE '%{_esc(w)}%'" for w in words[:5])
-        rows = self._pg.query(
-            f"SELECT m.role, substring(m.content, 1, 500), m.created_at "
-            f"FROM mycortex_mem.messages m "
-            f"WHERE m.peer_id = '{peer_id}' AND ({conditions}) "
-            f"ORDER BY m.created_at DESC LIMIT {limit};",
-        )
-        if not rows:
-            return json.dumps({"result": "No relevant messages found."})
-        results = []
-        for r in rows:
-            results.append(f"[{r[2][:10]}] {r[0]}: {r[1]}")
-        return json.dumps({"result": "\n\n".join(results)})
-
-    def _tool_context(self, args: dict) -> str:
-        peer_name = args.get("peer", "user")
-        return json.dumps({"context": self._build_injected_context()})
-
     def _tool_reasoning(self, args: dict) -> str:
         query = args.get("query", "")
         peer_name = args.get("peer", "user")
@@ -676,52 +627,6 @@ class MycortexMemMemoryProvider(MemoryProvider):
         except Exception as e:
             logger.warning("mycortex-mem reasoning failed: %s", e)
             return json.dumps({"result": f"Unable to synthesize answer (reasoning unavailable: {e})", "evidence": evidence[:1000]})
-
-    def _tool_conclude(self, args: dict) -> str:
-        peer_name = args.get("peer", "user")
-        conclusion = args.get("conclusion")
-        delete_id = args.get("delete_id")
-        do_list = args.get("list")
-        query = args.get("query", "")
-        peer_id = self._resolve_peer_id(peer_name)
-        actions = sum(1 for x in [conclusion, delete_id, do_list] if x)
-        if actions != 1:
-            return tool_error("Pass exactly one of: conclusion, delete_id, or list=true")
-        if conclusion:
-            if not peer_id:
-                return tool_error(f"Peer '{peer_name}' not found")
-            self._pg.run_sql(
-                f"INSERT INTO mycortex_mem.conclusions (peer_id, fact, source) "
-                f"VALUES ('{peer_id}', {_esc_lit(conclusion[:2000])}, 'agent');",
-                role="mycortex_mem_writer",
-            )
-            return json.dumps({"result": "Conclusion saved."})
-        if delete_id:
-            self._pg.run_sql(
-                f"UPDATE mycortex_mem.conclusions SET archived = TRUE "
-                f"WHERE id = '{delete_id}'::uuid;",
-                role="mycortex_mem_writer",
-            )
-            return json.dumps({"result": "Conclusion archived."})
-        if do_list:
-            where = f"p.workspace = '{_esc(self._workspace)}' AND NOT c.archived"
-            if query:
-                qwords = re.findall(r"\w+", query.lower())
-                if qwords:
-                    cond = " OR ".join(f"LOWER(c.fact) LIKE '%{_esc(w)}%'" for w in qwords[:5])
-                    where += f" AND ({cond})"
-            rows = self._pg.query(
-                f"SELECT c.id::text, c.fact, c.confidence, c.source "
-                f"FROM mycortex_mem.conclusions c "
-                f"JOIN mycortex_mem.peers p ON p.id = c.peer_id "
-                f"WHERE {where} ORDER BY c.updated_at DESC LIMIT 20;",
-            )
-            if not rows:
-                return json.dumps({"result": "No conclusions found."})
-            items = [{"id": r[0], "fact": r[1], "confidence": r[2], "source": r[3]} for r in rows]
-            return json.dumps({"conclusions": items})
-        return json.dumps({"result": "No action taken."})
-
 
 def _esc(val: str) -> str:
     return val.replace("'", "''")
