@@ -4,7 +4,7 @@ For any agent on any fleet host. Jev takes the **cheap decisions** — which mod
 which skill to load, which search results to open — so the expensive model only does the thinking.
 It is optional per host, and it is **off by default** on a fresh install.
 
-Design + verified behaviour: `docs/design/jev-decision-layer.md`.
+Design + verified behaviour: `docs/design/router-layer.md`.
 Swap proof: `docs/evidence/jev-swap-seam-2026-10-28/run.sh`.
 
 ## 0. Do I need to do anything?
@@ -25,15 +25,15 @@ python3 ops/scripts/manage/fleet-doctor.py 2>&1 | grep "Jev decision layer"
 ## 1. Install or upgrade (one command, idempotent)
 
 ```bash
-bash ops/scripts/manage/install-jev-layer.sh --check   # ALWAYS first: prints, changes nothing
-bash ops/scripts/manage/install-jev-layer.sh           # install / upgrade, then verify
+bash ops/scripts/manage/install-router-layer.sh --check   # ALWAYS first: prints, changes nothing
+bash ops/scripts/manage/install-router-layer.sh           # install / upgrade, then verify
 ```
 
 Re-running it **is** the upgrade path: it fetches the upstream repo, checks out the **pinned**
 revision, runs the upstream installer, runs `jev doctor`, and writes cost-ordered pools if none
 exist (`--force-pools` to reorder an existing set, `--commit <sha>` to move the pin).
 
-The deployed copy is at `~/.steadfaste-fleet/scripts/manage/install-jev-layer.sh`, so a host that has
+The deployed copy is at `~/.steadfaste-fleet/scripts/manage/install-router-layer.sh`, so a host that has
 run `fleet-update.sh` can use it without the repo checkout.
 
 What it changes, so nothing surprises you: plugins into `$HERMES_HOME/plugins/`, 13 skills into
@@ -71,9 +71,9 @@ declines to gamble when it is unsure.
 Shadow switches nothing, so the log is the only evidence. Three surfaces:
 
 ```bash
-python3 ops/scripts/manage/jev-shadow-report.py            # the summary + a verdict
-python3 ops/scripts/manage/jev-shadow-report.py --json     # machine-readable
-python3 ops/scripts/manage/jev-shadow-report.py --days 1
+python3 ops/scripts/manage/router-shadow-report.py            # the summary + a verdict
+python3 ops/scripts/manage/router-shadow-report.py --json     # machine-readable
+python3 ops/scripts/manage/router-shadow-report.py --days 1
 jev dashboard                                              # live page, loopback
 ```
 

@@ -59,7 +59,7 @@ if str(_scripts_dir) not in sys.path:
     sys.path.insert(0, str(_scripts_dir))
 from fleet_lib.env import get as fleet_env_get
 
-from .jev import config_model_state
+from .router_layer import config_model_state
 
 log = logging.getLogger(__name__)
 
@@ -1863,7 +1863,7 @@ def check_scripts(res):
 
 
 # ── Model default: a routing LABEL is not a model id ─────────────────────────
-# `config/jev-router-models.json` and ~/.hermes/jev/routing.json key their
+# `config/router-models.json` and ~/.hermes/jev/routing.json key their
 # entries as `<label>:<provider>/<model>`, e.g.
 # `openrouter:qwen/qwen3-coder-30b-a3b-instruct`. That label is Jev's routing
 # currency, NOT a model id a provider accepts: sent verbatim it is answered
@@ -1876,7 +1876,7 @@ def check_scripts(res):
 # The writer is the daily `orch-model-market-scan` cron: its STEP 1.2 re-points
 # `config.yaml model.default` at "the new head", and every head in the Jev list
 # is a label. Nothing consulted the shape of the value that reached config.yaml:
-# `fleet_doctor.jev._current_model` merely TOLERATES a colon in `default` (it
+# `fleet_doctor.router_layer._current_model` merely TOLERATES a colon in `default` (it
 # skips the provider prefixing and returns the value as-is), so the cost guard
 # stayed green while the host was broken.
 #

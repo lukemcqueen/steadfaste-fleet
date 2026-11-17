@@ -6,10 +6,10 @@
 # It is OPTIONAL per host — this script is the one way to put it on a host, and
 # it is idempotent, so re-running it is the upgrade path.
 #
-#   install-jev-layer.sh --check          report what would change, change nothing
-#   install-jev-layer.sh                  install / upgrade, then verify
-#   install-jev-layer.sh --force-pools    also rewrite the routing pools (cost-ordered)
-#   install-jev-layer.sh --commit <sha>   pin a different upstream revision
+#   install-router-layer.sh --check          report what would change, change nothing
+#   install-router-layer.sh                  install / upgrade, then verify
+#   install-router-layer.sh --force-pools    also rewrite the routing pools (cost-ordered)
+#   install-router-layer.sh --commit <sha>   pin a different upstream revision
 #
 # What it does, in order:
 #   1. clone or fetch the upstream repo (MIT) at the PINNED commit

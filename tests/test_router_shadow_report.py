@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 SCRIPT = (Path(__file__).resolve().parents[1] / "ops" / "scripts" / "manage"
-          / "jev-shadow-report.py")
+          / "router-shadow-report.py")
 NOW = time.time()
 
 

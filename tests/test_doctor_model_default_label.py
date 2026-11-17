@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """config.yaml `model.default` must be a BARE model id, never a routing label.
 
-The Jev pricing list (`config/jev-router-models.json`) and `~/.hermes/jev/routing.json`
+The Jev pricing list (`config/router-models.json`) and `~/.hermes/jev/routing.json`
 key their entries as `<label>:<provider>/<model>` — e.g.
 `openrouter:qwen/qwen3-coder-30b-a3b-instruct`. That LABEL is Jev's internal
 routing currency. It is NOT a model id any provider accepts, and passing it
@@ -22,7 +22,7 @@ while `openrouter:...` appears ONLY in the derived/combined display form.
 The writer that introduced it is the daily `orch-model-market-scan` cron: its
 STEP 1.2 re-points `config.yaml model.default` to "the new head", and every head
 in the Jev list is a label. Before this check nothing consulted the shape of the
-value that reached config.yaml — `fleet_doctor.jev._current_model` merely
+value that reached config.yaml — `fleet_doctor.router_layer._current_model` merely
 TOLERATES a colon in `default` (it skips the `provider:` prefixing and returns
 the value as-is), so the cost guard kept passing while the host was broken.
 

@@ -48,7 +48,7 @@ config edit. To freeze it at a known price/behaviour, pin a DATED SNAPSHOT
 One alias is often used by several DIFFERENT surfaces — the adversarial reviewer,
 the system-one/triage judge, the delegation model, ad-hoc design consult. The
 operator may want only ONE pinned; scope before sweeping every mention. The
-system-one ROUTER config (`config/jev-router-models.json`) may already use the
+system-one ROUTER config (`config/router-models.json`) may already use the
 snapshot while the skill prose lags it — pin the prose to match, and check whether
 `delegation.model` is left empty (children inherit the parent model) rather than
 assuming it is pinned.

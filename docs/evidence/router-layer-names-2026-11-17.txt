@@ -1,0 +1,21 @@
+Running: bash docs/evidence/router-layer-names-verify.sh
+rc: 0
+when: 2026-11-17T00:39:25Z
+
+== renamed artifacts are the live paths ==
+  PASS  config/router-models.json is tracked
+  PASS  config/jev-router-models.json is gone
+  PASS  fleet_doctor/router_layer.py is tracked
+  PASS  fleet_doctor/jev.py is gone
+== the doctor still imports the module it checks ==
+  PASS  checks.py imports .router_layer
+  PASS  cli.py imports check_jev_layer from .router_layer
+== register map sources all still exist ==
+  PASS  every register() source path exists
+== the naming guard (the regression test for this class) ==
+  PASS  guard test passes: no product token in tracked file names
+== the affected suites ==
+  PASS  renamed-module + register-map suites pass
+
+failed claims: 0
+sha256: 1d9a3ea387aa4ea02598b055c6ca3b40d5fc84709a0f0787290ae3ac0e918f9b

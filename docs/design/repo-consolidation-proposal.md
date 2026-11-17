@@ -21,7 +21,7 @@ steadfaste-fleet/
 │   ├── mcp-servers/     # ← from top-level mcp-servers/ (6 servers)
 │   ├── scripts/         # + poll-bus-inbox_titus.sh moves here (live bus-poll tool)
 │   ├── install/  offline/  services/  evidence/  web-cache/  deploy/   # unchanged
-│   └── config/          # ← from top-level config/ (jev-router-models.json)
+│   └── config/          # ← from top-level config/ (router-models.json)
 ├── plugins/             # Hermes plugins (distinct deployable artifacts; stays top-level)
 ├── skills/               # canonical skill library (unchanged)
 ├── docs/                 # docs (incl. evidence/ — NEVER pruned, per keep-logs rule)
@@ -39,7 +39,7 @@ meaning.
 |---|---|---|
 | `poll-bus-inbox_titus.sh` | root | `ops/scripts/poll-bus-inbox_titus.sh` (live tool — verified: reads `~/.steadfaste-fleet/hermes-inbox.conf`, polls `inbox_titus`) |
 | `evidence-bus-poll-titus-20261009.md`, `evidence-agent-fixer-evening-repetition-loop-20261009.md` | root | `docs/evidence/` |
-| `jev-router-models.json` | `config/` | `ops/config/jev-router-models.json` |
+| `router-models.json` | `config/` | `ops/config/router-models.json` |
 | `lightdm-screen-blank` | `laptop/usr-local-bin/` | `ops/install/laptop/lightdm-screen-blank` (host-file artifact kept in repo) |
 | `profiles/README.md` | `profiles/` | `docs/reference/profiles.md` (content merged into the repo map if it duplicates) |
 

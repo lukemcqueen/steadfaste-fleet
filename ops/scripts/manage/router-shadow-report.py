@@ -5,10 +5,10 @@ Shadow decides and logs but switches nothing, so the ONLY way to know whether
 turning routing `on` would help is to read the decision log. This prints that
 summary — it is the monitor, and it runs on any host that has the layer.
 
-    jev-shadow-report.py                 last 7 days, human summary
-    jev-shadow-report.py --days 1
-    jev-shadow-report.py --json          machine-readable
-    jev-shadow-report.py --log PATH      a different decisions log
+    router-shadow-report.py                 last 7 days, human summary
+    router-shadow-report.py --days 1
+    router-shadow-report.py --json          machine-readable
+    router-shadow-report.py --log PATH      a different decisions log
 
 Reads `$HERMES_HOME/logs/jev-decisions.jsonl` (the plugin's own log: decisions
 only, never prompt text). Two row kinds matter:
@@ -81,14 +81,14 @@ def _price_helper():
     # this script — looking only next to it made the DEPLOYED report print
     # "price unknown" on a host with a full catalog.
     here = Path(__file__).resolve().parent
-    for candidate in (here / "fleet_doctor" / "jev.py",
-                      here.parent / "fleet_doctor" / "jev.py"):
+    for candidate in (here / "fleet_doctor" / "router_layer.py",
+                      here.parent / "fleet_doctor" / "router_layer.py"):
         if candidate.is_file():
             path = candidate
             break
     else:
         return None, None
-    spec = importlib.util.spec_from_file_location("jev_shadow_price_helper", path)
+    spec = importlib.util.spec_from_file_location("router_shadow_price_helper", path)
     if spec is None or spec.loader is None:
         return None, None
     module = importlib.util.module_from_spec(spec)

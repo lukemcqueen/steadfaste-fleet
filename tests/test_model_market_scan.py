@@ -80,7 +80,7 @@ def test_reorder_pool_cheapest_first_stable():
 
 def test_scan_detects_reorder_and_unvetted(tmp_path, monkeypatch):
     mod = load_scan()
-    list_path = tmp_path / "jev-router-models.json"
+    list_path = tmp_path / "router-models.json"
     list_path.write_text(json.dumps(_list_doc(beta_first=False)), encoding="utf-8")
     state_path = tmp_path / "state.json"
     monkeypatch.setattr(mod, "default_list", lambda: list_path)
@@ -105,7 +105,7 @@ def test_scan_detects_reorder_and_unvetted(tmp_path, monkeypatch):
 
 def test_scan_noop_when_unchanged(tmp_path, monkeypatch):
     mod = load_scan()
-    list_path = tmp_path / "jev-router-models.json"
+    list_path = tmp_path / "router-models.json"
     list_path.write_text(json.dumps(_list_doc(beta_first=True)), encoding="utf-8")
     state_path = tmp_path / "state.json"
     # catalog WITHOUT the cheap unvetted 'zeta' -> no alert, prices match the list
@@ -192,7 +192,7 @@ def test_scan_violation_fails_closed(tmp_path, monkeypatch):
     }}}
     doc = _list_doc(beta_first=True)
     doc["tiers"]["medium"]["coding"].append("openrouter:fakeprov/delta")
-    list_path = tmp_path / "jev-router-models.json"
+    list_path = tmp_path / "router-models.json"
     list_path.write_text(json.dumps(doc), encoding="utf-8")
     state_path = tmp_path / "state.json"
     monkeypatch.setattr(mod, "default_list", lambda: list_path)
@@ -223,7 +223,7 @@ def test_scan_missing_model_fails_closed(tmp_path, monkeypatch):
     doc = _list_doc(beta_first=True)          # beta head, already cheapest
     doc["tiers"]["medium"]["coding"].append("openrouter:fakeprov/ghost")
     doc["prices"]["openrouter:fakeprov/ghost"] = {"in": 0.02, "out": 0.02}
-    list_path = tmp_path / "jev-router-models.json"
+    list_path = tmp_path / "router-models.json"
     list_path.write_text(json.dumps(doc), encoding="utf-8")
     state_path = tmp_path / "state.json"
     monkeypatch.setattr(mod, "default_list", lambda: list_path)
@@ -265,7 +265,7 @@ def test_scan_ignores_sentinel_dynamic_pricing(tmp_path, monkeypatch):
     cat["freesrov"] = {"models": {
         "free-tiny": {"cost": {"input": 0.0, "output": 0.0}},
     }}
-    list_path = tmp_path / "jev-router-models.json"
+    list_path = tmp_path / "router-models.json"
     list_path.write_text(json.dumps(_list_doc(beta_first=True)), encoding="utf-8")
     state_path = tmp_path / "state.json"
     monkeypatch.setattr(mod, "default_list", lambda: list_path)

@@ -2,7 +2,7 @@
 
 Jev takes the cheap decisions (which model a turn needs, which skill to load, which
 search results to open). It is OPTIONAL per host and installed by
-`ops/scripts/manage/install-jev-layer.sh`, so this check reports the gap rather
+`ops/scripts/manage/install-router-layer.sh`, so this check reports the gap rather
 than assuming it: WARN while a host is merely un-migrated, and a FAIL only when
 the layer is actually ARMED (routing on) and its pools lead with a model dearer
 than the one the host already runs.
@@ -199,8 +199,8 @@ def check_jev_layer(res) -> None:
             "Jev decision layer", "WARN",
             "not installed on this host (optional; takes the cheap decisions off the "
             "expensive model's plate)",
-            "bash ops/scripts/manage/install-jev-layer.sh   (or the deployed copy at "
-            "~/.steadfaste-fleet/scripts/manage/install-jev-layer.sh)",
+            "bash ops/scripts/manage/install-router-layer.sh   (or the deployed copy at "
+            "~/.steadfaste-fleet/scripts/manage/install-router-layer.sh)",
         )
         return
 
@@ -211,7 +211,7 @@ def check_jev_layer(res) -> None:
             "Jev decision layer", "WARN",
             "installed but no routing pools configured — routing can never pick a model",
             "jev models suggest --write, then reorder each pool cheapest-first "
-            "(see docs/design/jev-decision-layer.md)",
+            "(see docs/design/router-layer.md)",
         )
         return
 
@@ -245,7 +245,7 @@ def check_jev_layer(res) -> None:
         res.add("Jev decision layer", status,
                 detail + " — " + "; ".join(dearer),
                 "reorder each pool cheapest-first in $HERMES_HOME/jev/routing.json "
-                "(first fit wins) — see docs/design/jev-decision-layer.md")
+                "(first fit wins) — see docs/design/router-layer.md")
         return
     if mode == "on" and not current_price:
         res.add("Jev decision layer", "WARN",

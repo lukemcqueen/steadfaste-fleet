@@ -6,12 +6,6 @@ live pool that no longer matches the list, leads with a dearer model than the li
 says, or exceeds the tier's ceiling. The `hard` exemption is pinned too — escalation
 there is the tier's purpose, and a check that flagged it would be noise nobody reads.
 """
-# RENAME PROVENANCE: this file was tests/test_jev_router_pools.py until the
-# jev-router-pools -> router-pools rename. Its subject is
-# ops/scripts/manage/router-pools.py, which commit 9e512e35 renamed from
-# ops/scripts/manage/jev-router-pools.py (pure rename, 0 content lines) as part
-# of that sweep. Everything below predates this range unchanged; only this note
-# and the module path on line 17 differ.
 from __future__ import annotations
 
 import json
@@ -180,7 +174,7 @@ def test_every_priced_model_is_routed_or_named_as_a_candidate():
     ambiguous about what actually governs routing."""
     import json as _json
     doc = _json.loads((Path(__file__).resolve().parents[1] / "config"
-                       / "jev-router-models.json").read_text())
+                       / "router-models.json").read_text())
     routed = {m for specs in doc["tiers"].values() for models in specs.values() for m in models}
     priced = set(doc["prices"])
     orphans = priced - routed
@@ -197,7 +191,7 @@ def test_every_priced_model_is_routed_or_named_as_a_candidate():
 def _config():
     import json as _json
     return _json.loads((Path(__file__).resolve().parents[1] / "config"
-                        / "jev-router-models.json").read_text())
+                        / "router-models.json").read_text())
 
 
 def _bl(doc, model):
@@ -306,7 +300,7 @@ def test_the_baseline_is_the_model_the_host_actually_runs():
     run makes every 'x cheaper' claim compare against the wrong thing.
     Re-anchored to qwen3-coder-30b (the approved session default — see
     docs/evidence/worker-model-effort-ab-2026-11-13/ and the operator's 2026-11-15
-    approval). This test reads config/jev-router-models.json (same commit range)."""
+    approval). This test reads config/router-models.json (same commit range)."""
     doc = _config()
     assert doc["baseline"] == "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
     assert doc["prices"][doc["baseline"]]["in"] + doc["prices"][doc["baseline"]]["out"] < 1.0
@@ -382,7 +376,7 @@ def test_effort_check_is_silent_when_the_list_has_no_effort(tmp_path):
 
 def test_selftest_covers_the_effort_invariants():
     import json as _json
-    list_path = Path(__file__).resolve().parents[1] / "config" / "jev-router-models.json"
+    list_path = Path(__file__).resolve().parents[1] / "config" / "router-models.json"
     result = _run(list_path, Path("/nonexistent/routing.json"), "--selftest")
     assert result.returncode == 0, result.stdout + result.stderr
 
@@ -394,7 +388,7 @@ def test_config_effort_capability_map_is_sound():
     not declare it; a route-unreachable model is excluded for its real reason."""
     import json as _json
     doc = _json.loads((Path(__file__).resolve().parents[1] / "config"
-                       / "jev-router-models.json").read_text())
+                       / "router-models.json").read_text())
     effort = doc.get("effort")
     assert effort and effort.get("enabled") is True, "the effort block must exist and be enabled"
     levels = effort["levels"]

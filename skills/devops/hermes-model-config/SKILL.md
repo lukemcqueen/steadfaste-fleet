@@ -132,7 +132,7 @@ evidence selects a wrong model with full confidence:
 - **Decide the OWNER before touching the value.** On a fleet host the session
   default is not free-standing: the Jev list's `baseline` must equal it, and the
   daily `orch-model-market-scan` cron owns re-pointing both. Check
-  `config/jev-router-models.json` → `baseline`; when it names this host's model,
+  `config/router-models.json` → `baseline`; when it names this host's model,
   the AUTOMATED process owns the change — run that job rather than hand-writing
   the config: `cronjob_manage action=list` to find the job id (never guess one),
   then `cronjob_manage action=run` with that id; pass your diagnosis in the
@@ -269,7 +269,7 @@ evidence selects a wrong model with full confidence:
   reports it — measured 2026-11-16: a host 400'd on every turn for hours (17:07,
   17:10, 17:21, 17:28 in agent.log) with the banner looking fine. The writer is
   the daily `orch-model-market-scan` STEP 1.2 (its "new head" is a label), and
-  `fleet_doctor.jev._current_model` merely TOLERATES a colon in `default`, so
+  `fleet_doctor.router_layer._current_model` merely TOLERATES a colon in `default`, so
   the cost guard stayed green through it. The doctor's `Model default` check now
   FAILs on a label; fix with `hermes config set model.default <bare-id>` and
   verify against the LIVE surface, not a fixture.

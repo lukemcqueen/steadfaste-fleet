@@ -35,7 +35,7 @@ the same reason — a retry after a `cycle_query` is the workaround, not the fix
 ## Jev decision layer (⚠/FAIL — a pool leads dearer than the running model)
 
 The live `$HERMES_HOME/jev/routing.json` is a PER-HOST runtime artifact that
-goes stale vs the committed policy (`config/jev-router-models.json`). The doctor
+goes stale vs the committed policy (`config/router-models.json`). The doctor
 FAILs (WARNs while routing is off) when a simple/medium pool leads with a model
 >1.5x dearer than the host's current model — first-fit wins, so it is real money.
 

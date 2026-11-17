@@ -1,4 +1,4 @@
-"""Tests for the doctor's Jev config-model resolver (fleet_doctor.jev).
+"""Tests for the doctor's Jev config-model resolver (fleet_doctor.router_layer).
 
 check_jev_layer previously resolved "the model this host runs" by shelling
 `hermes config get model` — ~8s of Hermes plugin+tool startup (measured:
@@ -21,7 +21,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ops" / "scripts" / "manage"))
 
-from fleet_doctor import jev  # noqa: E402
+from fleet_doctor import router_layer  # noqa: E402
 
 
 CONFIG = """\
@@ -46,22 +46,22 @@ def _home(tmp_path: Path, text: str) -> Path:
 
 def test_yaml_path_reads_the_model_block(tmp_path):
     home = _home(tmp_path, CONFIG)
-    assert jev._config_model(home) == ("openrouter", "qwen/qwen3-coder-30b-a3b-instruct")
+    assert router_layer._config_model(home) == ("openrouter", "qwen/qwen3-coder-30b-a3b-instruct")
 
 
 def test_missing_config_returns_empty(tmp_path):
-    assert jev._config_model(tmp_path) == ("", "")
+    assert router_layer._config_model(tmp_path) == ("", "")
 
 
 def test_current_model_combines_provider_and_default(tmp_path, monkeypatch):
     home = _home(tmp_path, CONFIG)
-    monkeypatch.setattr(jev, "_hermes_home", lambda: home)
-    assert jev._current_model() == "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
+    monkeypatch.setattr(router_layer, "_hermes_home", lambda: home)
+    assert router_layer._current_model() == "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
 
 
 def test_current_model_empty_when_no_config(tmp_path, monkeypatch):
-    monkeypatch.setattr(jev, "_hermes_home", lambda: tmp_path)
-    assert jev._current_model() == ""
+    monkeypatch.setattr(router_layer, "_hermes_home", lambda: tmp_path)
+    assert router_layer._current_model() == ""
 
 
 def test_line_scan_fallback_scopes_to_the_model_block(tmp_path, monkeypatch):
@@ -70,10 +70,10 @@ def test_line_scan_fallback_scopes_to_the_model_block(tmp_path, monkeypatch):
     import sys as _sys
     monkeypatch.setitem(_sys.modules, "yaml", None)   # force the ImportError path
     home = _home(tmp_path, CONFIG)
-    assert jev._config_model(home) == ("openrouter", "qwen/qwen3-coder-30b-a3b-instruct")
+    assert router_layer._config_model(home) == ("openrouter", "qwen/qwen3-coder-30b-a3b-instruct")
 
 
 def test_line_scan_fallback_missing_file(tmp_path, monkeypatch):
     import sys as _sys
     monkeypatch.setitem(_sys.modules, "yaml", None)
-    assert jev._config_model(tmp_path) == ("", "")
+    assert router_layer._config_model(tmp_path) == ("", "")

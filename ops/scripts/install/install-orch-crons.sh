@@ -474,7 +474,7 @@ Read its rc:
 
 STEP 1 — governed apply (open begin_change first):
 1. Copy the refreshed prices + reordered tiers from ~/.steadfaste-fleet/state/model-market.json
-   into config/jev-router-models.json (the scan's output is the source of truth).
+   into config/router-models.json (the scan's output is the source of truth).
 2. If the cheapest-vetted model for the SESSION DEFAULT or the REVIEWER changed, re-point
    config.yaml model.default (hermes config set) and .env ADVERSARIAL_REVIEWER_MODEL to the
    new head. Verify each surface actually resolved to the new model.

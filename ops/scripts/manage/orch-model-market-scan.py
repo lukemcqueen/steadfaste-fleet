@@ -2,7 +2,7 @@
 """orch-model-market-scan — daily deterministic re-price + re-order of the fleet router list.
 
 Why this exists: the router spends money on POOL ORDER (first fit wins), and the
-shared list config/jev-router-models.json carries per-model $/M captured once
+shared list config/router-models.json carries per-model $/M captured once
 ("captured" date). Prices move, so a daily job re-prices the list from the LIVE
 OpenRouter catalog and re-orders each pool cheapest-first WITHIN its current,
 pre-vetted candidate set — that is the "cheaper, same quality" guarantee: no new
@@ -41,7 +41,7 @@ EXIT CODES:
       state/model-market.json for the operator, never applied.
 
 This script only WRITES the state file; it does not commit, push, deploy, or edit
-config/jev-router-models.json. Applying a pending change is the orchestrator
+config/router-models.json. Applying a pending change is the orchestrator
 cron's governed job (begin_change -> apply -> doctor -> commit -> push -> deploy).
 """
 from __future__ import annotations
@@ -83,7 +83,7 @@ def blended(price: dict) -> float | None:
 def per_m(price: dict | None) -> dict | None:
     """Catalog $/token price -> the $/M value the list stores (x1e6, rounded 6dp).
 
-    The live OpenRouter feed prices per TOKEN while config/jev-router-models.json
+    The live OpenRouter feed prices per TOKEN while config/router-models.json
     (and the policy hard cap) are per MILLION tokens. A direct dict compare (the
     old price_changed) or a blended-vs-cap test on raw catalog values was thus
     comparing different units by a factor of 1e6 — making price_changed always
@@ -122,11 +122,11 @@ def list_price_match(token: dict | None, listed: dict | None) -> bool:
 
 def default_list() -> Path:
     """The pricing list, repo checkout first, deployed copy second (like the pool tool)."""
-    for candidate in (REPO_ROOT / "config" / "jev-router-models.json",
-                      Path.home() / ".steadfaste-fleet" / "config" / "jev-router-models.json"):
+    for candidate in (REPO_ROOT / "config" / "router-models.json",
+                      Path.home() / ".steadfaste-fleet" / "config" / "router-models.json"):
         if candidate.is_file():
             return candidate
-    return REPO_ROOT / "config" / "jev-router-models.json"
+    return REPO_ROOT / "config" / "router-models.json"
 
 
 def load_json(path: Path):

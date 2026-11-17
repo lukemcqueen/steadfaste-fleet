@@ -1,6 +1,6 @@
 # Jev router pricing-list policy
 
-How the model-routing pricing list (`config/jev-router-models.json`) stays honest. The list
+How the model-routing pricing list (`config/router-models.json`) stays honest. The list
 is the single reviewable artifact that decides which model a turn gets (first fit wins), so
 its invariants are ENFORCED by the tool's `--selftest` and by repo tests — never documented
 only.

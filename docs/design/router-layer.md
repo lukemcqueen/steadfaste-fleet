@@ -128,7 +128,7 @@ control: trivial→`low`, routine→`low`, substantial→`medium`, expert→`hig
 regression when thinking is off).
 
 - `effort.enabled` + `effort.levels` + `effort.models` (capability map) + `effort.excluded`
-  live in the ONE reviewable artifact `config/jev-router-models.json`; `router-pools.py
+  live in the ONE reviewable artifact `config/router-models.json`; `router-pools.py
   --write` projects them into each host's `~/.hermes/jev/routing.json`, and `--check` /
   `--selftest` fail on drift or an unsound map.
 - The capability map is exact `provider:model` (verified against the probe). Untested models

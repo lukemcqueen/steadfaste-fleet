@@ -6,7 +6,7 @@ by POOL ORDER — first fit wins. Order was hand-edited once and immediately cos
 6.5x model at the head of medium/coding. So the order lives in ONE reviewable
 artifact with the PRICES attached:
 
-    config/jev-router-models.json   the fleet policy: ordered candidates per
+    config/router-models.json   the fleet policy: ordered candidates per
                                     tier/specialty, each with $/M from the catalog,
                                     the baseline we run, and a per-tier ceiling
 
@@ -53,11 +53,11 @@ def default_list() -> Path:
     development, and `~/.steadfaste-fleet/scripts/manage/` after a deploy — where the
     list lives at the deploy root, not beside the script.
     """
-    for candidate in (REPO_ROOT / "config" / "jev-router-models.json",
-                      Path.home() / ".steadfaste-fleet" / "config" / "jev-router-models.json"):
+    for candidate in (REPO_ROOT / "config" / "router-models.json",
+                      Path.home() / ".steadfaste-fleet" / "config" / "router-models.json"):
         if candidate.is_file():
             return candidate
-    return REPO_ROOT / "config" / "jev-router-models.json"
+    return REPO_ROOT / "config" / "router-models.json"
 
 
 DEFAULT_LIST = default_list()

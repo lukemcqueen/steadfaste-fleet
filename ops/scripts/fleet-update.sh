@@ -581,7 +581,7 @@ register "ops/scripts/manage/fleet_doctor/immutability.py" "${FLEET_DEPLOY_HOME}
 # but not registered simply never reaches a host, and the check it holds reads
 # as absent everywhere except the machine that wrote it.
 register "ops/scripts/manage/fleet_doctor/mcp_names.py"     "${FLEET_DEPLOY_HOME}/scripts/fleet_doctor/mcp_names.py"
-register "ops/scripts/manage/fleet_doctor/jev.py"   "${FLEET_DEPLOY_HOME}/scripts/fleet_doctor/jev.py"
+register "ops/scripts/manage/fleet_doctor/router_layer.py"   "${FLEET_DEPLOY_HOME}/scripts/fleet_doctor/router_layer.py"
 register "ops/scripts/manage/fleet_doctor/stale_premigration_home.py" "${FLEET_DEPLOY_HOME}/scripts/fleet_doctor/stale_premigration_home.py"
 register "ops/scripts/manage/fleet_doctor/helpers.py" "${FLEET_DEPLOY_HOME}/scripts/fleet_doctor/helpers.py"
 register "ops/scripts/manage/fleet_doctor/results.py" "${FLEET_DEPLOY_HOME}/scripts/fleet_doctor/results.py"
@@ -1050,11 +1050,11 @@ register "ops/scripts/manage/fix-cron-skills-toolset.py" "${FLEET_DEPLOY_HOME}/s
 # Installs/upgrades the optional Jev decision layer on a host (pinned upstream
 # revision, cost-ordered routing pools, verified with `jev doctor`). Idempotent:
 # re-running it IS the upgrade path. WARNs rather than installs by itself.
-register "ops/scripts/manage/install-jev-layer.sh" "${FLEET_DEPLOY_HOME}/scripts/manage/install-jev-layer.sh"
-register "ops/scripts/manage/jev-shadow-report.py" "${FLEET_DEPLOY_HOME}/scripts/manage/jev-shadow-report.py"
+register "ops/scripts/manage/install-router-layer.sh" "${FLEET_DEPLOY_HOME}/scripts/manage/install-router-layer.sh"
+register "ops/scripts/manage/router-shadow-report.py" "${FLEET_DEPLOY_HOME}/scripts/manage/router-shadow-report.py"
 register "ops/scripts/manage/router-pools.py"   "${FLEET_DEPLOY_HOME}/scripts/manage/router-pools.py"
 register "ops/scripts/manage/orch-model-market-scan.py" "${FLEET_DEPLOY_HOME}/scripts/manage/orch-model-market-scan.py"
-register "config/jev-router-models.json"             "${FLEET_DEPLOY_HOME}/config/jev-router-models.json"
+register "config/router-models.json"             "${FLEET_DEPLOY_HOME}/config/router-models.json"
 register "ops/scripts/manage/agent-push-metrics.sh"     "${FLEET_DEPLOY_HOME}/scripts/agent-push-metrics.sh"
 register "ops/scripts/manage/cron-cost-metrics.py"      "${FLEET_DEPLOY_HOME}/scripts/cron-cost-metrics.py"
 register "ops/scripts/manage/review-volume-metrics.py"  "${FLEET_DEPLOY_HOME}/scripts/review-volume-metrics.py"

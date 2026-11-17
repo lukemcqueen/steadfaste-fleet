@@ -14,6 +14,43 @@ import re
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
+# ── Decision-layer naming: our artifacts are named for what they ARE ──────────
+# The decision layer runs on a third-party product whose CLI, plugin name and
+# runtime paths keep that product's name in file CONTENTS — an external contract
+# we do not own and cannot rename. Our own ARTIFACTS must not borrow it: a file
+# name is ours to choose, and the product token in one makes the file read as
+# vendored code rather than ours.
+#
+# Historical records are exempt BY PREFIX, deliberately: a dated capture quotes
+# the path that existed at its revision, so renaming one falsifies the record and
+# breaks the checksum it carries. Adding a prefix here is a claim that the files
+# under it are records, not live artifacts.
+RECORD_PREFIXES = ("docs/evidence/", "docs/older/")
+PRODUCT_TOKEN = "jev"
+
+
+def test_no_product_token_in_tracked_file_names():
+    """No tracked path carries the third-party product token in its NAME.
+
+    A content grep cannot see a filename (a swept tree greps clean while
+    `test_<token>_*.py` files survive), so the name class needs its own guard —
+    this one. Records under RECORD_PREFIXES are exempt and printed as exempt.
+    """
+    import subprocess
+    listing = subprocess.run(
+        ["git", "-C", REPO_ROOT, "ls-files"],
+        capture_output=True, text=True, check=True,
+    ).stdout
+    offenders = [
+        rel for rel in listing.splitlines()
+        if not rel.startswith(RECORD_PREFIXES) and PRODUCT_TOKEN in rel.lower()
+    ]
+    assert not offenders, (
+        "our artifacts must be named for what they are, not for the upstream "
+        f"product; rename these (records under {RECORD_PREFIXES} are exempt): "
+        f"{sorted(offenders)}"
+    )
+
 
 def test_all_skills_have_skilL_md():
     """Every skill directory under skills/ must have a SKILL.md."""

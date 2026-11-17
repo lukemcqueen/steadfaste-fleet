@@ -14,7 +14,7 @@ The path literals below are STALE by design: they are the pre-migration names
 this check exists to detect. Do not rename them to steadfaste-fleet — the check
 would then look for the CURRENT home dir and always WARN.
 
-A leaf module (like mcp_names.py / jev.py) so it is independently testable:
+A leaf module (like mcp_names.py / router_layer.py) so it is independently testable:
 no relative package imports. Depends only on the Results `.add` interface.
 """
 
