@@ -69,7 +69,7 @@ cleanup_stale_orchestrator_entries() {
     for service in "${stale_services[@]}"; do
       if "${HERMES_BIN}" mcp list | grep -q "^${service} "; then
         echo "  ~ ${service}: removing stale orchestrator-only service from non-orchestrator"
-        "${HERMES_BIN}" mcp delete "${service}" >/dev/null 2>&1 || true
+        "${HERMES_BIN}" mcp delete "${service}" 2>&1 || echo "warning: failed to remove ${service}"
       fi
     done
   fi
@@ -104,7 +104,7 @@ while IFS=$'\t' read -r name deployed src; do
   script="$(mcp_surface_resolve "${deployed}" "${src}" "${REPO_ROOT}")"
 
   if [[ -z "${script}" ]]; then
-    echo "  ✗ ${name}: no script at ${deployed//\\$\\{HOME\\}/${HOME}} and no repo source ${src}"
+    echo "  ✗ ${name}: no script at ${deployed//\$\\{HOME\\}/${HOME}} and no repo source ${src}"
     missing=$((missing + 1))
     continue
   fi
