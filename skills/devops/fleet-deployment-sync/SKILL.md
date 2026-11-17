@@ -798,6 +798,38 @@ is to re-load ALL of the always-skills in one batch regardless of the checkmarks
 once the full set has been re-loaded in that session. Do not keep guessing at a name the list never
 names; batch re-load everything and retry the write.
 
+## Pitfall 31: Fleet updates require TWO governance gates when run without the sanctioned command
+
+When performing a fleet update that must go through governance (not the sanctioned
+`bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh`), the update process requires
+satisfying two separate governance gates before the operation will succeed:
+
+1. **Gate 1 (Skills gate) — 0/3 always-section skills loaded**
+   - Load all 3 always-skills: `skill_view(name='execute-right')`, `skill_view(name='task-orient')`,
+     and `skill_view(name='verify-and-ship')`
+   - This gate is independent and can be satisfied by a single `skill_view` call for each
+     of the required skills
+
+2. **Gate 2 (Lock gate) — GOVERNANCE LOCK REQUIRED**
+   - Call `mcp__loop_governance__begin_change(task_id="<task>", description="<what this does>")`
+   - This gate is also independent and must be satisfied before any write operation
+
+**The proper sequence when NOT using the sanctioned deploy command:**
+
+1. Load all 3 always-section skills: `skill_view(name='execute-right')`, `skill_view(name='task-orient')`,
+   and `skill_view(name='verify-and-ship')`
+2. Acquire governance lock: `mcp__loop_governance__begin_change(task_id="fleet-update", description="Operator-requested fleet update")`
+3. Perform the fleet update operation
+4. Close the change cycle appropriately
+
+**Do NOT try to batch the skill loads or the lock acquisition** — each operation must be performed
+separately as detailed in the original session, and attempting to combine them in a single call
+will trigger the governance checks as documented in the error messages.
+
+This pitfall stems from the enforcement system that checks both skill loading validity
+and lock acquisition before allowing write operations, which is critical to understand
+when performing fleet operations outside of the sanctioned deploy flow.
+
 ## Pitfall 23: `git log --oneline -N` can hide a replayed commit — verify ancestry, not the visible log
 
 After a `git pull --rebase` that replays your local commit onto a fast-moving origin,

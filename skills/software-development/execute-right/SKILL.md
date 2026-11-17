@@ -46,7 +46,11 @@ The non-negotiable rules of doing the work. Route (`task-orient`) → execute
    (`ops/scripts/manage/git-main-sync.sh`) uses `git pull --rebase`. Verdicts are
    keyed by blob CONTENT, so a rebase does not invalidate prior per-blob
    verdicts; resolve the one conflicting file, continue, then re-verify the
-   range (`git diff --name-only origin/main..HEAD`).
+   range (`git diff --name-only origin/main..HEAD`). The `--only` pathspec form
+   builds its own index, so a path git does NOT yet know (a NEW file) fails
+   with "did not match any file(s) known to git" — `git add` the new files
+   first, then `--only -F msg -- <all three paths>`; the pathspec keeps peer
+   in-flight edits out of the commit.
 8. **Follow repo conventions** over generic advice. **Keep context lean** —
    load only needed skills.
 9. **Stop before destruction** — approval for data loss, security risk,
