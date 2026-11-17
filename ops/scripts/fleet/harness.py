@@ -400,6 +400,11 @@ def adapter_verify(script: Path) -> tuple[str, bool]:
     second opinion per harness. An adapter with no --verify is "could not verify",
     never a pass.
     """
+    # A missing adapter is "could not verify", not "not wired": bash exits 127 on a
+    # path that does not exist rather than raising, which would otherwise render as
+    # a confident NOT WIRED for a file nobody ever wrote.
+    if not script.is_file():
+        return f"COULD NOT VERIFY — no adapter at {script}", False
     try:
         r = subprocess.run(["bash", str(script), "--verify"],
                            capture_output=True, text=True, timeout=180)

@@ -4094,8 +4094,15 @@ print("in-sync" if (d.get("drifted") == [] and d.get("missing") == []
                             install-claude-mcp.sh install-codex-mcp.sh \
                             install-opencode-mcp.sh install-fleet-mcp.sh; do
     if [[ -f "${FLEET_DEPLOY_HOME}/scripts/${_harness_installer}" ]]; then
-      bash "${FLEET_DEPLOY_HOME}/scripts/${_harness_installer}" 2>&1 | sed 's/^/    /' || \
-        warn "  ${_harness_installer} failed (non-fatal)"
+      # The installer's OWN exit code, not the pipeline's: `bash | sed || warn`
+      # attaches `||` to the PIPELINE, so a failing installer is masked by sed's
+      # exit 0 and the failure goes silent. pipefail makes `$?` the pipeline's
+      # first failure, which is the installer when sed succeeds.
+      _installer_rc=0
+      bash "${FLEET_DEPLOY_HOME}/scripts/${_harness_installer}" 2>&1 | sed 's/^/    /' || _installer_rc=$?
+      if (( _installer_rc != 0 )); then
+        warn "  ${_harness_installer} FAILED rc=${_installer_rc} (non-fatal) — the harness is NOT wired, see the lines above"
+      fi
     fi
   done
 
