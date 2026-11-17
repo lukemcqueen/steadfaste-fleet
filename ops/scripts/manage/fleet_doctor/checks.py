@@ -4787,7 +4787,16 @@ def check_stale_deploys(res):
         size = f.stat().st_size
         res.add(f"Stale deploy: {f.relative_to(deploy_home)}", "WARN",
             f"{size:,} bytes — not in any register() mapping",
-            f"Remove: rm {f}")
+            # Never prescribe a bare `rm`: this file may be a deployment we made
+            # and later renamed, OR something that exists only on this host.
+            # Those look identical from here, and the 2026-08-03
+            # local-cwr-file-processing loss came from guessing wrong. Files WE
+            # deployed are reclaimed automatically (quarantined, restorable) by
+            # the deploy's ownership inventory; anything else is the operator's
+            # call, and moving it aside keeps it recoverable.
+            f"Decide by hand, then move it aside — NOT rm: "
+            f"mv {f} {deploy_home}/state/deploy-quarantine/ "
+            f"(restorable; see ops/scripts/manage/reclaim-orphaned-deploys.py)")
 
 
 def check_install_sh_refs(res):

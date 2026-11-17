@@ -40,6 +40,8 @@ import os
 import sqlite3
 import subprocess
 import sys
+import time
+import urllib.error
 import urllib.request
 import uuid
 from datetime import datetime, timezone
@@ -192,6 +194,17 @@ def _record_review_call(db_path: Path, source: str, model: str,
             conn.close()
 
 
+# BOUNDED RETRY (operator directive 2026-11-17, Luke): a reviewer call is a
+# NETWORK call, so a transient failure must never be reported as a verdict and
+# must never block the plan-review gate with a traceback. Three total tries with
+# a short backoff. Only gateway/rate-limit/timeout statuses retry — an auth or
+# bad-request error is OUR bug, and retrying it just burns three times the time
+# before failing. A retry is a NEW spend and gets its own telemetry row.
+_RETRY_ATTEMPTS = 3
+_RETRY_BACKOFF = (2, 8)
+_RETRY_STATUSES = frozenset({408, 425, 429, 500, 502, 503, 504})
+
+
 def _call_model(prompt: str, db_path: str | None = None) -> str:
     model = get_reviewer_model()
     api_key = os.environ.get("OPENROUTER_API_KEY")
@@ -221,7 +234,7 @@ def _call_model(prompt: str, db_path: str | None = None) -> str:
     # time reads exactly like a reviewer outage; only a below-floor cap refuses.
     _PLAN_MAX_TOKENS = 24000          # measured plan output 6-15K + headroom
     _PLAN_MAX_TOKENS_FLOOR = 16000    # below this the review output truncates
-    _PLAN_EFFORT_DEFAULT = "low"      # enough thinking for real findings, bounded
+    _PLAN_EFFORT_DEFAULT = "none"     # MEASURED 2026-11-17 (cycle 14933)
     _PLAN_EFFORTS = ("none", "low", "medium", "high")
     max_tokens_raw = os.environ.get("REVIEWER_PLAN_MAX_TOKENS", "")
     try:
@@ -258,13 +271,81 @@ def _call_model(prompt: str, db_path: str | None = None) -> str:
             "Content-Type": "application/json",
         },
     )
-    with urllib.request.urlopen(req, timeout=300) as resp:
-        data = json.loads(resp.read())
-    # Ledger-accurate plan-review cost (2026-11-10): record the provider's OWN
-    # usage. Telemetry — a write failure never fails the review.
-    _record_review_call(Path(db_path or DEFAULT_DB).expanduser(), "plan", model,
-                        data.get("usage"))
-    return data["choices"][0]["message"]["content"]
+    last_error = "no attempt was made"
+    for attempt in range(1, _RETRY_ATTEMPTS + 1):
+        data = None
+        try:
+            with urllib.request.urlopen(req, timeout=300) as resp:
+                data = json.loads(resp.read())
+        except urllib.error.HTTPError as exc:
+            detail = ""
+            try:
+                detail = exc.read().decode("utf-8", "replace")[:400]
+            except Exception:  # body unreadable/consumed — the code still tells us a lot
+                detail = "<body unreadable>"
+            if exc.code not in _RETRY_STATUSES:
+                # NOT retryable: a 401/403/404/400 is our own misconfiguration.
+                raise SystemExit(
+                    f"Error: reviewer call failed with HTTP {exc.code} (not "
+                    f"retryable — check the key, model name and base URL) — "
+                    f"{detail!r}"
+                )
+            last_error = f"HTTP {exc.code} — {detail!r}"
+        except (urllib.error.URLError, TimeoutError, OSError,
+                json.JSONDecodeError) as exc:
+            last_error = f"{type(exc).__name__}: {exc}"
+        else:
+            # An HTTP 200 carrying EMPTY content is a FAILED CALL, not a verdict:
+            # a reasoning model can spend the whole output budget thinking and
+            # return content=None, which used to be returned from here as None and
+            # then blew up ~40 lines later in _extract_reviewer_json with an
+            # AttributeError naming neither the provider nor the cause.
+            choice = (data.get("choices") or [{}])[0]
+            content = (choice.get("message") or {}).get("content")
+            if content and content.strip():
+                # Ledger-accurate plan-review cost (2026-11-10): record the
+                # provider's OWN usage. Telemetry — a write failure never fails
+                # the review.
+                _record_review_call(Path(db_path or DEFAULT_DB).expanduser(),
+                                    "plan", model, data.get("usage"))
+                return content
+            if choice.get("finish_reason") == "length":
+                # NOT transient, so it must NOT be retried (2026-11-17, measured:
+                # reasoning_tokens 23999 / completion_tokens 24000, content=None,
+                # three attempts identical to the token, $0.019 each). The model
+                # spent the whole output budget thinking. Retrying a CONFIG
+                # ceiling just triples the bill and the wait, and calling it an
+                # "outage" points the operator at the provider instead of at the
+                # two knobs that actually fix it.
+                raise SystemExit(
+                    "Error: reviewer exhausted its output budget on reasoning "
+                    f"(finish_reason='length', usage={data.get('usage')!r}) — "
+                    "this is a CONFIG CEILING, not an outage, and it is NOT "
+                    "retried. Lower REVIEWER_PLAN_REASONING_EFFORT (e.g. 'none') "
+                    "or raise REVIEWER_PLAN_MAX_TOKENS "
+                    f"(this call used {max_tokens}) so reasoning AND content fit."
+                )
+            last_error = (
+                "reviewer returned no usable text (empty content; "
+                f"finish_reason={choice.get('finish_reason')!r}, "
+                f"usage={data.get('usage')!r})"
+            )
+        if attempt < _RETRY_ATTEMPTS:
+            delay = _RETRY_BACKOFF[min(attempt - 1, len(_RETRY_BACKOFF) - 1)]
+            print(f"[adversarial-review] attempt {attempt}/{_RETRY_ATTEMPTS} "
+                  f"failed: {last_error} — retrying in {delay}s",
+                  file=sys.stderr)
+            time.sleep(delay)
+    # Exhausted after retrying TRANSIENT failures. Never write a row here — an
+    # unanswered review is not a CLEAN review, and a fabricated verdict is
+    # exactly what this gate exists to prevent. (A config ceiling has already
+    # exited above with its own message, so reaching here means the provider
+    # really did fail repeatedly.)
+    raise SystemExit(
+        f"Error: reviewer produced no usable review after {_RETRY_ATTEMPTS} "
+        f"attempts — last error: {last_error}. No review row was written. "
+        "Re-run when the provider recovers."
+    )
 
 
 def _extract_reviewer_json(text: str) -> tuple[str, str]:
@@ -276,6 +357,16 @@ def _extract_reviewer_json(text: str) -> tuple[str, str]:
     parsing fails, record an empty findings array with verdict FINDINGS and
     let the summary carry the raw text (never silently drop a review).
     """
+    if not text or not isinstance(text, str) or not text.strip():
+        # Defence in depth: _call_model already guarantees a non-empty string,
+        # and it applies the SAME .strip() criterion — a whitespace-only reply is
+        # a failed call there, so it must not become a phantom FINDINGS row here.
+        # If that ever regresses, fail with the real reason instead of an
+        # AttributeError from the line below.
+        raise SystemExit(
+            "Error: reviewer returned no text to parse — refusing to record a "
+            "verdict from an empty reply (see the retry notice above)"
+        )
     start = text.find("{")
     end = text.rfind("}")
     if start != -1 and end > start:

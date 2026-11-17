@@ -1457,6 +1457,91 @@ check_each_mapped_file() {
   done
 }
 
+# ── Orchestrator status (host-derived, ONE definition) ──────────────────────
+
+# Hostname AND matching home dir. The env vars (AGENT_TYPE / IS_ORCHESTRATOR)
+# grant NO orch powers — they are spoofable. Previously this block was inlined
+# inside clean_stale_deploys(); it now also gates the ownership inventory, so
+# the rule lives here once instead of drifting into a second copy.
+is_orch_host() {
+  local _host _user _home
+  _host=$(hostname -s 2>/dev/null || echo "unknown")
+  _user=$(id -un 2>/dev/null || echo "$USER")
+  if command -v getent &>/dev/null; then
+    _home=$(getent passwd "$_user" 2>/dev/null | cut -d: -f6)
+  fi
+  _home="${_home:-$HOME}"
+  case "$_host" in
+    moses|esther) [[ "$_home" == "/home/$_host" ]] && return 0 ;;
+  esac
+  return 1
+}
+
+# ── Deploy ownership inventory + orphan reclaim ─────────────────────────────
+
+# clean_stale_deploys() below can only WARN, and it has to: scanning the deploy
+# tree for files absent from the register map cannot tell a destination WE
+# deployed and later renamed from a file that exists only on this host. Guessing
+# wrong lost local-cwr-file-processing on 2026-08-03, which is why that function
+# stopped deleting anything and why orphans have accumulated since.
+#
+# This gives the deploy MEMORY instead of a heuristic. It records every
+# destination this host's register map covers (state/deployed-files.txt) and
+# reclaims only paths present in the PREVIOUS inventory and absent from this
+# one — paths we provably deployed and no longer deploy. Anything absent from
+# the previous inventory is untouched BY CONSTRUCTION; that is what makes an
+# unattended reclaim safe rather than merely careful. Orphans are QUARANTINED
+# (moved, never deleted) so every reclaim is reversible.
+#
+# The FIRST run after this shipped has no previous inventory and reclaims
+# nothing: pre-existing strays are the operator's call, not ours to guess.
+# Runs on EVERY deploy, not just --force-all (the --force-all-only call site was
+# half of why orphans accumulated in the first place).
+#
+# The helper is deliberately stdlib-only, so it needs no capability resolver
+# (see the bare-python3 pitfall: a path python3 without PyYAML silently killed
+# the manifest converge step). If it ever grows a third-party import it MUST go
+# through python-with-module.sh.
+reclaim_orphaned_deploys() {
+  local helper="${REPO_DIR}/ops/scripts/manage/reclaim-orphaned-deploys.py"
+  if [[ ! -f "$helper" ]]; then
+    warn "  ⚠️  orphan reclaimer missing (${helper/$HOME/~}) — ownership inventory NOT updated"
+    return 0
+  fi
+  local inventory="${FLEET_DEPLOY_HOME}/state/deployed-files.txt"
+  local list="${FLEET_DEPLOY_HOME}/state/.deployed-files.new"
+  mkdir -p "$(dirname "$inventory")"
+  : > "$list"
+
+  # Destinations this host's register map covers (the ONE definition of what a
+  # deploy owns), restricted to what is actually deployed here.
+  local entry dest
+  for entry in "${MAP[@]}"; do
+    IFS='|' read -r _ dest _ _ <<< "$entry"
+    [[ -n "$dest" && -e "$dest" ]] && printf '%s\n' "$dest" >> "$list"
+  done
+  if is_orch_host && [[ ${#ORCH_MAP[@]} -gt 0 ]]; then
+    for entry in "${ORCH_MAP[@]}"; do
+      IFS='|' read -r _ dest _ _ <<< "$entry"
+      [[ -n "$dest" && -e "$dest" ]] && printf '%s\n' "$dest" >> "$list"
+    done
+  fi
+
+  info "🧾 Ownership inventory + orphan reclaim…"
+  local out rc=0
+  out=$(python3 "$helper" --inventory "$inventory" --deployed "$list" \
+        --deploy-home "$FLEET_DEPLOY_HOME" 2>&1) || rc=$?
+  rm -f "$list"
+  printf '%s\n' "$out" | sed 's/^/     /'
+  if [[ $rc -ne 0 ]]; then
+    # Fail closed and LOUD: an unrecorded reclaim is how provenance silently
+    # rots, and a stale inventory would make us think we own what we do not.
+    error "orphan reclaim failed (rc=$rc) — ownership inventory NOT advanced"
+    return 1
+  fi
+  return 0
+}
+
 # ── Deprecated file cleanup ─────────────────────────────────
 
 # Scans deploy dir for files not in MAP and removes them
@@ -1488,26 +1573,11 @@ clean_stale_deploys() {
     dests+=("$dest")
   done
   # Also protect ORCH_MAP destinations on orchestrator hosts
-  if [[ ${#ORCH_MAP[@]} -gt 0 ]]; then
-    local _is_orch=false
-    local _host _home _user
-    _host=$(hostname -s 2>/dev/null || echo "unknown")
-    _user=$(id -un 2>/dev/null || echo "$USER")
-    if command -v getent &>/dev/null; then
-      _home=$(getent passwd "$_user" 2>/dev/null | cut -d: -f6)
-    fi
-    _home="${_home:-$HOME}"
-    # Orchestrator = hostname moses|esther AND matching home dir. Env vars
-    # (AGENT_TYPE / IS_ORCHESTRATOR) grant NO orch powers — they are spoofable.
-    case "$_host" in
-      moses|esther) [[ "$_home" == "/home/$_host" ]] && _is_orch=true ;;
-    esac
-    if $_is_orch; then
-      for entry in "${ORCH_MAP[@]}"; do
-        IFS='|' read -r _ dest _ _ <<< "$entry"
-        dests+=("$dest")
-      done
-    fi
+  if [[ ${#ORCH_MAP[@]} -gt 0 ]] && is_orch_host; then
+    for entry in "${ORCH_MAP[@]}"; do
+      IFS='|' read -r _ dest _ _ <<< "$entry"
+      dests+=("$dest")
+    done
   fi
 
   # Scan the scripts dir for files not in the dest list
@@ -3283,6 +3353,13 @@ main() {
   # A schema step must NEVER brick the enforcement sync. Record it, continue,
   # and fail loudly at the END of the update — never a silent green.
   local -a _DEFERRED_FAILURES=()
+
+  # ── Ownership inventory + orphan reclaim (EVERY deploy) ───────────────
+  # A renamed or dropped destination is reclaimed in the same run that orphaned
+  # it. A failure DEFERS the update rather than passing green: a stale inventory
+  # means we would think we own what we do not (or no longer do), and provenance
+  # that rots silently is worse than a loud failure.
+  reclaim_orphaned_deploys || _DEFERRED_FAILURES+=("orphan reclaim failed")
 
   # ── Skills OWNERSHIP + PUBLICATION (cycle 13491) ──────────────────────
   # Runs after the skills deploy above (sync_skills → ${FLEET_DEPLOY_HOME}/skills).

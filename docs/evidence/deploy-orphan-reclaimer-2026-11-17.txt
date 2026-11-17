@@ -1,0 +1,38 @@
+
+=== revision ===
+9caad0bfa28f65b6bed340971b7dcfcb0ef3da76
+9caad0bf fix(cron): make the deploy's manifest converge step actually run
+
+=== helper is stdlib-only (needs no capability resolver) ===
+  PASS  stdlib-only
+
+=== unit suite (negative cases included) ===
+tests/test_reclaim_orphaned_deploys.py .............                     [100%]
+
+============================== 13 passed in 0.18s ==============================
+  PASS  suite ran
+
+=== end-to-end on a real sandbox deploy tree ===
+  | QUARANTINED /home/esther/.hermes/cache/scratch/tmp.MjvYsXJ9Dq/deploy/scripts/jev-old-thing.py
+  |   restore: mv '/home/esther/.hermes/cache/scratch/tmp.MjvYsXJ9Dq/deploy/state/deploy-quarantine/20261117T015525Z/scripts/jev-old-thing.py' '/home/esther/.hermes/cache/scratch/tmp.MjvYsXJ9Dq/deploy/scripts/jev-old-thing.py'
+  | preserved (local-*): /home/esther/.hermes/cache/scratch/tmp.MjvYsXJ9Dq/deploy/scripts/local-keep.sh
+  | inventory updated: 1 owned path(s)
+  | reclaimed 1 orphan(s) into /home/esther/.hermes/cache/scratch/tmp.MjvYsXJ9Dq/deploy/state/deploy-quarantine (restorable, not deleted)
+  PASS  reclaim exited 0
+  PASS  host-local local-keep.sh SURVIVED (the invariant that makes this safe unattended)
+  PASS  orphan left the deploy tree
+  PASS  orphan quarantined with content intact (restorable): deploy/state/deploy-quarantine/20261117T015525Z/scripts/jev-old-thing.py
+  PASS  restore command printed
+  PASS  inventory advanced to exactly what we now own
+  PASS  previous inventory archived for audit
+
+=== first-run safety: no previous inventory must be a NO-OP ===
+  PASS  nothing swept without memory — pre-existing files are the operator's call
+  PASS  baseline inventory written on the first run (the memory later runs need)
+
+=== deploy wires it on EVERY deploy (not force-all-only) ===
+  PASS  deploy calls the reclaimer
+  PASS  fleet-update.sh parses
+
+=== result ===
+VERIFIER: ALL CHECKS PASSED
