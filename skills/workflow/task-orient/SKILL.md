@@ -56,6 +56,8 @@ mcp__loop_governance__end_change(task_id="<short-name>")
 
 **Pass all three scores, EVERY time.** `feedback_accept` ACCEPTS a call that carries only one or two of them and silently defaults the rest to **0**, so the slip writes a permanent understated record for that cycle — and `feedback_override` can only change the DECISION (STOP / LOOP / MOVE_ON), never the numbers. An omitted `quality`/`progress` is NOT recoverable after the close; the prose `note` is the only place the real evidence survives. Send `completeness`, `quality`, `progress` together.
 
+**Do not freehand this call — copy the block above and fill it in.** Knowing the rule is not sufficient: the slip repeats even on sessions that had just read it, because a long `note` is written first and the score arguments trail off the end of it. Read the three argument names off the template rather than recalling them. The tell is in the RESPONSE: `composite=4.0` (completeness 10 with the other two at 0) means you dropped scores, and by then the close has happened — check the echo, and if it reads 4.0 say so in the delivery rather than letting an understated record stand unremarked.
+
 **Harness note — `skill_view` is a Hermes tool.** A Pi session has no
 `skill_view`; its OWN system prompt says "Use the read tool to load a skill's
 file when the task matches its description". On Pi the load IS a `read` of the
