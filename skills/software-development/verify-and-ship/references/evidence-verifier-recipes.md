@@ -85,3 +85,29 @@ Name the sha in the PASS line: the reader needs to know which revision was measu
 - If the capture is normalised after `make-evidence.sh` (a `sed` of the home prefix), the
   recorded hash no longer matches — drop the last line, recompute, re-append, and show
   `--verify` printing `OK`.
+
+## Claim hygiene — a red capture is a hypothesis about your VERIFIER first
+
+The first capture of a fresh verifier usually fails, and the failures are usually the
+verifier's own defects. Read every red as a claim about the probe before touching the
+artifact, and fix these three classes in the probe:
+
+- **Resolve the root from the SCRIPT'S OWN depth, then assert it.** A verifier placed in a
+docs/evidence/ dir sits TWO levels below the repo root, so
+  `REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"` resolves to the docs dir — and every
+  path-shaped claim then measures the wrong tree, which reads exactly like a broken sweep. Print the
+  resolved root in the PASS line, or assert it (`[ -d "${REPO}/.git" ]`). The cheapest tell that the
+  root is wrong is a test run reporting **`collected 0 items`**: a green-looking runner that ran
+  nothing.
+- **Never drive a claim's evidence loop with a grep that is allowed to match nothing.**
+  `while read -r f; do ...; done < <(grep -E '<pat>' file)` exits 0 when the grep matched no lines —
+  nothing was checked, so the claim PASSES VACUOUSLY over a missing or renamed tree. Count what you
+  parsed and FLOOR it (`[ "$n" -ge <plausible-min> ] || fail`), the same rule as asserting a lint's
+  search roots exist: a detector that cannot fire is indistinguishable from a clean tree.
+- **Run the verifier through the PROJECT interpreter** (`PY="${FLEET_VENV_PYTHON:-…}"`), and run it
+  from the repo root so every path pytest echoes is RELATIVE — an absolute path in the captured
+  output carries a home prefix into a committed evidence file, which the PII gate then refuses.
+
+Keep the failing capture when the fix is instructive, and say in the commit message that the red run
+was a probe defect and what it was — the reader is entitled to know nothing in the artifact was
+repaired after the fact.
