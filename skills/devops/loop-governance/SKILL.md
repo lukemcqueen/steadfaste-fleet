@@ -562,14 +562,25 @@ python3 loop_evaluator.py --days 30
 
 ### Closing vs pushing — a CLEAN receipt, not a second cycle
 
-Ending a governed change (`end_change`) runs the self-adversarial review and, when it is
-CLEAN, writes a SHA-bound **review receipt** for the reviewed range. Since closing releases
-the lock and pushing normally needs one, this once took a second no-content `push` cycle to
-ship a reviewed range. That is gone (2026-10-10): the enforcer
-has a **lock carve-out** for a push that a CLEAN receipt covers — if `end_change` shows a
-CLEAN close, `git push` right after it is authorisable with no new lock. Do not open a
+Ending a governed change (`end_change`) runs the self-adversarial review and, when the close is
+PERMITTED, writes a SHA-bound **review receipt** for the reviewed range. A CLEAN review is one way
+to reach a permitted close, not the only one — the per-blob coverage can also complete across a
+series of closes. Since closing releases the lock and pushing normally needs one, this once took a
+second no-content `push` cycle to ship a reviewed range. That is gone (2026-10-10): the enforcer
+has a **lock carve-out** for a push that a receipt covers — if `end_change` shows a permitted close,
+`git push` right after it is authorisable with no new lock. Do not open a
 second cycle purely to push; only commits added AFTER the close are outside the receipt and
 need their own review.
+
+**Simple in bulk, complex a few at a time.** One close pass is one WAVE of
+`BLOB_REVIEW_CONCURRENCY` = 4 reviewer calls and at most `BLOB_REVIEW_CAP_PER_CLOSE` = 15 blobs, and a
+blob already judged is SKIPPED by content (never re-sent). So:
+- many SIMPLE or same-shaped edits are covered in ONE pass — a docs-only range (class **A0**) skips
+  the model judge entirely, no call at all;
+- COMPLEX work (class **C**) is judged a few at a time, and the next `end_change` RESUMES from there
+  ("closing again continues from here"), so a wide complex range closes as a SERIES of small closes.
+- Do NOT split the range into extra cycles to get there, and do not open a carrier cycle to push:
+  repeated `end_change` until permitted is the supported path.
 
 **Issue the push ALONE.** The carve-out authorises a *lone* `git push`: a compound
 (`git push && …`), a pipe, a redirect or a background form is refused even with a CLEAN

@@ -292,6 +292,19 @@ intuition, and by design: the review that used to land after the push now gates 
   CONTENT.** A partial close is RESUMED by calling `end_change` again — it says "closing again
   continues from here" — so on a multi-file range expect 2-3 calls rather than one. Fixing a file
   after a FINDINGS verdict produces a NEW blob, judged on its own; re-close after every commit.
+- **Two paths through a close — SIMPLE in bulk, COMPLEX a few at a time.** One pass is one WAVE of
+  `BLOB_REVIEW_CONCURRENCY` = 4 reviewer calls (a close spends at most `BLOB_REVIEW_CAP_PER_CLOSE` = 15),
+  and a blob already judged is SKIPPED by content, never re-sent:
+  - **Many simple/same edits → pass them in ONE pass.** Similar small edits are judged together in the
+    wave, and a docs-only range (class **A0**) skips the model judge entirely — no call at all. Do not
+    split a range of simple edits across cycles; it drains in a single close.
+  - **Complex edits → a few per pass, then just close again.** Class **C** work is judged a few blobs at
+    a time and the next `end_change` continues from there, so a wide complex range is closed as a SERIES
+    of small closes. Do NOT split the range, and do NOT open extra cycles to push it — repeated
+    `end_change` until permitted is the supported path.
+  - Classes (`_review_class`, from the diff's path set only): **A0** every non-noise path is
+    documentation; **B** a code change that also carries a test delta (light judge); **C** everything
+    else — always-review/protected surface, untested code, or an unreadable path set (deep judge).
 - The receipt is bound to the RANGE (base…tip), but the gate also accepts ANY receipt whose
   `reviewed_blobs` cover every file the range changes — which is how a rebase that rewrote the tip
   can still push.

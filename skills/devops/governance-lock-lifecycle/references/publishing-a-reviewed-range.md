@@ -16,8 +16,9 @@ the gates in the order they fire, what each one wants, and the recipe that satis
    Without one the call is refused and the hook never runs.
 2. **Pre-push hook (`ops/scripts/pre-push-pull`).** Runs only if the lock gate passed. Verifies
    `core.hooksPath` points at `~/.steadfaste-fleet/hooks`, requires an active lock file, and — only
-   when the range touches an always-review path — requires a CLEAN review receipt covering that
-   range. The same path also runs the update/deploy, the doctor and the landing verification.
+   when the range touches an always-review path — requires a CLEAN **receipt** covering that
+   range (a receipt is written at a PERMITTED close, not only when the review came back CLEAN).
+   The same path also runs the update/deploy, the doctor and the landing verification.
 3. **Remote.** A non-fast-forward push is rejected only after all of the above passed.
 
 ## Is a receipt required for this range?
@@ -37,27 +38,41 @@ you conclude the gate is broken:
 - A **new commit landing inside the range** DOES invalidate it — that content is genuinely
   unreviewed. Do not widen the rule to make it pass; keep the deploy+push window quiet instead.
 
+## Simple in bulk, complex a few at a time
+
+One close pass is ONE WAVE of `BLOB_REVIEW_CONCURRENCY` = 4 reviewer calls, and a close spends at most
+`BLOB_REVIEW_CAP_PER_CLOSE` = 15 blobs. A blob already judged is skipped by CONTENT, so a close never
+re-judges what it has already read — which is what makes a wide range shippable as a series of small
+closes instead of one call no reasoning model can finish.
+
+- **Many SIMPLE or same-shaped edits → pass them in ONE pass.** Similar small edits are judged together
+  in the wave, and a docs-only range (class **A0**) skips the model judge entirely — no call at all.
+  Do not split a range of simple edits across cycles.
+- **COMPLEX edits → a few per pass, and just close again.** Class **C** work is judged a few blobs at a
+  time; the next `end_change` RESUMES from where the last one stopped, so repeat it until the close is
+  permitted. Do not split the range into extra cycles, and do not open a carrier cycle to push.
+- The classes come from the diff's PATH SET alone (`_review_class`): **A0** every non-noise path is
+  documentation; **B** a code change that also carries a test delta (light judge); **C** everything else
+  — always-review/protected surface, untested code, or an unreadable path set (deep judge).
+
 ## Recipe
 
 ```text
-# 1. Let the owning change CLOSE first — its close writes the receipt for the range.
+# 1. Close the owning change. A PERMITTED close writes the receipt for the range —
+#    a CLEAN review is one way to reach it, and a WIDE range is closed as a SERIES
+#    of closes: one pass covers one WAVE of 4 blobs (<=15 per close), already-judged
+#    blobs are skipped by content, so repeat end_change until it is permitted.
 feedback_accept(cycle_id=<owning>, task_id="<owning>", note="...")
 end_change(task_id="<owning>")                     # lock released, receipt written
 
-# 2. Open the short publish cycle. THIS is the lock the push gate needs.
-begin_change(task_id="push-<change>",
-             description="Hold the lock the push gate requires; no content change")
+# 2. Push the range on the receipt ALONE. Do NOT open a carrier cycle: a pending
+#    cycle makes the doctor FAIL ("PENDING cycles"), which is itself a push refusal.
+git push origin main                               # LONE push — no &&, no pipe, no redirect
 
-# 3. Deploy, then push, then verify from ORIGIN (never from your own branch).
-bash ~/.steadfaste-fleet/scripts/fleet-dogfood.sh --force     # deploy is the LAST step; nothing committed after it
-git push origin main
+# 3. Verify from ORIGIN, never from your own branch.
 git fetch origin --quiet
 git log --oneline -1 origin/main                            # shows your commit
 git rev-list --left-right --count origin/main...HEAD        # want '0 0'
-
-# 4. Close the publish cycle, with the push output as its evidence.
-feedback_accept(cycle_id=<new>, task_id="push-<change>", note="<push output + landed tip + '0 0'>")
-end_change(task_id="push-<change>")
 ```
 
 Independent confirmation of the landing (do not substitute "the branch looks clean"):
@@ -69,8 +84,7 @@ python3 ops/scripts/manage/verify-landed.py --repo . --base <previous tip>
 
 ## Pitfalls
 
-- **Your OWN open cycle is what the doctor reports as a failure, and that collides with the carrier-cycle
-recipe above.** While any cycle is PENDING, `fleet-doctor` prints `❌ PENDING cycles` and its overall
+- **An open cycle is what the doctor reports as a failure.** While any cycle is PENDING, `fleet-doctor` prints `❌ PENDING cycles` and its overall
 line FAILS, so `fleet-dogfood.sh` ends "DOGFOOD FAILED" even though the deploy it performs has already
 run, and the pre-push hook refuses with "Push blocked: doctor reports 1 failure". A clean doctor and a
 held lock are therefore mutually exclusive: sequence it so the lock is GONE before the push, and let the

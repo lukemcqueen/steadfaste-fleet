@@ -20,11 +20,21 @@ metadata:
 
 ## Two gates that block AFTER a clean close — each names its own remedy
 
-**A rebase invalidates the receipt.** The receipt binds tip+base, so any history rewrite
-(`git pull --rebase`, an amend) moves both and the gate answers "no clean review receipt for THIS
-range". Re-close the cycle after the rebase: per-blob verdicts are keyed by CONTENT, so they survive
+**A rebase can invalidate the receipt — but it usually survives on CONTENT.** The receipt records
+tip+base AND `reviewed_blobs` (path → blob sha), and the gate accepts it two ways: exact tip+base, or
+CONTENT COVERAGE — every blob the pushed range changes is present in the receipt with the same sha.
+A history rewrite (`git pull --rebase`, an amend) moves tip+base, so only the coverage rule can carry
+it; a range that GAINED content the receipt does not cover still refuses (fail-closed). Re-close the
+cycle if it refuses: per-blob verdicts are keyed by CONTENT, so they survive
 and only the blobs the rebase brought in need judging. An index conflict (`docs/*INDEX*`) is usually
 two sides adding rows — resolve to the UNION, then `GIT_EDITOR=true git rebase --continue`.
+
+**Simple edits in bulk, complex a few at a time.** One close pass covers one WAVE of 4 reviewer calls
+(`BLOB_REVIEW_CONCURRENCY`) and at most 15 blobs (`BLOB_REVIEW_CAP_PER_CLOSE`), and a blob already
+judged is skipped by content. So a range of many small or same-shaped edits — or a docs-only range
+(class **A0**, which skips the model judge entirely) — is covered in ONE pass, while complex work
+(class **C**) is judged a few blobs at a time and repeated `end_change` RESUMES until the close is
+permitted. Do not split the range into extra cycles to get there.
 
 **The deploy-sync check runs before the push.** `Deploy sync ❌` with several `Checksum: <file>`
 lines means the deployed tree is behind the repo — typical after a rebase pulled in a peer's edits.
