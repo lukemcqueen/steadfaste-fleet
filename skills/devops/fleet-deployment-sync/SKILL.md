@@ -42,7 +42,7 @@ and still requires a governance lock.
 RUNNING gateway still executes the OLD enforcer module from memory —
 `hermes plugins disable/enable` only writes `config.yaml`, it does NOT
 hot-reload the process-global PluginManager singleton. The new enforcer
-activates ONLY after `hermes gateway re""start`, which agents cannot perform
+activates ONLY after `hermes gateway restart`, which agents cannot perform
 (lifecycle guard). If the sanctioned command still returns `GOVERNANCE LOCK
 REQUIRED` right after a deploy, that is a PENDING RESTART, not a code bug —
 stop retrying and ask the host operator (Luke) to restart the gateway.
@@ -281,7 +281,7 @@ When the repo's enforcer is newer than the deployed one (Moses pushed), `begin_c
 
 Do NOT try to `cp` the enforcer file manually (blocked + violates the immutable-deploy rule), do NOT loop retrying `sudo hermes-plugin-lock` forms (write-class, needs a lock — the sanctioned exception covers only the exact fleet-update.sh invocation). Symptom on 2026-07-31: 8+ failed attempts across `bash`, `cp`, `python3 -c` before the fix landed; since 2026-08-04 the bare sanctioned command runs clean.
 
-**⚠️ Deploy ≠ load:** after deploying, the RUNNING gateway keeps the OLD enforcer in memory until `hermes gateway re""start` (agent-blocked — the host operator runs it). If the sanctioned command still returns GOVERNANCE LOCK REQUIRED after a deploy, that is a pending restart, not a code bug — do not loop; ask the operator.
+**⚠️ Deploy ≠ load:** after deploying, the RUNNING gateway keeps the OLD enforcer in memory until `hermes gateway restart` (agent-blocked — the host operator runs it). If the sanctioned command still returns GOVERNANCE LOCK REQUIRED after a deploy, that is a pending restart, not a code bug — do not loop; ask the operator.
 
 ## Pitfall 9: `git pull --rebase` replayed commits get logged as `--no-verify` → push blocked
 
@@ -310,33 +310,34 @@ Do NOT edit no-verify-log.json (audit tampering). Do NOT `git push --no-verify`.
 
 **Related:** the agent-fixer crons commit with `--no-verify` (logged 2026-07-30 as `fix: remove trailing backtick…`), which is how corrupted skill edits keep reaching the repo.
 
-## Pitfall 11: NEVER write a literal gateway-restart command into any repo/deployed script
+## Pitfall 11: never write a literal gateway-lifecycle command into an EXECUTABLE script
 
-The terminal tool's gateway lifecycle guard (`lifecycle_guard.py`) scans **the
-content of referenced shell scripts** — not just the command string — for
-`hermes gateway re""start|stop` (case-insensitive regex, code AND comments).
-Rendered split in THIS file too, and for the same reason: the guard scans CONTENT, so a
-literal one makes even a documentation file impossible to commit — not just a script.
-If you add a banner/echo/message containing that literal to `fleet-update.sh`
-(or any script invoked via `bash <script>` from the terminal), the guard
-blocks **every** invocation of that script — including the sanctioned
-lock-free deploy command itself (`bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh`
-returns "Blocked: command or referenced script cannot restart or stop the
-gateway"). The script becomes undeployable until the literal is removed.
-Hit 2026-08-05 (Esther): a "loud restart warning" banner embedded
-`hermes gateway re""start`; the guard blocked even `bash -n` on the file.
+The terminal tool's gateway lifecycle guard (`lifecycle_guard.py`) scans the command
+string AND the content of any shell script that command runs (`bash <script>`).
+Matching is token-aware: a verb split as `re""start` or backslash-escaped is
+reassembled before matching, so **literal-splitting buys nothing** — it is obsolete.
+The record: `skills/devops/enforcement-change-safety/references/guard-content-scan-false-positive-2026-08-24.md`.
 
-**The trap is the literal, not the intent.** Showing the operator the exact
-command is legitimate (the guard's own error message prints it). The problem
-is purely the contiguous string tripping a content scanner.
+What trips it is an EXECUTABLE script mentioning the lifecycle verb: a banner/echo in
+`fleet-update.sh` (or anything run as `bash <script>`) blocks **every** invocation of
+that script — including the sanctioned lock-free deploy command — with
+"Blocked: command or referenced script cannot restart or stop the gateway".
+Hit 2026-08-05 (Esther): a "loud restart warning" banner did this; the guard blocked
+even `bash -n` on the file.
 
-**Fix pattern — split the string so bash renders it but the file doesn't
-contain it contiguously (code OR comments — the regex scans comments too):**
+**Fix pattern — make the literal unnecessary; never obfuscate it.** The guard's own
+block message already prints the exact command for the operator, so a script never
+needs to reproduce it:
 
 ```bash
-local gw_restart_cmd="hermes gateway re""start"   # renders as the real command
-echo -e "    ${CYAN}${gw_restart_cmd}${RESET}"
+# No literal, no split — name the remedy instead of printing the command:
+warn "enforcement updated — the RUNNING gateway still holds the old module; the host operator must restart it"
 ```
+
+**Documentation is NOT the same case.** A Markdown doc cannot execute anything, so the
+guard's concern does not apply: this file, `AGENTS.md` and `docs/design/*.md` state the
+command plainly (`hermes gateway restart`) and commit, push and read cleanly. Do not mangle prose to
+satisfy a scanner that was never going to fire on it.
 
 Verify before shipping ANY script that mentions the gateway restart verb:
 
@@ -346,10 +347,10 @@ grep -n -iE "hermes[[:space:]]+gateway[[:space:]]+(restart|stop)" <script>
 # Then run the script through the terminal once — the guard is the judge.
 ```
 
-Also check `install-gateway-cron-timeout.sh`-style scripts that warn about
-restart requirements — same rule applies. The regex branches:
-`hermes gateway re""start|stop`, `launchctl ... hermes-gateway`,
-`systemctl ... hermes-gateway`, `pkill ... hermes ... gateway`.
+Also check `install-gateway-cron-timeout.sh`-style scripts that warn about restart
+requirements — the same rule applies. The regex branches: a gateway restart/stop verb,
+`launchctl ... hermes-gateway`, `systemctl ... hermes-gateway`,
+`pkill ... hermes ... gateway`.
 
 ## Pitfall 13: A peer's deploy holds the mutex — stand down, don't fight it
 
