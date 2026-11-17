@@ -3841,16 +3841,45 @@ print("in-sync" if (d.get("drifted") == [] and d.get("missing") == []
   # (Output captured to a var first — piping python to grep -q under
   # set -euo pipefail can SIGPIPE-abort the deploy on large output.)
   if [[ -z "$_CRON_NEEDS" ]] && command -v hermes &>/dev/null && [[ -f "${REPO_DIR:-$HOME/steadfaste-fleet}/ops/install/cron-manifest.yaml" ]]; then
-    local _manifest_out _manifest_script
+    local _manifest_out _manifest_script _manifest_resolver _manifest_py _manifest_rc
     _manifest_script="${FLEET_DEPLOY_HOME:-$HOME/.steadfaste-fleet}/scripts/manage/cron_manifest.py"
     if [[ ! -f "$_manifest_script" ]]; then
       _manifest_script="${REPO_DIR:-$HOME/steadfaste-fleet}/ops/scripts/manage/cron_manifest.py"
     fi
-    _manifest_out="$(python3 "$_manifest_script" --repair 2>/dev/null || true)"
-    if [[ "$_manifest_out" == *$'\n'UPDATED* || "$_manifest_out" == *$'\n'CREATED* || "$_manifest_out" == UPDATED* || "$_manifest_out" == CREATED* ]]; then
-      info "Cron manifest: converged drifted crons to canonical state"
+    # Choose the interpreter BY CAPABILITY via the fleet's canonical resolver,
+    # never by path existence. The deploy's PATH python3 is a Hermes-managed
+    # venv WITHOUT PyYAML on some hosts (measured on esther 2026-11-17: Python
+    # 3.14.9, `import yaml` -> ModuleNotFoundError), where cron_manifest.py
+    # raises ManifestLoadError. This block used to send that to
+    # `2>/dev/null || true` and then print the SUCCESS line "all in-scope crons
+    # already match" — so the converge pass was silently DEAD on every deploy, a
+    # renamed orch prompt never reached its live job, the doctor FAILed 'Cron
+    # manifest drift (orch-model-market-scan) - prompt differs (2236 -> 2228
+    # chars)' and the pre-push gate blocked the host. Resolver exit 3 is
+    # COULD NOT VERIFY: fail closed and say so, never report "nothing to do".
+    _manifest_resolver="${FLEET_DEPLOY_HOME:-$HOME/.steadfaste-fleet}/scripts/lib/python-with-module.sh"
+    if [[ ! -f "$_manifest_resolver" ]]; then
+      _manifest_resolver="${REPO_DIR:-$HOME/steadfaste-fleet}/ops/scripts/lib/python-with-module.sh"
+    fi
+    _manifest_py=""
+    if [[ -f "$_manifest_resolver" ]]; then
+      _manifest_py="$(bash "$_manifest_resolver" --print yaml 2>/dev/null)" || _manifest_py=""
+    fi
+    if [[ -z "$_manifest_py" ]]; then
+      warn "Cron manifest: COULD NOT VERIFY an interpreter that imports yaml — the converge pass did NOT run (install PyYAML for the fleet venv, or set FLEET_PYTHON in ~/.steadfaste-fleet/agent.env). Failing closed."
     else
-      info "Cron manifest: all in-scope crons already match"
+      # Never discard the status: a FAILED converge must not be reported as success.
+      _manifest_rc=0
+      _manifest_out="$("$_manifest_py" "$_manifest_script" --repair 2>&1)" || _manifest_rc=$?
+      if (( _manifest_rc != 0 )); then
+        warn "Cron manifest repair FAILED (rc=${_manifest_rc}) — drifted crons were NOT converged:"
+        printf '%s\n' "$_manifest_out" | tail -5 | sed 's/^/      /' >&2
+        warn "  interpreter: $_manifest_py  ·  re-run by hand: $_manifest_py $_manifest_script --repair"
+      elif [[ "$_manifest_out" == *UPDATED* || "$_manifest_out" == *CREATED* ]]; then
+        info "Cron manifest: converged drifted crons to canonical state"
+      else
+        info "Cron manifest: all in-scope crons already match"
+      fi
     fi
   fi
 

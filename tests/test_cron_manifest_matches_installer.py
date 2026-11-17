@@ -108,11 +108,71 @@ def test_every_installer_cron_is_declared_in_the_manifest():
     assert not missing, f"installer crons with no manifest entry (orphans): {missing}"
 
 
-def test_every_manifest_cron_has_an_installer():
-    manifest = set(_manifest_schedules())
+def _manifest_naive_entries() -> dict[str, dict]:
+    """name -> {no_agent, script, model}, parsed from the manifest (text, no yaml)."""
+    entries: dict[str, dict] = {}
+    name: str | None = None
+    for line in MANIFEST.read_text().splitlines():
+        m = re.match(r"^- name:\s*(\S+)", line)
+        if m:
+            name = m.group(1)
+            entries[name] = {"no_agent": False, "script": "", "model": ""}
+            continue
+        if not name:
+            continue
+        f = re.match(r"^\s+(no_agent|script|model):\s*'?\"?(.*?)'?\"?\s*$", line)
+        if f:
+            key, val = f.group(1), f.group(2).strip()
+            entries[name][key] = (val == "true") if key == "no_agent" else val
+    return entries
+
+
+def test_every_manifest_cron_is_created_by_something():
+    """Every manifest cron must be owned by a declared mechanism.
+
+    Ownership has exactly two sources: an installer `create_cron` block, or the
+    standalone fleet cron bridge (S2a), which hosts **simple `no_agent` jobs**
+    on user-scope systemd timers and REMOVES the Hermes entry so one scheduler
+    owns each job. A bridged cron therefore legitimately has no `create_cron` —
+    and `cron_manifest.py::_bridge_owned()` (plus the doctor's own checks) apply
+    that same exemption, which is why this test must too. Measured 2026-11-17:
+    agent-hermes-update and agent-remediate-apply were reported here while both
+    are bridge-owned, i.e. the test was the stale side.
+
+    The strict half is the part the bridge can never cover: the generator only
+    bridges `no_agent` script jobs (`fleet-bus-bridge-generate.py::job_is_simple`
+    requires no_agent + script + no context_from/continuity/model), so an
+    LLM-driven manifest cron MUST have an installer. That assertion is the one
+    that stays tight.
+    """
     installer = set(_installer_schedules())
-    missing = sorted(manifest - installer)
-    assert not missing, f"manifest crons with no installer create_cron: {missing}"
+    entries = _manifest_naive_entries()
+
+    # Half 1 (strict): an LLM cron cannot be bridge-hosted, so it needs an installer.
+    llm_missing = sorted(
+        n for n, e in entries.items()
+        if not e["no_agent"] and n not in installer
+    )
+    assert not llm_missing, (
+        "LLM-driven manifest crons with no installer create_cron — the bridge "
+        f"can never create these (it only hosts simple no_agent jobs): {llm_missing}"
+    )
+
+    # Half 2: a no_agent cron with no installer is acceptable ONLY if it is
+    # bridge-eligible by the generator's own predicate.
+    bridged = sorted(
+        n for n, e in entries.items()
+        if e["no_agent"] and n not in installer
+    )
+    not_bridgeable = sorted(
+        n for n in bridged
+        if not entries[n]["script"] or entries[n]["model"]
+    )
+    assert not not_bridgeable, (
+        "no_agent manifest crons with no installer AND not bridge-eligible "
+        "(needs a non-empty script and no model pin, per job_is_simple): "
+        f"{not_bridgeable}"
+    )
 
 
 def test_the_parsers_return_the_full_surface():

@@ -1,0 +1,28 @@
+Running: bash docs/evidence/cron-manifest-converge-verifier-2026-11-17.sh
+rc: 0
+when: 2026-11-17T01:40:35Z
+
+== 1. the deploy script is syntactically valid ==
+  PASS  bash -n ops/scripts/fleet-update.sh
+== 2. the pins hold (each test is discriminating) ==
+  PASS  test_fleet_update_manifest_repair
+  PASS  test_doctor_remedies_use_capable_interpreter
+  PASS  test_cron_manifest_matches_installer
+== 3. an interpreter that can import yaml is resolvable BY CAPABILITY ==
+  PASS  python-with-module.sh --print yaml -> <HOME>/.steadfaste-fleet/venv/bin/python3 (imports yaml)
+== 4. the pre-fix BASELINE reproduces the defect (the fix is load-bearing) ==
+  baseline revision: 2764a85f91f044f8a076a82fc310ab59e3b3e886
+  PASS  baseline discards the repair's stderr AND exit status
+  PASS  baseline auto-repair block does not use the capability resolver
+== 5. the fixed deploy does NOT swallow, and DOES resolve ==
+  PASS  deploy resolves the interpreter via python-with-module.sh
+  PASS  deploy no longer discards the repair's diagnostics/status
+  PASS  deploy has an explicit failure branch
+== 6. the doctor's remedy string runs VERBATIM ==
+  PASS  doctor remedy executes (rc=0)
+  remedy: bash ~/.steadfaste-fleet/scripts/lib/python-with-module.sh yaml ~/steadfaste-fleet/ops/scripts/manage/cron_manifest.py --check
+== 7. the manifest is converged on this host ==
+  PASS  cron_manifest.py --check rc=0 (all in-scope crons match)
+
+FAILED CLAIMS: 0
+sha256: 7da9d7fd6d78a27bad6ee182b35696ff7b8480cfb8be7af2f9cdc4167e5782b4

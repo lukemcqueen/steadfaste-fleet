@@ -1587,7 +1587,9 @@ def _check_manifest_drift(res):
   truth — name, schedule (base + per-host stagger), script, prompt, skill,
   deliver, workdir, no_agent, model, provider. Any field mismatch on a cron
   whose scope applies to this host is a FAIL with the expected value, so
-  agents know exactly what to fix (or run: cron_manifest.py --repair).
+  agents know exactly what to fix. Run it through the capability resolver —
+  cron_manifest.py parses YAML, and the PATH python3 cannot import yaml:
+    bash ~/.steadfaste-fleet/scripts/lib/python-with-module.sh yaml ~/steadfaste-fleet/ops/scripts/manage/cron_manifest.py --repair
   """
   try:
     import importlib.util
@@ -1618,7 +1620,7 @@ def _check_manifest_drift(res):
     drifted, missing, orphans = _mod.check_drift()
   except Exception as _e:
     res.add("Cron manifest drift", "WARN", f"manifest check failed: {_e}",
-        "Run: python3 ~/steadfaste-fleet/ops/scripts/manage/cron_manifest.py --check")
+        "Run: bash ~/.steadfaste-fleet/scripts/lib/python-with-module.sh yaml ~/steadfaste-fleet/ops/scripts/manage/cron_manifest.py --check")
     return
 
   if not drifted and not missing:
@@ -1628,15 +1630,15 @@ def _check_manifest_drift(res):
     for d in drifted[:5]:
       res.add(f"Cron manifest drift ({d['name']})", "FAIL",
           "; ".join(d["diffs"]),
-          "Run: python3 ~/steadfaste-fleet/ops/scripts/manage/cron_manifest.py --repair")
+          "Run: bash ~/.steadfaste-fleet/scripts/lib/python-with-module.sh yaml ~/steadfaste-fleet/ops/scripts/manage/cron_manifest.py --repair")
     if len(drifted) > 5:
       res.add(f"Cron manifest drift ({len(drifted)} total)", "FAIL",
           f"{len(drifted)} crons drifted from manifest",
-          "Run: python3 ~/steadfaste-fleet/ops/scripts/manage/cron_manifest.py --repair")
+          "Run: bash ~/.steadfaste-fleet/scripts/lib/python-with-module.sh yaml ~/steadfaste-fleet/ops/scripts/manage/cron_manifest.py --repair")
     for m in missing[:3]:
       res.add(f"Cron manifest missing ({m.get('name')})", "FAIL",
           "declared in manifest, absent from live jobs",
-          "Run: python3 ~/steadfaste-fleet/ops/scripts/manage/cron_manifest.py --repair")
+          "Run: bash ~/.steadfaste-fleet/scripts/lib/python-with-module.sh yaml ~/steadfaste-fleet/ops/scripts/manage/cron_manifest.py --repair")
 
 
 def _bridge_unit_names() -> set:
