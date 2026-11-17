@@ -33,6 +33,10 @@ The non-negotiable rules of doing the work. Route (`task-orient`) → execute
 3. **One change at a time** — never batch unrelated edits.
 4. **Verify with real commands** — never claim success without evidence.
    A stated claim is a promise: show the output.
+   Always verify file-change claims with `git diff` — never assert a file
+   changed from memory; run the diff and make claims only it supports (in a
+   recent case a nginx change was reported when none existed). The
+   `hermes-never-assume` skill enforces this policy.
 5. **Test FIRST (TDD Iron Law)** — no production code without a failing test
    first. A test written after the code passes immediately and proves nothing.
 6. **Never ask "do you want tests?"** — testing is mandatory.
