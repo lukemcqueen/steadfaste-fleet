@@ -244,6 +244,20 @@ Rules, each of which is a bug that actually happened:
    host's doctor, so "harness present but unwired" is a reported state rather than a
    silence nobody reads. An installer reaching a host is not evidence that it ever ran.
 
+**A per-capability wiring check must complete EVERY present harness's registry
+entry in the same change.** `fleet harness verify <name>` judges each declared
+capability (`context`/`skills`/`governance`) by whether the registry names a
+real `register` adapter — and a present, shipped harness with an undeclared one
+FAILs. Adding or tightening that check but completing only SOME entries (e.g.
+hermes/codex) leaves a genuinely-wired harness (claude-code) reporting FAIL
+purely from a registry omission that reads like broken wiring. When the doctor
+starts surfacing a harness verify FAIL after a check ships, distinguish the two:
+`fleet harness verify <name>` printing `no adapter declared in the registry`
+while the harness's own surface probe (`install-<h>-mcp.sh --verify`,
+`<h> mcp list`) shows servers registered means the REGISTRY is under-declared,
+not the wiring — add the missing `skills`/`governance` capability entries
+pointing at the real adapter scripts, regenerate the derived docs, re-verify.
+
 **Standing rule — a diagnosed gap is not a deliverable.** Finding that a fleet
 improvement is not wired everywhere is NOT the work: describing the gap and
 offering to fix it later ("say the word") hands the work back to the operator and
