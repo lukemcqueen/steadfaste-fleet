@@ -253,3 +253,147 @@ def check_jev_layer(res) -> None:
                 "check `jev models list` and reorder the pools by cost")
         return
     res.add("Jev decision layer", "PASS", detail)
+
+
+# ── Provider exclusions: one policy, projected per harness ───────────────
+# cross-agent-design rule 9 — "registering is not executing": the deploy COPIES
+# ops/scripts/manage/provider-policy.py, which wires nothing on its own. This
+# check is the host-side half that makes the projection a REPORTED state: it
+# compares the ONE reviewable artifact (config/router-models.json →
+# provider_exclusions) with what this host's harnesses actually read, and names
+# the runnable remedy. The deploy runs the projection; this row is the gate.
+PROVIDER_POLICY_CANDIDATES = [
+    # Deployed layout first (the doctor's own home), then the checkout.
+    Path.home() / ".steadfaste-fleet" / "scripts" / "manage" / "provider-policy.py",
+    Path(__file__).resolve().parents[1] / "provider-policy.py",
+]
+POLICY_ARTIFACT_CANDIDATES = [
+    Path(__file__).resolve().parents[3] / "config" / "router-models.json",
+    Path.home() / ".steadfaste-fleet" / "config" / "router-models.json",
+]
+
+
+def _load_provider_policy():
+    """Load the ONE provider-policy module (no relative imports) → its HARNESSES table.
+
+    Reusing the script's table is the point: a second copy in the doctor would
+    be a second definition of "which harness is wired", and the two would drift.
+    """
+    import importlib.util
+    for cand in PROVIDER_POLICY_CANDIDATES:
+        if cand.is_file():
+            try:
+                spec = importlib.util.spec_from_file_location("provider_policy", cand)
+                if spec is None or spec.loader is None:
+                    return None
+                mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(mod)
+                return mod
+            except Exception:  # noqa: BLE001 - an unloadable policy is COULD NOT VERIFY below
+                return None
+    return None
+
+
+def _policy_exclusions(path: Path):
+    """The artifact's excluded providers (sorted), or None when unreadable."""
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    block = doc.get("provider_exclusions")
+    return sorted(block) if isinstance(block, dict) else []
+
+
+def live_provider_ignore(home: Path | None = None):
+    """`provider_routing.ignore` from config.yaml — NO subprocess (mirrors `_config_model`).
+
+    YAML when importable, else a line-scan scoped to the `provider_routing:`
+    block (the indent check is what stops the top-level `model:` block being read
+    as this one). Returns a sorted list, or None when the value cannot be read
+    (which the caller reports as COULD NOT VERIFY — never as agreement).
+    """
+    h = home if home is not None else _hermes_home()
+    try:
+        text = (h / "config.yaml").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    try:
+        import yaml as _yml
+        cfg = _yml.safe_load(text)
+        pr = cfg.get("provider_routing") if isinstance(cfg, dict) else None
+        if isinstance(pr, dict):
+            ig = pr.get("ignore")
+            return sorted(ig) if isinstance(ig, list) else []
+    except Exception:  # noqa: BLE001 - fall back to the text scan below
+        pass
+    in_block = False
+    out: list = []
+    for line in text.splitlines():
+        if line.startswith("provider_routing:") and not line[:1].isspace():
+            in_block = True
+            continue
+        if not in_block:
+            continue
+        if line.strip() and not line[:1].isspace():
+            break  # left the provider_routing: block
+        s = line.strip()
+        if s.startswith("ignore:"):
+            rest = s.split(":", 1)[1].strip()
+            if rest.startswith("["):  # inline list: ignore: [a, b]
+                out = [x.strip().strip("'\"") for x in rest.strip("[]").split(",") if x.strip()]
+        elif s.startswith("- "):
+            out.append(s[2:].strip().strip("'\""))
+    return sorted(out)
+
+
+def check_provider_policy(res) -> None:
+    home = _hermes_home()
+    mod = _load_provider_policy()
+    artifact = next((p for p in POLICY_ARTIFACT_CANDIDATES if p.is_file()), None)
+    fix = ("run ~/.steadfaste-fleet/scripts/manage/provider-policy.py --write "
+           "(the deploy runs it too; verify with --check)")
+    if mod is None or artifact is None:
+        res.add("Provider exclusions", "WARN",
+                "could not resolve provider-policy.py or config/router-models.json — "
+                "cannot verify the projection (COULD NOT VERIFY)",
+                "deploy with fleet-update.sh, then re-run the doctor")
+        return
+    want = _policy_exclusions(artifact)
+    if want is None:
+        res.add("Provider exclusions", "WARN",
+                f"could not parse {artifact} — cannot verify the projection",
+                "check config/router-models.json is valid JSON")
+        return
+    if not (home / "config.yaml").is_file():
+        res.add("Provider exclusions", "PASS",
+                "no Hermes config on this host — nothing to project")
+        return
+    live = live_provider_ignore(home)
+    if live is None:
+        res.add("Provider exclusions", "WARN",
+                "could not read provider_routing from config.yaml (COULD NOT VERIFY)",
+                fix)
+        return
+    # Coverage: harnesses present on this host with NO verified provider knob.
+    gaps = []
+    for name, spec in getattr(mod, "HARNESSES", {}).items():
+        pres = spec.get("presence") if isinstance(spec, dict) else None
+        if spec.get("mechanism") is None and pres and Path(pres).expanduser().exists():
+            gaps.append(name)
+    detail = f"excluded {want or '(none)'} · live ignore {live or '(none)'}"
+    missing = [p for p in want if p not in live]
+    if missing:
+        # A host that HAS Hermes and comes out of a deploy with the exclusion
+        # unapplied is a real break: it will still route to the excluded
+        # upstream and pay the 400 + fallback on every reasoning-bearing turn.
+        res.add("Provider exclusions", "FAIL",
+                detail + f" — live config MISSING {missing}; those upstreams are still routable",
+                fix)
+        return
+    if gaps:
+        res.add("Provider exclusions", "WARN",
+                detail + f" — declared gap(s) {gaps} present on this host: no verified "
+                "provider-exclusion knob, so the policy is NOT enforced for them",
+                fix)
+        return
+    res.add("Provider exclusions", "PASS", detail)

@@ -3961,6 +3961,38 @@ print("in-sync" if (d.get("drifted") == [] and d.get("missing") == []
     fi
   fi
 
+  # ── Provider exclusions: policy projected per harness ─────
+  # cross-agent-design rule 9 — a deploy that COPIES provider-policy.py has
+  # wired NOTHING; wiring is a step that RUNS. Project the ONE reviewable
+  # artifact (config/router-models.json -> provider_exclusions) through each
+  # present harness's OWN api, so every host's routing converges without an
+  # agent having to know the script by name. Fail-soft by design: a projection
+  # that cannot verify is WARNed here (never reported as agreement, never
+  # aborting the deploy) and the doctor's "Provider exclusions" row is the gate.
+  _pp_script="${FLEET_DEPLOY_HOME:-$HOME/.steadfaste-fleet}/scripts/manage/provider-policy.py"
+  if [[ ! -f "$_pp_script" ]]; then
+    _pp_script="${REPO_DIR:-$HOME/steadfaste-fleet}/ops/scripts/manage/provider-policy.py"
+  fi
+  if [[ -f "$_pp_script" ]]; then
+    local _pp_out _pp_rc
+    _pp_rc=0
+    # provider-policy.py's own --write already skips absent/unwired harnesses, so
+    # a host with no coding agent is a no-op rather than an error.
+    _pp_out="$(python3 "$_pp_script" --write 2>&1)" || _pp_rc=$?
+    if (( _pp_rc == 3 )); then
+      warn "Provider exclusions: COULD NOT VERIFY — the projection did NOT apply:"
+      printf '%s\n' "$_pp_out" | tail -5 | sed 's/^/      /' >&2
+      warn "  re-run by hand: python3 $_pp_script --write"
+    elif (( _pp_rc != 0 )); then
+      warn "Provider exclusions: projection exited ${_pp_rc} — not applied:"
+      printf '%s\n' "$_pp_out" | tail -5 | sed 's/^/      /' >&2
+    elif [[ "$_pp_out" == *"wrote "* ]]; then
+      info "Provider exclusions: projected onto $(printf '%s\n' "$_pp_out" | grep -c '^wrote ') present harness(es)"
+    else
+      info "Provider exclusions: no wired harness present — nothing to project"
+    fi
+  fi
+
   # ── LLM cron inactivity timeout ───────────────────────────
   # Ensures HERMES_CRON_TIMEOUT (fleet default 600s) is applied to the
   # gateway service: systemd drop-in on Linux, ~/.hermes/.env on macOS.

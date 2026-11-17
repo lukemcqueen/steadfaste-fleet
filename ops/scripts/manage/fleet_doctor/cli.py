@@ -9,7 +9,7 @@ import sys
 import time
 
 from .results import Results
-from .router_layer import check_jev_layer
+from .router_layer import check_jev_layer, check_provider_policy
 from .mcp_names import check_mcp_role_names
 from .stale_premigration_home import check_stale_premigration_home
 from .checks import (
@@ -165,6 +165,7 @@ def main():
         check_cron_bridge_migration,
         check_cron_bridge_ownership,
         check_model_default,
+        check_provider_policy,
         check_bridge_unit_killmode,
         check_orphan_cycle_resolution,
         check_paused_cron_reasons,
