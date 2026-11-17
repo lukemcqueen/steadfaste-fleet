@@ -29,8 +29,16 @@ Design (alert-only backstop, per operator directive "no brute-force killing"):
      leak-fix rolls the txn back on its own once the daemon's write transaction
      completes/aborts; if it persists, the report names the exact pids for a
      human decision. Killing as a working norm was explicitly rejected.
-  3. SECONDARY: any loop-gov daemon whose start time < deployed-mtime runs
-     pre-deploy code -> report it (no action).
+  3. SECONDARY: a daemon is running pre-deploy code iff the module file it
+     LOADED no longer hashes to the sha256 it recorded in the daemon stamp
+     (~/.steadfaste-fleet/state/loop-gov-daemon.json). CONTENT, not mtime. The
+     old "start time < deployed-mtime" test was wrong twice over: it measured a
+     file the daemon may never have loaded (a host can point its daemon at the
+     repo copy), and every deploy rewrites the deployed copy, so it flagged
+     EVERY daemon on EVERY deploy — the moses false-alarm class (2026-11-17: the
+     alert read "running pre-deploy code" while the DB probe had SUCCEEDED, i.e.
+     nothing was locked). pids the stamp does not know fall back to that mtime
+     test, with the grace window.
 
 Watchdog pattern (StateTracker-gated, no_agent):
   - Empty stdout -> silent (DB writable AND no stale-deploy daemon).
@@ -47,6 +55,8 @@ Run (no_agent cron or manual):  python3 agent-loop-gov-lock-watchdog.py
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import sqlite3
 import subprocess
@@ -69,6 +79,11 @@ except ImportError:  # pragma: no cover - standalone fallback only on missing li
 HOME = Path.home()
 DEPLOYED_MCP = HOME / ".steadfaste-fleet" / "tools" / "loop-governance" / "loop-gov-mcp.py"
 DB_PATH = HOME / ".steadfaste-fleet" / "data" / "loop-governance.db"
+# Per-pid daemon stamp written by the loop-gov MCP at startup: pid -> module +
+# sha256 of that file at load time. The authoritative source for "is this daemon
+# running the code on disk?", because it names the file the daemon ACTUALLY
+# loaded rather than the deployed copy we merely assume it loaded.
+STAMP_PATH = HOME / ".steadfaste-fleet" / "state" / "loop-gov-daemon.json"
 # begin_change uses busy_timeout 5000; our probe must exceed it so a genuinely
 # stuck txn is detected (healthy in-flight writes commit in <ms).
 PROBE_TIMEOUT_MS = 10_000
@@ -200,17 +215,62 @@ def _deployed_mtime() -> float | None:
         return None
 
 
-def main() -> int:
-    db_blocked = _db_write_blocked()
-    deployed = _deployed_mtime()
+def _load_stamp() -> dict:
+    """{pid_str: {"module": path, "sha256": hex, "started": epoch}} — {} if absent.
 
-    # SECONDARY: pre-deploy daemons run stale code that will leak on next write.
-    secondary_stale: list[int] = []
-    if deployed is not None:
-        for pid in _loop_gov_pids():
+    READ-ONLY by design: the stamp is shared state (every loop-gov daemon appends
+    its own pid), and we never write it, so a concurrent session cannot be
+    corrupted by us. A torn/partial write raises ValueError, which we swallow to
+    {} — callers then fall back to the mtime rule. Never a traceback, never a
+    false green.
+    """
+    try:
+        data = json.loads(STAMP_PATH.read_text())
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _module_sha(path: str) -> str | None:
+    try:
+        return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    except OSError:
+        return None
+
+
+def _pre_deploy_pids() -> list[int]:
+    """Daemons whose loaded module no longer hashes to what they recorded.
+
+    Content verification, per pid, against the file that daemon ACTUALLY loaded.
+    A deploy rewriting the deployed copy is not evidence of stale code and must
+    never flag a daemon whose own module is unchanged. A recorded module we
+    cannot read is reported (never treated as clean — no false green). pids with
+    no stamp entry fall back to the mtime rule, which is all we have for them.
+    """
+    stamp = _load_stamp()
+    deployed = _deployed_mtime()
+    stale: list[int] = []
+    for pid in _loop_gov_pids():
+        entry = stamp.get(str(pid)) or {}
+        module = entry.get("module")
+        recorded = entry.get("sha256")
+        if isinstance(module, str) and isinstance(recorded, str):
+            current = _module_sha(module)
+            if current is None or current != recorded:
+                stale.append(pid)
+            continue
+        if deployed is not None:
             start = _lstart_epoch(pid)
             if start is not None and (start + GRACE_SECONDS) < deployed:
-                secondary_stale.append(pid)
+                stale.append(pid)
+    return stale
+
+
+def main() -> int:
+    db_blocked = _db_write_blocked()
+
+    # SECONDARY: pre-deploy daemons run stale code that will leak on next write.
+    secondary_stale = _pre_deploy_pids()
 
     if db_blocked:
         # PRIMARY: DB is locked -> surface its loop-gov fd-holders (alert-only).
