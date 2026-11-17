@@ -315,6 +315,29 @@ have:**
 - A **plugin/enforcer** fix needs the GATEWAY to reload. An in-session agent
   cannot restart it (lifecycle guard), so hand it over with the exact command and
   say plainly which half is loaded and which is still pending.
+  - **The detector for this half already exists — read it, do not infer it.** The
+    deploy's `_restart_pending()` records WHEN the activation-only content last changed
+    as `<combined sha256> <epoch>` in `<deploy-home>/state/governance-enforcer-deployed`
+    (the enforcer plugin AND the loop-gov MCP module as one hash). Compare that epoch
+    with the gateway process's start epoch: start < change epoch ⇒ this host is being
+    enforced by the PREVIOUS revision. The doctor surfaces it as the
+    `Stale enforcer plugin` row, and because the comparison is live it CLEARS BY ITSELF
+    after a restart — no marker to remove and no state to reset.
+  - **A report of "I don't have permission" may be a STALE enforcer's block message.**
+    The gate's wording lives IN the plugin, so a host running the previous revision hands
+    its sessions the previous revision's text — including refusals that name no remedy —
+    and a legitimate, satisfiable refusal then travels upward as a permissions wall
+    ("this needs someone with administrative access"). Measure the LOADED revision before
+    accepting such a report: a byte-identical file on disk settles what the host HAS,
+    never what it is ENFORCING, and the two can disagree for days with nothing on the
+    host saying so.
+  - **Match the gateway process on `ps -eo pid,args`, then read its start separately.**
+    `ps -eo lstart=,command=` truncates a long argv, and the gateway is spawned through a
+    large `-c` wrapper whose identifying text sits at the END of the line — so a
+    `command=`-based match misses it and the deploy's own check degrades to "cannot
+    determine gateway start time — UNVERIFIABLE, treating as restart required". That is
+    the fail-safe direction (it never reads as clean), not a defect to suppress: match on
+    `args`, which is not truncated, and get the epoch with `ps -o lstart= -p <pid>`.
 - Never let "it deployed" stand in for "it is in play". Reporting half a fix as
   live is the failure this section exists to prevent.
 
