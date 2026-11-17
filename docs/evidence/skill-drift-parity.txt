@@ -29,19 +29,18 @@ A file under no repo-owned skill dir is a Hermes default and stays skipped.
 
 | Measure | Value |
 |---|---|
-| Stranded in place (path in repo, content only deployed) | 6 |
+| Stranded in place (path in repo, content only deployed) | 5 |
 | Absent from the repo (deployed under a repo-owned skill) | 0 |
 |   ↳ path dropped from repo history | 0 |
 |   ↳ path never committed | 0 |
-| Files in sync | 1001 |
-| Skipped (Hermes defaults, or repo ahead) | 552 |
+| Files in sync | 1012 |
+| Skipped (Hermes defaults, or repo ahead) | 546 |
 
 **Verdict: FAIL**
 
 Stranded in place:
-- devops/fleet-deployment-sync/SKILL.md
+- devops/agent-ergonomic-cli/SKILL.md
+- devops/git-push-gate-failures/SKILL.md
 - devops/governance-lock-lifecycle/SKILL.md
 - devops/rename-sweep/SKILL.md
-- devops/shared-repo-push-gates/SKILL.md
-- software-development/verify-and-ship/SKILL.md
-- software-development/verify-and-ship/references/evidence-verifier-recipes.md
+- devops/sweep-verification/SKILL.md

@@ -233,6 +233,15 @@ Rules, each of which is a bug that actually happened:
    host's doctor, so "harness present but unwired" is a reported state rather than a
    silence nobody reads. An installer reaching a host is not evidence that it ever ran.
 
+**Standing rule — a diagnosed gap is not a deliverable.** Finding that a fleet
+improvement is not wired everywhere is NOT the work: describing the gap and
+offering to fix it later ("say the word") hands the work back to the operator and
+leaves the fleet unwired. *ALWAYS provide a way for agents to implement fleet
+improvements* — ship the runnable mechanism in the SAME pass: the deploy RUNS the
+projection where the harness is present, the host doctor reports drift/gaps with a
+runnable remedy, and a test pins it. Catching yourself closing a reply with a
+proposed fix is the signal to open the cycle instead.
+
 ### The GATE half of a capability
 
 A capability a host must satisfy is not only code the host RUNS — it is often also a gate
@@ -329,6 +338,19 @@ and let MEASUREMENT make the call:
     decision turns on a number the operator named, go and test THAT number instead of arguing from
     the table.
 
+**Standing rule — a change to the harness/API/adapter carries its docs in the
+SAME change.** Anything that alters the surface a coding agent sees — a tool, a
+tool NAME, an MCP server, a registration script, the harness registry, an env
+var an adapter reads — changes what the docs describe, and a doc left describing
+the old surface is a trap: the next reader trusts it and wires to something that
+is no longer there. Update in the same pass, never "later":
+`ops/install/harnesses/registry.yaml` (then run its generator so the derived
+docs follow), the design doc that owns the area (`docs/design/agent-interop.md`
+and siblings), and any SKILL.md that names the surface. `generate-harnesses.py
+--check` gates the GENERATED docs only — prose you wrote by hand is gated only by
+you. Search for the old name/value repo-wide first (see below): the fix is
+almost never one file.
+
 Checklist before shipping anything agent-facing:
 - [ ] works from **at least two different harnesses** (prove it, don't claim it)
 - [ ] any gate the host must PASS keys on something that host **has** — proven by driving
@@ -338,6 +360,9 @@ Checklist before shipping anything agent-facing:
 - [ ] unreachable dependency → **visible message**, never a silent empty
 - [ ] Linux **and macOS**
 - [ ] a **drift guard test**, not just a doc
+- [ ] **docs carried in the SAME change** — registry + its generator, the owning design
+      doc, and any skill naming the surface you touched (grep for the OLD name repo-wide
+      first; the fix is rarely one file)
 - [ ] the deploy **RUNS** the adapter where the harness is present, and the host doctor reports it
 - [ ] a standing POLICY is data in **one** artifact, projected per harness through that
       harness's own api, with every unwired harness **declared** — never written into a

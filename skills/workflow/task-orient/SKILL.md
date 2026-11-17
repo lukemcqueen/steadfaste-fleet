@@ -119,6 +119,14 @@ Measured traps (each costs a turn):
   `read_file`/`search_files` (or a simple `ls`/`grep` compound), and run
   `execute_code` only inside a governed cycle with the repo resolved.
 - **The operator-consent approval gate is INDEPENDENT of the governance lock and silently stalls a long migration.** A compound command inside a governed cycle still prompts the operator for consent, and when they step away the prompt times out as `BLOCKED — user did NOT consent` after minutes, freezing the whole workflow (do not retry; the block persists until the operator returns). Read-only inspection should therefore use `read_file`/`search_files`/single read primitives so progress never depends on an approval prompt — save the compound commands for the mutations that genuinely need consent, and batch those so each approval window counts.
+- **A heredoc is not a scannable script.** The lifecycle guard reads a
+  command's executed script before it runs; a `<<'EOF' … EOF` body is not a file
+  it can read, so a heredoc touching gateway state is refused with "a script the
+  command executes must be scannable". Use `python3 -c "<one-liner>"` when the
+  payload is inline text, or write the script to a file and run that.
+- **Any redirect promotes a read primitive to write-class.** `ls … 2>&1`, a
+  trailing `>`, or `2>/dev/null` makes an otherwise lock-free command need both
+  gates — drop the redirect when the goal is inspection.
 - When a read is blocked, change the MECHANISM (listed primitive or
   read_file/search_files) — never re-run the same shape reworded.
 

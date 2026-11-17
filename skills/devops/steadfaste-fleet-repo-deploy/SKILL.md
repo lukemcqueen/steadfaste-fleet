@@ -268,6 +268,18 @@ test still loads it from the repo — that is what makes a green suite
 uninformative). Then run the DEPLOYED copy before reporting, and say which path
 you exercised.
 
+**The register DESTINATION is load-bearing when the script resolves anything from
+`__file__` — mirror a sibling's depth, never the audit's flat suggestion.** A script
+that finds the repo root (`Path(__file__).resolve().parents[3]`) or a config relative
+to the deploy home resolves those from its own directory depth, so a destination one
+level shallower than its siblings silently changes what it reads: the repo-root walk
+lands somewhere else and a sibling-relative path misses. The commit audit prints a
+destination of its own invention (flat, directly under `scripts/`), which is wrong for
+exactly this reason — place the line beside the SIBLING it belongs with and copy that
+sibling's destination shape (`ops/scripts/manage/<tool>.py` →
+`${FLEET_DEPLOY_HOME}/scripts/manage/<tool>.py`). Then exercise the DEPLOYED copy once:
+a repo-side run cannot show this class of break.
+
 **The commit-time audit WARNS about a missing register entry — it does not block.** The
 audit prints the exact line to add (`register "<source>" "<destination>"`) beside
 `NEW file … is not registered`, and the commit still lands, so a feature can ship with a

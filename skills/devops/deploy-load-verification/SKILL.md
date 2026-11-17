@@ -409,6 +409,46 @@ made *after* a deploy leaves HEAD ahead of it and the next check reports
   Frame it as "captured at <revision>, before the commit that adds it", never as a
   claim about the tree at HEAD.
 
+## Deploy ≠ RAN: a step that prints its success line may have done nothing
+
+A reconcile/converge step is its own failure surface. It can be DEAD on every host
+while the deploy log reports it as clean, because two mistakes compound:
+
+- **The caller discards both the diagnostics and the status.**
+  `out="$(python3 helper.py --repair 2>/dev/null || true)"` followed by an
+  `if/else` that prints a success line on the non-matching branch turns a hard
+  error into a clean-looking no-op: output is empty, the status is 0 by
+  construction, and the step announces "everything already matches". Never put
+  `2>/dev/null` together with `|| true` on a converging call. Capture output and
+  status separately, branch on the STATUS, and on failure print the tail of the
+  output, the interpreter used, and the exact re-run command.
+- **The interpreter was picked by path existence, not capability.** The `python3`
+  on an agent/deploy PATH is a tooling venv that can import neither `yaml` nor
+  `mcp`, so a helper that parses YAML dies with its manifest-load error while the
+  same helper run through the fleet venv works fine. Resolve by CAPABILITY:
+  `bash ~/.steadfaste-fleet/scripts/lib/python-with-module.sh --print yaml`
+  prints an interpreter that can import it (preferring the declared `FLEET_PYTHON`
+  / `~/.steadfaste-fleet/venv/bin/python3`), or run the tool through it:
+  `python-with-module.sh yaml <script> [args...]`. Its exit 3 is **COULD NOT
+  VERIFY** — fail closed and say so; never degrade to "nothing to do".
+- **Prove the step RAN, not that it printed.** A converge step should state what it
+  changed, and the claim is confirmed by reading the converged state back from its
+  live consumer (the job/config it rewrites) — never from the step's own log line.
+- **A stale claim in the step's own comment is load-bearing.** A comment listing
+  what a gate "skips" or "runs" is what the next reader trusts; when the code and
+  the comment disagree, fix whichever is wrong in the same change.
+- **The gate's REMEDY TEXT is part of the enforcement surface.** A check whose
+  remedy string tells agents to run a dependency-bearing tool with the interpreter
+  that cannot import it sends every agent that follows the gate into the same
+  failure. Execute the printed remedy VERBATIM before shipping the check, and pin
+  it with a text test so a later edit cannot silently un-fix it.
+- **A text assertion over a shell step must be scoped to the block under test.** A
+  whole-file grep for a token (an interpreter name, a script path) fires on other
+  blocks that legitimately mention it — the deploy map registers the helper even
+  when the step under test does not use it — so isolate the block first. Likewise a
+  line-anchored assertion mis-fires on a legitimately backslash-continued command:
+  join continuations, or require the single-line form you want agents to copy.
+
 ## Pitfalls
 
 1. **Claiming "everything renamed" while the config key still has the old
