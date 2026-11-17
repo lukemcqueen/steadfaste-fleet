@@ -78,8 +78,12 @@ else
   # The pre-flight result is PRINTED and its failure is fatal: a check that fails
   # and is ignored is a check that was never run, and the real install would then
   # fail later with a worse message (or half-install).
-  PREFLIGHT="$(python3 "$CHECKOUT/install.py" --check --hermes-home "$HERMES_HOME" 2>&1)"
-  PREFLIGHT_RC=$?
+  # The rc is captured in the SAME statement as the capture, deliberately: this
+  # script sets -u but not -e, so any statement a later edit inserts between a
+  # separate `... ; RC=$?` pair would silently reset $? and turn a FAILED
+  # pre-flight into a passing one.
+  PREFLIGHT_RC=0
+  PREFLIGHT="$(python3 "$CHECKOUT/install.py" --check --hermes-home "$HERMES_HOME" 2>&1)" || PREFLIGHT_RC=$?
   [ -n "$PREFLIGHT" ] && printf '%s\n' "$PREFLIGHT"
   [ "$PREFLIGHT_RC" -eq 0 ] || die "the upstream installer's pre-flight check failed (rc=$PREFLIGHT_RC) — nothing was installed"
   python3 "$CHECKOUT/install.py" --hermes-home "$HERMES_HOME" || die "installer failed"
