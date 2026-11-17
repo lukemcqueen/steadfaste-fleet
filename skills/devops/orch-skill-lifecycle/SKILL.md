@@ -423,6 +423,15 @@ Result: 3 skills updated, 1 upstreamed, 1 SOUL.md entry.
   `secret-leak-detector.sh`; (8) commit/push (dogfood gate will fire, see below).
   Copying WITHOUT the superset check is how a deploy-only edit silently
   REVERTS repo-only content.
+  **A deployed copy can carry a CORRUPTION the repo does not have — reject it, and repair BOTH sides.**
+  Superset in line count is not the same as good content: a stranded SKILL.md held mangled spacing
+  (`maintained beside   the implementation`, introduced on the host), so a verbatim `cp` would have
+  imported the typo into the repo and shipped it fleet-wide. Classify every line the reconciler prints
+  as DROPPED: a line superseded in place is safe to lose; a line that is the SAME text with damaged
+  whitespace or a truncated tail is a DEFECT — keep the repo's correct bytes and take only the
+  deployed ADDITIONS. Then fix the DEPLOYED copy too: the detector compares content in BOTH
+  directions, so a file you deliberately did not copy verbatim stays `stranded: 1` forever and the
+  doctor keeps reporting it. Correcting both sides is what takes the count to 0.
 - **Fleet [NEW] skills ARE upstreamable when SSH reaches the reporting host
   (2026-10-07)** → the 2026-08-28 "no SSH path" note is host-specific, not
   universal: moses is reachable from esther (`ssh mosesaaron`), so a `[NEW]`

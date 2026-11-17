@@ -259,3 +259,13 @@ showed) — otherwise the next reader reintroduces it as "obviously true".
   bullet still saying "X allowlist inside the function, refusal is permanent" right beside a
   current "designated verifier needs no grant" block) is the tell that the schema evolved but the
   prose did not — fix the old bullet IN PLACE, never append an "UPDATE:" note under it.
+- **An in-code comment ASSERTING a guard exists is a documentation claim — verify the guard exists.**
+  `ops/scripts/install/mcp-surface.inc.sh` declared itself "the ONE definition of the fleet MCP
+  surface" and, of the registry, "A test pins the two together so neither can drift alone" — and no
+  such test existed, so the surface it declared quietly drifted away from what the audit actually
+  checked, with nothing to catch it. A comment that names a verification (`pinned by a test`,
+  `enforced by the doctor`, `checked in CI`, `asserted at build time`) is auditable like any
+  cross-reference: grep for the named test or check, and if it is absent that is a HIGH-severity
+  finding, not a wording nit — the comment is then the ONLY thing holding the invariant, and a
+  comment is not a control. Fix it by WRITING the guard, then leave the comment true. The same
+  follows for a comment asserting a property is impossible; prove it or delete the claim.

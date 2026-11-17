@@ -115,31 +115,13 @@ fleet exec gisu fleet-doctor.py --quiet
 
 ⚠️ **`fleet exec <agent> -- <raw-command>` does NOT work — the `--` separator is NOT supported.** The EXEC handler only runs scripts that exist in `~/.steadfaste-fleet/scripts/` on the target; a `--` "raw command" attempt returns `Script not found: --` (exit -1). Verified 2026-08-11: `fleet exec titus -- "python3 -c ..."` failed exactly this way. Use `--output-schema RAW` (which skips RESULT validation) with a real deployed script — the RAW schema is about validation, not about raw shell execution. To run an arbitrary probe on a fleet agent, ship it as a script in the repo + register it in fleet-update.sh, or use an existing deployed probe (`fleet-doctor.py`, `agent-diagnostic.py`).
 
+⚠️ **The `command` field is ONE TOKEN — a quoted shell string can NEVER run.** The EXEC schema constrains it to `^[a-zA-Z0-9_./-]+$` (`ops/scripts/lib/handoff_schema.py`), so `fleet exec <agent> "<anything with a space>"` fails one of two ways before the target ever sees it: the quoted compound lands in the ARGS slot and the command arrives EMPTY (`$.command: length 0 < minimum 1`; the target answers `No command specified`), or it is read as the command and fails the pattern outright (`$.command: does not match pattern '^[a-zA-Z0-9_./-]+$'`). Args are free-form, the command is not — `fleet exec joseph -- df -h /` works because `df` IS the command and `-h`, `/` are its args, so `--` separates the command from dash-args and does NOT introduce a raw shell. A multi-step probe is not expressible through this interface at all: use a deployed script, or the absolute-path escape hatch below. When a dispatch fails validation, read WHICH field failed before changing your syntax — `length 0` means the token landed in the wrong slot, `does not match pattern` means it landed in the right one and is the wrong shape.
+
+⚠️ **An `EXEC_RESULT` is not proof it answered YOUR send — match the `corr=`, and distrust a suspiciously FAST reply.** The client searches the live queue AND the archives, so an ARCHIVED result from an EARLIER failed send can be returned as the answer to a NEW correlation id — the same error text you saw before, arriving as if it were fresh. Both can be true of one host only if one reply is stale. Two tells: it arrives in far LESS than the target's tick interval, or it reports a `command` you did not send. When either appears, re-derive the peer's real state from the queue (or a fresh probe with a longer window) before acting, and never report a peer down on the strength of such a reply.
+
+⚠️ **The 300s wait equals the client handler's 5-minute tick** (`*/5 * * * *`), so a round trip is decided by where the send lands in the tick: a send just after one waits ~300s and loses by seconds. Treat a timeout on this path as TIMING until proven otherwise — confirm the peer another way (bus activity, `peek`) before reporting it down, or raise `--timeout` past the tick interval. (The stale-reply replay above is tracked as governance issue #303.)
+
 **Escape hatch — EXEC also resolves an ABSOLUTE PATH as the command.** When `SCRIPTS_DIR/<command>` does not exist, the handler accepts a full filesystem path, so read-only system probes run without shipping a script: `{"command": "/usr/bin/ls", "params": ["-la", "/usr/local/sbin"]}`, `{"command": "/usr/bin/find", "params": ["/home/<user>", "-name", "*.orig"]}`, `{"command": "/usr/bin/printenv", "params": ["HOME"]}`. Bare names (`ls`, `find`) still fail — the path must be absolute. This also probes privilege state: `{"command": "/usr/bin/sudo", "params": ["-n", "true"]}` → exit 0 = NOPASSWD works, exit 1 `a password is required` = no silent elevation. Each EXEC round-trip costs one 5-min handler tick on client agents — batch the probes you can (send several EXECs in one pass, read results together), and remember the agent's HOME may not be what the registry suggests: `printenv HOME` first when a path lookup comes back "No such file or directory".
-
-**The `command` field is ONE TOKEN — a shell string is rejected before it leaves the box (2026-11-17).**
-The EXEC schema constrains `command` to `^[a-zA-Z0-9_./-]+$` (`ops/scripts/lib/handoff_schema.py`), so
-`fleet exec <agent> "<anything with a space>"` can never run. Either the quoted compound lands in the
-args slot and the command arrives EMPTY (`$.command: length 0 < minimum 1`; the target answers
-`No command specified`), or it is read as the command and fails the pattern outright
-(`$.command: does not match pattern '^[a-zA-Z0-9_./-]+$'`). Args are free-form; the command is not.
-`fleet exec joseph -- df -h /` works because `df` is the command and `-h`, `/` are its args —
-`--` separates the command from args that start with a dash, it does NOT introduce a raw shell.
-Anything genuinely compound belongs in a deployed script (escape hatch above).
-
-⚠️ **An `EXEC_RESULT` is not proof it answered YOUR send — match the `corr=`, and distrust a
-suspiciously FAST reply.** The client searches the live queue AND the archives, so an ARCHIVED result
-from an earlier failed call can be returned as the answer to a new correlation id. Observed
-2026-11-17: a valid send (`corr=exec-d739c64e41a2`) returned the byte-identical error of an unrelated
-earlier attempt after ~60s, while the NEXT exec — a single-token command — timed out with "Checked
-live queue AND archives for 300s and found no result". Both cannot be true of one host, so the fast
-reply was the stale archive. A result that arrives in far less than the target's tick interval, or
-that reports a `command` you did not send, is stale. (Tracked as governance issue #303.)
-
-⚠️ **The 300s wait equals the client handler's 5-minute tick** (`*/5 * * * *`), so a round trip is
-decided by where the send lands in the tick: a send just after one waits ~300s and loses by seconds.
-Treat a timeout on this path as TIMING until proven otherwise — confirm the peer another way (bus
-activity, `peek`) before reporting it down, or raise `--timeout` past the tick interval.
 
 It generates a `correlation_id`, sends the EXEC, then polls `inbox_moses` every 15s for up to 5min waiting for `EXEC_RESULT`.
 
