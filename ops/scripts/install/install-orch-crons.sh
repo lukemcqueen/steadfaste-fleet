@@ -480,7 +480,7 @@ STEP 1 — governed apply (open begin_change first):
    new head. Verify each surface actually resolved to the new model.
 3. Rebuild the live router: python3 ops/scripts/manage/router-pools.py --write. Validate the
    list: python3 ops/scripts/manage/router-pools.py --selftest (must PASS).
-4. Run the doctor (0 fail) and the router/scanner tests (tests/test_jev_router_pools.py,
+4. Run the doctor (0 fail) and the router/scanner tests (tests/test_router_pools.py,
    tests/test_model_market_scan.py) — all green.
 5. Commit, deploy (fleet-update.sh), push. Confirm HEAD == origin/main.
 

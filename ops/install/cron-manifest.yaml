@@ -1119,7 +1119,7 @@ crons:
     1. Copy the refreshed prices + reordered tiers from ~/.steadfaste-fleet/state/model-market.json into config/jev-router-models.json (the scan's output is the source of truth).
     2. If the cheapest-vetted model for the SESSION DEFAULT or the REVIEWER changed, re-point config.yaml model.default (hermes config set) and .env ADVERSARIAL_REVIEWER_MODEL to the new head. STRIP THE ROUTING LABEL FIRST — every head in the Jev list is written `<label>:<provider>/<model>` (e.g. `openrouter:qwen/qwen3-coder-30b-a3b-instruct`) and config.yaml must hold the BARE id: a label set verbatim is answered `is not a valid model ID` (HTTP 400, not retryable) and the host then silently runs a fallback_providers model on every new session. Set `qwen/...`, never `openrouter:qwen/...` — the provider belongs in model.provider (the doctor's `Model default` check FAILs on a label). Verify each surface actually resolved to the new model.
     3. Rebuild the live router: python3 ops/scripts/manage/router-pools.py --write. Validate the list: python3 ops/scripts/manage/router-pools.py --selftest (must PASS).
-    4. Run the doctor (0 fail) and the router/scanner tests (tests/test_jev_router_pools.py, tests/test_model_market_scan.py) — all green.
+    4. Run the doctor (0 fail) and the router/scanner tests (tests/test_router_pools.py, tests/test_model_market_scan.py) — all green.
     5. Commit, deploy (fleet-update.sh), push. Confirm HEAD == origin/main.
 
     Report: the per-model price delta (old -> new $/M), which pool heads re-ordered, doctor verdict, and the unvetted-candidate list (if any). Never introduce a model not already in the vetted candidate set — quality is preserved by only re-ordering approved models.

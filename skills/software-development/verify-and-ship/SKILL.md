@@ -89,9 +89,27 @@ the DB is the only place to settle it:
   that empty reply, which is not a review. The signature is in `review_calls` (reasoning tokens at
   or near the cap). Re-run the same invocation with the reasoning effort turned down for that call
   (`REVIEWER_PLAN_REASONING_EFFORT=none`); the same material then completes in a few hundred
-  tokens. Material SIZE is not the lever — a 6 KB prompt burns the cap exactly like a 60 KB one —
-  so do not shrink the material to work around it. Disclose the override in the material AND in the
-  close note: it is still an independent read, and the operator needs to know which knob was turned.
+  tokens. Material SIZE is not the lever for THIS shape — a 6 KB prompt burns the cap exactly like
+  a 60 KB one — so do not shrink the material to work around it. Disclose the override in the
+  material AND in the close note: it is still an independent read, and the operator needs to know
+  which knob was turned.
+- **A DIFFERENT shape records NO ROW AT ALL: the runner CRASHES on the empty reply** —
+  `AttributeError: 'NoneType' object has no attribute 'find'` out of the review-JSON extractor,
+  non-zero exit, and the cycle carries no verdict. The store query is what tells the two apart: one
+  has a row, this one has none, and stdout looks like a review in neither case. Do not loop the
+  invocation — **SPLIT the material**: run the recorded gate on the NOTE-ONLY material (change
+  summary, constraints, rejected options, verification) and hand the DIFF-carrying material to a
+  delegated fresh-session reviewer. The recorded row then exists AND the substance gets an
+  independent read from the party that can see the diff. Say in the close note which half each
+  reviewer saw, so nobody reads a note-only verdict as a review of the code.
+- **Brief the delegate as NUMBERED FALSIFICATION TARGETS, and expect "could not verify" on live
+  claims.** "Review this" returns praise; name the material file by PATH (never a paste), attach the
+  range's diff, then list what to attack — "1. construct a case where this reports clean while the
+  defect is live; 2. read every branch and say whether any degrades to a silent pass; 3. are these
+  tests discriminating, or would any pass against a broken implementation; 4. does any claim exceed
+  what its cited command shows" — and ask it to name any test that CANNOT fail. A subagent holds no
+  governance lock, so it cannot execute anything: every live-execution claim you want judged must
+  carry the command that re-produces it, or you will collect `info: could not verify` for each one.
 - **`--re-review` SUPERSEDES the current verdict**, so a diagnostic re-run replaces a good review
   with whatever the new reply contained. Do not experiment on a cycle holding a real verdict; and
   when you do re-review, the material must be a full rewrite of the FINAL state (see the folding
@@ -261,6 +279,13 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   from `__file__` depth that resolves differently. A fail-closed check announces
   this instead of passing, which is the only reason the defect is findable; the
   fix belongs in the check, never in the message.
+- **A status-reporting check must keep "nothing there" apart from "something there that cannot
+  be judged."** `SKIP` ("no process to compare") and `COULD NOT VERIFY` ("a process IS running,
+  but its start time cannot be read") are different facts: collapsing both into one SKIP makes the
+  check MORE permissive than the deploy it mirrors, and prints a reason that is false. Give the
+  present-but-unmeasurable case its own WARN naming the pid, never report the host clean while
+  anything went unjudged, and test both branches separately — an independent reviewer files the
+  collapsed version as a real gap, and it is right.
 
 **Phase 1.5 — adversarial verification (mandatory, no bypass):**
 - Static gate per changed script: `adversarial-verify.py --file <f> --level
