@@ -307,11 +307,9 @@ of input tokens per run.
 | `agent-fixer-*` | `auto-remediation` | `terminal, file, web` |
 | `orch-skill-lifecycle` | `orch-skill-lifecycle` | `terminal, file, web` |
 | `orch-skill-evaluate` | `skill-vetting` | `terminal, file` |
-| `local-weekly-loop-eval` | `loop-governance` | `terminal, file` |
-| `local-daily-soul-refinement` | `soul-refinement` | `terminal, file` |
+| any `local-*` cron (per-host) | the skill that owns that job (e.g. `loop-governance`, `soul-refinement`; `content-production` + `content-humanizer` for briefings) | `terminal, file` (+ `web` for briefings) |
 | `agent-md-prune-apply` | `documentation-scope` | `terminal, file` |
 | `agent-memory-pruning` | (self-contained prompt) | `terminal, file` |
-| `local-daily-sustainability-briefing` | `content-production`, `content-humanizer` | `web, terminal, file` |
 | `agent-daily-bible-reading` | `agent-daily-bible-reading` | (none) |
 | All `no_agent=True` | (no_agent) | (no_agent) |
 
@@ -446,9 +444,10 @@ that `(provider, model)` pair resolves today. Prefer a cheap-but-resolvable pair
 over a free one, and make the fallback chain a different model FAMILY from the
 primary so a single upstream outage cannot take out consecutive slots.
 
-Existing free pins (`local-daily-soul-refinement`, `local-weekly-loop-eval`,
-`local-job-opportunity-scanner`, `local-agent-daily-ai-brief`, …) must be
+Existing free pins — this host's `local-*` crons among them — must be
 UNPINNED so they follow the main model, not re-pinned to a different free tier.
+Enumerate them from the host's LIVE `jobs.json`, not from any list in this repo:
+per-host crons are intentionally not registered here.
 Full procedure: `docs/runbooks/cron-model-chain-repoint.md`.
 
 ### Creating a new cron — do NOT pin by default

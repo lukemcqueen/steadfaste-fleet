@@ -130,18 +130,16 @@ These run on every agent in the fleet. Created by `install-crons.sh`.
 > assertion. A cron whose takeover latency cannot be measured is not yet
 > accountable.
 
-### Local-only crons (`local-*`) — 5 crons
+### Local-only crons (`local-*`)
 
-These run only on this machine. NOT in repo installers.
-
-| Name | Schedule | Type | Deliver |
-|------|----------|------|---------|
-| `local-agent-daily-news-brief` | `0 7 * * *` | LLM | Telegram |
-| `local-agent-daily-ai-brief` | `0 5 * * *` | LLM | origin | *(AI, music copyright, Korean AI, tech, conferences; faith+tech orgs incl. CHAI & Christians in Web3 — updated 2026-09-23 per Luke; created on Esther, job 1f31ee6587e3)* |
-| `local-agent-daily-system-brief` | `0 9 * * *` | LLM | Telegram |
-| `local-agent-daily-finance-brief` | `0 18 * * 1-5` | LLM | Telegram |
-| `local-agent-agents-doc-audit` | `0 7 * * 1` | LLM | origin |
-| `local-ai-hot-topics-news` | `0 7 * * 1,3,5` | LLM | origin |
+**Per-host, intentionally NOT registered in the repo.** A `local-*` cron is that
+host's own business. This reference records **no** name, schedule, or deliver
+target for one, and absence here is never drift. Kept empty of names **by design
+— do not add them.** Same reason they are absent from `cron-manifest.yaml`: every
+declared entry there is `scope: universal`, so declaring a host-local brief would
+install it on every host. Per-host cron state lives in that host's live
+`jobs.json`. (This table previously enumerated this host's `local-*` set; it had
+already rotted — two of the names it listed no longer existed.)
 
 ### Manually-created LLM crons — 4 crons
 
@@ -152,7 +150,6 @@ These run on this machine but use `agent-*` naming. Not in repo installers (inte
 | `fleet-bus-workday` | `21 8,20 * * *` | LLM | local |
 | ~~`fleet-bus-evening`~~ | ~~`0 20,22 * * 1-5`~~ | ~~LLM~~ | ~~origin~~ | ⚠️ **REMOVED 2026-11-07** — consolidated into `fleet-bus-workday` (2×/day) |
 | ~~`fleet-bus-overnight`~~ | ~~`0 23 * * 1-5`~~ | ~~LLM~~ | ~~origin~~ | ⚠️ **REMOVED 2026-11-07** — consolidated into `fleet-bus-workday` |
-| `local-job-opportunity-scanner` | `0 7 * * *` | LLM | origin + Telegram |
 
 ### Other crons — 8 crons
 
@@ -188,7 +185,6 @@ These run on this machine but use `agent-*` naming. Not in repo installers (inte
 | `stale-ref-watchdog` | `0 5 * * *` | no_agent | `manage/agent-stale-ref-watchdog.sh` | origin |
 | `agent-swap-refresh` | `0 5 * * *` | no_agent | `agent-swap-refresh.py` | origin |
 | `orch-clean-health-queue` | `*/10 * * * *` | no_agent | `orch-clean-health-queue.py` | origin |
-| `local-fleet-dispatch-collector` | `every 15m` | no_agent | `local-fleet-dispatch-collector.sh` | origin |
 
 ---
 

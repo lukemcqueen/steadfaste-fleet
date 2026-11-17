@@ -35,7 +35,7 @@
 |--------|-------------|---------|
 | `orch-*` | **orchestrator hosts only** (moses/esther — host-derived, never self-claimed) | fleet-wide: bus audit/recover, fleet watchdog, regression gate, cost report, skill lifecycle/evaluate, bus worker, task passes |
 | `agent-*` | **every agent** (universal set) | per-agent local ops: fixer, fleet-bus inbox, watchdogs, dreams, memory/brain sync, prune |
-| `local-*` | **this machine** (per-host deliverables) | user-facing briefs (ai / sustainability / finance / news), soul refinement, weekly loop eval, job scanner |
+| `local-*` | **this machine** (per-host deliverables) | user-facing per-host briefs and host-only maintenance — registered per host, never enumerated in the repo |
 | `no_agent` | any (script-only, $0) | cheap watchdogs/relays; silent when clean |
 
 A normal agent NEVER runs an `orch-*` cron (orchestrator-only; a non-orchestrator
@@ -191,8 +191,8 @@ should be one consolidated pass — merge before you add a third slot.
 | ~~`fleet-bus-evening`~~ | ~~`0 20,22 * * 1-5`~~ | ~~LLM~~ | ~~(prompt)~~ | ~~telegram~~ | ⚠️ **REMOVED 2026-11-07** — consolidated into `fleet-bus-workday` (2×/day) |
 | ~~`fleet-bus-overnight`~~ | ~~`0 23 * * 1-5`~~ | ~~LLM~~ | ~~(prompt)~~ | ~~telegram~~ | ⚠️ **REMOVED 2026-11-07** — consolidated into `fleet-bus-workday` |
 | `agent-daily-bible-reading` | `0 1 * * *` | LLM | agent-daily-bible-reading skill | origin |
-| `agent-daily-soul-refinement` | ~~`0 23 * * *`~~ | ~~LLM~~ | ~~soul-refinement skill~~ | ~~origin~~ | ⚠️ **ABSORBED 2026-08-02** — fleet-level daily soul refinement merged into `orch-skill-lifecycle`. Per-host variant is `local-daily-soul-refinement`. |
-| `agent-weekly-loop-eval` | ~~`0 9 * * 1`~~ | ~~LLM~~ | ~~loop-governance skill~~ | ~~origin~~ | ⚠️ **ABSORBED 2026-08-02** — fleet-level weekly loop eval merged into `orch-skill-lifecycle`. Per-host variant is `local-weekly-loop-eval`. |
+| `agent-daily-soul-refinement` | ~~`0 23 * * *`~~ | ~~LLM~~ | ~~soul-refinement skill~~ | ~~origin~~ | ⚠️ **ABSORBED 2026-08-02** — fleet-level daily soul refinement merged into `orch-skill-lifecycle`. Per-host variant is a `local-*` job. |
+| `agent-weekly-loop-eval` | ~~`0 9 * * 1`~~ | ~~LLM~~ | ~~loop-governance skill~~ | ~~origin~~ | ⚠️ **ABSORBED 2026-08-02** — fleet-level weekly loop eval merged into `orch-skill-lifecycle`. Per-host variant is a `local-*` job. |
 | `agent-no-verify-audit` | `every 60m` | no_agent | `manage/agent-no-verify-audit.py` | origin |
 | `agent-inbox-workday` | ~~`0 9-17 * * 1-5`~~ | ~~LLM~~ | ~~session-active-guard.py~~ | ~~origin~~ | ⚠️ **STALE/REMOVED 2026-08-10 on most hosts** — duplicate of `fleet-bus-workday` (post-rename leftover). **Still active on `gisu` as of 2026-08-25** (communications role; `9 9-17 * * 1-5`, verified enabled+ok via agent-cron-status EXEC). Verify per-host before assuming removal. |
 | `agent-inbox-evening` | ~~`0 18,20,22 * * 1-5`~~ | ~~LLM~~ | ~~(prompt)~~ | ~~origin~~ | ⚠️ **STALE/REMOVED 2026-08-10** — duplicate of `fleet-bus-evening` (post-rename leftover) |
@@ -204,30 +204,17 @@ should be one consolidated pass — merge before you add a third slot.
 
 ## Local-only (`local-*` prefix)
 
-> **Per-host jobs.** Each agent records ITS OWN `local-*` crons here so they
-> survive a rebuild — and the group prefix IS the scope, so these are
-> deliberately absent from `cron-manifest.yaml`: every declared entry there is
-> `scope: universal`, so declaring a host-local brief would install it on every
-> host, where a personal brief (or a host-only dependency) is simply wrong. A
-> name below that is absent from a given host is that host's per-host set,
-> **not** drift.
->
-> Rows reconciled against the LIVE `jobs.json` on esther (2026-11-17): the
-> sustainability briefing was missing entirely, `job-opportunity-scanner` was
-> recorded as a BARE name (forbidden by the naming convention), and the
-> loop-eval row carried a name and schedule that exist on no host.
+**Per-host jobs — intentionally NOT registered in the repo.** A `local-*` cron is
+that host's own business. This reference records **no** name, schedule, or
+deliver target for one, and absence from this table is never drift. Kept empty
+of names **by design — do not add them**, however tempting a "canonical
+reference is missing a cron" reading is.
 
-| Name | Schedule | Type | Deliver |
-|------|----------|------|---------|
-| `local-agent-daily-news-brief` | `0 7 * * *` | LLM | Telegram |
-| `local-agent-daily-ai-brief` | `0 5 * * *` | LLM | origin | *(AI, music copyright, Korean AI, tech, conferences; faith+tech orgs incl. CHAI & Christians in Web3 — updated 2026-09-23 per Luke; created on Esther, job 1f31ee6587e3)* |
-| `local-agent-daily-finance-brief` | `0 18 * * 1-5` | LLM | Telegram |
-| `local-agent-agents-doc-audit` | `0 7 * * 1` | LLM | origin |
-| `local-daily-sustainability-briefing` | `7 6 * * *` | LLM | origin | *(KAESA/Amy sustainability & materials briefing; `content-production` + `content-humanizer`; gated by `manage/verify_briefing.py` which MUST print ALL PASS before delivery, and ships .md/.docx/.pdf. Live on esther, job 50cdb07eda5c — added 2026-11-17)* |
-| `local-job-opportunity-scanner` | `0 7 * * *` | LLM | origin + Telegram | *(live name carries the required `local-` prefix — this table recorded it as the bare `job-opportunity-scanner` until 2026-11-17)* |
-| `local-daily-soul-refinement` | `14 23 * * *` | LLM | origin | *(live name — created without `agent-` infix; per-host variant. Schedule corrected 2026-10-18 from `0 23 * * *` to the live value; verify per host.)* |
-| `local-weekly-loop-eval` | `25 9 * * 1` | LLM | Telegram | *(live name — created without `agent-` infix. Live schedule on esther is `25 9 * * 1`, corrected 2026-11-17 from the `0 9 * * 1` recorded against a name that exists on no host; verify per host.)* |
-| `local-orch-fleet-command-verifier` | `every 10m` | no_agent | Telegram |
+Same reason they are absent from `cron-manifest.yaml`: the group prefix IS the
+scope, and every declared entry there is `scope: universal` — so declaring a
+host-local brief would install it on every host, where a personal brief (or a
+host-only dependency) is simply wrong. Per-host cron state lives in that host's
+live `jobs.json`, which is also where to look when rebuilding a host.
 
 ---
 
