@@ -115,35 +115,9 @@ else
   else
     say "  WARN: no \`jev\` command yet; writing the cost-ordered draft directly"
   fi
-  JEV_POOLS="$POOLS" python3 - <<'PY'
-import json, os, pathlib
-
-path = pathlib.Path(os.environ["JEV_POOLS"])
-CHEAP = "openrouter:qwen/qwen3.7-flash"                 # cheapest capable flash we found
-TRUSTED = "openrouter:deepseek/deepseek-v4.1-flash"     # the model the fleet already runs
-try:
-    data = json.loads(path.read_text())
-except (OSError, json.JSONDecodeError):
-    data = {"mode": "redacted-text", "exclude": ["*:free", "cloudflare-ai-gateway:*"], "tiers": {}}
-tiers = data.setdefault("tiers", {})
-
-def front(models, first):
-    out = [first]
-    for model in models or []:
-        if "moonshotai/kimi" in model:   # dearer than what we run: never route there by accident
-            continue
-        if model not in out:
-            out.append(model)
-    return out
-
-for tier, first in (("simple", CHEAP), ("medium", TRUSTED)):
-    for spec, models in (tiers.get(tier) or {}).items():
-        tiers[tier][spec] = front(models, first)
-# `hard` is left alone: escalation there is deliberate spend, not a mistake.
-path.parent.mkdir(parents=True, exist_ok=True)
-path.write_text(json.dumps(data, indent=2) + "\n")
-print(f"  wrote {path} — simple/* leads with {CHEAP}, medium/* with {TRUSTED}, hard/* untouched")
-PY
+  # The fallback is a script, not an inline heredoc, so the rescue path is
+  # testable: tests/test_router_pools_seed.py exercises exactly these inputs.
+  python3 "$(dirname "$0")/router-pools-seed.py" "$POOLS" || die "could not write $POOLS"
 fi
 
 say
