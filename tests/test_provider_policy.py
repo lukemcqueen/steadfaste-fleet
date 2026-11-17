@@ -106,3 +106,59 @@ def test_a_present_harness_with_no_knob_is_a_finding_not_silence(policy, artifac
     gaps = [f for f in findings if f["kind"] == "gap-present"]
     assert gaps, "a present, unwired harness must produce a gap-present finding"
     assert all("NOT" in f["detail"] or "not" in f["detail"] for f in gaps)
+
+
+# --- EXECUTABLE PROOF (ADV-14939-1): the CLI itself, not just its functions --------
+
+def _run_cli(*args):
+    import subprocess
+    return subprocess.run([sys.executable, str(POLICY_PY), *args],
+                          capture_output=True, text=True, timeout=60)
+
+
+def test_cli_selftest_passes_on_the_shipped_artifact():
+    """The shipped artifact must pass the tool's own --selftest (exit 0)."""
+    proc = _run_cli("--selftest")
+    assert proc.returncode == 0, f"--selftest failed on the shipped artifact: {proc.stdout}{proc.stderr}"
+    assert "SELFTEST PASSED" in proc.stdout
+
+
+def test_cli_selftest_can_fail(tmp_path):
+    """A check that cannot fail is worthless: an exclusion with no reason must exit 1."""
+    bad = {"provider_exclusions": {"some-provider": {"scope": "all"}}}
+    bad_path = tmp_path / "router-models.json"
+    bad_path.write_text(json.dumps(bad), encoding="utf-8")
+    proc = _run_cli("--selftest", "--list", str(bad_path))
+    assert proc.returncode == 1, f"--selftest did not reject a reason-less exclusion: {proc.stdout}"
+    assert "SELFTEST FAILED" in proc.stdout
+
+
+def test_cli_exit_code_contract():
+    """0/1/3 as documented: 3 = could not verify (never 'agrees'), 1 = findings."""
+    missing = _run_cli("--check", "--list", "/nonexistent/router-models.json")
+    assert missing.returncode == 3, (
+        f"an unreadable artifact must be COULD NOT VERIFY (3), got {missing.returncode}: {missing.stderr}")
+    real = _run_cli("--check", "--json")
+    findings = json.loads(real.stdout)["findings"]
+    expected = 1 if any(f["kind"] != "gap-absent" for f in findings) else 0
+    assert real.returncode == expected, (
+        f"--check returned {real.returncode}, expected {expected} for its own findings: {findings}")
+
+
+def test_cli_read_half_is_the_harness_own_api(policy):
+    """Record the probe: the read half goes through the harness CLI and yields JSON.
+
+    Tolerates absence (a host without hermes is not a failure) — but when the
+    harness IS present the documented surface must still answer, so a rename in
+    the harness breaks this test instead of silently dead-ending the projection.
+    """
+    import shutil
+    import subprocess
+    if shutil.which("hermes") is None:
+        pytest.skip("hermes is not installed on this host — nothing to probe")
+    spec = policy.HARNESSES["hermes"]
+    proc = subprocess.run(["hermes"] + spec["get"], capture_output=True, text=True, timeout=60)
+    assert proc.returncode == 0, f"the harness's own read API failed: {proc.stderr}"
+    parsed = json.loads(proc.stdout)
+    assert isinstance(parsed, dict) and "ignore" in parsed, (
+        f"the documented surface no longer returns the ignore list: {proc.stdout[:200]}")
