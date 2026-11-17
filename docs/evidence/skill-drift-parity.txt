@@ -2,6 +2,16 @@
 
 Regenerate with: `python3 ops/scripts/manage/check-skill-drift-parity.py`
 
+Run identity: this file is written by that command (the deploy runs it), so
+the commit carrying it IS the run. `git log -1 --format=%h --
+docs/evidence/skill-drift-parity.txt` names it, and `git diff <that>~ --
+docs/evidence/skill-drift-parity.txt` prints the previous counts — which is
+what settles any move between runs: a deploy copies repo content into the
+deployed tree, so files leave `skipped ... repo ahead` and enter
+`in sync`; a skills backport changes them in the repo first, so the repo
+runs ahead until the next deploy. Counts that move without a deploy or a
+repo skills change are the signal to look at.
+
 A deployed skill file whose content appears in neither the repo working
 tree nor any committed revision of that path means a lesson was written on
 this host and never copied back: it is stranded here, and the deploy's
@@ -19,17 +29,16 @@ A file under no repo-owned skill dir is a Hermes default and stays skipped.
 
 | Measure | Value |
 |---|---|
-| Stranded in place (path in repo, content only deployed) | 7 |
+| Stranded in place (path in repo, content only deployed) | 6 |
 | Absent from the repo (deployed under a repo-owned skill) | 0 |
 |   ↳ path dropped from repo history | 0 |
 |   ↳ path never committed | 0 |
-| Files in sync | 1004 |
-| Skipped (Hermes defaults, or repo ahead) | 548 |
+| Files in sync | 1001 |
+| Skipped (Hermes defaults, or repo ahead) | 552 |
 
 **Verdict: FAIL**
 
 Stranded in place:
-- devops/deploy-load-verification/SKILL.md
 - devops/fleet-deployment-sync/SKILL.md
 - devops/governance-lock-lifecycle/SKILL.md
 - devops/rename-sweep/SKILL.md
