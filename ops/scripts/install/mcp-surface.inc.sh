@@ -66,6 +66,26 @@ resolve_cli() {
   return 1
 }
 
+# ── Orchestrator detection ───────────────────────────────────────────────────
+is_orchestrator() {
+  # Check if the host is configured as an orchestrator
+  if [[ -n "${IS_ORCHESTRATOR:-}" ]]; then
+    # Explicit orchestrator flag
+    [[ "${IS_ORCHESTRATOR}" == "true" || "${IS_ORCHESTRATOR}" == "1" ]]
+    return $?
+  elif [[ -f "/etc/standalone-mode" ]]; then
+    # Standalone mode flag
+    return 1
+  elif [[ -f "/etc/moses-host" ]]; then
+    # Moses/Esther special case
+    return 0
+  else
+    # For other hosts, assume regular server (non-orchestrator);
+    # This allows easier detection on hosts without special markers
+    return 1
+  fi
+}
+
 # ── The surface ──────────────────────────────────────────────────────────────
 # TAB-separated: name <TAB> deployed script <TAB> repo-relative source.
 # The deployed path is what the harness must execute; the repo source is the
@@ -75,12 +95,20 @@ resolve_cli() {
 # ops/install/harnesses/registry.yaml (`defaults.mcp_server`). A test pins the
 # two together so neither can drift alone.
 mcp_surface_lines() {
-  cat <<'SURFACE'
+  # Include orchestrator-specific services only on orchestrator hosts
+  if is_orchestrator; then
+    cat <<'SURFACE'
 fleet-context	${HOME}/.steadfaste-fleet/scripts/fleet-context-mcp.py	mcp-servers/fleet-context-mcp.py
 agent-bus	${HOME}/.steadfaste-fleet/scripts/fleet-bus-mcp.py	mcp-servers/fleet-bus-mcp.py
 tasks	${HOME}/.steadfaste-fleet/scripts/task-mcp.py	mcp-servers/task-mcp.py
 executor	${HOME}/.steadfaste-fleet/scripts/executor-mcp.py	mcp-servers/executor-mcp.py
 SURFACE
+  else
+    # Regular servers get only non-orchestrator services
+    cat <<'SURFACE'
+fleet-context	${HOME}/.steadfaste-fleet/scripts/fleet-context-mcp.py	mcp-servers/fleet-context-mcp.py
+SURFACE
+  fi
 }
 
 # Resolve a surface row to a real file path (deployed first, then repo source).

@@ -59,8 +59,27 @@ fi
 
 REPO_ROOT="$(mcp_surface_repo_root)"
 
+# ── Cleanup orchestrator-only services on non-orchestrator hosts ──────────────
+# Remove any dangling orchestrator-only MCP servers (agent-bus, executor) that are
+# registered from previous deployments but no longer intended for this host
+cleanup_stale_orchestrator_entries() {
+  if ! is_orchestrator; then
+    # Non-orchestrator hosts should not have these services registered
+    local stale_services=("agent-bus" "executor")
+    for service in "${stale_services[@]}"; do
+      if "${HERMES_BIN}" mcp list | grep -q "^${service} "; then
+        echo "  ~ ${service}: removing stale orchestrator-only service from non-orchestrator"
+        "${HERMES_BIN}" mcp delete "${service}" >/dev/null 2>&1 || true
+      fi
+    done
+  fi
+}
+
+# Run the cleanup on non-orchestrator hosts
+cleanup_stale_orchestrator_entries
+
 # ── What is already registered? (one parse, reused per row) ──────────────────
-registered_names="$("${PY}" - "${HERMES_BIN}" <<'PY'
+registered_names="$(\"${PY}\" - \"${HERMES_BIN}\" <<'PY'
 import re, subprocess, sys
 cli = sys.argv[1]
 try:
@@ -85,7 +104,7 @@ while IFS=$'\t' read -r name deployed src; do
   script="$(mcp_surface_resolve "${deployed}" "${src}" "${REPO_ROOT}")"
 
   if [[ -z "${script}" ]]; then
-    echo "  ✗ ${name}: no script at ${deployed//\$\{HOME\}/${HOME}} and no repo source ${src}"
+    echo "  ✗ ${name}: no script at ${deployed//\\$\\{HOME\\}/${HOME}} and no repo source ${src}"
     missing=$((missing + 1))
     continue
   fi
