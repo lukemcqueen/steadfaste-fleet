@@ -37,7 +37,7 @@ REPO = Path(__file__).resolve().parents[1]
 # Overridable so the SAME battery can be driven at the pre-fix revision
 # (`git show <base>:poll-bus-inbox_titus.sh > /tmp/<same-name>`), which is what
 # makes the RED run replayable instead of merely described.
-SCRIPT = Path(os.environ.get("POLL_BUS_SCRIPT", REPO / "poll-bus-inbox_titus.sh"))
+SCRIPT = Path(os.environ.get("POLL_BUS_SCRIPT", REPO / "ops/scripts/fleet/poll-bus-inbox_titus.sh"))
 PEEK_PATH = "/api/pgmq/peek/inbox_titus"
 PAYLOAD = '{"count": 0, "messages": []}'
 
