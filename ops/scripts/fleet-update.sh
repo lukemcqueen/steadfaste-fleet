@@ -4094,12 +4094,16 @@ print("in-sync" if (d.get("drifted") == [] and d.get("missing") == []
                             install-claude-mcp.sh install-codex-mcp.sh \
                             install-opencode-mcp.sh install-fleet-mcp.sh; do
     if [[ -f "${FLEET_DEPLOY_HOME}/scripts/${_harness_installer}" ]]; then
-      # The installer's OWN exit code, not the pipeline's: `bash | sed || warn`
-      # attaches `||` to the PIPELINE, so a failing installer is masked by sed's
-      # exit 0 and the failure goes silent. pipefail makes `$?` the pipeline's
-      # first failure, which is the installer when sed succeeds.
+      # Capture the installer's OWN exit code, then pipe the text. The obvious
+      # `bash installer | sed ... || warn` attaches `||` to the PIPELINE, so sed's
+      # exit 0 masks a failing installer and the failure goes silent. Nor may the
+      # rc be read from PIPESTATUS after `|| true` (that runs `true`, resetting
+      # PIPESTATUS to 0) or from a plain pipeline under `set -e` (it aborts).
+      # Measured under `set -euo pipefail`, this form is the one that reports
+      # 7 / 0 / 127 correctly for failing / succeeding / missing installers.
       _installer_rc=0
-      bash "${FLEET_DEPLOY_HOME}/scripts/${_harness_installer}" 2>&1 | sed 's/^/    /' || _installer_rc=$?
+      _installer_out=$(bash "${FLEET_DEPLOY_HOME}/scripts/${_harness_installer}" 2>&1) || _installer_rc=$?
+      printf '%s\n' "${_installer_out}" | sed 's/^/    /'
       if (( _installer_rc != 0 )); then
         warn "  ${_harness_installer} FAILED rc=${_installer_rc} (non-fatal) — the harness is NOT wired, see the lines above"
       fi
