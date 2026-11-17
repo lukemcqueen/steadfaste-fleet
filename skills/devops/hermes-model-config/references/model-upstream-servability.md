@@ -74,8 +74,17 @@ Check these before promising a config-only fix:
 - `reasoning_echo` is per-entry opt-IN (adds the must-echo pad); there is no
   mirror-image flag that declares a route strict.
 
-So the fix is a decision about the MODEL, not a config flag — which makes it a
-fleet-policy change, not a local edit (see the re-anchor cascade in SKILL.md).
+So this is fleet policy, not a local edit. It now lives as DATA — one entry per
+EXCLUDED upstream — in `config/router-models.json -> provider_exclusions`
+(reason + evidence + scope, the same rule `effort.excluded` already carries), and
+is projected into each coding agent through that harness's OWN api by
+`ops/scripts/manage/provider-policy.py`. A harness with no verified knob is
+DECLARED there as a gap rather than guessed at: Hermes is one adapter, not the
+policy (docs/design/agent-interop.md). For a MULTI-upstream model, excluding a
+reasoning-hostile upstream simply sends the request to a usable one — the
+single-upstream case above is the one where an excluded provider leaves nowhere
+to go, which is why the entry states its scope. (See the re-anchor cascade in
+SKILL.md for the model-level consequences.)
 
 ## Picking a replacement
 

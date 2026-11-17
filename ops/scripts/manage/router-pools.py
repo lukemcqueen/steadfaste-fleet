@@ -314,6 +314,16 @@ def _selftest(doc: dict) -> int:
         for model, entry in (effort.get("excluded") or {}).items():
             if not isinstance(entry, Mapping) or not entry.get("reason") or not entry.get("evidence"):
                 failures.append(f"effort.excluded[{model}] must carry reason and evidence: {entry!r}")
+    # Provider/upstream exclusions are policy too, and the SAME rule applies: an
+    # exclusion with no reason and no evidence is an unexplained preference. The
+    # live projection is each harness's own business (adapters live in
+    # ops/scripts/manage/provider-policy.py) - this artifact owns the fact, not the
+    # file format of whichever agent reads it.
+    for provider, entry in (doc.get("provider_exclusions") or {}).items():
+        if not isinstance(entry, Mapping) or not entry.get("reason") or not entry.get("evidence"):
+            failures.append(f"provider_exclusions[{provider}] must carry reason and evidence: {entry!r}")
+        elif not entry.get("scope"):
+            failures.append(f"provider_exclusions[{provider}] must state its scope: {entry!r}")
 
     if failures:
         print(f"SELFTEST FAILED ({len(failures)}):")

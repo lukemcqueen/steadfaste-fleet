@@ -22,6 +22,14 @@
     "rejected_reason": "5.47x the baseline ($4.100/M vs the list's own $0.750/M baseline at baseline_price_usd_per_m) for a medium coding turn; the suggested pool order put it first. The ratio is checkable inside THIS FILE: this file's own rejected entry for kimi-k2.7-code records in_usd_per_m 0.60 and out_usd_per_m 3.50, so the blended $4.100/M is that entry's own 0.60 + 3.50, and 4.1 / baseline_price_usd_per_m 0.750 = 5.47, which equals the ratio_of_baseline 5.47 stored in the same entry. The component values were taken from the live catalog scan this cycle applied; kimi is deliberately absent from this file's prices block because it is rejected by policy, not routed.",
     "rule": "Every pool must LEAD with a model cheaper than the baseline. Every model in a SIMPLE pool is cheaper than the baseline. A medium pool may carry the baseline as the in-pool fallback. `hard` may lead dearer - that is the exception for very complex work - but only from the hard whitelist and never above $3.00/M."
   },
+  "provider_exclusions": {
+    "amazon-bedrock": {
+      "reason": "Rejects replayed reasoning content: HTTP 400 'Provider returned error' with raw 'User messages cannot contain reasoning content. Please remove the reasoning content and try again.' The client's sanitizer returns early for non-assistant roles and its self-heal only matches UNKNOWN-FIELD phrasings, so the rejection is never recorded, the route is never narrowed, and every reasoning-bearing turn pays one wasted NON-retryable round-trip plus a user-visible fallback. Excluding the upstream is correct even though a single-upstream model would then have zero providers: with several upstreams the request simply lands on a usable one.",
+      "evidence": "docs/evidence/ + skills/devops/hermes-model-config/references/model-upstream-servability.md (probe: curl -s https://openrouter.ai/api/v1/models/<m>/endpoints); operator directive 2026-11-17 'You can ignore all Amazon bedrock'",
+      "scope": "all models - the incompatibility is a property of the upstream's request validation, not of one model",
+      "recorded": "2026-11-17"
+    }
+  },
   "effort": {
     "enabled": true,
     "levels": [
