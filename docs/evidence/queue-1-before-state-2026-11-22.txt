@@ -1,0 +1,247 @@
+queue-1-before-state-2026-11-22.txt
+======================================
+Slice: 6b42d612-4621-4174-a334-0e16e52388aa ([queue/1])
+Story: c579ef95-39a8-46ad-908d-d799b579e6ae (Fleet cost under $10/day avg + halve review queue)
+Parent slice: review-queue-remedy-3-stage-1
+Captured: 2026-11-22 18:58 KST by orch-bus-worker cron (esther, orchestrator)
+Window: 2026-08-18 → 2026-11-22 (loop-governance DB, esther host)
+
+────────────────────────────────────────────────────────────────────────
+1. Volume on esther — review-volume-metrics --json-summary
+────────────────────────────────────────────────────────────────────────
+(21-day window per the script's default.)
+
+blob_reviews (close-gate review rows, all models):
+  total:    4005
+  by_model:
+    deepseek/deepseek-v4-pro-0813   n=2408   first=2026-11-04  last=2026-11-16
+    deepseek/deepseek-v4-pro        n=1281   first=2026-10-18  last=2026-11-04
+    xiaomi/mimo-v2.6-pro            n= 172   first=2026-11-16  last=2026-11-17
+    (empty)                         n= 144   first=2026-10-16  last=2026-10-18
+  per-day (newest first, 2026-11-17): 131 / 11-16: 43 / 11-15: 44 / 11-13: 649
+
+adversarial_reviews (plan-review rows, all models):
+  total:    499
+  by_model:
+    deepseek/deepseek-v4-pro        n=379   first=2026-09-24  last=2026-11-04
+    deepseek/deepseek-v4-pro-0813   n= 69   first=2026-11-04  last=2026-11-15
+    deepseek/deepseek-v4-flash      n= 28   first=2026-10-13  last=2026-10-17
+    xiaomi/mimo-v2.6-pro            n= 23   first=2026-11-16  last=2026-11-17
+  per-day (newest first, 2026-11-17): 8 / 11-16: 15 / 11-15: 7 / 11-13: 14
+
+review_calls (MEASURED-token ledger, 2026-11-10 onward):
+  total: 1694
+  by_source:
+    close:  n=1579  prompt=9,457,814  completion=586,172  reasoning=2,485,884
+    plan:   n= 115  prompt=  770,078  completion=1,250,814 reasoning=1,175,437
+  per-day (newest first, 2026-11-17): 193 / 11-16: 74 / 11-15: 64
+
+The 21-day daily counts for blob_reviews spike sharply on 2026-11-13 (649)
+and 2026-11-06 (954); both are known close-burst days tied to
+fleet-update.sh + mass skill backports.
+
+────────────────────────────────────────────────────────────────────────
+2. Cycle pipeline — loop_cycles table (esther)
+────────────────────────────────────────────────────────────────────────
+Total loop_cycles:                9646
+Adversarial_reviews rows:          499
+Adversarial_reviews_history rows:  108
+Cycles without adversarial review: 9147 (95% — but only 6705 of those are
+  decision != MOVE_ON; MOVE_ON cycles legitimately don't require a review.)
+
+Decision distribution (loop_cycles):
+  STOP ✓                              3655
+  MOVE_ON                             2926   (excluded from review target)
+  LOOP 🔄 — keep iterating            2470
+  STOP ✓ — goal met, quality acceptable 575
+  MOVE ON → — skip or escalate to human 10
+  PENDING                                8
+  LOOP                                    1
+  STOP                                    1
+
+Silent-fail set (no adversarial_reviews row, decision != MOVE_ON):
+  total:                              6705
+  composite >= 7 (high-quality silent): 2763
+  composite < 7 OR NULL:               3942
+
+Silent-fail by decision (only the ones that should have been reviewed):
+  STOP ✓                silent=3655   composite>=7= 148
+  LOOP 🔄                silent=2457   composite>=7=2042
+  STOP ✓ — goal met     silent= 573   composite>=7= 573
+  MOVE ON →             silent=  10   composite>=7=   0
+  PENDING               silent=   8   composite>=7=   0
+
+Daily census (last 7 days, decision != MOVE_ON):
+  date        cycles   silent   silent-hi(comp>=7)
+  2026-11-22     8       8        0    (early-day)
+  2026-11-17    42      42       40
+  2026-11-16    52      52       51
+  2026-11-15    27      27       27
+  2026-11-14     8       8        8
+  2026-11-13    57      57       48
+  2026-11-12    81      81       74
+
+Pattern: in the last 7 days, essentially 100% of closed cycles (decision
+!= MOVE_ON) are silent — no adversarial_reviews row — and most of those
+are high-quality (composite >= 7). The review pipeline (per E1 wiring in
+docs/design/review-risk-routing.md, status PARTIALLY IMPLEMENTED) is
+classifying too few cycles to trigger a review.
+
+────────────────────────────────────────────────────────────────────────
+3. Classification coverage — review_class column
+────────────────────────────────────────────────────────────────────────
+Cycles with review_class IS NOT NULL: 247 / 9646 (2.6%)
+
+Of those 247 classified cycles:
+  A0: 33  (reviewed=3, silent=30, silent-hi=26)
+  B:  18  (reviewed=8, silent=10, silent-hi= 9)
+  C: 196  (reviewed=39, silent=157, silent-hi=143)
+  review_class NULL: 9399  (reviewed=449, silent=8950, silent-hi=3465)
+
+The review_class column was added per E1 (loop-gov-mcp.py l.3690-3693,
+2026-11-10). It records WHICH risk class each cycle's review decision
+used. The fact that 97.4% of cycles have NULL means the classifier
+(_review_class at l.6973, called from _record_review_class at l.7046) is
+not being invoked for the vast majority of cycle close events.
+
+Of cycles WITH a review_class set:
+  C-class hit-rate: 39 / 196 = 20%
+  B-class hit-rate:  8 / 18  = 44%
+  A0-class hit-rate: 3 / 33  =  9%
+
+Even classified cycles are reviewed only 20-44% of the time — the close
+gate's complexity gate (50-line / 3-file threshold per
+COMPLEXITY_LINE_THRESHOLD / COMPLEXITY_FILE_THRESHOLD at l.4456-4457) is
+still the dominant trigger, and review_class is recorded but the review
+itself is still skipped when the diff is small.
+
+────────────────────────────────────────────────────────────────────────
+4. Existing sweep — agent-review-queue-sweep.py --dry-run --days 3
+────────────────────────────────────────────────────────────────────────
+The fleet already ships a sweep routine that handles part of the
+silent-fail set. Dry-run output on esther at measurement time:
+
+  review-queue-sweep DRY-RUN: would close 0 cycles (ids -..-)
+    would clean 0 precommit test-fixture cycles (ids -..-)
+    unreviewed before: 2517
+      stop_ok    0
+      loop       2460
+      move_on    49
+      stop_fail  1
+      pending    7
+
+Interpretation:
+  • stop_ok = 0 → STOP_OK cycles older than 3 days with a clean
+    outcome_note are already being auto-accepted by the daily sweep
+    (this is the routine doing its job; nothing left to close today).
+  • loop = 2460 → the dominant class. The sweep only SURFACES LOOP
+    cycles for human review; it never auto-closes them. So the bulk
+    of the silent-fail set accumulates here.
+  • pending = 7 → PENDING-leak signal; the sweep emits an alert if a
+    PENDING row goes unscored for >24h without an active governance lock.
+  • The precommit-fixture cleanup matched 0 — fixture artifacts are
+    also already auto-overridden.
+
+The existing sweep covers STOP_OK and precommit fixtures. The remaining
+silent-fail backlog is dominated by LOOP cycles, which the sweep
+correctly refuses to auto-close (a LOOP is "keep iterating", not
+"done").
+
+────────────────────────────────────────────────────────────────────────
+5. Root cause hypothesis — pending-review pile-up
+────────────────────────────────────────────────────────────────────────
+The "pending review pile-up" is dominated by cycles that should have
+triggered an adversarial review but didn't. Two compounding causes:
+
+  (a) E1 wiring is PARTIALLY IMPLEMENTED. The review_class column was
+      added (l.3690, 2026-11-10) and the classifier exists
+      (_review_class, l.6973), but the close gate at end_change
+      records review_class for only 2.6% of cycles. The classifier is
+      only invoked from explicit end_change paths that pass
+      has_uncommitted_code / paths context; most cycle close events
+      don't carry that context, so the classifier returns None and
+      the column stays NULL.
+
+  (b) The complexity gate (50-line / 3-file threshold) still decides
+      whether any review runs at all. A 30-line refactor of a security
+      check is below threshold and gets skipped; a 60-line prose doc
+      edit is above threshold and gets reviewed. The review cost lands
+      on every complex-by-size cycle regardless of risk — exactly the
+      failure mode that lever E was designed to fix.
+
+  (c) The existing sweep (agent-review-queue-sweep.py) handles STOP_OK
+      and precommit fixtures but is conservative on LOOP. A LOOP cycle
+      with the same outcome_note across N iterations (a stalled
+      worker) is surfaced for human review rather than auto-accepted,
+      so it accumulates.
+
+────────────────────────────────────────────────────────────────────────
+6. Proposed stage-1 fix (single, smallest measurable)
+────────────────────────────────────────────────────────────────────────
+From the documented remedy list (docs/older/review-queue-diagnosis-2026-10.md
+§"Cheapest remedy"), the cheapest measurable fix that targets the actual
+silent-fail set (LOOP-dominated, not the parked class) is:
+
+  STAGE-1 FIX: add a "stalled LOOP" detection to the existing sweep —
+  when a LOOP cycle has the SAME outcome_note across N>=3 iterations
+  (or its loop_count >= 3 with composite unchanged), the sweep emits a
+  HIGH-severity alert and proposes auto-acceptance via the existing
+  user_overrode=0 mechanism with a marker note ("auto-swept by
+  review-queue-sweep: LOOP stalled N iterations, composite unchanged;
+  reviewer attention recommended before any push from this cycle's
+  session_id"). Never auto-accepts — only surfaces with severity.
+
+This:
+  • does NOT change the reviewer timeout (operator-excluded decision)
+  • does NOT touch the parked class (separate issue, [queue/2]'s scope)
+  • uses the existing sweep infrastructure (extends, not replaces)
+  • has a measurable delta: count of surfaced "stalled LOOP" alerts
+    per day vs the LOOP silent-fail backlog size
+  • is the cheapest stage that produces a real number for the
+    24h-after comparison.
+
+NOT in this stage-1 fix (deferred to [queue/2] or later stages):
+  • Ship E1 wiring (close-gate review trigger)
+  • Address the parked class (remedy 2/3 in the October list)
+  • Correct mis-projected slices (remedy 5)
+  • Cancel leaked doctor-probe rows + honest probe (remedy 4)
+
+────────────────────────────────────────────────────────────────────────
+7. Fleet-wide coverage (slice's plan item 1)
+────────────────────────────────────────────────────────────────────────
+The slice requires the same measurement on each applicable orchestrator
+(moses, esther, joseph, kustos, gisu, titus; excluding macOS dev agent
+unless it carries loop governance). This run captures esther (this
+host); the AFTER-state measurement at 24h+ will dispatch via fleet
+exec to capture the same numbers on the other 5 orchestrators.
+
+────────────────────────────────────────────────────────────────────────
+8. Re-measurement protocol
+────────────────────────────────────────────────────────────────────────
+At 24h+ after the fix lands, re-run:
+  • python3 ops/scripts/manage/review-volume-metrics.py --json-summary
+  • The SQL block from §2 above (silent-fail census)
+  • python3 ops/scripts/manage/agent-review-queue-sweep.py --dry-run --days 3
+Diff against this file's §2 and §4 numbers. Expected delta:
+  • §2 silent-fail hi-q count drops by the number of newly-surfaced
+    stalled-LOOP alerts (counted by severity, not by close).
+  • §4 unreviewed-before number stays roughly the same (the fix
+    surfaces LOOPs, doesn't close them) — but pending/stop_fail/loop
+    bucket distribution shifts toward more loop surfaced.
+
+────────────────────────────────────────────────────────────────────────
+Provenance
+────────────────────────────────────────────────────────────────────────
+Every number in §§1-4 comes from a live read against
+~/.steadfaste-fleet/data/loop-governance.db on esther, at the timestamp
+above. Queries are reproducible:
+  • review-volume-metrics.py (fleet-update registered)
+  • sqlite3 -header -column on the local DB
+  • task-db.py list --parent c579ef95-…
+The October diagnosis at docs/older/review-queue-diagnosis-2026-10.md
+is the prior diagnosis this stage-1 builds on; its headline ("the
+review queue is idle, not blocked") was true of the TASK-lifecycle
+review column, NOT of loop-governance adversarial_reviews — the
+silent-fail set measured here is loop-governance only, and is the
+subset of the October "review queue" that has accumulated since the
+2026-10-15 review-cost-reduction design.
