@@ -208,7 +208,7 @@ their domain.
 | `fresh-tomato-router` | 1.0.0 | Interact with FreshTomato/DD-WRT routers programmatically via curl — authentication, nvram access, port for... | `skill_view(name='fresh-tomato-router')` |
 | `git-deployment-workflow` | 1.0.0 | Deploy code by pushing to bare remote repositories (Capistrano-style deployment targets). Covers force push... | `skill_view(name='git-deployment-workflow')` |
 | `git-forensics` | 1.0.0 | Use when files vanished or uncommitted deletions appeared. | `skill_view(name='git-forensics')` |
-| `git-push-gate-failures` | 1.0.0 | Use when a push is blocked and the cause is unclear. | `skill_view(name='git-push-gate-failures')` |
+| `git-push-gate-failures` | 1.0.0 | Use when a push blocks, or before pushing a governed range. | `skill_view(name='git-push-gate-failures')` |
 | `golden-parity-harness` | 1.0.0 | Golden known-answer parity testing for system replacement. | `skill_view(name='golden-parity-harness')` |
 | `governance-closeout` | 1.0.0 | Use when a governed change will not close. | `skill_view(name='governance-closeout')` |
 | `governance-compliance-reporting` | 1.0.0 | Review agent commits for enforcement compliance. | `skill_view(name='governance-compliance-reporting')` |
