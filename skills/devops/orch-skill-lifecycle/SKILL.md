@@ -482,6 +482,12 @@ Result: 3 skills updated, 1 upstreamed, 1 SOUL.md entry.
   overridable `SKILLS=`), or the check silently measures a previous day's work. Probed with a stub
   returning `stranded: 6` (must exit non-zero), a crash (rc=3) and malformed output (must both
   read COULD NOT VERIFY): 3 probes, 0 blind spots. Fixed in `6a99be19`.
+- **Open the governance cycle with `workdir=<repo>`, or the close cannot write a receipt (2026-11-23)** →
+  this cron runs in the agent's home dir, not the repo, so a bare `begin_change()` acquires a lock with
+  `repo_path=''` and prints "No repo identity for this lock". The work still closes, but the review
+  receipt is never written and the push gate would refuse an always-review range. Pass
+  `workdir=<repo>` (`~/steadfaste-fleet`) — and you cannot re-open afterwards to fix it: a second
+  `begin_change` is refused while the first cycle is PENDING, so get the workdir right on the FIRST call.
 - **A collector that exits 0 on a failed send is BLIND, and "silent" is not "nothing changed" (2026-11-23)** →
   `agent-learning-collector` picks ONE credential in `_build_auth_headers` (Basic preferred over
   Bearer) and the deployed `.env`'s `FLEET_BASIC_AUTH` is stale for the bare PGMQ API — Basic → 401,
