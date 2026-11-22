@@ -21,9 +21,16 @@ every pool at zero price), so the question was whether they are (a) obtainable,
    injection/reliability probe with a control group
    (`free-model-injection-probe.py`, run on all three models).
 
-Scripts + hashed transcripts + raw JSON are in this directory
-(`reachability.txt`, `vetting.txt`, `injection-probe*.txt`; `make-evidence.sh
---verify <file>` reproduces each sha256).
+Scripts + hashed transcripts + raw JSON are in this directory:
+
+- `reachability.txt` + `reachability.raw.json` — Result 1 (`free-model-probe.py`)
+- `head-to-head.txt` + `head-to-head.raw.json` — first battery (`free-model-ab2.py`)
+- `vetting.txt` + `vetting.raw.json` — Result 2 (`free-model-vet.py`)
+- `injection-probe.txt`, `injection-probe-gpt-oss-20b.txt`,
+  `injection-probe-deepseek.txt` — Result 3 (`free-model-injection-probe.py`)
+
+The repo's existing `ops/scripts/make-evidence.sh --verify <file>` reproduces each
+transcript's sha256.
 
 ## Result 1 — almost nothing free is actually obtainable
 
