@@ -1,0 +1,711 @@
+{
+  "captured": "live daily scan",
+  "catalog_source": "live",
+  "list": "<HOME>/.steadfaste-fleet/config/router-models.json",
+  "prices": {
+    "openrouter:amazon/nova-lite-v1": {
+      "in": 6e-08,
+      "out": 2.4e-07
+    },
+    "openrouter:deepseek/deepseek-v4-flash": {
+      "in": 9e-08,
+      "out": 1.8e-07
+    },
+    "openrouter:deepseek/deepseek-v4-flash-0731": {
+      "in": 4.43e-08,
+      "out": 3e-07
+    },
+    "openrouter:deepseek/deepseek-v4-pro-0813": {
+      "in": 1.32e-06,
+      "out": 3.96e-06
+    },
+    "openrouter:deepseek/deepseek-v4.1-flash": {
+      "in": 4.98e-08,
+      "out": 1.992e-07
+    },
+    "openrouter:minimax/minimax-m3": {
+      "in": 3e-07,
+      "out": 1.2e-06
+    },
+    "openrouter:mistralai/mistral-small-24b-instruct-2501": {
+      "in": 5e-08,
+      "out": 8e-08
+    },
+    "openrouter:moonshotai/kimi-k2.7-code": {
+      "in": 6e-07,
+      "out": 3e-06
+    },
+    "openrouter:openai/gpt-oss-20b": {
+      "in": 3e-08,
+      "out": 1.3e-07
+    },
+    "openrouter:qwen/qwen3-coder-30b-a3b-instruct": {
+      "in": 7e-08,
+      "out": 2.8e-07
+    },
+    "openrouter:qwen/qwen3.5-122b-a10b": {
+      "in": 2.6e-07,
+      "out": 2.08e-06
+    },
+    "openrouter:qwen/qwen3.7-flash": {
+      "in": 3e-08,
+      "out": 1.3e-07
+    },
+    "openrouter:thinkingmachines/inkling-small": {
+      "in": 4.5e-07,
+      "out": 1.2e-06
+    },
+    "openrouter:xiaomi/mimo-v2.6-pro": {
+      "in": 4.35e-07,
+      "out": 8.7e-07
+    },
+    "openrouter:z-ai/glm-4.7": {
+      "in": 6e-07,
+      "out": 2.2e-06
+    },
+    "openrouter:z-ai/glm-5.3": {
+      "in": 6.99e-08,
+      "out": 1.4e-06
+    },
+    "openrouter:z-ai/glm-5.3-flash": {
+      "in": 3.99e-08,
+      "out": 7.84e-08
+    }
+  },
+  "tiers": {
+    "simple": {
+      "general": [
+        "openrouter:openai/gpt-oss-20b"
+      ],
+      "vision": [
+        "openrouter:z-ai/glm-5.3-flash"
+      ],
+      "coding": [
+        "openrouter:openai/gpt-oss-20b"
+      ],
+      "writing": [
+        "openrouter:openai/gpt-oss-20b"
+      ],
+      "research": [
+        "openrouter:openai/gpt-oss-20b"
+      ]
+    },
+    "medium": {
+      "general": [
+        "openrouter:deepseek/deepseek-v4-flash",
+        "openrouter:deepseek/deepseek-v4-flash-0731",
+        "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
+      ],
+      "vision": [
+        "openrouter:z-ai/glm-5.3-flash",
+        "openrouter:deepseek/deepseek-v4-flash-0731",
+        "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
+      ],
+      "coding": [
+        "openrouter:deepseek/deepseek-v4-flash",
+        "openrouter:deepseek/deepseek-v4-flash-0731",
+        "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
+      ],
+      "writing": [
+        "openrouter:mistralai/mistral-small-24b-instruct-2501",
+        "openrouter:deepseek/deepseek-v4-flash-0731",
+        "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
+      ],
+      "research": [
+        "openrouter:amazon/nova-lite-v1",
+        "openrouter:deepseek/deepseek-v4-flash-0731",
+        "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
+      ]
+    },
+    "hard": {
+      "general": [
+        "openrouter:minimax/minimax-m3",
+        "openrouter:thinkingmachines/inkling-small",
+        "openrouter:z-ai/glm-4.7"
+      ],
+      "coding": [
+        "openrouter:xiaomi/mimo-v2.6-pro",
+        "openrouter:minimax/minimax-m3",
+        "openrouter:qwen/qwen3.5-122b-a10b"
+      ],
+      "vision": [
+        "openrouter:xiaomi/mimo-v2.6-pro",
+        "openrouter:minimax/minimax-m3",
+        "openrouter:thinkingmachines/inkling-small"
+      ],
+      "writing": [
+        "openrouter:minimax/minimax-m3",
+        "openrouter:thinkingmachines/inkling-small",
+        "openrouter:z-ai/glm-4.7"
+      ],
+      "research": [
+        "openrouter:minimax/minimax-m3",
+        "openrouter:thinkingmachines/inkling-small",
+        "openrouter:z-ai/glm-4.7"
+      ]
+    }
+  },
+  "order_changed": false,
+  "price_changed": true,
+  "apply_pending": true,
+  "missing_models": [],
+  "violations": [],
+  "unvetted_cheaper_candidates": {
+    "simple/general": [
+      {
+        "model": "google/gemma-4-26b-a4b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/gemma-4-31b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-pro-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-clip-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "inclusionai/ling-3.2-flash:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      }
+    ],
+    "simple/vision": [
+      {
+        "model": "google/gemma-4-26b-a4b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/gemma-4-31b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-pro-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-clip-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "inclusionai/ling-3.2-flash:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      }
+    ],
+    "simple/coding": [
+      {
+        "model": "google/gemma-4-26b-a4b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/gemma-4-31b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-pro-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-clip-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "inclusionai/ling-3.2-flash:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      }
+    ],
+    "simple/writing": [
+      {
+        "model": "google/gemma-4-26b-a4b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/gemma-4-31b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-pro-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-clip-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "inclusionai/ling-3.2-flash:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      }
+    ],
+    "simple/research": [
+      {
+        "model": "google/gemma-4-26b-a4b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/gemma-4-31b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-pro-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-clip-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "inclusionai/ling-3.2-flash:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      }
+    ],
+    "medium/general": [
+      {
+        "model": "google/gemma-4-26b-a4b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/gemma-4-31b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-pro-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-clip-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "inclusionai/ling-3.2-flash:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      }
+    ],
+    "medium/vision": [
+      {
+        "model": "google/gemma-4-26b-a4b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/gemma-4-31b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-pro-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-clip-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "inclusionai/ling-3.2-flash:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      }
+    ],
+    "medium/coding": [
+      {
+        "model": "google/gemma-4-26b-a4b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/gemma-4-31b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-pro-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-clip-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "inclusionai/ling-3.2-flash:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      }
+    ],
+    "medium/writing": [
+      {
+        "model": "google/gemma-4-26b-a4b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/gemma-4-31b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-pro-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-clip-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "inclusionai/ling-3.2-flash:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      }
+    ],
+    "medium/research": [
+      {
+        "model": "google/gemma-4-26b-a4b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/gemma-4-31b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-pro-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-clip-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "inclusionai/ling-3.2-flash:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      }
+    ],
+    "hard/general": [
+      {
+        "model": "google/gemma-4-26b-a4b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/gemma-4-31b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-pro-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-clip-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "inclusionai/ling-3.2-flash:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      }
+    ],
+    "hard/coding": [
+      {
+        "model": "google/gemma-4-26b-a4b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/gemma-4-31b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-pro-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-clip-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "inclusionai/ling-3.2-flash:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      }
+    ],
+    "hard/vision": [
+      {
+        "model": "google/gemma-4-26b-a4b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/gemma-4-31b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-pro-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-clip-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "inclusionai/ling-3.2-flash:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      }
+    ],
+    "hard/writing": [
+      {
+        "model": "google/gemma-4-26b-a4b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/gemma-4-31b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-pro-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-clip-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "inclusionai/ling-3.2-flash:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      }
+    ],
+    "hard/research": [
+      {
+        "model": "google/gemma-4-26b-a4b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/gemma-4-31b-it:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-pro-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "google/lyria-3-clip-preview",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      },
+      {
+        "model": "inclusionai/ling-3.2-flash:free",
+        "blended": 0.0,
+        "in": 0.0,
+        "out": 0.0,
+        "vs_head_usd": 0.0
+      }
+    ]
+  },
+  "signature": "180ce973e3432a61"
+}

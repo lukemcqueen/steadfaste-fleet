@@ -1,6 +1,6 @@
 {
   "source": "models.dev, read through `jev models list` (cache: ~/.cache/jev/models_dev.json)",
-  "captured": "2026-11-21",
+  "captured": "2026-11-23",
   "baseline": "openrouter:qwen/qwen3-coder-30b-a3b-instruct",
   "policy": {
     "simple": {
@@ -220,8 +220,8 @@
       "cache_read": 0.097
     },
     "openrouter:deepseek/deepseek-v4.1-flash": {
-      "in": 0.3,
-      "out": 1.2,
+      "in": 0.0498,
+      "out": 0.1992,
       "cache_read": 0.0042
     },
     "openrouter:minimax/minimax-m3": {
@@ -235,13 +235,13 @@
       "cache_read": 0.0
     },
     "openrouter:openai/gpt-oss-20b": {
-      "in": 0.017,
-      "out": 0.085,
+      "in": 0.03,
+      "out": 0.13,
       "cache_read": 0.0375
     },
     "openrouter:qwen/qwen3-coder-30b-a3b-instruct": {
-      "in": 0.15,
-      "out": 0.6,
+      "in": 0.07,
+      "out": 0.28,
       "cache_read": 0.0
     },
     "openrouter:qwen/qwen3.5-122b-a10b": {
@@ -260,8 +260,8 @@
       "cache_read": 0.0036
     },
     "openrouter:z-ai/glm-4.7": {
-      "in": 0.4,
-      "out": 1.75,
+      "in": 0.6,
+      "out": 2.2,
       "cache_read": 0.08
     },
     "openrouter:z-ai/glm-5.3": {
@@ -275,18 +275,18 @@
       "cache_read": 0.03
     }
   },
-  "baseline_price_usd_per_m": 0.75,
+  "baseline_price_usd_per_m": 0.35,
   "derivation": {
     "basis": "blended $/M = catalog cost.input + cost.output, the SAME basis the doctor's cost guard uses; cache_read is carried but not counted",
-    "baseline": "openrouter:qwen/qwen3-coder-30b-a3b-instruct = 0.150 in + 0.600 out = $0.750/M",
+    "baseline": "openrouter:qwen/qwen3-coder-30b-a3b-instruct = 0.07 in + 0.28 out = $0.350/M",
     "source": "~/.cache/jev/models_dev.json (models.dev); the filtered extract this list was built from is committed at docs/evidence/jev-router-pools-2026-10-28/catalog-prices.json",
     "baseline_change_note_2026-11-16": "re-anchored from openrouter:deepseek/deepseek-v4-flash-0731 ($0.357/M) to qwen3-coder-30b-a3b-instruct ($0.750/M) on Luke's 2026-11-15 directive (matching the session/worker default switch in hermes config). Pool heads stay compliant: simple ceiling relaxed to 0.5 x $0.750 = $0.375, and every simple head is AT OR UNDER it: FOUR of the five sit exactly AT it (simple/general, /coding, /writing and /research all lead openai/gpt-oss-20b = 0.075 in + 0.300 out = $0.375 = 0.50x, admitted because the ceiling test is `<=`), and only simple/vision is strictly under (z-ai/glm-5.3-flash = $0.118 = 0.16x). Medium ceiling 1.0 x $0.750 = $0.750 and every medium head is strictly under it (dearest $0.240 = 0.32x). The previous baseline-change note (2026-10-28) describes the original v4-flash-0731 anchor. (The gpt-oss-20b figures in THIS note are as of the re-anchor; the price_refresh notes below record later catalog moves - on 2026-11-16 gpt-oss-20b read 0.018 in + 0.09 out = $0.108/M = 0.144x baseline, and on 2026-11-21 it read 0.017 in + 0.085 out = $0.102/M = 0.136x baseline, both within the 0.5x simple ceiling.)",
     "heads": {
-      "simple/general": "openrouter:openai/gpt-oss-20b = 0.017 in + 0.085 out = $0.102/M",
+      "simple/general": "openrouter:openai/gpt-oss-20b = 0.03 in + 0.13 out = $0.160/M",
       "simple/vision": "openrouter:z-ai/glm-5.3-flash = 0.0399 in + 0.0784 out = $0.118/M",
-      "simple/coding": "openrouter:openai/gpt-oss-20b = 0.017 in + 0.085 out = $0.102/M",
-      "simple/writing": "openrouter:openai/gpt-oss-20b = 0.017 in + 0.085 out = $0.102/M",
-      "simple/research": "openrouter:openai/gpt-oss-20b = 0.017 in + 0.085 out = $0.102/M",
+      "simple/coding": "openrouter:openai/gpt-oss-20b = 0.03 in + 0.13 out = $0.160/M",
+      "simple/writing": "openrouter:openai/gpt-oss-20b = 0.03 in + 0.13 out = $0.160/M",
+      "simple/research": "openrouter:openai/gpt-oss-20b = 0.03 in + 0.13 out = $0.160/M",
       "medium/general": "openrouter:deepseek/deepseek-v4-flash = 0.09 in + 0.18 out = $0.270/M",
       "medium/vision": "openrouter:z-ai/glm-5.3-flash = 0.0399 in + 0.0784 out = $0.118/M",
       "medium/coding": "openrouter:deepseek/deepseek-v4-flash = 0.09 in + 0.18 out = $0.270/M",
@@ -299,31 +299,32 @@
       "hard/research": "openrouter:minimax/minimax-m3 = 0.3 in + 1.2 out = $1.500/M"
     },
     "price_refresh_note_2026-11-16": "prices + tier order refreshed from the live daily scan (orch-model-market-scan.py, the live OpenRouter /models catalog), applied under governance from state/model-market.json. cache_read is carried unchanged (not part of the blended $/M basis). SECOND refresh same day (evening scan, signature 790572a653802045): deepseek/deepseek-v4.1-flash 0.140/0.420 -> 0.0507/0.2028 $/M and openai/gpt-oss-20b 0.075/0.300 -> 0.018/0.090 $/M (blended 0.560 -> 0.2535 and 0.375 -> 0.108 $/M); all other prices and every pool order unchanged, so no head moved and no default was re-pointed.",
-    "price_refresh_note_2026-11-21": "prices + tier order refreshed from the live daily scan (orch-model-market-scan.py, the live OpenRouter /models catalog), applied under governance from state/model-market.json (cycle model-market-apply-2026-11-21, signature f5f0e3882a86b5bd). cache_read is carried unchanged (not part of the blended $/M basis). Price moves (in/out $/M; blended): deepseek/deepseek-v4-flash-0731 0.060/0.180 -> 0.0443/0.300 (0.240 -> 0.3443); deepseek/deepseek-v4-pro-0813 0.111/4.440 -> 1.320/3.960 (4.551 -> 5.280, rejected entry re-priced); deepseek/deepseek-v4.1-flash 0.140/0.420 -> 0.300/1.200 (0.560 -> 1.500, priced candidate only); openai/gpt-oss-20b 0.075/0.300 -> 0.017/0.085 (0.375 -> 0.102); moonshotai/kimi-k2.7-code (rejected entry) 0.600/3.500 -> 0.600/3.000 (4.100 -> 3.600). Pool heads re-ordered (cheapest-first within the vetted set): medium/general and medium/coding deepseek/deepseek-v4-flash-0731 -> deepseek/deepseek-v4-flash ($0.270/M); medium/research deepseek/deepseek-v4-flash-0731 -> amazon/nova-lite-v1 ($0.300/M). Baseline unchanged (qwen3-coder-30b-a3b-instruct = 0.150 in + 0.600 out = $0.750/M) so model.default and ADVERSARIAL_REVIEWER_MODEL were NOT re-pointed. derivation.heads recomputed from tiers + prices by this apply, which also repairs the 2026-11-17 rename damage (commits 93c5509f2 + 4338f8644 dropped the 2026-11-17 refresh note and rewound heads to 2026-11-16-evening values while the prices block held 2026-11-17 values; the contradiction was recorded by the 2026-11-19 scan report). Five unique unvetted $0/M candidates reported across all 15 pools (google/gemma-4-26b-a4b-it:free, google/gemma-4-31b-it:free, google/lyria-3-pro-preview, google/lyria-3-clip-preview, inclusionai/ling-3.2-flash:free), NOT adopted (A/B vetting required; lyria-3 pro/clip are audio-preview models and the :free tiers rate-limit)."
+    "price_refresh_note_2026-11-21": "prices + tier order refreshed from the live daily scan (orch-model-market-scan.py, the live OpenRouter /models catalog), applied under governance from state/model-market.json (cycle model-market-apply-2026-11-21, signature f5f0e3882a86b5bd). cache_read is carried unchanged (not part of the blended $/M basis). Price moves (in/out $/M; blended): deepseek/deepseek-v4-flash-0731 0.060/0.180 -> 0.0443/0.300 (0.240 -> 0.3443); deepseek/deepseek-v4-pro-0813 0.111/4.440 -> 1.320/3.960 (4.551 -> 5.280, rejected entry re-priced); deepseek/deepseek-v4.1-flash 0.140/0.420 -> 0.300/1.200 (0.560 -> 1.500, priced candidate only); openai/gpt-oss-20b 0.075/0.300 -> 0.017/0.085 (0.375 -> 0.102); moonshotai/kimi-k2.7-code (rejected entry) 0.600/3.500 -> 0.600/3.000 (4.100 -> 3.600). Pool heads re-ordered (cheapest-first within the vetted set): medium/general and medium/coding deepseek/deepseek-v4-flash-0731 -> deepseek/deepseek-v4-flash ($0.270/M); medium/research deepseek/deepseek-v4-flash-0731 -> amazon/nova-lite-v1 ($0.300/M). Baseline unchanged (qwen3-coder-30b-a3b-instruct = 0.150 in + 0.600 out = $0.750/M) so model.default and ADVERSARIAL_REVIEWER_MODEL were NOT re-pointed. derivation.heads recomputed from tiers + prices by this apply, which also repairs the 2026-11-17 rename damage (commits 93c5509f2 + 4338f8644 dropped the 2026-11-17 refresh note and rewound heads to 2026-11-16-evening values while the prices block held 2026-11-17 values; the contradiction was recorded by the 2026-11-19 scan report). Five unique unvetted $0/M candidates reported across all 15 pools (google/gemma-4-26b-a4b-it:free, google/gemma-4-31b-it:free, google/lyria-3-pro-preview, google/lyria-3-clip-preview, inclusionai/ling-3.2-flash:free), NOT adopted (A/B vetting required; lyria-3 pro/clip are audio-preview models and the :free tiers rate-limit).",
+    "price_refresh_note_2026-11-23": "prices + tier order refreshed from the live daily scan (orch-model-market-scan.py, the live OpenRouter /models catalog), applied under governance from state/model-market.json (cycle #10115, signature 180ce973e3432a61). cache_read is carried unchanged (not part of the blended $/M basis). Price moves (in/out $/M; blended): qwen/qwen3-coder-30b-a3b-instruct (BASELINE) 0.150/0.600 -> 0.070/0.280 (0.750 -> 0.350); openai/gpt-oss-20b 0.017/0.085 -> 0.030/0.130 (0.102 -> 0.160); deepseek/deepseek-v4.1-flash 0.300/1.200 -> 0.0498/0.1992 (1.500 -> 0.249, priced candidate only); z-ai/glm-4.7 0.400/1.750 -> 0.600/2.200 (2.150 -> 2.800). All other prices unchanged. Pool ORDER unchanged (scan order_changed=false): no head identity moved, and the baseline MODEL is unchanged (qwen3-coder-30b-a3b-instruct), so model.default and ADVERSARIAL_REVIEWER_MODEL were NOT re-pointed. baseline_price_usd_per_m re-derived 0.750 -> 0.350 and the ceiling cascade was computed BEFORE applying: simple 0.5x = $0.175/M (every simple member under it: gpt-oss-20b $0.160, glm-5.3-flash $0.118), medium 1.0x = $0.350/M (dearest member, the qwen3-coder fallback, sits exactly AT the ceiling - admitted by `<=`; every medium head strictly under), hard absolute $3.00/M (dearest glm-4.7 $2.800) - no member evicted, no pool membership change. derivation.heads recomputed from tiers + prices; rejected ratios_of_baseline and hard_whitelist price_usd_per_m/x_baseline re-derived against the new baseline. Five unique unvetted $0/M candidates reported across all 15 pools (google/gemma-4-26b-a4b-it:free, google/gemma-4-31b-it:free, google/lyria-3-pro-preview, google/lyria-3-clip-preview, inclusionai/ling-3.2-flash:free), NOT adopted (A/B vetting required)."
   },
   "candidates": {
-    "openrouter:deepseek/deepseek-v4.1-flash": "priced only, NOT routed: within budget when recorded, promoted by a one-file edit (2026-11-21 scan: 0.30 in + 1.20 out = $1.500/M blended)",
+    "openrouter:deepseek/deepseek-v4.1-flash": "priced only, NOT routed: within budget when recorded, promoted by a one-file edit (2026-11-23 scan: 0.0498 in + 0.1992 out = $0.249/M blended, down from $1.500/M on 2026-11-21)",
     "openrouter:qwen/qwen3-coder-30b-a3b-instruct": "is the BASELINE and routed (medium/general + medium/coding fallback) since the 2026-11-15 re-anchor; note reflects that it no longer competes as a candidate",
     "openrouter:qwen/qwen3.7-flash": "priced only, NOT routed: 404 on this OpenRouter key per live probe 2026-11-15 (0 endpoints matching data policy) and per docs/evidence/jev-effort-levels-2026-10-29/effort-levels.txt. The model appears in the catalog at $0.16/M but is NOT actually callable here; do NOT promote back into a pool head without first re-probing reachability on the live key."
   },
   "rejected": {
     "openrouter:moonshotai/kimi-k2.7-code": {
       "price_usd_per_m": 3.6,
-      "ratio_of_baseline": 4.8,
+      "ratio_of_baseline": 10.29,
       "reason_ref": "policy.rejected_reason",
       "in_usd_per_m": 0.6,
       "out_usd_per_m": 3.0
     },
     "openrouter:deepseek/deepseek-v4-pro-0813": {
       "price_usd_per_m": 5.28,
-      "ratio_of_baseline": 7.04,
+      "ratio_of_baseline": 15.09,
       "reason": "was the hard/general + hard/coding head at its captured $2.640/M (2026-10-28); the live catalog's prices rose (4.44/M out on 2026-11-15; 1.32 in + 3.96 out = $5.280/M on 2026-11-21) so the blended $/M has stayed above the hard $3.00/M cap. Rejected 2026-11-15 while it exceeds the cap; promote it back in a one-file edit if a future scan prices it under $3.00/M blended.",
       "in_usd_per_m": 1.32,
       "out_usd_per_m": 3.96
     },
     "openrouter:z-ai/glm-5.3": {
       "price_usd_per_m": 1.47,
-      "ratio_of_baseline": 1.96,
+      "ratio_of_baseline": 4.2,
       "reason": "was the hard/writing + hard/research head at its captured $1.470/M (2026-10-28); the live catalog's OUTPUT price rose (3.6/M out) so blended $/M was $3.680 on 2026-11-15, above the hard $3.00/M cap. On 2026-11-16 the live price fell back (1.4/M out) => blended $1.470/M, UNDER the cap, so the one-file-edit promotion this note invites is now AVAILABLE - but NOT auto-applied by the scan (it preserves pool membership) and re-routing it also needs its hard_whitelist entry re-added, a vetting decision. Raised to the operator in the 2026-11-16 scan report.",
       "in_usd_per_m": 0.0699,
       "out_usd_per_m": 1.4
@@ -331,36 +332,36 @@
   },
   "hard_whitelist": {
     "openrouter:z-ai/glm-4.7": {
-      "price_usd_per_m": 2.15,
-      "x_baseline": 2.87,
+      "price_usd_per_m": 2.8,
+      "x_baseline": 8.0,
       "ctx": 204800,
       "vision": false,
       "why": "open weights, reasoning + tool_call, ctx>=200k, within the hard budget"
     },
     "openrouter:minimax/minimax-m3": {
       "price_usd_per_m": 1.5,
-      "x_baseline": 2.0,
+      "x_baseline": 4.29,
       "ctx": 1048576,
       "vision": true,
       "why": "open weights, reasoning + tool_call, ctx>=200k, within the hard budget"
     },
     "openrouter:qwen/qwen3.5-122b-a10b": {
       "price_usd_per_m": 2.34,
-      "x_baseline": 3.12,
+      "x_baseline": 6.69,
       "ctx": 262144,
       "vision": true,
       "why": "open weights, reasoning + tool_call, ctx>=200k, within the hard budget"
     },
     "openrouter:xiaomi/mimo-v2.6-pro": {
       "price_usd_per_m": 1.305,
-      "x_baseline": 1.74,
+      "x_baseline": 3.73,
       "ctx": 1050000,
       "vision": true,
       "why": "open weights, reasoning + tool_call, ctx>=200k, within the hard budget"
     },
     "openrouter:thinkingmachines/inkling-small": {
       "price_usd_per_m": 1.65,
-      "x_baseline": 2.2,
+      "x_baseline": 4.71,
       "ctx": 524288,
       "vision": true,
       "why": "open weights, reasoning + tool_call, ctx>=200k, within the hard budget"
