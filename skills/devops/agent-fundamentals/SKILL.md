@@ -22,6 +22,8 @@ platforms: [linux, macos]
 
 **Applies to:** Any question about system capabilities, existing features, documentation, or configuration. Never trust your knowledge alone.
 
+**Probe integrity — a search that returns nothing is a claim about your PROBE before it is a claim about the world.** When a zero result contradicts something you have already read (a file you just opened, a path a doc names), suspect the search first, not the subject. The mechanism that bites most often: a tool's working directory PERSISTS across calls, so a `cd` from an earlier command silently relocates a default-path search — it returns a clean `0` from the wrong directory, and `0` reads exactly like "this is not referenced anywhere". Pass an explicit absolute `path` on every search, and before reporting any "X is unreferenced / nothing parses this / that file is gone" finding, re-run the probe with the explicit path and confirm the negative is real. A false negative here is the most expensive kind: it is what justifies deleting or rewriting something that is very much alive.
+
 ---
 
 ## 2. The Smallest Fix Is Usually the Right One

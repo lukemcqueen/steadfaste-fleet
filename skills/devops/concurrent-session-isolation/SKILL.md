@@ -215,6 +215,10 @@ git diff --cached --name-only                                     # only YOUR fi
    authorise, and self-authorising it is the same class of error as overriding a finding.
    A cycle whose DESCRIPTION contradicts the diff cannot be talked out of it — see
    `governance-closeout`.
+   - **Pushing while a peer is dirty is blocked by the PUSH hook, and the diagnosis is not "your change is bad".** Read the hook before blaming the diff. A fleet `pre-push` (a) refuses when the branch is `ahead N, behind M` against the remote ("is behind remote — pull --rebase"), (b) demands an ACTIVE governance lock OR a CLEAN review receipt covering the range — a close writes that receipt, so a closed cycle already satisfies this half — and (c) triggers a MANDATORY dogfood (a full `pull → deploy → doctor → verify`) decided from `git diff HEAD`, i.e. the WORKING TREE. That last one is the trap: a PEER's dirty non-doc files are what make the deploy fire on YOUR push. Integrate first or stand down.
+   - **Never sidestep those gates from an off-repo worktree.** The hook scopes itself to the canonical repo top (`$_REPO_TOP == $HOME/steadfaste-fleet`), so a worktree checked out anywhere else runs NO lock gate, NO dogfood and NO doctor. That is a BYPASS wearing the costume of isolation — it is not "one worktree per session" done well. Push from the canonical tree, or not at all.
+   - **`ahead N, behind M` plus a peer's dirty tree has no clean local move.** A rebase needs a clean tree; `--autostash` stashes their work (forbidden); the receipt does not clear the behind-check. The correct end-state is to HOLD the local commits and report the blocker — a docs/evidence range sits committed-but-unpushed without loss, and once the range integrates a peer's own push carries yours.
+
 8. **A deploy+push races the peer's next commit.** The push gate compares HEAD with the
    last-deploy commit, so any commit landing during the minutes-long deploy invalidates
    it: a *successful* deploy is followed by "Deploy sync — HEAD ahead of last deploy".

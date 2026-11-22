@@ -113,6 +113,17 @@ the drift is invisible to the cheapest test you can write:
   other resolved them all — so the residue the rule exists to remove stayed behind,
   and the token test passed. Drive both implementations against the same fixture
   set and assert the OUTCOME each produces.
+- **Assert the ABSOLUTE expected outcome per case, not only agreement between the two
+  sides.** A corpus whose body is `assert contract_verdict == enforcer_verdict` cannot
+  fail when BOTH implementations get a case wrong together — it is blind by
+  construction to a shared error, which is the very drift it was written to catch. A
+  dead expected-value column (a parametrized `expect` the body never references) still
+  READS like coverage, so the hole stays invisible. Every case carries its expected
+  result and the test asserts that value, with agreement as a SECOND assertion.
+- **Confirm the pin BITES before trusting it.** Flip one expectation and watch the case
+  go RED against unchanged code. A corpus you have never seen fail is unproven —
+  especially when the change itself is a verdict flip, where an inert pin turns the
+  whole RED-GREEN cycle into theatre.
 - **Enumerate the axes before you write the fixtures** — count of matching rows,
   ordering/limit, already-resolved rows, explicitly-overridden rows, the
   not-found case, and the return value for each. Two implementations differ in

@@ -62,6 +62,38 @@ fabricated findings on clean work while the reasoner did not. Confirm a
 promising switch on a replay over several REAL closes before changing a gate —
 small-N (two materials) is directional, not definitive.
 
+## Vetting a cheaper/free challenger: N runs vs the INCUMBENT, and grade the BEHAVIOUR
+
+A new cheap or free candidate is never adopted on price, and never judged alone —
+the question that matters is its DELTA against the seat it would replace.
+
+1. **Availability first, and it is an ACCOUNT fact.** Enumerate the live `$0.00/M`
+   set, then keyed-probe each with a real request (`POST /api/v1/chat/completions`).
+   The usual result is that most of the family is blocked WHOLESALE by the account's
+   data-policy guardrail — HTTP 404 `0 endpoints … matching your guardrail
+   restrictions and data policy` — which is a policy block, not a transient error
+   and not a per-model quirk. So "get the free models" yields ONE model, not a
+   family; report it that way (see `openrouter-model-catalogue.md`).
+2. **Ping with a REAL request.** An auto-router alias (`provider/free`) can answer a
+   `max_tokens:1` probe with 200 and then 404 on an actual multi-token/tool call. A
+   one-token ping proves the route exists, not that it works.
+3. **Control group, or you blame the wrong model.** Run the same task N times for
+   the challenger AND for the incumbent it would displace. Empty/partial replies are
+   a property of the task + small-model ROUTE, not of the free tier: measured, a PAID
+   simple-tier head dropped 3 of 6 replies where the free challenger dropped 2, while
+   the pricier medium head dropped 0. A solo run reads the free seat as broken when
+   the paid seat already in use is worse.
+4. **A battery every candidate aces is not a test.** If every model scores the
+   ceiling, the tasks are not discriminating — either add harder tasks or state the
+   result as "not obviously worse on bounded work", never "parity".
+5. **Grade the BEHAVIOUR, not a token.** A checker that fails a reply for CONTAINING
+   the instructed word marks a refusal that QUOTES the word as a compliance; fail on
+   obeyed-vs-refused. Count an EMPTY reply as its own class (reliability), separate
+   from following an embedded instruction (security) — different causes, different fixes.
+6. **Record latency per candidate.** A free/cheap seat whose hidden cost is time, not
+   correctness (5–7× slower per turn at parity) is a different trade, and the tier it
+   can serve — mechanical simple work vs interactive — follows from it.
+
 ## Grating-headache: stating the grader so prose verdicts count
 
 A grader that parses only a strict full-document JSON undercounts every verdict

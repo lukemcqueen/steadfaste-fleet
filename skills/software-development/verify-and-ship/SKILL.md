@@ -254,6 +254,15 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   notify) instead of waiting on a handle the restart invalidated.
 - Changing a DEFAULT CONSTANT breaks hardcoded old literals in tests — sweep
   both shapes (fixture AND assertion), run to prove both moved.
+- **A `.py` probe or verifier committed under `docs/evidence/` still trips the repo's TDD gate.**
+  The gate fires on ADDED code files and has NO docs/ exemption, so a throwaway-looking
+  evidence script is refused as "new production code without a test" until a test file rides in the
+  SAME commit (put it under `tests/`, which the gate recognises by path). For a probe, the test that
+  earns its place proves the CHECKERS DISCRIMINATE — one well-formed AND one malformed input per
+  checker, plus an import-inertness assertion — not that `main()` runs: a checker whose expected
+  value is wrong marks every candidate identically wrong and reads as a model/artifact defect when
+  the bug is the probe. The gate keys on ADDED files only, so a later modified-file or doc-only
+  commit does not re-trigger it.
 - **An assertion that something is EMPTY must compare to the empty value.**
   `assert fn()` is always FALSE when the case under test is "nothing reported",
   so the test calls itself "silent" while passing exactly when the code is
@@ -356,6 +365,7 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   A reviewer will accept 'asserted by test X, runnable with pytest' where it
   will never accept 'verified: offsets were compared'.
 - **A committed test alone is re-filed as unverified-claim unless a CAPTURED RUN ARTIFACT rides in the same range — and the ACCUSED file must itself change to point at the evidence.** Verdicts stay keyed to the blob's un-changed bytes forever, so adding a test elsewhere (or claiming it in the commit message) never clears the accused file: edit that file to reference the test, and commit `docs/evidence/<topic>-<date>.txt` carrying the exact command, output and exit code. For a script that iterates the whole environment (`env | sed` mirrors, prompt samplers), its hermetic test must CLEANSE its own test-scoped vars up front or the reviewer files an ambient-leak finding.
+- **A DOC that NAMES its evidence files is still unverified-claim — the per-blob window cannot ENUMERATE the range, so INLINE the raw output rather than citing paths.** A review window that could not list the transcript a README named filed the inventory line as a contradiction, and re-filed the SAME finding after the inventory was corrected — because the blob still *depended* on files the window could not see. Naming a sibling is also how a doc asserts something its reader cannot check. Put the exact command output in the blob itself (the transcript, the score table, the exit codes) so every number is verifiable from the file being read; keep the transcript files as the re-runnable backing, never as the only place the evidence lives. Corollary: a `rereview_change` that returns CLEAN does **not** clear a per-blob finding unless the ACCUSED blob's bytes changed — a verdict is keyed to the blob's content, so edit the named file; changing a different one leaves the verdict standing.
 - **The CLOSE gate is a per-blob reviewer with a limited window — pin the test's
   SUBJECT inside the test.** A test importing module internals from a file the
   close reviewer cannot see is filed FABRICATION; hardcoded expectations are
