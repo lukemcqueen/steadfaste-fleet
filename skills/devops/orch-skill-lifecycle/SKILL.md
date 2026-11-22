@@ -482,6 +482,17 @@ Result: 3 skills updated, 1 upstreamed, 1 SOUL.md entry.
   overridable `SKILLS=`), or the check silently measures a previous day's work. Probed with a stub
   returning `stranded: 6` (must exit non-zero), a crash (rc=3) and malformed output (must both
   read COULD NOT VERIFY): 3 probes, 0 blind spots. Fixed in `6a99be19`.
+- **A collector that exits 0 on a failed send is BLIND, and "silent" is not "nothing changed" (2026-11-23)** →
+  `agent-learning-collector` picks ONE credential in `_build_auth_headers` (Basic preferred over
+  Bearer) and the deployed `.env`'s `FLEET_BASIC_AUTH` is stale for the bare PGMQ API — Basic → 401,
+  Bearer → 200 on `/api/pgmq/depth`. Every send 401'd, the script printed the error but exited 0 and
+  saved no state, so the cron wrapper read "silent (empty output)" and the pipeline went blind from
+  2026-11-19 while the timer kept firing. **When the collection window looks empty, run the collector
+  BY HAND with the env sourced and read its stderr** — do not conclude "nothing changed" from a
+  silent timer. The fix (committed 78954cbd) retries once with the Bearer token on a 401 when the
+  first attempt used Basic; pinned by `tests/test_agent_learning_collector_auth_fallback.py` (4 tests).
+  Diagnosis tell: `agent-learning-collector-state.json` mtime frozen while the timer is active — state
+  is saved only when `send_ok`, so a frozen state file IS the failure signal.
 - **Staged report bodies are JSON envelopes — a naive `Generated:` parse returns a silent 0 (2026-10-19)** →
   files under `learning-reports/` hold `{"text": "..."}` with the report newlines ESCAPED, so
   `Generated:` sits mid-line and a `\S+` capture swallows the trailing `\nType:` — `fromisoformat`
