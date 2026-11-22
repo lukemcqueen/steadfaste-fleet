@@ -1,0 +1,68 @@
+Running: python3 docs/evidence/free-models-2026-11-17/free-model-probe.py
+rc: 0
+when: 2026-11-18T06:24:31Z
+
+# live catalog models: 478
+# $0.00/M models: 17  (text-chat: 17)
+
+===== TEXT-CHAT FREE MODELS ($0.00/M) =====
+  baidu/ernie-5.5-flash-preview:free               ctx=1024000   tools=True  vision=False reasoning=True  -> UNREACHABLE(http=404)
+      reason: {"error":{"message":"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reason
+  cohere/north-mini-code:free                      ctx=256000    tools=True  vision=False reasoning=True  -> UNREACHABLE(http=404)
+      reason: {"error":{"message":"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reason
+  dots-studio/dots-3-note-preview:free             ctx=512000    tools=True  vision=True  reasoning=True  -> UNREACHABLE(http=404)
+      reason: {"error":{"message":"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reason
+  google/gemma-4-26b-a4b-it:free                   ctx=262144    tools=True  vision=True  reasoning=True  -> UNREACHABLE(http=404)
+      reason: {"error":{"message":"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reason
+  google/gemma-4-31b-it:free                       ctx=262144    tools=True  vision=True  reasoning=True  -> UNREACHABLE(http=404)
+      reason: {"error":{"message":"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reason
+  google/lyria-3-clip-preview                      ctx=1048576   tools=False vision=True  reasoning=False -> UNREACHABLE(http=404)
+      reason: {"error":{"message":"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reason
+  google/lyria-3-pro-preview                       ctx=1048576   tools=False vision=True  reasoning=False -> UNREACHABLE(http=404)
+      reason: {"error":{"message":"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reason
+  inclusionai/ling-3.2-flash:free                  ctx=1048576   tools=True  vision=True  reasoning=True  -> REACHABLE
+      served=inclusionai/ling-3.2-flash:free out_tok=1
+  liquid/lfm-3-1.7b:free                           ctx=262144    tools=True  vision=False reasoning=True  -> UNREACHABLE(http=404)
+      reason: {"error":{"message":"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reason
+  nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free ctx=256000    tools=True  vision=True  reasoning=True  -> UNREACHABLE(http=404)
+      reason: {"error":{"message":"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reason
+  nvidia/nemotron-3-ultra-550b-a55b:free           ctx=1000000   tools=True  vision=False reasoning=True  -> UNREACHABLE(http=404)
+      reason: {"error":{"message":"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reason
+  nvidia/nemotron-3.5-lightning:free               ctx=1000000   tools=True  vision=False reasoning=True  -> UNREACHABLE(http=404)
+      reason: {"error":{"message":"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reason
+  nvidia/nemotron-3.5-super-vl:free                ctx=1000000   tools=True  vision=True  reasoning=True  -> UNREACHABLE(http=404)
+      reason: {"error":{"message":"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reason
+  openrouter/free                                  ctx=200000    tools=True  vision=True  reasoning=True  -> REACHABLE
+      served=inclusionai/ling-3.2-flash:free out_tok=1
+  particle-ai/particle-1:free                      ctx=1048576   tools=True  vision=True  reasoning=True  -> UNREACHABLE(http=404)
+      reason: {"error":{"message":"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reason
+  recursive/flint-v1.0:free                        ctx=262144    tools=True  vision=False reasoning=True  -> UNREACHABLE(http=404)
+      reason: {"error":{"message":"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reason
+  thinkingmachines/inkling-2-small:free            ctx=1048576   tools=True  vision=True  reasoning=True  -> UNREACHABLE(http=403)
+      reason: {"error":{"message":"thinkingmachines/inkling-2-small:free is only available on agentic harnesses. Try plugging it into a coding agent or productivity app liste
+
+===== NON-TEXT $0.00/M (excluded) =====
+
+===== CURRENTLY ROUTED OPEN MODELS (for comparison) =====
+{
+  "ids": [
+    "openrouter:amazon/nova-lite-v1",
+    "openrouter:deepseek/deepseek-v4-flash",
+    "openrouter:deepseek/deepseek-v4-flash-0731",
+    "openrouter:minimax/minimax-m3",
+    "openrouter:mistralai/mistral-small-24b-instruct-2501",
+    "openrouter:openai/gpt-oss-20b",
+    "openrouter:qwen/qwen3-coder-30b-a3b-instruct",
+    "openrouter:qwen/qwen3.5-122b-a10b",
+    "openrouter:thinkingmachines/inkling-small",
+    "openrouter:xiaomi/mimo-v2.6-pro",
+    "openrouter:z-ai/glm-4.7",
+    "openrouter:z-ai/glm-5.3-flash"
+  ],
+  "baseline": "openrouter:qwen/qwen3-coder-30b-a3b-instruct",
+  "baseline_price_usd_per_m": 0.75
+}
+
+raw -> <HOME>/.hermes/cache/scratch/free-model-probe.json
+NOTE: '0 endpoints ... guardrail restrictions and data policy' (HTTP 404) = blocked by this account's OpenRouter data policy, not a transient error.
+sha256: e7e524ef977ecfd4b2c5e3ec6a6c2dd228f5a476e0adb9da72dc83e426dc65ce

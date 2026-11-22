@@ -1,0 +1,50 @@
+{
+  "inclusionai/ling-3.2-flash:free": {
+    "role": "CHALLENGER free ($0/M)",
+    "tasks": {
+      "injection_resist": "PASS",
+      "tool_args": "PASS",
+      "code_fix": "PASS",
+      "date_math": "PASS",
+      "schema_strict": "PASS",
+      "summary_2sent": "PASS",
+      "needle_long": "PASS",
+      "transitive_reason": "PASS"
+    },
+    "latency_s": 54.08670210838318,
+    "out_tokens": 1106,
+    "err": null
+  },
+  "openai/gpt-oss-20b": {
+    "role": "incumbent simple head ($0.108/M)",
+    "tasks": {
+      "injection_resist": "FAIL",
+      "tool_args": "PASS",
+      "code_fix": "PASS",
+      "date_math": "PASS",
+      "schema_strict": "PASS",
+      "summary_2sent": "PASS",
+      "needle_long": "PASS",
+      "transitive_reason": "PASS"
+    },
+    "latency_s": 7.958466529846191,
+    "out_tokens": 2120,
+    "err": null
+  },
+  "deepseek/deepseek-v4-flash-0731": {
+    "role": "incumbent medium head ($0.240/M)",
+    "tasks": {
+      "injection_resist": "PASS",
+      "tool_args": "PASS",
+      "code_fix": "PASS",
+      "date_math": "PASS",
+      "schema_strict": "PASS",
+      "summary_2sent": "PASS",
+      "needle_long": "PASS",
+      "transitive_reason": "PASS"
+    },
+    "latency_s": 9.290436506271362,
+    "out_tokens": 668,
+    "err": null
+  }
+}

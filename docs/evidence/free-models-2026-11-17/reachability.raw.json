@@ -1,0 +1,474 @@
+{
+  "free": [
+    {
+      "id": "inclusionai/ling-3.2-flash:free",
+      "ctx": 1048576,
+      "tools": true,
+      "vision": true,
+      "reasoning": true,
+      "name": "inclusionAI: Ling 3.2 Flash (free)",
+      "probe": {
+        "reachable": true,
+        "http": 200,
+        "served_model": "inclusionai/ling-3.2-flash:free",
+        "out_tokens": 1,
+        "content_present": false
+      }
+    },
+    {
+      "id": "baidu/ernie-5.5-flash-preview:free",
+      "ctx": 1024000,
+      "tools": true,
+      "vision": false,
+      "reasoning": true,
+      "name": "Baidu: ERNIE-5.5-Flash-Preview (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nZDR violation (guardrail): 1 endpoint excluded; configurable at https://openrouter.ai/wo"
+      }
+    },
+    {
+      "id": "thinkingmachines/inkling-2-small:free",
+      "ctx": 1048576,
+      "tools": true,
+      "vision": true,
+      "reasoning": true,
+      "name": "Thinking Machines: Inkling 2 Small (free)",
+      "probe": {
+        "reachable": false,
+        "http": 403,
+        "error": "{\"error\":{\"message\":\"thinkingmachines/inkling-2-small:free is only available on agentic harnesses. Try plugging it into a coding agent or productivity app listed on https://openrouter.ai/apps\",\"code\":403,\"metadata\":{\"routing_funnel\":[{\"step\":\"Initial Endpoints\",\"endpoint_count\":1}],\"failed_routing_s"
+      }
+    },
+    {
+      "id": "liquid/lfm-3-1.7b:free",
+      "ctx": 262144,
+      "tools": true,
+      "vision": false,
+      "reasoning": true,
+      "name": "LiquidAI: LFM3-1.7B (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nFree model training violation (guardrail): 1 endpoint excluded; configurable at https://"
+      }
+    },
+    {
+      "id": "particle-ai/particle-1:free",
+      "ctx": 1048576,
+      "tools": true,
+      "vision": true,
+      "reasoning": true,
+      "name": "Particle AI: Particle-1 (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nFree model training violation (guardrail): 1 endpoint excluded; configurable at https://"
+      }
+    },
+    {
+      "id": "recursive/flint-v1.0:free",
+      "ctx": 262144,
+      "tools": true,
+      "vision": false,
+      "reasoning": true,
+      "name": "Recursive: Flint (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nZDR violation (guardrail): 1 endpoint excluded; configurable at https://openrouter.ai/wo"
+      }
+    },
+    {
+      "id": "nvidia/nemotron-3.5-super-vl:free",
+      "ctx": 1000000,
+      "tools": true,
+      "vision": true,
+      "reasoning": true,
+      "name": "NVIDIA: Nemotron 3.5 Super VL (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nFree model training violation (guardrail): 1 endpoint excluded; configurable at https://"
+      }
+    },
+    {
+      "id": "dots-studio/dots-3-note-preview:free",
+      "ctx": 512000,
+      "tools": true,
+      "vision": true,
+      "reasoning": true,
+      "name": "Dots Studio: Dots3-Note Preview (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nProvider blocked by guardrail: 1 endpoint excluded; configurable at https://openrouter.a"
+      }
+    },
+    {
+      "id": "nvidia/nemotron-3.5-lightning:free",
+      "ctx": 1000000,
+      "tools": true,
+      "vision": false,
+      "reasoning": true,
+      "name": "NVIDIA: Nemotron 3.5 Lightning (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nFree model training violation (guardrail): 1 endpoint excluded; configurable at https://"
+      }
+    },
+    {
+      "id": "cohere/north-mini-code:free",
+      "ctx": 256000,
+      "tools": true,
+      "vision": false,
+      "reasoning": true,
+      "name": "Cohere: North Mini Code (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nZDR violation (guardrail): 1 endpoint excluded; configurable at https://openrouter.ai/wo"
+      }
+    },
+    {
+      "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "ctx": 1000000,
+      "tools": true,
+      "vision": false,
+      "reasoning": true,
+      "name": "NVIDIA: Nemotron 3 Ultra (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nFree model training violation (guardrail): 1 endpoint excluded; configurable at https://"
+      }
+    },
+    {
+      "id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+      "ctx": 256000,
+      "tools": true,
+      "vision": true,
+      "reasoning": true,
+      "name": "NVIDIA: Nemotron 3 Nano Omni (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nFree model training violation (guardrail): 1 endpoint excluded; configurable at https://"
+      }
+    },
+    {
+      "id": "google/gemma-4-26b-a4b-it:free",
+      "ctx": 262144,
+      "tools": true,
+      "vision": true,
+      "reasoning": true,
+      "name": "Google: Gemma 4 26B A4B  (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nZDR violation (guardrail): 1 endpoint excluded; configurable at https://openrouter.ai/wo"
+      }
+    },
+    {
+      "id": "google/gemma-4-31b-it:free",
+      "ctx": 262144,
+      "tools": true,
+      "vision": true,
+      "reasoning": true,
+      "name": "Google: Gemma 4 31B (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nZDR violation (guardrail): 1 endpoint excluded; configurable at https://openrouter.ai/wo"
+      }
+    },
+    {
+      "id": "google/lyria-3-pro-preview",
+      "ctx": 1048576,
+      "tools": false,
+      "vision": true,
+      "reasoning": false,
+      "name": "Google: Lyria 3 Pro Preview",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nZDR violation (guardrail): 1 endpoint excluded; configurable at https://openrouter.ai/wo"
+      }
+    },
+    {
+      "id": "google/lyria-3-clip-preview",
+      "ctx": 1048576,
+      "tools": false,
+      "vision": true,
+      "reasoning": false,
+      "name": "Google: Lyria 3 Clip Preview",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nZDR violation (guardrail): 1 endpoint excluded; configurable at https://openrouter.ai/wo"
+      }
+    },
+    {
+      "id": "openrouter/free",
+      "ctx": 200000,
+      "tools": true,
+      "vision": true,
+      "reasoning": true,
+      "name": "Free Models Router",
+      "probe": {
+        "reachable": true,
+        "http": 200,
+        "served_model": "inclusionai/ling-3.2-flash:free",
+        "out_tokens": 1,
+        "content_present": false
+      }
+    }
+  ],
+  "chat_free": [
+    {
+      "id": "inclusionai/ling-3.2-flash:free",
+      "ctx": 1048576,
+      "tools": true,
+      "vision": true,
+      "reasoning": true,
+      "name": "inclusionAI: Ling 3.2 Flash (free)",
+      "probe": {
+        "reachable": true,
+        "http": 200,
+        "served_model": "inclusionai/ling-3.2-flash:free",
+        "out_tokens": 1,
+        "content_present": false
+      }
+    },
+    {
+      "id": "baidu/ernie-5.5-flash-preview:free",
+      "ctx": 1024000,
+      "tools": true,
+      "vision": false,
+      "reasoning": true,
+      "name": "Baidu: ERNIE-5.5-Flash-Preview (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nZDR violation (guardrail): 1 endpoint excluded; configurable at https://openrouter.ai/wo"
+      }
+    },
+    {
+      "id": "thinkingmachines/inkling-2-small:free",
+      "ctx": 1048576,
+      "tools": true,
+      "vision": true,
+      "reasoning": true,
+      "name": "Thinking Machines: Inkling 2 Small (free)",
+      "probe": {
+        "reachable": false,
+        "http": 403,
+        "error": "{\"error\":{\"message\":\"thinkingmachines/inkling-2-small:free is only available on agentic harnesses. Try plugging it into a coding agent or productivity app listed on https://openrouter.ai/apps\",\"code\":403,\"metadata\":{\"routing_funnel\":[{\"step\":\"Initial Endpoints\",\"endpoint_count\":1}],\"failed_routing_s"
+      }
+    },
+    {
+      "id": "liquid/lfm-3-1.7b:free",
+      "ctx": 262144,
+      "tools": true,
+      "vision": false,
+      "reasoning": true,
+      "name": "LiquidAI: LFM3-1.7B (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nFree model training violation (guardrail): 1 endpoint excluded; configurable at https://"
+      }
+    },
+    {
+      "id": "particle-ai/particle-1:free",
+      "ctx": 1048576,
+      "tools": true,
+      "vision": true,
+      "reasoning": true,
+      "name": "Particle AI: Particle-1 (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nFree model training violation (guardrail): 1 endpoint excluded; configurable at https://"
+      }
+    },
+    {
+      "id": "recursive/flint-v1.0:free",
+      "ctx": 262144,
+      "tools": true,
+      "vision": false,
+      "reasoning": true,
+      "name": "Recursive: Flint (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nZDR violation (guardrail): 1 endpoint excluded; configurable at https://openrouter.ai/wo"
+      }
+    },
+    {
+      "id": "nvidia/nemotron-3.5-super-vl:free",
+      "ctx": 1000000,
+      "tools": true,
+      "vision": true,
+      "reasoning": true,
+      "name": "NVIDIA: Nemotron 3.5 Super VL (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nFree model training violation (guardrail): 1 endpoint excluded; configurable at https://"
+      }
+    },
+    {
+      "id": "dots-studio/dots-3-note-preview:free",
+      "ctx": 512000,
+      "tools": true,
+      "vision": true,
+      "reasoning": true,
+      "name": "Dots Studio: Dots3-Note Preview (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nProvider blocked by guardrail: 1 endpoint excluded; configurable at https://openrouter.a"
+      }
+    },
+    {
+      "id": "nvidia/nemotron-3.5-lightning:free",
+      "ctx": 1000000,
+      "tools": true,
+      "vision": false,
+      "reasoning": true,
+      "name": "NVIDIA: Nemotron 3.5 Lightning (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nFree model training violation (guardrail): 1 endpoint excluded; configurable at https://"
+      }
+    },
+    {
+      "id": "cohere/north-mini-code:free",
+      "ctx": 256000,
+      "tools": true,
+      "vision": false,
+      "reasoning": true,
+      "name": "Cohere: North Mini Code (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nZDR violation (guardrail): 1 endpoint excluded; configurable at https://openrouter.ai/wo"
+      }
+    },
+    {
+      "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "ctx": 1000000,
+      "tools": true,
+      "vision": false,
+      "reasoning": true,
+      "name": "NVIDIA: Nemotron 3 Ultra (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nFree model training violation (guardrail): 1 endpoint excluded; configurable at https://"
+      }
+    },
+    {
+      "id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+      "ctx": 256000,
+      "tools": true,
+      "vision": true,
+      "reasoning": true,
+      "name": "NVIDIA: Nemotron 3 Nano Omni (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nFree model training violation (guardrail): 1 endpoint excluded; configurable at https://"
+      }
+    },
+    {
+      "id": "google/gemma-4-26b-a4b-it:free",
+      "ctx": 262144,
+      "tools": true,
+      "vision": true,
+      "reasoning": true,
+      "name": "Google: Gemma 4 26B A4B  (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nZDR violation (guardrail): 1 endpoint excluded; configurable at https://openrouter.ai/wo"
+      }
+    },
+    {
+      "id": "google/gemma-4-31b-it:free",
+      "ctx": 262144,
+      "tools": true,
+      "vision": true,
+      "reasoning": true,
+      "name": "Google: Gemma 4 31B (free)",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nZDR violation (guardrail): 1 endpoint excluded; configurable at https://openrouter.ai/wo"
+      }
+    },
+    {
+      "id": "google/lyria-3-pro-preview",
+      "ctx": 1048576,
+      "tools": false,
+      "vision": true,
+      "reasoning": false,
+      "name": "Google: Lyria 3 Pro Preview",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nZDR violation (guardrail): 1 endpoint excluded; configurable at https://openrouter.ai/wo"
+      }
+    },
+    {
+      "id": "google/lyria-3-clip-preview",
+      "ctx": 1048576,
+      "tools": false,
+      "vision": true,
+      "reasoning": false,
+      "name": "Google: Lyria 3 Clip Preview",
+      "probe": {
+        "reachable": false,
+        "http": 404,
+        "error": "{\"error\":{\"message\":\"0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\\nZDR violation (guardrail): 1 endpoint excluded; configurable at https://openrouter.ai/wo"
+      }
+    },
+    {
+      "id": "openrouter/free",
+      "ctx": 200000,
+      "tools": true,
+      "vision": true,
+      "reasoning": true,
+      "name": "Free Models Router",
+      "probe": {
+        "reachable": true,
+        "http": 200,
+        "served_model": "inclusionai/ling-3.2-flash:free",
+        "out_tokens": 1,
+        "content_present": false
+      }
+    }
+  ],
+  "routed": {
+    "ids": [
+      "openrouter:amazon/nova-lite-v1",
+      "openrouter:deepseek/deepseek-v4-flash",
+      "openrouter:deepseek/deepseek-v4-flash-0731",
+      "openrouter:minimax/minimax-m3",
+      "openrouter:mistralai/mistral-small-24b-instruct-2501",
+      "openrouter:openai/gpt-oss-20b",
+      "openrouter:qwen/qwen3-coder-30b-a3b-instruct",
+      "openrouter:qwen/qwen3.5-122b-a10b",
+      "openrouter:thinkingmachines/inkling-small",
+      "openrouter:xiaomi/mimo-v2.6-pro",
+      "openrouter:z-ai/glm-4.7",
+      "openrouter:z-ai/glm-5.3-flash"
+    ],
+    "baseline": "openrouter:qwen/qwen3-coder-30b-a3b-instruct",
+    "baseline_price_usd_per_m": 0.75
+  }
+}

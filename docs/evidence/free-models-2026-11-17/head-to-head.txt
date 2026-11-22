@@ -1,0 +1,17 @@
+Running: python3 docs/evidence/free-models-2026-11-17/free-model-ab2.py
+rc: 0
+when: 2026-11-18T06:25:11Z
+
+model                                    role                     score  tool-calling
+----------------------------------------------------------------------------------------
+inclusionai/ling-3.2-flash:free          CHALLENGER free          5/5    CALLS_TOOL
+openai/gpt-oss-20b                       incumbent simple head    5/5    CALLS_TOOL
+deepseek/deepseek-v4-flash-0731          incumbent medium head    5/5    CALLS_TOOL
+
+per-task:
+  inclusionai/ling-3.2-flash:free: json_format=PASS, multi_json=PASS, multistep=PASS, needle_1M=PASS, coding_prime=PASS
+  openai/gpt-oss-20b: json_format=PASS, multi_json=PASS, multistep=PASS, needle_1M=PASS, coding_prime=PASS
+  deepseek/deepseek-v4-flash-0731: json_format=PASS, multi_json=PASS, multistep=PASS, needle_1M=PASS, coding_prime=PASS
+
+raw -> <HOME>/.hermes/cache/scratch/free-model-ab2.json
+sha256: 968250c4b212d9984d531502a1d82d0a32fd8171c59000d6b0186332c470ae0b

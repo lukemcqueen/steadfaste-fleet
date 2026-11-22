@@ -1,0 +1,38 @@
+{
+  "inclusionai/ling-3.2-flash:free": {
+    "role": "CHALLENGER free",
+    "tasks": {
+      "json_format": "PASS",
+      "multi_json": "PASS",
+      "multistep": "PASS",
+      "needle_1M": "PASS",
+      "coding_prime": "PASS"
+    },
+    "tool_call": "CALLS_TOOL",
+    "err": null
+  },
+  "openai/gpt-oss-20b": {
+    "role": "incumbent simple head",
+    "tasks": {
+      "json_format": "PASS",
+      "multi_json": "PASS",
+      "multistep": "PASS",
+      "needle_1M": "PASS",
+      "coding_prime": "PASS"
+    },
+    "tool_call": "CALLS_TOOL",
+    "err": null
+  },
+  "deepseek/deepseek-v4-flash-0731": {
+    "role": "incumbent medium head",
+    "tasks": {
+      "json_format": "PASS",
+      "multi_json": "PASS",
+      "multistep": "PASS",
+      "needle_1M": "PASS",
+      "coding_prime": "PASS"
+    },
+    "tool_call": "CALLS_TOOL",
+    "err": null
+  }
+}
