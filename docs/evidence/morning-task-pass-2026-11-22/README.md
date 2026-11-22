@@ -9,7 +9,7 @@ Host-derived identity: **esther** (orchestrator, hot-backup).
 | Step | Result |
 |---|---|
 | Survey pending stories (`--repo ALL --status pending --kind story`) | 3 stories, **all already sliced** (0 unsliced) |
-| Survey claimable (`--repo ALL --claimable --limit 50`) | 18 → **17 after this pass** (1 cancelled) |
+| Survey claimable (`--repo ALL --claimable --limit 50`) | 17 → **16 after this pass** (1 cancelled; board MCP view read 18 at start, 16 after) |
 | Decompose unsliced stories | **0** — no `add --parent` writes needed |
 | Write executable plans into slices | **1 written** — v016 surface now exists (October blocker `9fb2ddb6` completed) |
 | Cancel stale duplicate | **1 cancelled** — `55806657` [cost/1] duplicate of completed work |
@@ -59,8 +59,9 @@ would repeat that documented thrash — per-slice holds below, each with a reaso
 
 ## Claimable pool after the pass
 
-17 claimable (was 18): 6 KAESA 90-day phases + 6 KAESA engagement slices +
-[cost/2] + [queue/2] + case study + landing page. In review: none.
+16 claimable (was 17 by CLI / 18 by board view): 6 KAESA 90-day phases + 6
+KAESA engagement slices + [cost/2] + [queue/2] + case study + landing page.
+In review: none.
 
 ## Notes
 
