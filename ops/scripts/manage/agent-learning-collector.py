@@ -554,13 +554,45 @@ def send_report(report: dict, dry_run: bool = False) -> list[str] | None:
         print(f"Sent: {subject} (msg_id={str(msg_id)[:8]})", flush=True)
         return sent_files
     except URLError as e:
+        code = getattr(e, 'code', '?')
         body = ""
         if hasattr(e, 'read'):
             try:
                 body = e.read().decode()[:200]
             except Exception:
                 body = str(e)
-        print(f"ERR: Send failed: {getattr(e, 'code', '?')} {body}", file=sys.stderr, flush=True)
+        # A 401 means the credential we picked was rejected. The bus has two
+        # auth modes (nginx Basic, bare-PGMQ Bearer) and _build_auth_headers
+        # picks ONE — so a stale FLEET_BASIC_AUTH against the bare PGMQ API
+        # kills every send and, because the failure is swallowed below, the
+        # collector stays "silent" for days (verified 2026-11-23: Basic 401 on
+        # 127.0.0.1:8903 while Bearer returned 200; last staged report
+        # 2026-11-19). Retry ONCE with the Bearer token when the first attempt
+        # used Basic — the docstring's documented fallback, now actually wired.
+        if code == 401 and "Basic" in headers.get("Authorization", ""):
+            token = _resolve_env("FLEET_BUS_TOKEN")
+            if token:
+                retry_headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {token}",
+                }
+                retry_req = Request(
+                    api_url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers=retry_headers,
+                    method="POST",
+                )
+                try:
+                    with urlopen(retry_req, timeout=30) as resp:
+                        result = json.loads(resp.read().decode())
+                    msg_id = result.get("msg_id", "?")
+                    print(f"Sent: {subject} (msg_id={str(msg_id)[:8]}) [bearer fallback]",
+                          flush=True)
+                    return sent_files
+                except URLError as e2:
+                    print(f"ERR: Bearer fallback also failed: "
+                          f"{getattr(e2, 'code', '?')}", file=sys.stderr, flush=True)
+        print(f"ERR: Send failed: {code} {body}", file=sys.stderr, flush=True)
         # Also surface on stdout — a stderr-only failure read as "silent (empty
         # output)" in the cron wrapper and hid the 400 rejection for 9 days
         # (2026-09-11). A failed send must be visible in the job output.
