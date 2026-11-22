@@ -565,7 +565,20 @@ range-wide in effect (dozens of blobs, tiny files included, most clearing on the
 remedy is to re-issue the close — but a blob that keeps drawing the SAME reply against byte-identical
 content needs a genuinely new prompt: give it a real content change (an honest tightening of a long
 comment counts), commit it as a new blob, and close again. Do not enlarge the range, and do not reach
-for an override. Report the message/store disagreement as a defect in the close's diagnostics — a gate
+for an override.
+
+**A close that reports NO VERDICT AT ALL — an unparseable or empty reviewer reply — is
+RETRYABLE on identical bytes. Do not start editing files to "make it a new prompt" until
+retries actually stall.** The refusal says so itself ("Nothing was judged … Retry
+end_change"), and every re-issue RESUMES: measured on one range, consecutive `end_change`
+calls drained it to closed (4 judged / 2 remaining → 5 judged / 1 remaining → closed),
+with the reviewer TIMING OUT on one blob along the way rather than judging it not-clean.
+So the per-pass wave budget, not the content, is usually the limiter — re-issue until the
+reported remaining count stops DECREASING, and read each pass's own list of which blobs
+still need a verdict. Reserve the reasoning-effort / output-cap knob for a blob that draws
+the SAME no-verdict reply across retries against byte-identical content, and reserve a
+real CONTENT change for when the STORE holds a not-clean verdict for that blob's sha.
+Conflating the two sends you editing files that were never judged wrong. Report the message/store disagreement as a defect in the close's diagnostics — a gate
 whose message asserts a stored verdict that does not exist is a one-way gate for anyone who believes it.
 
 **A reviewer finding on a TEST is often a real lesson: fix the test, not the production code.** The

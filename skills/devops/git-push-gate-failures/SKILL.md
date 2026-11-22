@@ -1,6 +1,6 @@
 ---
 name: git-push-gate-failures
-description: "Use when a push is blocked and the cause is unclear."
+description: "Use when a push blocks, or before pushing a governed range."
 version: 1.0.0
 author: Steadfaste Fleet
 tags: [git, push, hooks, deploy, shell]
