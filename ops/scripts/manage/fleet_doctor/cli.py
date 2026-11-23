@@ -70,7 +70,7 @@ from .checks import (
 )
 from .fix import apply_fixes
 from .bus_alert import dispatch_bus_alerts
-from .task_integrity import check_task_model_integrity
+from .task_integrity import check_task_model_integrity, check_task_query_scoping
 from . import dispositions
 
 
@@ -171,6 +171,7 @@ def main():
         check_paused_cron_reasons,
         check_review_provenance,
         check_task_model_integrity,
+        check_task_query_scoping,
         check_stale_loop_gov_daemon,
         check_stale_enforcer_plugin,
         check_task_id_hygiene,

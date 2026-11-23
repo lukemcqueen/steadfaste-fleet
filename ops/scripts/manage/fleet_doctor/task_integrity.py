@@ -26,9 +26,12 @@ from pathlib import Path
 
 _SCHEMA_GLOB = "v0*.sql"
 
-# A `list --assigned` task row starts with the 8-char task-id prefix. Advisory
-# lines name the tool that produced them instead, so they never match.
-_ROW_ID = re.compile(r"^[0-9a-f]{8}\s")
+# A task row starts with the task id: the full uuid (`f8988944-ef87-…`) or the
+# 8-char prefix some views echo (`f8988944 `). Advisory lines name the tool that
+# produced them instead, so they never match. (Both shapes measured from real
+# `task-db list` output — the prefix-only pattern matched NEITHER and turned
+# every row-bearing verdict into "COULD NOT VERIFY".)
+_ROW_ID = re.compile(r"^[0-9a-f]{8}(?:-|\s)")
 
 
 def _is_orchestrator() -> bool:
@@ -186,3 +189,66 @@ def check_task_model_integrity(res: "Results") -> None:            # noqa: F821
                     "Release them to the pool: task-db.py unclaim <id> --reason '<why>' "
                     "(or list them with: task-db.py list --assigned)",
                 )
+
+
+def _probe_default_scope(task_db_py: Path) -> tuple[str, int]:
+    """Run the deployed engine's DEFAULT list with every scope input REMOVED.
+
+    The probe's own environment is part of the probe: FLEET_SESSION_REPO is
+    stripped and the cwd is a fresh empty directory, so the only legal answer is
+    "no tasks" — an engine that answers with rows is serving the fleet view as
+    its default. (Input shape checked against task-db's own resolver ladder:
+    explicit arg -> injected -> env -> cwd -> UNKNOWN.)
+    """
+    env = {k: v for k, v in os.environ.items() if k != "FLEET_SESSION_REPO"}
+    import tempfile
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            p = subprocess.run(["python3", str(task_db_py), "list"],
+                               capture_output=True, text=True, timeout=30,
+                               cwd=td, env=env)
+            return ((p.stdout or "") + (p.stderr or "")).strip(), p.returncode
+    except (OSError, subprocess.SubprocessError):
+        return "", 3
+
+
+def check_task_query_scoping(res: "Results") -> None:               # noqa: F821
+    """A task query defaults to the CALLER's repo — never the whole host.
+
+    Operator rule (2026-10-14, restated 2026-11-23 after Titus reported that a Pi
+    session's task view showed every repo's tasks): "If the repo is unknown …
+    NO tasks should be returned", and the fleet-wide view is a SPECIAL REQUEST.
+    This drives the deployed engine's own default query and FAILS when it comes
+    back with rows — a host whose engine predates repo scoping passes every
+    static check while serving another repo's work as the agent's own.
+    """
+    runner = _deploy() / "scripts" / "task-db.py"
+    if not runner.is_file():
+        res.add("Task query scoping", "WARN",
+                "COULD NOT VERIFY: the deployed task-db.py is not on this host",
+                "Run: bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh")
+        return
+    raw, rc = _probe_default_scope(runner)
+    if not raw.strip():
+        res.add("Task query scoping", "WARN",
+                "COULD NOT VERIFY: the default task query produced no output",
+                "Check psql/docker access, then re-run the doctor")
+        return
+    rows = [ln for ln in raw.splitlines() if _ROW_ID.match(ln)]
+    if rows:
+        res.add("Task query scoping", "FAIL",
+                f"the DEFAULT task query returned {len(rows)} row(s) with no repo "
+                f"resolvable — this engine serves every repo's tasks as the caller's "
+                f"own (the defect Titus reported)",
+                "Update the deployed engine: bash ~/steadfaste-fleet/ops/scripts/"
+                "fleet-update.sh (and register the DEPLOYED task-mcp.py, never the "
+                "repo working tree — the doctor's MCP wiring row says which)")
+    elif "No tasks found" in raw or "repo unknown" in raw:
+        res.add("Task query scoping", "PASS",
+                "an unresolvable repo returns NO tasks (default = caller's repo; "
+                "the fleet-wide view is a special request)")
+    else:
+        res.add("Task query scoping", "WARN",
+                "COULD NOT VERIFY: the default task query printed neither rows nor "
+                f"the no-tasks marker (rc={rc}) — its output format may have changed",
+                f"Inspect: python3 {runner} list")

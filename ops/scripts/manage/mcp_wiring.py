@@ -51,6 +51,51 @@ DEFAULT_EXPECTED = {
 }
 ORCH_ONLY = {"agent-bus", "executor"}
 
+#: The DEPLOYED copy each server must be registered FROM. The registration runs
+#: this copy — never the repo working tree: the tree is user-writable and a stale
+#: checkout then serves stale behaviour (measured 2026-11-23: a `tasks`
+#: registration pointing at <repo>/mcp-servers/task-mcp.py served pre-scoping
+#: task queries while the deployed copy was current — an agent saw every repo's
+#: tasks as its own). Same paths as `deployed` column of
+#: ops/scripts/install/mcp-surface.inc.sh (spelled `~` here rather than ${HOME});
+#: pinned to it by tests/test_mcp_wiring.py.
+DEFAULT_DEPLOYED = {
+    "fleet-context": "~/.steadfaste-fleet/scripts/fleet-context-mcp.py",
+    "agent-bus": "~/.steadfaste-fleet/scripts/fleet-bus-mcp.py",
+    "tasks": "~/.steadfaste-fleet/scripts/task-mcp.py",
+    "executor": "~/.steadfaste-fleet/scripts/executor-mcp.py",
+    # Role pairs of the one loop-gov binary (not rows of the surface artifact).
+    "loop-governance": "~/.steadfaste-fleet/tools/loop-governance/loop-gov-mcp.py",
+    "review": "~/.steadfaste-fleet/tools/loop-governance/loop-gov-mcp.py",
+}
+
+#: Path markers: `/.steadfaste-fleet/` is the deploy home (fleet-update owns it);
+#: `/steadfaste-fleet/` without the dot is the repo working tree.
+DEPLOY_MARK = "/.steadfaste-fleet/"
+REPO_TREE_MARK = "/steadfaste-fleet/"
+
+
+def deployed_for(name, script=None):
+    """The path a registration (or a printed fix) should name.
+
+    The deployed copy when this audit knows one; otherwise the repo-relative
+    script, so a printed command still resolves on a host running from a clone.
+    """
+    known = DEFAULT_DEPLOYED.get(name)
+    if known:
+        return known
+    return f"~/{repo_rel_script(script)}"
+
+
+def _registered_script(block, script):
+    """The path the registration actually runs for this server (arg basename match),
+    or None when the entry carries no such argument."""
+    want = Path(str(script or "")).name
+    for p in _paths_of(block):
+        if Path(p).name == want:
+            return p
+    return None
+
 #: Where the server scripts live under the repo root.
 MCP_SERVERS_REL = "mcp-servers"
 
@@ -173,6 +218,11 @@ def audit(config_text, expected=None, exists=None, is_orch=True, which=None):
                 gone.append(p)              # not resolvable anywhere
         return gone, bare
 
+    def _fix_add(name, script):
+        return (f"hermes mcp add {name} --command "
+                f"~/.steadfaste-fleet/venv/bin/python3 "
+                f"--args {deployed_for(name, script)}")
+
     for name, script in expected.items():
         if name in ORCH_ONLY and not is_orch:
             if name in blocks:
@@ -185,10 +235,7 @@ def audit(config_text, expected=None, exists=None, is_orch=True, which=None):
 
         block = blocks.get(name)
         if block is None:
-            results.append((name, "FAIL", "not configured",
-                            f"hermes mcp add {name} --command "
-                            f"~/.steadfaste-fleet/venv/bin/python3 "
-                            f"--args ~/steadfaste-fleet/{repo_rel_script(script)}"))
+            results.append((name, "FAIL", "not configured", _fix_add(name, script)))
             continue
 
         gone, bare = _missing_paths(block)
@@ -196,9 +243,7 @@ def audit(config_text, expected=None, exists=None, is_orch=True, which=None):
             # Present but pointing at nothing: the false-pass the name-only check gave.
             results.append((name, "FAIL",
                             "configured, but these paths do NOT exist: " + ", ".join(gone),
-                            f"hermes mcp remove {name} && hermes mcp add {name} "
-                            f"--command ~/.steadfaste-fleet/venv/bin/python3 "
-                            f"--args ~/steadfaste-fleet/{repo_rel_script(script)}"
+                            f"hermes mcp remove {name} && {_fix_add(name, script)}"
                             "   (or run fleet-update.sh to deploy the missing pieces)"))
             continue
         cmd = re.search(r"^[ \t]*command:[ \t]*(.+?)[ \t]*$", block, re.MULTILINE)
@@ -207,11 +252,31 @@ def audit(config_text, expected=None, exists=None, is_orch=True, which=None):
             why = ("a bare command, not the fleet venv: " + ", ".join(bare)) if bare else \
                   f"the HERMES venv ({command}) — the tree the fleet is migrating off"
             results.append((name, "WARN", f"registered against {why}",
-                            f"hermes mcp remove {name} && hermes mcp add {name} "
-                            f"--command {FLEET_VENV} "
-                            f"--args ~/steadfaste-fleet/{repo_rel_script(script)}"
+                            f"hermes mcp remove {name} && {_fix_add(name, script)}"
                             f"   (there is no 'hermes mcp update'; re-add it)"))
             continue
+        # The ACTIVE path, not merely an existing one: a registration that runs the
+        # repo working tree serves whatever that checkout happens to hold, and a
+        # stale checkout keeps serving stale behaviour with every path present.
+        reg = _registered_script(block, script)
+        deployed = DEFAULT_DEPLOYED.get(name)
+        if deployed and reg:
+            dep_tail = deployed.split(DEPLOY_MARK, 1)[-1]
+            if DEPLOY_MARK in reg:
+                if reg.split(DEPLOY_MARK, 1)[-1] != dep_tail:
+                    results.append((name, "WARN",
+                                    f"registered at {reg} — not the deployed copy "
+                                    f"({deployed})",
+                                    f"hermes mcp remove {name} && {_fix_add(name, script)}"))
+                    continue
+            elif REPO_TREE_MARK in reg:
+                results.append((name, "WARN",
+                                f"registered at {reg} — that is the repo WORKING TREE, "
+                                f"not the deployed copy; the server that runs is whatever "
+                                f"that checkout holds (a stale one serves stale behaviour)",
+                                f"hermes mcp remove {name} && {_fix_add(name, script)}"
+                                "   (run fleet-update.sh first if the deployed copy is absent)"))
+                continue
         results.append((name, "PASS", "configured and its paths exist", ""))
         continue
     return results

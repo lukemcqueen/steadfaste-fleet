@@ -67,7 +67,7 @@ def test_an_entry_pointing_at_a_dead_path_FAILS_and_says_which_path():
     name, status, detail, fix = res[0]
     assert status == "FAIL", res
     assert "/opt/tools/loop-gov-mcp.py" in detail, detail
-    assert "hermes mcp add" in fix and "x.py" in fix, fix
+    assert "hermes mcp add" in fix and ".steadfaste-fleet" in fix, fix
 
 
 def test_a_dead_args_script_is_caught_too():
@@ -129,15 +129,17 @@ def test_a_bare_command_is_resolved_on_PATH_not_as_a_path():
 def test_the_printed_fix_names_a_path_that_resolves():
     """The doctor calls audit() with a BARE filename ("fleet-bus-mcp.py"), so the printed fix
     used to render `~/steadfaste-fleet/fleet-bus-mcp.py` — a path that does not exist, i.e. advice
-    nobody can run. The fix must name the repo-relative script."""
+    nobody can run. The fix names the DEPLOYED copy (the one fleet-update owns), which is also
+    the path a registration must use: a fix pointing at the repo working tree teaches the drift
+    it is meant to repair (2026-11-23)."""
     m = _load()
     cfg = ("mcp_servers:\n  tasks:\n    command: /opt/hermes-agent/venv/bin/python3\n"
            "    args: [/opt/task-mcp.py]\n")
     res = m.audit(cfg, {"tasks": "task-mcp.py"}, exists=lambda p: True)
     fix = res[0][3]
     arg = next(t for t in fix.split() if t.endswith("task-mcp.py"))
-    assert arg.endswith("/mcp-servers/task-mcp.py"), fix
-    print("  the printed fix names the repo-relative script ✓")
+    assert arg.endswith(".steadfaste-fleet/scripts/task-mcp.py"), fix
+    print("  the printed fix names the deployed script ✓")
 
 
 def test_the_expected_map_agrees_with_the_doctors():
@@ -172,6 +174,83 @@ def test_the_doctor_reports_an_unavailable_audit_instead_of_skipping_it():
     assert "res.add(" in block, "the failure path must REPORT, not pass silently"
     assert "unavailable" in block, "it must say the audit is unavailable"
     print("  the doctor reports an unavailable wiring audit ✓")
+
+
+# ── The registration must run the DEPLOYED copy, never the repo working tree ──
+# (2026-11-23, Titus: "tasks (mcp) shows ALL the tasks"). A registration pointing
+# at <repo>/mcp-servers/task-mcp.py runs whatever that checkout happens to hold,
+# so a stale checkout serves pre-scoping task queries while the deployed copy is
+# current. Existence is not currency.
+
+DEPLOYED_TASKS = "/srv/host/.steadfaste-fleet/scripts/task-mcp.py"
+REPO_TASKS = "/srv/host/steadfaste-fleet/mcp-servers/task-mcp.py"
+
+
+def _tasks_cfg(script_path):
+    return ("mcp_servers:\n  tasks:\n    command: /opt/venv/bin/python3\n"
+            f"    args: [{script_path}]\n")
+
+
+def test_a_repo_working_tree_registration_warns_and_names_the_deployed_copy():
+    res = _load().audit(_tasks_cfg(REPO_TASKS), {"tasks": "task-mcp.py"},
+                        exists=lambda p: True)
+    name, status, detail, fix = res[0]
+    assert status == "WARN", res
+    assert "working tree" in detail.lower(), detail
+    assert "task-mcp.py" in fix and ".steadfaste-fleet" in fix, fix
+
+
+def test_a_deployed_copy_registration_passes():
+    res = _load().audit(_tasks_cfg(DEPLOYED_TASKS), {"tasks": "task-mcp.py"},
+                        exists=lambda p: True)
+    assert res[0][1] == "PASS", res
+
+
+def test_an_unmanaged_custom_path_is_left_alone():
+    """/opt is somebody's own wiring: not ours to judge. The rule fires on the
+    fleet's own two trees and nowhere else."""
+    res = _load().audit(_tasks_cfg("/opt/mcp/task-mcp.py"), {"tasks": "task-mcp.py"},
+                        exists=lambda p: True)
+    assert res[0][1] == "PASS", res
+
+
+def test_the_deployed_paths_this_audit_enforces_match_the_surface_artifact():
+    """ONE definition: the deployed path per server is what
+    ops/scripts/install/mcp-surface.inc.sh declares in its `deployed` column.
+    This audit duplicates it only because it deploys standalone — so the two are
+    pinned together here rather than hoped for."""
+    import re as _re
+    surf = (REPO / "ops" / "scripts" / "install" / "mcp-surface.inc.sh").read_text()
+    m = _re.search(r"mcp_surface_lines\(\)\s*\{(.*?)\nSURFACE\n", surf, _re.DOTALL)
+    assert m, "mcp_surface_lines() heredoc not found — update this test"
+    declared = {}
+    for line in m.group(1).splitlines():
+        if "\t" not in line:
+            continue
+        name, deployed, _src = line.strip().split("\t")
+        declared[name] = deployed
+    mod = _load()
+    assert getattr(mod, "DEFAULT_DEPLOYED", None), (
+        "mcp_wiring declares no DEFAULT_DEPLOYED — the audit cannot enforce the "
+        "deployed copy without it")
+    for name, deployed in declared.items():
+        if name not in mod.DEFAULT_EXPECTED:
+            continue                     # not this audit's surface (role pairs etc.)
+        got = mod.DEFAULT_DEPLOYED.get(name)
+        assert got is not None, f"{name} is audited but has no deployed path"
+        want = deployed.replace("${HOME}", "~")   # shell spelling vs python spelling
+        assert got == want, (
+            f"{name}: the audit enforces {got!r} but the surface artifact declares "
+            f"{want!r} — one of them is now a second definition")
+
+
+def test_the_printed_fix_names_the_deployed_copy():
+    """The fix must point at the copy fleet-update owns, not the working tree —
+    a fix that names the repo path teaches the drift it is meant to repair."""
+    res = _load().audit(_tasks_cfg(REPO_TASKS), {"tasks": "task-mcp.py"},
+                        exists=lambda p: True)
+    fix = res[0][3]
+    assert ".steadfaste-fleet/scripts/task-mcp.py" in fix, fix
 
 
 def _main():

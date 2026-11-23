@@ -81,3 +81,75 @@ def test_task_claim_passes_task_id_and_no_notify(monkeypatch):
     monkeypatch.setattr(tm.task_db, "cmd_claim", rec)
     tm._HANDLERS["task_claim"]({"task_id": _UUID, "no_notify": True})
     assert rec.calls == [((_UUID, True), {})]
+
+
+# ── Repo scoping: the DEFAULT is the caller's own repo, and the fleet-wide view
+# ── is a SPECIAL REQUEST (operator 2026-11-23: "the default is ONLY tasks for the
+# ── repo; a request for ALL tasks has to be a special request").
+
+REPO_SCOPED_TOOLS = ("task_list", "task_pending", "task_board",
+                     "task_list_claimable", "task_list_handed_out")
+
+
+def _run_tool(tool_name, args, monkeypatch, cmd_name):
+    rec = Recorder()
+    monkeypatch.setattr(tm.task_db, cmd_name, rec)
+    result = tm._HANDLERS[tool_name](args)
+    return result, rec
+
+
+def test_the_default_query_carries_no_repo_and_no_all_repos(monkeypatch):
+    """No parameter => the ENGINE scopes to the caller's repo (its own resolver).
+
+    The MCP layer must not smuggle a scope in: passing repo='ALL' here is
+    exactly the bug Titus reported (an agent sees every repo's tasks)."""
+    for tool_name, cmd_name in (("task_list", "cmd_list"),
+                                ("task_board", "cmd_list_board")):
+        result, rec = _run_tool(tool_name, {}, monkeypatch, cmd_name)
+        assert result.is_error is False, (tool_name, result)
+        (args, kw), = rec.calls
+        assert not any(str(a).upper() == "ALL" for a in args if a), (tool_name, args, kw)
+        assert not any(str(v).upper() == "ALL" for v in kw.values() if v), (tool_name, kw)
+
+
+def test_repo_ALL_alone_is_refused_with_the_special_request_message(monkeypatch):
+    """`repo: "ALL"` reads like an ordinary 'no filter' to a model, so it is
+    REFUSED without the explicit special-request flag. The engine is never
+    reached: a refused scope must not touch the store."""
+    for tool_name, cmd_name in (("task_list", "cmd_list"),
+                                ("task_board", "cmd_list_board")):
+        result, rec = _run_tool(tool_name, {"repo": "ALL"}, monkeypatch, cmd_name)
+        assert result.is_error is True, (tool_name, result)
+        assert "all_repos" in result.content[0].text, result
+        assert not rec.calls, f"{tool_name} reached the engine with a refused scope"
+
+
+def test_all_repos_true_is_the_only_route_to_the_fleet_view(monkeypatch):
+    """The special request is a dedicated flag; it is what turns the query
+    fleet-wide, and it is loud in the schema so it is not reached for by
+    accident."""
+    result, rec = _run_tool("task_list", {"all_repos": True}, monkeypatch, "cmd_list")
+    assert result.is_error is False, result
+    (args, kw), = rec.calls
+    assert "ALL" in args or kw.get("repo") == "ALL", (args, kw)
+
+
+def test_all_repos_and_an_explicit_repo_conflict_is_refused(monkeypatch):
+    result, rec = _run_tool("task_list", {"repo": "my-repo", "all_repos": True},
+                            monkeypatch, "cmd_list")
+    assert result.is_error is True, result
+    assert not rec.calls
+
+
+def test_every_scoped_tool_advertises_all_repos_as_a_special_request():
+    tools = asyncio.run(tm.list_tools(None))
+    by_name = {t.name: t for t in tools.tools}
+    for tool_name in REPO_SCOPED_TOOLS:
+        schema = getattr(by_name[tool_name], "input_schema", None) \
+            or by_name[tool_name].inputSchema
+        props = schema.get("properties", {})
+        assert "all_repos" in props, f"{tool_name} has no all_repos flag"
+        assert "special request" in props["all_repos"]["description"].lower(), tool_name
+        # The `repo` description must NOT be an invitation to pass 'ALL'.
+        assert "ALL" not in props["repo"]["description"].replace("all_repos", ""), \
+            f"{tool_name} invites repo='ALL' in its description"

@@ -1,0 +1,30 @@
+Running: python3 -c import importlib.util, os, shutil, subprocess
+from pathlib import Path
+os.environ['AGENT_NAME'] = 'esther'
+spec = importlib.util.spec_from_file_location('ti', '<HOME>/steadfaste-fleet/ops/scripts/manage/fleet_doctor/task_integrity.py')
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+scratch = Path(os.environ['TMPDIR']) / 'task-scope-baseline'
+shutil.rmtree(scratch, ignore_errors=True)
+(scratch / 'scripts').mkdir(parents=True)
+git = subprocess.run(['git', '-C', '<HOME>/steadfaste-fleet', 'show', 'dd52de44:ops/scripts/manage/task-db.py'], capture_output=True, text=True)
+(scratch / 'scripts' / 'task-db.py').write_text(git.stdout)
+print('baseline = git show dd52de44:ops/scripts/manage/task-db.py  (pre cycle-12593 repo scoping)')
+print('baseline carries the scoping marker?', 'repo unknown' in git.stdout)
+for label, p in [('deployed-current ', '<HOME>/.steadfaste-fleet/scripts/task-db.py'),
+                 ('baseline-pre-scope', str(scratch / 'scripts' / 'task-db.py'))]:
+    out, rc = m._probe_default_scope(Path(p))
+    rows = [l for l in out.splitlines() if m._ROW_ID.match(l)]
+    verdict = 'FAIL (rows returned)' if rows else ('PASS (no tasks)' if ('No tasks found' in out or 'repo unknown' in out) else 'COULD NOT VERIFY')
+    print(f'{label}: rc={rc} rows={len(rows)} verdict={verdict}')
+    print('   first line:', out.splitlines()[0][:110] if out.splitlines() else '(empty)')
+
+rc: 0
+when: 2026-11-23T06:07:54Z
+
+baseline = git show dd52de44:ops/scripts/manage/task-db.py  (pre cycle-12593 repo scoping)
+baseline carries the scoping marker? False
+deployed-current : rc=0 rows=0 verdict=PASS (no tasks)
+   first line: No tasks found.
+baseline-pre-scope: rc=0 rows=40 verdict=FAIL (rows returned)
+   first line: ID                                     Agent      Scope     Status       Pr  Kind   Content
+sha256: 3c6d21781f14b5ebf1a94afa89fe0aa9a4a7b1f8166b63c45842e01ea2c0701c

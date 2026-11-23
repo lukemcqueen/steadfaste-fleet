@@ -3575,14 +3575,32 @@ main() {
   fi
 
   # ── Ensure tasks MCP server registered (ALL agents, not orch-only) ──
-  # Idempotent hermes mcp add; config points at the repo path (mirrors
-  # loop-governance wiring — the doctor's --fix converges the same way).
+  # Idempotent hermes mcp add; the registration runs the DEPLOYED copy — the
+  # path the ONE surface artifact (mcp-surface.inc.sh) declares. NEVER the repo
+  # working tree: the tree is user-writable and a stale checkout then serves
+  # stale behaviour (measured 2026-11-23: a `tasks` registration at
+  # <repo>/mcp-servers/task-mcp.py served PRE-SCOPING task queries while the
+  # deployed copy was current — an agent saw every repo's tasks as its own).
+  # An existing registration pointing at the working tree is REPOINTED here,
+  # because "already registered" is not "registered at the right path" (the
+  # same P1-A rule loop-governance already follows below).
   if command -v hermes >/dev/null 2>&1; then
+    local mcp_venv="${HOME}/.steadfaste-fleet/venv/bin/python3"
+    local mcp_server="${FLEET_DEPLOY_HOME}/scripts/task-mcp.py"
+    local _tasks_needs_add=0
     if hermes mcp list 2>/dev/null | grep -q "tasks"; then
-      : # already registered
+      if grep -q "/steadfaste-fleet/mcp-servers/task-mcp.py" "${HOME}/.hermes/config.yaml" 2>/dev/null; then
+        info "tasks MCP runs the repo WORKING TREE — repointing it at the deployed copy"
+        if hermes mcp remove tasks >/dev/null 2>&1; then
+          _tasks_needs_add=1
+        else
+          warn "could not remove the stale tasks registration — run: hermes mcp remove tasks"
+        fi
+      fi
     else
-      local mcp_venv="${HOME}/.steadfaste-fleet/venv/bin/python3"
-      local mcp_server="${HOME}/steadfaste-fleet/mcp-servers/task-mcp.py"
+      _tasks_needs_add=1
+    fi
+    if [[ "$_tasks_needs_add" -eq 1 ]]; then
       if [[ -x "$mcp_venv" && -f "$mcp_server" ]]; then
         info "Registering tasks MCP server…"
         if hermes mcp add tasks --command "$mcp_venv" --args "$mcp_server" 2>/dev/null; then

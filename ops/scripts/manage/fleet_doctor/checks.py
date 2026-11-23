@@ -3753,9 +3753,14 @@ def check_governance(res):
       continue
 
     if name not in config_text:
+      # The fix names the DEPLOYED copy — the path a registration must run (the
+      # repo working tree is user-writable and serves whatever that checkout
+      # holds; mcp_wiring.audit judges exactly this).
+      _fix_args = (_mw.deployed_for(name, server_script) if _mw is not None
+                   else f"~/steadfaste-fleet/mcp-servers/{server_script}")
       res.add(f"MCP server ({name})", "FAIL", "not configured",
           f"Run: hermes mcp add {name} --command ~/.steadfaste-fleet/venv/bin/python3 "
-          f"--args ~/steadfaste-fleet/mcp-servers/{server_script}")
+          f"--args {_fix_args}")
       continue
 
     res.add(f"MCP server ({name})", "PASS", "configured in config.yaml")

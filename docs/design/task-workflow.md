@@ -319,9 +319,12 @@ Two consequences worth knowing:
   Without that, a strict default would hide the task the caller just minted
   inside its own repo. With no resolvable repo the row stays untagged, exactly
   as before — which is also how a legacy untagged row comes into existence.
-- **The fleet view is explicit.** `--repo ALL` / `{"repo": "ALL"}` is the only
-  way to ask for every repo (orchestrator views), and it must be asked for.
-  Omitting the parameter is NOT the fleet view.
+- **The fleet view is a SPECIAL REQUEST.** On the CLI it is `--repo ALL`; on the
+  MCP tools it is the `all_repos: true` flag (added 2026-11-23). A bare
+  `{"repo": "ALL"}` is REFUSED: the string reads like an ordinary "no filter" to
+  a model, and that is how an agent came to read every repo's tasks as its own.
+  Omitting the parameter is never the fleet view — the default is the caller's
+  own repo, and an unresolvable repo returns NOTHING.
 
 The Hermes side needs step 2 because the tasks MCP server is ONE shared child
 per host (spawned by the gateway daemon, cwd = `$HOME`, measured 2026-10-14) —
@@ -336,17 +339,24 @@ over stdio, pinned before/after), `tests/test_task_query_repo_scope.py`,
 `tests/test_runtime/test_task_query_repo_injection.py`.
 
 
-**Config wiring (all agents):** mirror loop-governance exactly — the config
-points at the REPO path (`~/steadfaste-fleet/mcp-servers/`), same as
-loop-governance; the deployed copy in `~/.steadfaste-fleet/scripts/` is a
-fallback for doctor checks. The doctor's `--fix` converges this same way.
+**Config wiring (all agents):** the registration runs the **DEPLOYED** copy
+(`~/.steadfaste-fleet/scripts/task-mcp.py`) — the path the ONE surface artifact
+(`ops/scripts/install/mcp-surface.inc.sh`) declares. It used to point at the
+REPO path (`~/steadfaste-fleet/mcp-servers/`) "mirroring loop-governance", but
+loop-governance was hardened to the deployed copy (P1-A: the working tree is
+user-writable) and the tasks wiring was left behind. Measured cost (2026-11-23):
+a `tasks` registration at the repo path serves whatever that checkout holds, so
+a stale checkout kept serving PRE-SCOPING task queries while the deployed copy
+was current — an agent saw every repo's tasks as its own. The doctor's MCP
+wiring row now flags a working-tree registration, and fleet-update.sh repoints
+it.
 
 ```yaml
 mcp_servers:
   todos:
     command: /home/<user>/.steadfaste-fleet/venv/bin/python3
     args:
-      - /home/<user>/steadfaste-fleet/mcp-servers/task-mcp.py
+      - /home/<user>/.steadfaste-fleet/scripts/task-mcp.py
     enabled: true
 ```
 
