@@ -46,9 +46,19 @@ if ! command -v hermes >/dev/null 2>&1; then
   exit 3
 fi
 
-# Fetch current model.default via the public CLI.
-CURRENT="$(hermes config get model.default 2>/dev/null || true)"
-CURRENT="${CURRENT:-}"
+# Fetch current model.default via the public CLI. DISTINGUISH a failed read from an
+# empty value: a transient 'hermes config get' failure must NOT be coerced to
+# "no current model" (which the decision reads as "write needed") — that would turn
+# a no-op into a wrong write. On a get-failure, skip the write loudly with a distinct
+# exit code so the caller surfaces it rather than mis-materializing.
+CURRENT_FILE="$(mktemp)"
+if ! hermes config get model.default 2>/dev/null >"$CURRENT_FILE"; then
+  echo "materialize-fleet-model: COULD NOT VERIFY current model.default — 'hermes config get' failed; skipping write. Will retry next sync." >&2
+  rm -f "$CURRENT_FILE"
+  exit 4
+fi
+CURRENT="$(tr -d '\n' <"$CURRENT_FILE")"
+rm -f "$CURRENT_FILE"
 # Run the Python decision: print a JSON line: {"model":..,"provider":..,"write":bool,"label":bool}
 DECISION="$(CURRENT_MODEL="$CURRENT" PYTHONPATH="$REPO_DIR/ops/scripts" "$PY" - <<'PYEOF'
 import json, os, sys
