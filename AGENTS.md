@@ -18,6 +18,26 @@ The repo is a **layer model** (`src/` was retired; keep the separation):
 Full canonical structure + naming rules: `skills/software-development/repo-organization/SKILL.md`;
 planned consolidation: `docs/design/repo-consolidation-proposal.md`.
 
+## Agent skills
+
+### Issue tracker
+
+Issues and tickets live in the fleet **task-db** (`tasks` schema on
+`mycortex-postgres`), driven by `task-db.py` / the `task_*` MCP tools — not
+GitHub Issues. Create/fetch/close tickets there, tagged with the triage
+vocabulary below. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical roles as task-db JSON `tags`: `needs-triage`, `needs-info`,
+`ready-for-agent`, `ready-for-human`, `wontfix`. See
+`docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context. `GLOSSARY.md` and `docs/adr/` at the repo root; create
+`GLOSSARY.md` lazily via `/domain-modeling`. See `docs/agents/domain.md`.
+
 ## Scope — Rules Govern Changes, Not Investigation
 
 Every rule in this file governs *changes* — to the repo, to prod, or to
