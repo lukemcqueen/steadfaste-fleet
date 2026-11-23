@@ -29,14 +29,18 @@ A file under no repo-owned skill dir is a Hermes default and stays skipped.
 
 | Measure | Value |
 |---|---|
-| Stranded in place (path in repo, content only deployed) | 0 |
+| Stranded in place (path in repo, content only deployed) | 2 |
 | Absent from the repo (deployed under a repo-owned skill) | 127 |
 |   ↳ path dropped from repo history | 5 |
 |   ↳ path never committed | 122 |
-| Files in sync | 1013 |
+| Files in sync | 1011 |
 | Skipped (Hermes defaults, or repo ahead) | 887 |
 
 **Verdict: FAIL**
+
+Stranded in place:
+- devops/cron-job-management/SKILL.md
+- devops/llm-cost-optimization/SKILL.md
 
 Absent from the repo (deployed under a repo-owned skill):
 - autonomous-ai-agents/steadfaste-fleet/references/project-cortex-directory.md (dropped-from-repo)
