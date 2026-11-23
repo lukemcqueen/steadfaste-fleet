@@ -241,6 +241,63 @@ else
   fi
 fi
 
+# B10. a rename landed as TWO SEQUENTIAL sweeps DOUBLES the product token in any
+#      name that was already compound (the legacy bus unit name becomes one that
+#      carries the product token twice). A SINGLE sweep can never produce a
+#      repeated token, so ANY hit is residue: repair it to the SINGLE name (the
+#      token is the product, not a prefix).
+#      EXCLUDED (and NAMED, so the coverage is checkable):
+#        - dated records and rationale docs (docs/older, design, plans, reviews,
+#          evidence, artifacts) — they quote the state they were written in;
+#        - skills/devops/rename-sweep — the skill that TEACHES this mangle class,
+#          whose worked example must keep the doubled spelling it warns about;
+#        - this suite's own grep literals.
+#      The surfaces are ASSERTED to exist first: a missing directory would make
+#      the grep return nothing and the lint would report a clean sweep over nothing.
+_b10_missing=""
+for _b10d in docs ops skills mcp-servers plugins; do
+  [ -d "$REPO/$_b10d" ] || _b10_missing="$_b10_missing $_b10d"
+done
+if [ -n "$_b10_missing" ]; then
+  bad "B10 cannot verify — missing surface(s):$_b10_missing"
+else
+  _b10_raw="$TMP/b10.raw"; _b10_rc=0
+  grep -RInE \
+      --include=*.md --include=*.sh --include=*.py --include=*.yaml --include=*.yml \
+      --include=*.toml --include=*.service --include=*.plist --include=*.conf \
+      --include=*.json \
+      --exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=node_modules \
+      --exclude-dir=older --exclude-dir=evidence --exclude-dir=reviews \
+      --exclude-dir=design --exclude-dir=plans --exclude-dir=artifacts \
+      --exclude-dir=rename-sweep \
+      -e 'fleet[-_.]fleet' -e 'cortex[-_.]cortex' -e 'mycortex[-_.]mycortex' \
+      -e 'steadfaste[-_.]steadfaste' -e 'hermes[-_.]hermes' \
+      "$REPO/docs" "$REPO/ops" "$REPO/skills" "$REPO/mcp-servers" "$REPO/plugins" \
+      >"$_b10_raw" || _b10_rc=$?
+  if [ "$_b10_rc" -gt 1 ]; then
+    bad "B10 grep failed (rc=$_b10_rc) — CANNOT VERIFY the doubled-token surface"
+  else
+    b10_left="$(grep -v 'test_fleet_cli_brand\.sh' "$_b10_raw" \
+      | grep -viE "$RECORD_FILTER" || true)"
+    if [ -z "$b10_left" ]; then
+      ok "B10: no doubled product token (two-sweep residue) in a live surface"
+    else
+      bad "B10: doubled product token remains — repair to the SINGLE name:"
+      echo "$b10_left"
+    fi
+  fi
+fi
+
+# B10-negative: prove the detector can SEE the shape. A detector that never fires
+# is indistinguishable from a clean tree, so plant the exact shape and require a hit.
+mkdir -p "$TMP/neg10/docs"
+printf 'unit=steadfaste-fleet-fleet-bus.service\n' > "$TMP/neg10/docs/planted.md"
+if grep -RInE --include=*.md -e 'fleet[-_.]fleet' "$TMP/neg10/docs" | grep -q 'fleet-fleet'; then
+  ok "B10-negative: a planted doubled token IS detected (the lint is not blind)"
+else
+  bad "B10-negative: the lint is BLIND — a planted doubled token was not detected"
+fi
+
 echo
 echo "== RESULT: $pass ok, $fails failed =="
 [ $fails -eq 0 ]

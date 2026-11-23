@@ -2965,6 +2965,151 @@ def check_system(res):
       res.add("Systemd crash loops", "PASS", "no units in auto-restart loop")
 
 
+# ── Doubled product tokens (double-sweep residue) ──
+# A rename that landed as TWO sequential sweeps doubles the product token in
+# any name that was already compound: sweeping `hermes-cortex` -> `steadfaste-fleet`
+# and then `cortex` -> `fleet` rewrites the legacy bus unit name into one that
+# carries the product token TWICE. A SINGLE sweep can never produce a repeated
+# token, so ANY hit is residue — repair it to the SINGLE name (the token is the
+# product, not a prefix) and confirm the repair against the LIVE surface
+# (`systemctl --user list-units`, the cron list), never against the doc that
+# named it: a doctor's expected-unit list can carry a doubled name indefinitely,
+# so the unit it names does not exist and the check silently stops covering it.
+#
+# Surfaces scanned: the deployed tree's live artifacts, the user unit files
+# (names AND contents) and the cron job names.
+# Surfaces NOT scanned, named here so the coverage is checkable: dated records
+# and backups (any path carrying archive/backup/record/history), and `skills/` —
+# a skill that TEACHES this mangle class must keep the doubled spelling it warns
+# about, so it is excluded rather than "fixed".
+_DOUBLED_TOKEN_RE = re.compile(
+    r"fleet[-_.]fleet|cortex[-_.]cortex|mycortex[-_.]mycortex"
+    r"|steadfaste[-_.]steadfaste|hermes[-_.]hermes")
+_DOUBLED_TOKEN_SKIP_DIRS = frozenset({
+    ".git", "__pycache__", "node_modules", "venv", ".venv", "state", "skills",
+    "evidence", "logs", "older", "artifacts",
+    # `data/` is the loop-governance runtime store (event jsonl ledgers, cycle
+    # archives, the governance DB). A PAST cycle's task_id can itself be a
+    # doubled name — measured in data/loop-events/*.jsonl — and an append-only
+    # ledger must not be rewritten to satisfy a lint: the store records what ran,
+    # it does not name anything live.
+    "data",
+})
+_DOUBLED_TOKEN_SKIP_SUBSTRINGS = ("archive", "backup", "record", "history")
+_DOUBLED_TOKEN_SKIP_SUFFIXES = frozenset({
+    ".pyc", ".pyo", ".so", ".whl", ".gz", ".zip", ".bak", ".png", ".jpg",
+    ".jpeg", ".webp", ".pdf", ".sqlite", ".db",
+})
+_DOUBLED_TOKEN_MAX_BYTES = 512_000
+
+
+def _doubled_token_path_skipped(parts) -> bool:
+  """True when any path segment is a records/backup dir this check must not read."""
+  for part in parts:
+    low = part.lower()
+    if low in _DOUBLED_TOKEN_SKIP_DIRS:
+      return True
+    if any(tok in low for tok in _DOUBLED_TOKEN_SKIP_SUBSTRINGS):
+      return True
+  return False
+
+
+def check_doubled_tokens(res: "Results") -> None:
+  """Doubled product tokens — residue of a rename that landed as two sweeps.
+
+  A single sweep cannot produce a repeated token, so any hit is residue of the
+  two-sweep shape (product rename, then component rename). Repair to the single
+  name: the token is the product, not a prefix.
+  """
+  hits: list = []
+  surfaces: list = []
+  unverified: list = []
+
+  if FLEET_DEPLOY_HOME.is_dir():
+    surfaces.append(str(FLEET_DEPLOY_HOME))
+    for p in FLEET_DEPLOY_HOME.rglob("*"):
+      try:
+        rel = p.relative_to(FLEET_DEPLOY_HOME)
+      except ValueError:
+        continue
+      if _doubled_token_path_skipped(rel.parts):
+        continue
+      if p.is_symlink() or not p.is_file():
+        continue
+      if p.suffix.lower() in _DOUBLED_TOKEN_SKIP_SUFFIXES:
+        continue
+      if _DOUBLED_TOKEN_RE.search(p.name):
+        hits.append(f"{rel} (filename)")
+      try:
+        if p.stat().st_size > _DOUBLED_TOKEN_MAX_BYTES:
+          continue
+        for i, line in enumerate(p.read_text(errors="replace").splitlines(), 1):
+          if _DOUBLED_TOKEN_RE.search(line):
+            hits.append(f"{rel}:{i}: {line.strip()[:120]}")
+      except OSError:
+        continue
+  else:
+    unverified.append("deployed tree missing")
+
+  unit_dir = HOME / ".config" / "systemd" / "user"
+  if IS_LINUX:
+    if unit_dir.is_dir():
+      surfaces.append(str(unit_dir))
+      for p in sorted(unit_dir.rglob("*")):
+        if _DOUBLED_TOKEN_RE.search(p.name):
+          hits.append(f"{p.name} (unit filename)")
+        if p.is_symlink() or not p.is_file():
+          continue
+        if p.suffix.lower() not in {".service", ".timer", ".socket", ".target", ".conf"}:
+          continue
+        try:
+          for i, line in enumerate(p.read_text(errors="replace").splitlines(), 1):
+            if _DOUBLED_TOKEN_RE.search(line):
+              hits.append(f"{p.name}:{i}: {line.strip()[:120]}")
+        except OSError:
+          continue
+    else:
+      unverified.append("unit dir missing")
+
+  if JOBS_FILE.is_file():
+    surfaces.append(str(JOBS_FILE))
+    try:
+      blob = json.loads(JOBS_FILE.read_text(errors="replace"))
+      jobs = blob if isinstance(blob, list) else (blob.get("jobs") or [])
+      for j in jobs:
+        if not isinstance(j, dict):
+          continue
+        for key in ("name", "id", "job_id"):
+          val = str(j.get(key) or "")
+          if val and _DOUBLED_TOKEN_RE.search(val):
+            hits.append(f"cron job {val!r}")
+    except (OSError, ValueError, AttributeError) as e:
+      unverified.append(f"cron names unreadable ({type(e).__name__})")
+  else:
+    unverified.append("jobs file missing")
+
+  # Fail closed: a clean grep over nothing is not a pass (SOUL 12).
+  if not surfaces:
+    res.add("Doubled tokens", "WARN",
+        "no surface could be scanned — CANNOT VERIFY "
+        f"({'; '.join(unverified) or 'no surfaces found'})",
+        "Check FLEET_DEPLOY_HOME, ~/.config/systemd/user and the cron jobs file exist")
+    return
+
+  note = f" (unverified: {'; '.join(unverified)})" if unverified else ""
+  if hits:
+    shown = "; ".join(hits[:5])
+    more = f"  (+{len(hits) - 5} more)" if len(hits) > 5 else ""
+    res.add("Doubled tokens", "FAIL",
+        f"{len(hits)} doubled product token(s) — two-sweep residue: {shown}{more}{note}",
+        "Repair each to the SINGLE name (the token is the product, not a prefix), "
+        "confirm against the live surface (systemctl --user list-units / the cron "
+        "list), then re-run the doctor")
+  else:
+    res.add("Doubled tokens", "PASS",
+        f"no doubled product token across {len(surfaces)} surface(s){note}")
+
+
 def check_config(res):
   """6. Config consistency: steadfaste-fleet.env var cross-reference."""
   env_path = FLEET_ENV if FLEET_ENV.exists() else LEGACY_MODELS_ENV
