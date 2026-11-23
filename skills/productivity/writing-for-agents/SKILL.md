@@ -1,6 +1,7 @@
 ---
 version: 1.0.0
 name: writing-for-agents
+version: 1.0.0
 description: Writing documents for agents. Use when creating or editing skills, or modifying AGENTS.md or CLAUDE.md.
 ---
 
