@@ -155,14 +155,21 @@ says the HISTORY is right, nothing about whether the HOST was updated.
      `--disposition "nightly-handoff.py"` (real name `Stale deploy: scripts/nightly-handoff.py`) each
      refused. Read the exact name from the UNDISPOSED list and paste it; check the name of an
      already-disposed item from the doctor's own line (it prints `[deferred (owner, since date)]`).
-   - **The UNDISPOSED text block TRUNCATES at ~12 entries (`… and N more`) — read the FULL list from
-     `--json`, never the text view.** The text hides most of what needs deciding (measured: 65
-     undisposed, only 12 printed). Dump `fleet-doctor.py --json > <file>` and list every WARN/INFO
-     check — name precedes status in each object, so `grep -B1 -e '"status": "WARN"' -e '"status":
-     "INFO"' <file>` prints each one — then batch them by CLASS (cron extras vs stale deploys vs
-     skill drift vs harness) and fix or dispose per class, not one at a time. Triaging the text view
-     alone under-reports and you close believing the list was a dozen long. (Keep the two `-e` flags
-     separate: a quoted `"WARN|INFO"` alternation is write-class to the terminal classifier.)
+   - **The UNDISPOSED text block TRUNCATES at ~12 entries (`… and N more`) — and `--json` carries NO
+     disposition state, so neither view alone lists the full undisposed set.** Each json check object
+     has only `name/status/detail/fix` — the `[deferred (owner, since date)]` marker lives ONLY in
+     the text view — so the json grep lists every WARN/INFO candidate but cannot tell which of them
+     are already decided. The reliable enumeration is ITERATIVE: `--json` names the candidates (dump
+     `fleet-doctor.py --json > <file>` and `grep -B1 -e '"status": "WARN"' -e '"status": "INFO"'
+     <file>` — name precedes status in each object; keep the two `-e` flags separate, a quoted
+     `"WARN|INFO"` alternation is write-class), dispose the visible ones, re-run `--quiet` and read
+     the next `UNDISPOSED` block, repeat until `0 undisposed`. Batch by CLASS (cron extras vs stale
+     deploys vs skill drift vs harness), not one at a time.
+   - **`--disposition` is SLOW — each call re-inits the doctor's MCP layers, ~15s each, so a `for`
+     loop over 10+ in one foreground terminal call crosses the 180s timeout mid-loop.** Chunk the
+     loop to ~8 per call (each `--disposition` prints `N undisposed` remaining as it goes), or run
+     the whole loop backgrounded with `notify=true`. A timed-out loop still records the items it did
+     process — re-run `--quiet`, dispose what remains, do not re-dispose what already landed.
    - **`fleet-doctor.py --json` is NOT pure JSON — the doctor prints `[mcp-server] DEBUG:` lines to
      stdout BEFORE the `{`.** A programmatic `json.load` of the raw file fails with
      `Expecting value: line 1 column 2`; skip lines until the first line that starts with `{`, then
