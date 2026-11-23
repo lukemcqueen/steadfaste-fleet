@@ -944,6 +944,7 @@ register "docs/templates/com.hermes.fleet-gateway.plist" "${FLEET_DEPLOY_HOME}/t
 register "ops/scripts/fleet_lib/tools.py"         "${FLEET_DEPLOY_HOME}/scripts/fleet_lib/tools.py"
 register "ops/scripts/fleet_lib/models.py"        "${FLEET_DEPLOY_HOME}/scripts/fleet_lib/models.py"
 register "ops/scripts/fleet_lib/env.py"           "${FLEET_DEPLOY_HOME}/scripts/fleet_lib/env.py"
+register "ops/scripts/fleet_lib/identity.py"      "${FLEET_DEPLOY_HOME}/scripts/fleet_lib/identity.py"
 
 # mycortex knowledge brain — schema, migration runner, import, CLI, parity harness
 register "ops/services/mycortex/migrate.py"          "${FLEET_DEPLOY_HOME}/services/mycortex/migrate.py"

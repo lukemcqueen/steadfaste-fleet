@@ -17,6 +17,12 @@ from pathlib import Path
 _SCRIPT_DIR = Path(__file__).parent
 if str(_SCRIPT_DIR) not in __import__('sys').path:
     __import__('sys').path.insert(0, str(_SCRIPT_DIR))
+# fleet_lib resolves from the SCRIPTS parent (ops/scripts), one level up from
+# this health/ dir — needed for the canonical identity rule below.
+_SCRIPTS_PARENT = _SCRIPT_DIR.parent
+if str(_SCRIPTS_PARENT) not in __import__('sys').path:
+    __import__('sys').path.insert(0, str(_SCRIPTS_PARENT))
+from fleet_lib import identity as _identity
 
 # Cross-platform service helpers
 from platform_utils import (
@@ -97,12 +103,14 @@ def _check_scripts() -> bool:
 
 def _is_orchestrator() -> bool:
     """Check if this machine is an orchestrator (runs the Agent Bus server).
-    
-    Uses the same pattern as install.sh and fleet-update.sh:
-    short hostname matched against moses|esther.
+
+    The canonical host-derived rule lives once in fleet_lib.identity (hostname
+    moses|esther AND matching home dir; env never trusted); this is one of its
+    call sites. The previous body checked hostname only, which the fleet bus
+    gates on — a hostname match on a box whose home is not /home/<host> would
+    wrongly treat it as an orchestrator.
     """
-    short = os.uname().nodename.split(".")[0].lower()
-    return short in ("moses", "esther")
+    return _identity.is_orchestrator()
 
 
 SERVICES: list[dict] = [

@@ -47,25 +47,24 @@ SCOPE_OPT_IN = "opt-in"
 
 
 # ── Host identity (orchestrator = hostname + home dir, never env) ─────
+# The canonical rule lives once in fleet_lib.identity; this is one of its call
+# sites. _hostname() MUST keep returning `hostname -s` — the per-host stagger
+# hash (cksum(hostname:cron-name) % 60) depends on that short-name form.
+# cron_manifest runs standalone (deployed to scripts/manage/, or from the repo's
+# ops/scripts/manage/), so resolve the fleet_lib parent explicitly.
+_scripts_dir = Path(__file__).resolve().parent.parent
+if str(_scripts_dir) not in sys.path:
+    sys.path.insert(0, str(_scripts_dir))
+from fleet_lib import identity as _identity
+
+
 def _hostname() -> str:
-    try:
-        return subprocess.run(["hostname", "-s"], capture_output=True, text=True, timeout=5).stdout.strip()
-    except Exception:
-        return os.uname().nodename.split(".")[0]
+    return _identity._short_hostname()
 
 
 def _is_orchestrator() -> bool:
     """Orchestrator status is host-derived: hostname moses|esther AND matching home dir."""
-    host = _hostname()
-    if host not in ("moses", "esther"):
-        return False
-    user = os.environ.get("USER") or os.environ.get("LOGNAME") or ""
-    try:
-        import pwd
-        home = pwd.getpwnam(user).pw_dir
-    except Exception:
-        home = os.path.expanduser("~")
-    return home == f"/home/{host}"
+    return _identity.is_orchestrator()
 
 
 def _stagger_minute(name: str) -> str:

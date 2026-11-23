@@ -22,7 +22,17 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
+
+# Ensure ops/scripts (parent-of-parent) is importable so fleet_lib resolves —
+# task_integrity is imported by the doctor CLI's subprocess and by hermetic
+# tests that import the package; relying on config.py's side-effect sys.path
+# insert (which happens to run first) is fragile.
+_scripts_dir = Path(__file__).resolve().parents[2]
+if str(_scripts_dir) not in sys.path:
+    sys.path.insert(0, str(_scripts_dir))
+from fleet_lib import identity as _identity
 
 _SCHEMA_GLOB = "v0*.sql"
 
@@ -35,18 +45,16 @@ _ROW_ID = re.compile(r"^[0-9a-f]{8}(?:-|\s)")
 
 
 def _is_orchestrator() -> bool:
-    """Host-derived role, same rule as fleet_doctor.config.AGENT_ROLE.
+    """Host-derived role, the fleet authority — NEVER trusts env.
 
-    The probe uses the fleet view (`--repo ALL`) ONLY for an orchestrator so it
+    Same rule as fleet_doctor.config.AGENT_ROLE and fleet_lib.identity. The
+    probe uses the fleet view (`--repo ALL`) ONLY for an orchestrator so it
     can see stranded slices on every host; a worker keeps its repo-scoped view
-    (it has no right to fleet-wide visibility).
+    (it has no right to fleet-wide visibility). The old env-first chain here let
+    AGENT_TYPE/IS_ORCHESTRATOR widen this probe to fleet scope on a worker host;
+    the canonical rule (fleet_lib.identity) refuses env, which is the fix.
     """
-    agent_type = os.environ.get("AGENT_TYPE", "").lower().strip()
-    if agent_type in ("orchestrator", "server", "dev"):
-        return agent_type == "orchestrator"
-    if os.environ.get("IS_ORCHESTRATOR", "").lower() in ("true", "1", "yes"):
-        return True
-    return os.uname().nodename.split(".")[0] in ("moses", "esther")
+    return _identity.is_orchestrator()
 
 
 def _repo() -> Path:

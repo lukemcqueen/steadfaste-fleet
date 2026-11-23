@@ -62,16 +62,14 @@ MCP_SERVERS_DIR = FLEET_REPO / "mcp-servers"
 CURL = os.environ.get("CURL_BIN", "curl")
 
 # ── Agent role detection ─────────────────────────────────────────
-# Roles: orchestrator, server, dev
-# Detection: AGENT_TYPE env var → IS_ORCHESTRATOR env var → hostname → fallback
-_agent_type = os.environ.get("AGENT_TYPE", "").lower().strip()
-if _agent_type in ("orchestrator", "server", "dev"):
-    AGENT_ROLE = _agent_type
-elif os.environ.get("IS_ORCHESTRATOR", "").lower() in ("true", "1", "yes"):
-    AGENT_ROLE = "orchestrator"
-else:
-    _hostname = os.uname().nodename.split(".")[0]
-    AGENT_ROLE = "orchestrator" if _hostname in ("moses", "esther") else "server"
+# HOST-DERIVED ONLY — the fleet authority. The env vars AGENT_TYPE /
+# IS_ORCHESTRATOR grant NO orchestrator powers (they are spoofable); the old
+# env-first chain here could widen this doctor's task probe to fleet scope on a
+# worker host whenever those vars were set. The rule lives once in
+# fleet_lib.identity (see its docstring); this is one of its call sites.
+from fleet_lib import identity as _identity
+
+AGENT_ROLE = _identity.agent_role()
 
 # ── External base URL resolution ────────────────────────────────
 def resolve_external_base() -> str:
