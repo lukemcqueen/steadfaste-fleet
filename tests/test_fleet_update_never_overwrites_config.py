@@ -57,3 +57,38 @@ def test_no_model_convergence_skip_flag_logic_remains():
         "calls were removed outright; the per-host skip flag is a vestige of "
         "the opt-out anti-pattern and must not linger."
     )
+
+
+def test_materializer_is_the_sanctioned_config_writer_with_override_seam():
+    """The ONLY sanctioned writer of operator-owned config.yaml model keys is the
+    materializer, and it must NOT clobber a deliberate per-host pin.
+
+    The 2026-09-08 clobber class is 'fleet-update auto-writes operator-owned
+    model.default on every deployment'. The materializer
+    (decouple-fleet-model-materializer, cycle 8566) is that write carried forward
+    intentionally, but it only re-introduces the class SAFELY:
+      (i)   it is idempotent (no-op when current == fleet target),
+      (ii)  it honors a per-host SESSION_MODEL / SESSION_PROVIDER override BEFORE
+            the fleet baseline (an operator pin is the write target, not the baseline),
+      (iii) a routing label or a failed config-read fails closed (no write).
+    Those three properties are proven hermetically in test_materialize_fleet_model.py.
+    This guard asserts the write is delegated to exactly that script (never a
+    re-introduced standalone writer) and that fleet-update invokes it fail-open.
+    """
+    text = _script_text()
+    assert "materialize-fleet-model.sh" in text, (
+        "fleet-update.sh must route the model-default write through the sanctioned "
+        "materializer only (materialize-fleet-model.sh), which carries the idempotence "
+        "+ operator-override + fail-closed properties. A re-introduced standalone "
+        "writer (install-model-default.sh class) is the 2026-09-08 clobber returned."
+    )
+    # the resolver honors an operator pin (SESSION_MODEL) before the baseline — the
+    # no-clobber seam lives in fleet_lib.models.resolve_session_target, not in the
+    # deploy script's write path.
+    _models = _REPO / "ops" / "scripts" / "fleet_lib" / "models.py"
+    msrc = _models.read_text()
+    assert "SESSION_MODEL" in msrc and "resolve_session_target" in msrc, (
+        "fleet_lib/models.py must expose resolve_session_target honoring SESSION_MODEL "
+        "first — the operator-override seam that stops the materializer from clobbering "
+        "a deliberate per-host pin."
+    )
