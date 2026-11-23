@@ -188,6 +188,16 @@ sudo unattended-upgrades --dry-run --debug 2>&1 | head -20
 
 ### 4. Fail2ban Jail Expansion
 
+**Frame it correctly: fail2ban is a rate limiter, not an access control.** It cannot stop a distributed attack (one or two tries per IP across thousands of IPs), it stops nothing when the attacker already holds a valid key, and the shipped default ban is short (`maxretry=5`, `findtime=10m`, `bantime=10m`). What actually resists SSH brute force is key-only auth; fail2ban is the layer that quiets log noise and slows a single-source attacker. Never cite fail2ban as the reason a password-auth host is safe. Verify it is genuinely running and which jails are live — a jail present in config is not a jail that is enabled:
+
+```bash
+sudo fail2ban-client status            # jail list — sshd must appear here
+sudo fail2ban-client status sshd       # bans, and the IPs currently banned
+journalctl -u fail2ban --since '7 days ago' | grep -cE 'Ban |Jail .*sshd.'   # has it actually banned?
+```
+
+The sshd filter ignores failed pubkeys for *valid* users by default (`publickey = nofail`) but COUNTS failed pubkeys for *invalid* users, so a login aimed at the wrong host or a non-existent account does accumulate toward a ban.
+
 Add jails for any additional exposed services (Hermes API ports, etc.):
 
 ```bash
@@ -302,6 +312,19 @@ sudo rkhunter --check --sk       # run a check
    rotation with the peer's owner first (reinstall/regeneration is legit, but
    verify). While known_hosts is stale the probe is blocked, so reach the peer
    through the Agent Bus or another channel for the question.
+10. **A valid, present key is still refused when its path permissions are wrong.** `StrictModes` (default `yes`, and normally left commented out in `sshd_config`) silently rejects a key when the `.ssh` directory or the authorized-keys file is writable by group or other; the client sees only `Permission denied (publickey)`, and the key itself parses perfectly, so it looks like a key problem. Correct the ownership and modes so the directory is owner-only and the key file is owner read/write (the standard SSH layout), then confirm with `stat -c '%a %U %G'` on both. Check this BEFORE blaming the key, the client, or the file's contents.
+
+11. **`sshd -T` needs root.** Run as a normal user it exits with `no hostkeys available` and prints nothing, which reads like an empty or misconfigured result. Don't retry it — determine the effective settings by reading `sshd_config` and `sshd_config.d/*.conf` directly and knowing the compiled-in defaults (e.g. `StrictModes yes`, `PubkeyAuthentication yes`).
+
+12. **Never infer the effective SSH auth methods from the main `sshd_config` — the DROP-INS decide.** A stock `sshd_config` ships every auth line commented out (`#PasswordAuthentication yes`, `#KbdInteractiveAuthentication yes`), which reads like password auth is ON; near the top, though, is `Include /etc/ssh/sshd_config.d/*.conf`, and any drop-in silently overrides it (e.g. Omarchy's `10-omarchy-hardening.conf` sets `PasswordAuthentication no` + `KbdInteractiveAuthentication no`). Auditing only the main file produced a wrong "this host allows password SSH" finding. Read `ls /etc/ssh/sshd_config.d/` and EVERY file in it, then confirm from a client WITHOUT root:
+
+   ```bash
+   ssh -o PubkeyAuthentication=no -o PreferredAuthentications=password \
+       -o NumberOfPasswordPrompts=0 -o BatchMode=no -v user@host true 2>&1 \
+     | grep "Authentications that can continue"
+   ```
+
+   That line is the authoritative list of methods the server will actually accept (`publickey` alone ⇒ password auth is off). `NumberOfPasswordPrompts=0` means no credential is ever sent, so the probe cannot lock an account or trip fail2ban. Trust this live method list over any reading of config files.
 
 ## Verification Checklist
 

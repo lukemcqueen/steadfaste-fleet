@@ -239,6 +239,14 @@ This does not override the Scope Boundary above. An out-of-scope fix still gets 
 left alone. The distinction is whether the item is a *separate change the operator must
 choose to fund* (note it) or *your own current work left unfinished* (finish it).
 
+**The same failure wears a SEARCH costume: a second confirming query is a delay, not diligence.**
+Once a search has NAMED the defect and where it lives, the next tool call is the FIX — not another
+sweep to be sure, not a wider grep for siblings, not a re-read of the file to confirm what the
+search already returned. The operator cannot see your uncertainty; they see the elapsed time
+between finding a one-line defect and repairing it, and "why aren't you fixing easy things as you
+go?" is the correction that earns. Fix the confirmed instance FIRST, then widen the search — and
+only when the fix's blast radius actually depends on the answer.
+
 ## Recovery When Caught
 
 If the user corrects you for asking an obvious question:

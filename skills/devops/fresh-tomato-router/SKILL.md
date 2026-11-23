@@ -146,6 +146,33 @@ When a port is unreachable despite a router forwarding rule being configured and
 ### Layer 1: Router Port Forward
 1. Read the forward rule from the router: `curl -sk --basic -u "$(cat ~/.asus)" "…/forward-basic.asp" | grep -oP "portforward':\\s*'[^']+"`
 2. Verify: rule exists, **enabled** (first field is `1`), target IP is correct, target port is correct
+3. **"Target IP is correct" means it matches the TARGET HOST'S CURRENT LAN IP — compare it, never assume.** An enabled, correctly-labelled rule can still point at the WRONG HOST, because the addresses themselves move: with no DHCP reservations the hosts take plain leases and can swap addresses while the table keeps the targets it was written with. Every service probe on both hosts then reads "closed externally".
+
+   ```bash
+   # this host's own address — compare it against the rule's target field
+   ip -4 -o addr show | awk '{print $2, $4}' | grep -v '^lo'
+   # who ACTUALLY holds the rule's target? probe it on a port only that host serves
+   for p in <this-host-port> <other-host-port>; do
+     timeout 2 bash -c "echo > /dev/tcp/<target-ip>/$p" 2>/dev/null && echo "$p OPEN" || echo "$p closed"
+   done
+   ```
+
+   The port that answers identifies the holder: a target answering on the OTHER host's service port IS that other host, so the rule is misdirected. Trust the port PREFIX and the rule DESCRIPTION over the address — both are written from the port, so they still name the intended host after the addresses move. A misdirected table fails BOTH hosts at once (each one's probes land on its sibling, which does not serve those ports): read the sibling's rules in the same pass before concluding the network is down.
+
+   **An SSH forward is a rule like any other — verify it by HOST KEY, never by its label.** A host's `:22` published on a high port (e.g. `11022`) is just another entry in the table and misdirects the same way after a lease swap: the rule DESCRIPTION names the INTENT, but the TARGET IP is what actually answers, so a login aimed at the labelled-correct host silently lands on the sibling. The authoritative identity test is the host key:
+
+   ```bash
+   # which box does the published port actually reach?
+   ssh-keyscan -T 5 -p <ext_port> -t ed25519 <public_hostname> 2>/dev/null | awk '{print $3}'
+   # each candidate host's own key (run ON that host, or keyscan its LAN IP:22)
+   ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+   ```
+
+   A matching fingerprint proves which machine answered. The symptom of a misdirected SSH forward is a LOGIN failure, not a connection failure: the TCP handshake succeeds, then sshd returns `Permission denied (publickey)` because the landing host has no such user (`id <user>` there answers `no such user`) or does not carry the key. Do NOT start editing the client key when the port is reaching the wrong machine.
+
+4. **Prevent the recurrence, don't just re-point the table.** Re-pointing the targets restores reachability now and breaks again on the next lease swap. The durable fix is a stable address per host — a static IP, or a DHCP reservation keyed to the NIC's MAC. Confirm the NIC has a usable MAC before promising a reservation: a placeholder (`00:00:00:00:00:16`) cannot be reserved.
+
+   **Because the lease follows the MAC, the LEASE ITSELF is a lever: physically swapping the two hosts' ethernet adapters re-aligns a swapped table with no router write.** The DHCP server hands an IP to the adapter's MAC, so the address travels with the adapter into its new box — move the adapters and the two hosts trade addresses, which is exactly what un-swaps a table whose labels are already correct. Verify `hostname` on each box plus each NIC's MAC afterwards, then re-confirm the published ports by host key. Reach for this only when the swap is the root cause; if the table's targets are simply wrong for stable addresses, fix the table. Either way, record the NIC MACs afterwards so the mapping is documented, not re-derived.
 
 ### Layer 2: nginx Proxy (if the port forwards to a nginx server)
 1. Verify nginx is running on the target machine: `systemctl is-active nginx` or `pgrep nginx`
@@ -178,6 +205,8 @@ When a port is unreachable despite a router forwarding rule being configured and
 | External HTTP 000, internal LAN has `HTTP 200` | Layer 1 (router forward not set) | Check router nvram |
 | External HTTP 401, internal LAN has `HTTP 200` | Layer 2 (nginx auth) works | Correct — nginx is present, just needs auth |
 | External HTTP 000 on one port, HTTP 200 on another (e.g., :14007 works but :14004 doesn't) | Layer 3 (UFW blocking specific port on target) | `sudo ufw status \| grep <port>` on target machine |
+| External probes fail on BOTH hosts, while every rule is enabled and labelled correctly | Layer 1 (target IP is stale — the hosts' leases swapped) | Compare `ip -4 -o addr show` to the rule's target; probe the target on each host's service ports |
+| SSH login returns `Permission denied (publickey)` although the key is valid and present | Layer 1 (the published SSH port reaches the sibling host) | `ssh-keyscan -p <ext_port>` and compare the host key to each host's own `/etc/ssh/ssh_host_ed25519_key.pub` |
 
 ## Verification
 

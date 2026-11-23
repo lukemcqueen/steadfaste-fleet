@@ -61,8 +61,13 @@ The non-negotiable rules of doing the work. Route (`task-orient`) → execute
    privilege escalation. Once something is blocked, never rephrase or retry it
    toward the same outcome — switch to a non-destructive equivalent.
 10. **Protect secrets + auth** — never expose, never weaken.
-11. **Proactively fix pre-existing issues** — fix discovered bugs even if you
-    didn't cause them; skip only destructive fixes needing approval.
+11. **Proactively fix pre-existing issues — and fix them AS YOU FIND THEM** —
+    fix discovered bugs even if you didn't cause them; skip only destructive
+    fixes needing approval. A defect spotted mid-survey is repaired in that
+    cycle, not banked for a later pass: a survey that keeps growing while the
+    one-line fix it already found sits undone reads as stalling ("why aren't
+    you fixing easy things as you go?") and is the same fault as gathering
+    instead of acting.
 12. **Never ask permission for obvious fixes** — fix first, report after.
     Once a SET of work is authorised, pick the order by what unblocks most,
     say it in one clause, start — don't hand the sequencing back.
@@ -174,6 +179,17 @@ as a signal that edits are already on disk and must be re-checked against what
 that skill says before you proceed — reverting a scripted edit is cheap, and a
 regression re-introduced into a system that deliberately removed it is not.
 
+**A name in the request is a LOOKUP, not a search problem — load the skill that
+OWNS the component before you grep for it.** When the task names a product,
+service, unit, dir or artifact, the fleet's own skills carry the authoritative
+facts: the component's container/db/role names, its unit names, which spellings
+are deliberate keeps, and what a rename did to it. Grepping the filesystem
+first spends the turn budget on misses and ends in a confident-but-wrong
+conclusion; `skill_view` the owning skill (its `description` names the
+territory), then grep only to CONFIRM. The operator's tell is "why do you keep
+guessing instead of loading skills?" — a fleet-shaped noun in the request is
+the trigger.
+
 **1. Search for existing resources — 3+ different terms.** One search is not
 a survey; if nothing matches term-1 you haven't proven the gap. Batch:
 `search_files` over the repo + deployed trees, `skills_list()`, cron list.
@@ -251,6 +267,20 @@ config files. "Just this once" is rationalization.
 Test names are CLAIMS, not evidence: a name asserting a COMPARATIVE property
 (worst/best/first/last) needs the discriminating pair in the fixture — run the
 test against the PRE-FIX code and see the assertion FAIL, or the name overclaims.
+
+An assertion about an ABSENT side effect is the same class of overclaim: "no
+unscoped query reached the engine" is equally true of an implementation with no
+scope guard at all, so it passes vacuously against the exact regression it names.
+Pair it with a POSITIVE CONTROL — spy on the guard and assert it ran (an inert
+monkeypatch leaves the spy empty and fails the test), or assert a path that
+CANNOT work without the guard — and prove the spy is not itself inert by driving
+the same test file at a throwaway copy with the guard stripped from ONE handler:
+exactly that member's cases must fail and the rest pass, with the probe's own
+exit code equal to the number of claims that failed, so a green run carries
+information. A guard that lives in N handlers needs N assertions — parametrise
+over the set (one table of member → the function it calls) instead of proving it
+for the single member you happened to exercise, or a sibling that loses the guard
+ships silently.
 
 In repos with gates: assert the RETURN CODE of a process-driven subject, not
 only its output (a content-only assertion stays green across a crash; give

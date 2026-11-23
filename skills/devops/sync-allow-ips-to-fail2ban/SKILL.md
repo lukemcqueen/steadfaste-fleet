@@ -11,7 +11,45 @@ User says "add/remove an allow IP" or "sync IPs to fail2ban".
 
 ## Workflow — 3 steps (always do ALL):
 
-### Step 1 — Create/update the source script
+### ⚠️ Prerequisites — verify BEFORE promising the change (measured on esther + moses, 2026-11-23)
+
+**Adding an allow IP is a ROOT action. An agent normally CANNOT do it — report that plainly instead of implying success.**
+
+- `~/.hermes/scripts/local-sync-allow-ips-to-fail2ban.sh` **does not exist** on esther or moses. The block under Step 1 is what you would CREATE, not something already installed — invoking "the sync script" fails with `No such file or directory`.
+- **Neither host has `/etc/fail2ban/jail.local`, and neither carries any `ignoreip` line** (`grep -rn '^ignoreip' /etc/fail2ban/` → empty). Both drive fail2ban from `/etc/fail2ban/jail.d/*.conf`; the effective ignoreip is fail2ban's built-in `127.0.0.1/8 ::1`. So a `sed -i 's/^ignoreip = .*/…/'` **no-ops** — there is no line to replace.
+- `/etc/nginx/allow-ips-manual.conf` and `/etc/fail2ban/jail.d/` are `root:root` and **not writable** by the agent, and **both hosts demand a sudo password** (`sudo -n true` → `a password is required`). esther's NOPASSWD list has no `fail2ban-client reload` and no write primitive; moses grants `(ALL) ALL` but not NOPASSWD.
+- The repo runbook `docs/runbooks/blocklist-cleanup-ddos-relax.md` treats the allow file as the **manual/human domain** — "NEVER edit nginx templates or allow-ips-manual.conf" by automation. The deploy strips allow-listed IPs automatically but never writes the file.
+
+Confirm your footing first:
+
+```bash
+sudo -n true 2>&1 || echo "NO passwordless sudo — this change needs the operator"
+test -w /etc/nginx/allow-ips-manual.conf || echo "allow file NOT writable"
+ls /etc/fail2ban/jail.local 2>&1; grep -rn '^ignoreip' /etc/fail2ban/ | head
+```
+
+### Direct procedure — use this when you hold root
+
+Run on **EACH** host whose fail2ban you want to whitelist — esther and moses run fail2ban independently, so one host does not cover the other:
+
+```bash
+# 1. add to the source allow list (manual/root action)
+echo 'allow 203.0.113.45;   # <who / reason>' | sudo tee -a /etc/nginx/allow-ips-manual.conf
+
+# 2. create the ignoreip line (jail.local is absent; it is read AFTER jail.d, so it wins)
+printf '[DEFAULT]\nignoreip = 127.0.0.1/8 ::1 203.0.113.45\n' | sudo tee /etc/fail2ban/jail.local
+
+# 3. apply — REQUIRED; editing the file alone changes nothing until reload
+sudo fail2ban-client reload
+
+# 4. verify
+sudo fail2ban-client status sshd      # the banned 'IP list' must not contain the allowed IP
+grep -n '^ignoreip' /etc/fail2ban/jail.local
+```
+
+fail2ban's ban is only a **rate limiter** (default `maxretry=5` / `findtime=10m` / `bantime=10m`); whitelisting an operator IP is what prevents self-lockout, and it must be repeated on every fail2ban host.
+
+### Step 1 — Create/update the source script (optional automation)
 Script lives at `~/.hermes/scripts/local-sync-allow-ips-to-fail2ban.sh`:
 
 ```bash
@@ -71,6 +109,10 @@ fail2ban-client status | grep -i "number of jail"
 
 ## Pitfalls
 
+- **Confirm you actually hold root before starting** — on esther and moses you do not (`sudo -n true` fails), and the allow file plus `jail.d/` are root-owned. Reporting "added" without the write landing is a false claim; verify with `grep -n '^ignoreip' /etc/fail2ban/jail.local` afterwards.
+- **There is no `jail.local` and no existing `ignoreip` line on either fleet host** — create the line; a `sed` against a non-existent line silently does nothing and looks like success.
+- **`fail2ban-client reload` is part of the change, not an afterthought** — and it also needs root.
+- **Whitelist every host that runs fail2ban** — esther and moses are independent; adding the IP on one leaves the operator bannable on the other.
 - **Never add `127.0.0.1` or `::1` to the manual file** — they're always in `ignoreip` by construction; adding them is harmless but noisy.
 - **The allow file is nginx `allow` directives, not raw IPs** — the extractor strips the `allow ` prefix and trailing `;`. A malformed line (missing `;`) silently drops the IP.
 - **`sed` replaces the whole `ignoreip` line** — if jail.local is absent or lacks an `ignoreip` line, the script no-ops; create the line first with `sed -i "s/^ignoreip = .*/ignoreip = 127.0.0.1\/8 ::1/" "$JAIL_LOCAL"`.

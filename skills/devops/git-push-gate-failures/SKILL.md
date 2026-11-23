@@ -359,6 +359,42 @@ State plainly in the description that no source changes — that is what the cyc
 to agree with — and expect the close to warn `receipt NOT written … lists no files` once the range is
 already pushed (benign: an empty range has nothing to authorise).
 
+## 8. Push blocked by doctor FAILs that are NOT yours
+
+**Symptom:** `❌ Push blocked: doctor reports N failures.` The named FAILs are service/probe checks
+(`Service (Dashboard)`, `Service (Langfuse)`, `Service (Agent Bus)`), the doctor reads
+`FAILING … N fail`, and nothing in your range touches a service.
+
+**Prove they are not yours before chasing them** — two cheap checks, both required:
+
+```bash
+# 1. Is the service actually alive on THIS host? probe the LOCAL listener, not the public URL
+curl -sk -o /dev/null -w '%{http_code}\n' http://127.0.0.1:<port>/health
+# 2. Does your range touch any service / EXTERNAL_SERVICES config at all?
+git diff --name-only <base> HEAD
+```
+
+A local `200` beside a failing public probe means the service is UP and the gap is reachability —
+so the cause sits below the doctor, not in your diff. A range naming no service config cannot have
+caused it: say so with both outputs attached instead of "fixing" a healthy service.
+
+**The usual cause is a router forward whose TARGET no longer matches the host** — the rules are
+enabled and labelled correctly while the target IP belongs to a sibling host, so every external
+probe on BOTH hosts fails and the shared repo becomes un-pushable for the whole fleet, not just for
+you. Diagnose with `fresh-tomato-router` → Layer 1. Doctor dispositions cover warn/info only, never
+FAIL, so there is no bypass to reach for — the router (an operator action) is the exit.
+
+**An always-review path can enter the range from an EARLIER commit, not your tip.** The `touches an
+always-review path` refusal may name a file your own commits never mention: the range spans base…tip,
+so a sibling's earlier commit pulls it in. That is normal — the fix is still `close, then push` (§7),
+not rewriting history.
+
+**Never report a fleet-wide delivery that has not reached origin.** A gate, migration or lesson that
+is committed and deployed on YOUR host is invisible to every peer while the push is blocked — they
+still run the old code. Report it as `committed + deployed here, push blocked by X, peers NOT yet
+covered`, and name the one action that clears X. A dispatch notice sent over the bus does not
+substitute for the code landing.
+
 ## Verification checklist
 
 - [ ] `stat` the update-commit mtime before debugging your diff

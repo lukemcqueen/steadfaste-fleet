@@ -54,9 +54,44 @@ Poll multiple nodes; majority rules.
 | One port CLOSED, siblings OPEN | That specific host/service, not the router (2026-08-30: WAN:10022 peer-SSH down while 11022 SSH open) |
 | Forwards OPEN but router-admin ports (8443/8080/444/81) CLOSED | FreshTomato remote admin disabled — enable *Administration → Access → Remote Access*, then reach at `https://<ddns>:8443` |
 
+## When a GATE reports your own service unreachable (doctor / push)
+
+A health check that probes your OWN public URL from the host (the fleet doctor's
+external-service rows are exactly this) inherits the hairpin trap completely, so its verdict is a
+HYPOTHESIS until an external node answers. Two measurements, taken together, settle it:
+
+1. **Local health is not reachability.** `curl -sk https://127.0.0.1:<port>/` returning the status
+the check expects (e.g. a `401` from an auth-gated vhost) proves nginx and the upstream are fine and
+proves nothing about the public path. A TLS vhost answers plain `http://` on the same port with
+`400` — read the scheme, not just the failure.
+2. **Probe the suspects AND a known-good sibling in the SAME pass.** Siblings OPEN (443/22) while
+every service port is CLOSED is a real closure at the forward/WAN layer, not noise from your test
+vantage: the vantage reaches the internet fine, so a dropped port is dropped for everyone. Only when
+the siblings ALSO fail is the router/WAN path itself in question.
+
+Rules that follow:
+
+- **Never make such a FAIL green by pointing the check at a local base** (a localhost/`127.0.0.1`
+  override of the external base, a dispositions entry, a re-scoped check) — that converts a public
+  reachability outage into a passing local-health check, which is the masking this skill exists to
+  prevent. Report the outage with the external evidence instead. Dispositions cover warn/info
+  findings only — a FAIL has no disposition path, by design.
+- **Classify a blocked push by FAIL KIND before touching the change.** A push gate that counts ANY
+  doctor FAIL means one unrelated host-service outage blocks every push on that host, including
+  pushes whose diff has nothing to do with networking. Separate deploy-drift FAILs (deploy sync,
+  checksums — yours, fix them) from unrelated host-service FAILs (not yours) and report the second
+  as its own blocker with the external evidence.
+- **A service-port migration has THREE layers that must move together**: the host env's public
+  URL(s), the server's actual `listen` directives, and the router's forwards. Compare them explicitly
+  — a stale public-URL port value in the host env is how a check ends up probing a port the host no
+  longer serves, and it silently breaks any documented failover URL that points at the same literal.
+
 ## Pitfalls
 
 - Never conclude "not externally accessible" from a hairpin 000 — get an external node's result first.
+- Never conclude an outage from a local check's failure either: an unreachable-looking service may
+  be a hairpin artifact (open) or a mismatched port prefix (probing a port nobody serves), not a
+  closed port. The external node is the only verdict, and it needs a sibling port beside it.
 - check-host.net nodes answer asynchronously: `sleep ~6` before polling the result.
 - Empty result (no `request_id`) = API rate-limited or transient — retry once.
 - Probe the suspect port AND a known-good sibling port in the same pass; the contrast splits "router problem" vs "target problem" in one round.
