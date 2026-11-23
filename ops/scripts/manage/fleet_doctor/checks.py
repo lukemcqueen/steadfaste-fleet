@@ -2895,7 +2895,7 @@ def check_system(res):
   expected_user_units = {
     "steadfaste-fleet-dashboard.service",
     "steadfaste-fleet-langfuse.service",
-    "steadfaste-fleet-fleet-bus.service",
+    "fleet-bus.service",
   }
   if IS_LINUX:
     failed = run_bg(["systemctl", "--user", "list-units", "--state=failed",
