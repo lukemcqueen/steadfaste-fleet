@@ -89,7 +89,8 @@ hermes config set model.default "$MODEL" || {
 }
 if [ -n "$PROVIDER" ]; then
   hermes config set model.provider "$PROVIDER" || {
-    echo "materialize-fleet-model: WARN — 'hermes config set model.provider $PROVIDER' failed; default set but provider unchanged." >&2
+    echo "materialize-fleet-model: FAIL — 'hermes config set model.provider $PROVIDER' failed; model.default was set but provider is now stale relative to the fleet canonical. Resolve before next sync." >&2
+    exit 1
   }
 fi
 
