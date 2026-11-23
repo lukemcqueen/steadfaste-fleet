@@ -134,6 +134,9 @@ repo; this public repo carries only framework docs (PRDs, design, reference).
 | `docs/adr/TEMPLATE.md` | ADR template — status/date/author header, then context → decision → consequences |
 | `docs/adr/README.md` | **ADR convention** — durable fleet decisions (model contract + pricing, bus v2 API). Read before re-deriving WHY the system is shaped this way |
 | `docs/adr/0005-messaging-gateway.md` | **ADR-0005: Unified Messaging Gateway** — one daemon owns all messaging apps; agents bus-only; envelope v1; per-bot ACLs + advisory locks |
+| `docs/agents/issue-tracker.md` | **Issue tracker** — the fleet task-db (tasks schema via task-db.py / task_* MCP), the tracker the Matt Pocock engineering skills read/write (custom "Other" tracker, not GitHub) |
+| `docs/agents/triage-labels.md` | **Triage labels** — the five canonical roles as task-db JSON tags (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix) |
+| `docs/agents/domain.md` | **Domain docs layout** — single-context (GLOSSARY.md + docs/adr/ at root; GLOSSARY created lazily via /domain-modeling) |
 | `docs/design/messaging-gateway.md` | **Messaging gateway design** — party-converged architecture (adapters, routing, envelope, reliability, security, migration, MVP) |
 | `docs/external/external-services.md` | External services — names and locations of what lives outside the repo (never values) |
 | `docs/external/mcp-adversarial-review.md` | The DeepSeek adversarial-review MCP server — pattern, tool surface, where the key comes from |
