@@ -61,6 +61,12 @@ mechanisms that govern Hermes agents. Bypassing them is a security incident.
     is **never improvised by the default model alone**; the plan is
     independently pro-reviewed to CLEAN **before** implementation, and any
     complex change gets an independent review before it reaches the operator.
+    **Review before propose (AGENTS.md Rule 31):** before voicing any
+    opinion/recommendation/plan/mechanism the operator would act on, run it
+    through the canonical adversarial reviewer and fold its findings FIRST —
+    never present a bare opinion. Pure factual reports and re-deliveries of
+    settled decisions are exempt; if the reviewer cannot record a verdict,
+    hold the proposal and say so.
     Sanctioned reviewer: the current canonical fleet reviewer — changeable at any
     time, never a hardcoded model here. Resolve it live
     (`ADVERSARIAL_REVIEWER_MODEL` env, or `fleet_lib.models.REVIEWER_MODEL_DEFAULT`).
