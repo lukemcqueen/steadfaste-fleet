@@ -467,11 +467,13 @@ their domain.
 |-------|---------|---------|-----------|
 | `paid-ads` | 1.0.0 | When the user wants help with paid advertising campaigns on Google Ads, Meta (Facebook/Instagram), LinkedIn... | `skill_view(name='paid-ads')` |
 
-## Productivity (10 skills)
+## Productivity (16 skills)
 
 | Skill | Version | Purpose | Load With |
 |-------|---------|---------|-----------|
 | `canvas` | 1.0.0 | Fetch Canvas LMS courses and assignments via API token. | `skill_view(name='canvas')` |
+| `grill-me` | 1.0.0 | A relentless interview to sharpen a plan or design. | `skill_view(name='grill-me')` |
+| `handoff` | 1.0.0 | Compact the current conversation into a handoff document for another agent to pick up. | `skill_view(name='handoff')` |
 | `here-now` | 1.15.3 | Publish sites to {slug}.here.now and store files in Drives. | `skill_view(name='here-now')` |
 | `korean-language-learning` | 1.0.0 | A warm, practical Korean language companion for English speakers aged 50+. Covers Hangul mastery, essential... | `skill_view(name='korean-language-learning')` |
 | `memento-flashcards` | 1.0.0 | Spaced-repetition flashcard system. Create cards from facts or text, chat with flashcards using free-text a... | `skill_view(name='memento-flashcards')` |
@@ -480,7 +482,11 @@ their domain.
 | `shop-app` | 0.0.28 | Shop.app: product search, order tracking, returns, reorder. | `skill_view(name='shop-app')` |
 | `shopify` | 1.0.0 | Shopify Admin & Storefront GraphQL APIs via curl. Products, orders, customers, inventory, metafields. | `skill_view(name='shopify')` |
 | `siyuan` | 1.0.0 | Query and edit a SiYuan knowledge base via its API. | `skill_view(name='siyuan')` |
+| `teach` | 1.0.0 | Teach the user a new skill or concept, within this workspace. | `skill_view(name='teach')` |
 | `telephony` | 1.0.0 | Provision Twilio numbers, SMS/MMS, and AI outbound calls. | `skill_view(name='telephony')` |
+| `to-questionnaire` | 1.0.0 | Turn a decision you can't fully answer into a questionnaire for someone else to fill in. | `skill_view(name='to-questionnaire')` |
+| `wait-what` | 1.0.0 | Stop. That last message did not land: re-pitch it. | `skill_view(name='wait-what')` |
+| `writing-for-agents` | 1.0.0 | Writing documents for agents. Use when creating or editing skills, or modifying AGENTS.md or CLAUDE.md. | `skill_view(name='writing-for-agents')` |
 
 ## Programmatic Seo (1 skill)
 
@@ -564,7 +570,7 @@ their domain.
 |-------|---------|---------|-----------|
 | `social-media-analyzer` | 1.0.0 | Social media campaign analysis and performance tracking. Calculates engagement rates, ROI, and benchmarks a... | `skill_view(name='social-media-analyzer')` |
 
-## Software Development (66 skills)
+## Software Development (81 skills)
 
 | Skill | Version | Purpose | Load With |
 |-------|---------|---------|-----------|
@@ -574,6 +580,7 @@ their domain.
 | `alembic-enum-double-create` | 1.0.0 | Use when alembic fails DuplicateObject enum on fresh DB. | `skill_view(name='alembic-enum-double-create')` |
 | `api-documentation` | 1.0.0 | API documentation standards and tooling: OpenAPI/Swagger specs, endpoint descriptions, request/response sch... | `skill_view(name='api-documentation')` |
 | `architecture-review` | 1.2.0 | Multi-role architecture review (a.k.a. HC-Party) with weighted decision matrices, conflict resolution, and... | `skill_view(name='architecture-review')` |
+| `ask-matt` | 1.0.0 | Ask which skill or flow fits your situation. A router over the skills in this repo. | `skill_view(name='ask-matt')` |
 | `background-job-queue` | 1.0.0 | Add durable background job processing to a FastAPI/asyncpg app using arq. Covers project layout, job functi... | `skill_view(name='background-job-queue')` |
 | `batch-job-optimization` | 1.0.0 | Systematically analyze and optimize database-bound batch processing jobs (imports, exports, ETL, bulk updat... | `skill_view(name='batch-job-optimization')` |
 | `build-check-split` | 1.0.0 | Use when driving a task list tagged BUILD vs CHECK. | `skill_view(name='build-check-split')` |
@@ -589,6 +596,7 @@ their domain.
 | `dev-plan` | 2.1.0 | Plan mode: write an actionable markdown plan to .hermes/plans/, no execution. Bite-sized tasks, exact paths... | `skill_view(name='dev-plan')` |
 | `dhh-rails-reviewer` | 1.0.0 | Use for brutally honest DHH-style Rails code review. | `skill_view(name='dhh-rails-reviewer')` |
 | `dhh-rails-style` | 1.0.0 | Use when writing Ruby/Rails code in DHH/37signals style. | `skill_view(name='dhh-rails-style')` |
+| `diagnosing-bugs` | 1.0.0 | Diagnosis loop for hard bugs and performance regressions. Use when the user says "diagnose"/"debug this", o... | `skill_view(name='diagnosing-bugs')` |
 | `documentation-auditing` | 1.0.0 | Audit documentation for stale file paths, broken cross-references, and correctness gaps. Systematic approac... | `skill_view(name='documentation-auditing')` |
 | `documentation-consolidation` | 1.0.0 | Use when reorganizing, pruning, or merging a docs corpus. | `skill_view(name='documentation-consolidation')` |
 | `domain-modeling` | 1.0.0 | Build and sharpen a project's domain model. Use when discussing codebase terminology, writing or editing a... | `skill_view(name='domain-modeling')` |
@@ -600,6 +608,9 @@ their domain.
 | `grill-with-docs` | 1.0.0 | A relentless interview to sharpen a plan or design, which also creates docs (ADR's and glossary) as we go. | `skill_view(name='grill-with-docs')` |
 | `grilling` | 1.0.0 | Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test their t... | `skill_view(name='grilling')` |
 | `hermetic-python-testing` | 1.0.0 | Write Python modules with hermetic unit-test seams. Covers sandboxed inputs AND live-side-effect output def... | `skill_view(name='hermetic-python-testing')` |
+| `implement` | 1.0.0 | Implement a piece of work based on a spec or set of tickets. | `skill_view(name='implement')` |
+| `implement-spec` | 1.0.0 | Implement the result of /to-spec and /to-tickets in code. | `skill_view(name='implement-spec')` |
+| `improve-codebase-architecture` | 1.0.0 | Scan a codebase for deepening opportunities, present them as a visual HTML report, then grill through which... | `skill_view(name='improve-codebase-architecture')` |
 | `large-mechanical-refactor` | 1.0.0 | Use when a wide refactor ripples across many files. | `skill_view(name='large-mechanical-refactor')` |
 | `legacy-codebase-navigation` | 1.0.0 | Navigate, understand, and debug large legacy codebases (Rails, Django, early Node). Techniques for tracing... | `skill_view(name='legacy-codebase-navigation')` |
 | `lesson-aware-agent` | 1.0.0 | Universal lesson-aware injection pattern. Makes every agent action memory-aware: search lessons before acti... | `skill_view(name='lesson-aware-agent')` |
@@ -607,8 +618,10 @@ their domain.
 | `logging-patterns` | 1.0.0 | Structured logging conventions: log levels, format standards, context injection, correlation IDs, sensitive... | `skill_view(name='logging-patterns')` |
 | `mcp-server-building` | 1.1.0 | Build, test, and debug MCP servers for Hermes Agent — logging, dependency checks, fix hints, and best pract... | `skill_view(name='mcp-server-building')` |
 | `memory-architecture` | 1.0.0 | Design and maintain agent memory system: MEMORY.md structure, privacy boundaries, gitignore per brain sourc... | `skill_view(name='memory-architecture')` |
+| `pr` | 1.0.0 | Use when writing a PR body. | `skill_view(name='pr')` |
 | `product-requirements` | 1.0.0 | Concise 1-page PRD template: problem, scope, functional/non-functional requirements, edge cases, acceptance... | `skill_view(name='product-requirements')` |
 | `project-map` | 1.0.0 | Structural project analysis — build a dependency graph so agents | `skill_view(name='project-map')` |
+| `prototype` | 1.0.0 | Build a throwaway prototype to answer a design question. Use when the user wants to sanity-check whether a... | `skill_view(name='prototype')` |
 | `public-contribution` | 1.0.0 | After any improvement, bug fix, workflow discovery, or lesson — pause and evaluate whether the insight is p... | `skill_view(name='public-contribution')` |
 | `rails-data-pipeline-debugging` | 1.2.0 | Debugging data transformation bugs in legacy Rails apps — tracing heuristic text-splitting, internationalis... | `skill_view(name='rails-data-pipeline-debugging')` |
 | `react-best-practices` | 1.0.0 | 70+ React & Next.js performance optimization rules from Vercel Engineering — covers waterfalls, bundle size... | `skill_view(name='react-best-practices')` |
@@ -619,12 +632,14 @@ their domain.
 | `repo-organization` | 1.1.0 | Canonical repo organization for Steadfaste Fleet — structure, naming, consolidation, symlinks, and audit pr... | `skill_view(name='repo-organization')` |
 | `requirements-elicitation` | 1.2.0 | Requirements elicitation for Steadfaste Fleet (a.k.a. elicit) — structured domain exploration, RICE/MoSCoW... | `skill_view(name='requirements-elicitation')` |
 | `rest-graphql-debug` | 1.2.0 | Debug REST/GraphQL APIs: status codes, auth, schemas, repro. | `skill_view(name='rest-graphql-debug')` |
+| `retro` | 1.0.0 | Conduct a retrospective on a coding session. | `skill_view(name='retro')` |
 | `robust-code-design` | 1.0.0 | Use when hardening code against adversarial failure modes. | `skill_view(name='robust-code-design')` |
 | `role-gating-and-public-moderation` | 1.0.0 | Role gating, PII tiers, and UGC moderation patterns. | `skill_view(name='role-gating-and-public-moderation')` |
 | `root-cause-debugging` | 2.0.0 | 6-phase root cause debugging: feedback loop, reproduce, pattern, hypothesise + instrument, fix, cleanup. Un... | `skill_view(name='root-cause-debugging')` |
 | `save-lesson` | 1.0.0 | Auto-save a bug-fix lesson after resolving any non-trivial error. | `skill_view(name='save-lesson')` |
 | `session-manager` | 1.1.0 | Session management skill — checkpoint/restore, context compression, progress tracking, and recovery for mai... | `skill_view(name='session-manager')` |
 | `session-orchestration` | 1.0.0 | Five-wave session orchestration: Discovery → Impl-Core → Impl-Polish → Quality → Finalization. Quality gate... | `skill_view(name='session-orchestration')` |
+| `setup-matt-pocock-skills` | 1.0.0 | Configure this repo for the engineering skills: set up its issue tracker, triage label vocabulary, and doma... | `skill_view(name='setup-matt-pocock-skills')` |
 | `software-factory` | 1.0.0 | Real features: 4-gate design with user approval per gate. | `skill_view(name='software-factory')` |
 | `state-orchestrator` | 1.0.0 | Information routing decision matrix for Steadfaste Fleet agents. Defines when to consult live context vs se... | `skill_view(name='state-orchestrator')` |
 | `steadfaste-design` | 1.0.0 | steadfaste design-doc and governance-cycle work. | `skill_view(name='steadfaste-design')` |
@@ -632,8 +647,14 @@ their domain.
 | `storybook-setup` | 1.0.0 | Set up Storybook with Next.js (Vite) + Tailwind CSS + @storybook/test — init, Tailwind wiring, story patter... | `skill_view(name='storybook-setup')` |
 | `subagent-driven-development` | 1.2.0 | Execute plans via delegate_task subagents (2-stage review). | `skill_view(name='subagent-driven-development')` |
 | `task-decomposition` | 1.0.0 | Break large tasks into discrete, verifiable, independently completable units. Uses functional decomposition... | `skill_view(name='task-decomposition')` |
+| `tdd` | 1.0.0 | Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions "red-gr... | `skill_view(name='tdd')` |
 | `test-seed-uniqueness` | 1.0.0 | Ensure test seed data never causes unique constraint violations — UUID-based, timestamp-based, counter-base... | `skill_view(name='test-seed-uniqueness')` |
+| `to-spec` | 1.0.0 | Turn the current conversation into a spec and publish it to the project issue tracker: no interview, just s... | `skill_view(name='to-spec')` |
+| `to-tickets` | 1.0.0 | Break a plan, spec, or the current conversation into a set of tracer-bullet tickets, each declaring its blo... | `skill_view(name='to-tickets')` |
+| `triage` | 1.0.0 | Move issues and external PRs through a state machine of triage roles, categorise, verify, grill if needed,... | `skill_view(name='triage')` |
 | `verify-and-ship` | 0.1.0 | Pre-ship verification: the mandatory change checklist and the eight-question self-critique before end_chang... | `skill_view(name='verify-and-ship')` |
+| `wayfinder` | 1.0.0 | Plan a huge chunk of work (more than one agent session can hold) as a shared map of decision tickets on you... | `skill_view(name='wayfinder')` |
+| `wizard` | 1.0.0 | Generate an interactive bash wizard that walks a human through steps only they can perform. Use when provis... | `skill_view(name='wizard')` |
 
 ## Spiritual Disciplines (1 skill)
 
