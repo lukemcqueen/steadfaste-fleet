@@ -67,24 +67,28 @@ resolve_cli() {
 }
 
 # ── Orchestrator detection ───────────────────────────────────────────────────
+# Hostname AND matching home dir — the fleet authority. This body is the SAME
+# rule as fleet-update.sh `is_orch_host()` and os-config.sh FLEET_AGENT_TYPE:
+# one rule, one shape. The env vars (AGENT_TYPE / IS_ORCHESTRATOR) grant NO
+# orchestrator powers — they are spoofable (see fleet-update.sh:1472-1473) — and
+# the dead `/etc/moses-host` marker this function used to check is created by
+# nothing, so it returned FALSE on the orchestrator itself and every adapter that
+# sources this include silently narrowed its surface to fleet-context-only on
+# moses/esther. A host is an orchestrator iff its hostname is moses/esther AND its
+# home is /home/<host>. macOS-safe: `getent` is absent on macOS, so _home falls
+# back to $HOME for a Darwin host (it is not an orchestrator either way).
 is_orchestrator() {
-  # Check if the host is configured as an orchestrator
-  if [[ -n "${IS_ORCHESTRATOR:-}" ]]; then
-    # Explicit orchestrator flag
-    [[ "${IS_ORCHESTRATOR}" == "true" || "${IS_ORCHESTRATOR}" == "1" ]]
-    return $?
-  elif [[ -f "/etc/standalone-mode" ]]; then
-    # Standalone mode flag
-    return 1
-  elif [[ -f "/etc/moses-host" ]]; then
-    # Moses/Esther special case
-    return 0
-  else
-    # Check if this host is a regular server (non-orchestrator);
-    # Allow easier detection on hosts without special markers
-    # For all non-orchestrator hosts, we want default to non-orchestrator behavior
-    return 1
+  local _host _user _home
+  _host=$(hostname -s 2>/dev/null || echo "unknown")
+  _user=$(id -un 2>/dev/null || echo "$USER")
+  if command -v getent &>/dev/null; then
+    _home=$(getent passwd "$_user" 2>/dev/null | cut -d: -f6)
   fi
+  _home="${_home:-$HOME}"
+  case "$_host" in
+    moses|esther) [[ "$_home" == "/home/$_host" ]] && return 0 ;;
+  esac
+  return 1
 }
 
 # ── The surface ──────────────────────────────────────────────────────────────
