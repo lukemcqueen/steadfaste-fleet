@@ -5538,16 +5538,13 @@ def _env_file_paths() -> list:
     fleet env before reaching into a Hermes-owned file. ~/.hermes/.env stays last
     so a host whose credential happens to live there keeps working, but it is not
     the source of truth for cortex config.
+
+    Delegates to the canonical ladder in fleet_lib.envfile — one source of truth
+    for the FLEET_ENV_FILE → FLEET_REPO → FLEET_DEPLOY_HOME → ~/.hermes order,
+    shared with every other fleet component instead of this file's private copy.
     """
-    paths = []
-    explicit = (os.environ.get("FLEET_ENV_FILE", "") or "").strip()
-    if explicit:
-        paths.append(Path(explicit))
-    repo = (os.environ.get("FLEET_REPO", "") or "").strip()
-    paths.append((Path(repo) if repo else HOME / "steadfaste-fleet") / ".env")
-    paths.append(Path(os.environ.get("FLEET_DEPLOY_HOME", str(HOME / ".steadfaste-fleet"))) / ".env")
-    paths.append(HOME / ".hermes" / ".env")          # legacy last resort
-    return paths
+    from fleet_lib.envfile import env_file_paths
+    return env_file_paths()
 
 
 def _env_value(name: str, default: str = "") -> str:
@@ -5557,7 +5554,7 @@ def _env_value(name: str, default: str = "") -> str:
     (FLEET_ENV_FILE, else ~/steadfaste-fleet/.env, else the deploy root), and only
     then the Hermes-owned ~/.hermes/.env.
 
-    Two deliberate choices:
+    Two deliberate choices (kept by fleet_lib.envfile):
     - Only the NAMED key is extracted; a file is never loaded wholesale into
       os.environ. Loading it would pull every other secret into the process and
       change behaviour for code that does not expect it.
@@ -5568,16 +5565,8 @@ def _env_value(name: str, default: str = "") -> str:
     value = (os.environ.get(name, "") or "").strip()
     if value:
         return value
-    for path in _env_file_paths():
-        try:
-            if not path.is_file():
-                continue
-            for line in path.read_text(errors="ignore").splitlines():
-                if line.startswith(f"{name}="):
-                    return line.split("=", 1)[1].strip().strip('"').strip("'")
-        except OSError:
-            continue
-    return default
+    from fleet_lib.envfile import env_file_value
+    return env_file_value(name) or default
 
 
 def _reviewer_api_key() -> str:

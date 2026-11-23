@@ -274,16 +274,14 @@ def _validate_response(result, questions: dict) -> str | None:
 
 
 def _env_file_paths(env: dict) -> list:
-    """Env files to consult for a credential, cortex-first (Hermes last)."""
-    paths = []
-    explicit = (env.get("FLEET_ENV_FILE") or "").strip()
-    if explicit:
-        paths.append(Path(explicit))
-    repo = (env.get("FLEET_REPO") or "").strip()
-    paths.append((Path(repo) if repo else Path.home() / "steadfaste-fleet") / ".env")
-    paths.append(Path(env.get("FLEET_DEPLOY_HOME") or (Path.home() / ".steadfaste-fleet")) / ".env")
-    paths.append(Path.home() / ".hermes" / ".env")     # legacy last resort
-    return paths
+    """Env files to consult for a credential, cortex-first (Hermes last).
+
+    Delegates to the canonical ladder in fleet_lib.envfile — one source of truth
+    for the FLEET_ENV_FILE → FLEET_REPO → FLEET_DEPLOY_HOME → ~/.hermes order,
+    shared with every other fleet component instead of this file's private copy.
+    """
+    from fleet_lib.envfile import env_file_paths
+    return env_file_paths(env)
 
 
 def _env_file_secret(name: str, env: dict) -> str:
@@ -296,19 +294,12 @@ def _env_file_secret(name: str, env: dict) -> str:
     sourced worked. The client is a cortex component like the gate, so it resolves
     the credential the same way: process env first, then the fleet env, Hermes
     last. Only the NAMED key is extracted, and files are re-read per call.
+
+    The parsing is fleet_lib.envfile's: one quoting rule shared repo-wide instead
+    of this file's private strip('"').strip("'").
     """
-    if not name:
-        return ""
-    for path in _env_file_paths(env):
-        try:
-            if not path.is_file():
-                continue
-            for line in path.read_text(errors="ignore").splitlines():
-                if line.startswith(f"{name}="):
-                    return line.split("=", 1)[1].strip().strip('"').strip("'")
-        except OSError:
-            continue
-    return ""
+    from fleet_lib.envfile import env_file_value
+    return env_file_value(name, env=env)
 
 
 def _invoke(provider_cfg: dict, body: dict, env: dict, fn=None) -> dict:
