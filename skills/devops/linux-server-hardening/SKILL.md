@@ -116,6 +116,46 @@ sudo systemctl reload sshd      # apply without dropping connections
 
 **Verification:** In a second terminal (keep the first one open), try `ssh -o PasswordAuthentication=no user@host` — it should connect. Try `ssh -o PreferredAuthentications=password user@host` — it should be rejected.
 
+### 2b. Diagnosing "key rejected under StrictModes"
+
+When someone reports SSH pubkey auth blocked by "file/dir permissions,"
+verify before believing or acting — measure, don't relay:
+
+```bash
+# 1. Modes + ownership in ONE stat (lock-free on governed hosts):
+stat -c '%a %U:%G %n' <home> <home>/.ssh <auth-keys-path>
+# StrictModes wants the home dir, its .ssh dir, and the keys file each
+# NOT group/other-writable, and owned by the user or root.
+
+# 2. Look for ACLs hiding extra grants (an 'ls -l' '+' suffix means ACLs exist):
+ls -la <home>/.ssh
+
+# 3. Config: is StrictModes even on? Any AuthorizedKeysFile override?
+#    Default is yes; drop-ins (sshd_config.d/*.conf) can change it.
+grep -r -e "StrictModes" -e "AuthorizedKeysFile" /etc/ssh/sshd_config /etc/ssh/sshd_config.d/
+
+# 4. DEFINITIVE evidence — the sshd log names the exact rejection:
+journalctl -u sshd --no-pager | grep -i -e "bad ownership" -e "refused" -e "Failed publickey" | tail -20
+# "Authentication refused: bad ownership or modes" points at the exact path.
+# Zero such lines + correct stat = perms are NOT the problem; check the key
+# itself or the client side instead.
+```
+
+If a key's fingerprint must be confirmed, `ssh-keygen -lf` prints one line
+per key (type, bits, SHA256 fingerprint, comment) — on governed hosts run it
+inside a cycle (it is not a lock-free primitive there).
+
+### 2c. Adding a key to the authorized list
+
+- **Check for an existing identical entry FIRST** (same key body, same
+  trailing comment) — if it already exists, report "already present" and stop;
+  appending again only creates a duplicate line.
+- Add the user's line verbatim — same key-type prefix, body, comment. Never
+  "repair" or reformat a pasted key; a single changed character breaks it.
+- After any edit, preserve strict modes and user ownership on the keys file
+  and its directory — a group/other-writable keys file stops authenticating
+  under StrictModes.
+
 ### 3. Unattended-Upgrades
 
 Automatic security patching prevents known-exploit mass scanning from hitting you.
@@ -248,6 +288,20 @@ sudo rkhunter --check --sk       # run a check
 6. **sysctl ip_forward for Docker:** `net.ipv4.ip_forward=1` is required for Docker networking. Don't set it to 0 in hardening configs.
 
 7. **Reboot for kernel updates:** unattended-upgrades does NOT auto-reboot by default. For kernel security patches to take effect, configure `/etc/apt/apt.conf.d/50unattended-upgrades` with `Unattended-Upgrade::Automatic-Reboot "true";` and `Unattended-Upgrade::Automatic-Reboot-Time "03:00";` if you want automatic reboots for kernel updates.
+
+8. **A peer agent's "perms block auth" claim is a hypothesis, not a finding.**
+   Verify with `stat` + the sshd journal before changing anything — the
+   measured modes and the log's "bad ownership or modes" lines are the only
+   evidence that counts. If the stat is correct and the log is silent, the
+   claim does not reproduce on this host; say so and ask which host/path they
+   meant rather than "fixing" a non-problem.
+
+9. **HOST KEY CHANGED on a peer is a red flag, not a chore.** When `ssh`
+   refuses with a changed host key, never blindly accept the new key
+   (no `-o StrictHostKeyChecking=no`, no `ssh-keyscan` append) — confirm the
+   rotation with the peer's owner first (reinstall/regeneration is legit, but
+   verify). While known_hosts is stale the probe is blocked, so reach the peer
+   through the Agent Bus or another channel for the question.
 
 ## Verification Checklist
 
