@@ -540,6 +540,82 @@ queue 'inbox_gisu'` (per-queue ACL at `core/fleet_bus/server.py`
 `orch-bus-forwarder-sync` cron alerts `LOCAL→PEER: N failed` every tick while
 the messages sit in the local queues indefinitely.
 
+### LOCAL→PEER 401 "Missing or invalid Authorization header" — a collapsed peer URL, NOT a dead token
+
+**Discriminate the 401 by its TEXT before touching any credential:**
+
+- `Invalid or expired token` → the token row / expiry (see the T+90d section).
+- `Missing or invalid Authorization header. Use: Authorization: Bearer ***` →
+  the request reached the bus server **without nginx in front of it**.
+  `core/fleet_bus/server.py` accepts exactly two auth modes: an
+  `X-Forwarded-User` header (nginx-validated Basic) or an
+  `Authorization: Bearer …` header. A **`Basic …`** header matches NEITHER —
+  `if not auth.startswith("Bearer ")` raises this message. So this 401 means a
+  Basic-auth request was pointed at the RAW bus port, bypassing nginx.
+
+**The forwarder is the usual source.** `_request()` sends `PEER_AUTH` (Basic)
+whenever it is set, and the peer is meant to be the OTHER host's nginx. When
+**both** `FLEET_BUS_URL` and `FLEET_BUS_FALLBACK_URL` resolve to `127.0.0.1`,
+role-aware peer resolution has nothing external to pick and `PEER_URL` becomes
+the LOCAL bus — so every LOCAL→PEER send is Basic-to-raw-bus and returns this
+exact 401. **Check BOTH URL keys, never only `FLEET_BUS_URL`** (the `_is_local`
+branch falls back to `FLEET_BUS_FALLBACK_URL`, so a single local key is not
+evidence of health).
+
+**Why the URLs collapse:** `swap_bus_config()` in
+`fleet-bus-failover-watchdog.py` reads the CURRENT `.env` value as its source of
+truth for "the other side's bus". It is not idempotent — a repeat activation
+(failover flap, drill, or a restore run while `.env` is already swapped) writes
+localhost into BOTH keys, and the real peer URL is then LOST from `.env`; no
+later activate/restore can bring it back. Recover the true URLs from a
+`.env.bak-*` (grep for the two keys) and re-anchor the swap to a key that is
+never the one it overwrites.
+
+**A stuck failover is self-confirming — cross-check the peer, not the state
+file.** With the peer URL now localhost, the watchdog's own probe target is
+localhost, so it accrues failures and never reaches its recovery threshold while
+the peer is perfectly healthy. Confirm the peer's real liveness with
+`mcp__agent_bus__inbox_list_agents` (ungated MCP; prints per-agent 🟢/—). A peer
+shown 🟢 beside a state file reporting hundreds of consecutive failures means the
+URLs are broken, not the peer.
+
+**Lock-free reads that make this diagnosable from a tick:** `grep` the two URL
+keys out of `.env` (and any `.env.bak-*`), `grep -m2` the scalar fields
+(`failover_active`, `consecutive_failures`, `last_check_at`) out of
+`bus-failover-state.json`, and read `journalctl --user -u
+fleet-bridge-<name>` for tick timing — but remember the bridge runner exits 0
+whatever the script does, so a clean journal is not evidence of success.
+
+**Fixed at the source (2026-11-23).** `swap_bus_config()` no longer derives the
+peer from the values it is about to overwrite. It now takes an **anchor** — the
+steady-state `{peer, self}` pair — from the watchdog state, or from a durable
+marker line written into `.env` itself:
+
+```
+# bus-steady-urls: peer=<peer bus URL> self=<this host's external URL>
+```
+
+The marker is what makes the anchor survive a lost state file AND a collapsed
+pair, and it is why recovery no longer needs a `.env.bak-*`. Three behaviours
+are now pinned by tests (`tests/test_bus_failover_swap.py`, 10 cases):
+activate is idempotent (a repeat can no longer write the local bus into the peer
+slot); restore returns the anchored steady state; and **both fail CLOSED** —
+with no non-local peer available the swap is REFUSED and the file is left
+byte-identical, because writing a loopback URL into the peer slot is the
+corruption being fixed.
+
+Recovery on an already-collapsed host (order matters — repair the file BEFORE
+letting the watchdog recover, since the old restore wrote loopback back):
+1. Recover the pair: `grep -e '^FLEET_BUS_URL=' -e '^FLEET_BUS_FALLBACK_URL=' .env.bak-*`
+2. Set `FLEET_BUS_FALLBACK_URL` to the PEER (the other orchestrator). In ACTIVE
+   failover `FLEET_BUS_URL` is *meant* to be the loopback bus — the forwarder's
+   role-aware resolution then takes the peer from the fallback.
+3. Seed the marker with both values (peer, self) so a later collapse is
+   recoverable without a backup.
+4. Verify: run the forwarder — silence plus `peer_downed_at` refreshed in
+   `bus-forwarder-state.json` means the peer is now correctly identified and
+   down; a 401 in `LOCAL→PEER` means it is still pointing at the local raw bus.
+
 ## Dedup: consumed copies are never re-forwarded (2026-08-12)
 
 **Symptom:** a single `fleet send gisu EXEC "…fleet-doctor.py…"` produced **3

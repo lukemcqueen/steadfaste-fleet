@@ -70,6 +70,7 @@ import json
 import os
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -221,31 +222,101 @@ def _esther_reachable(urls: list[str] | None = None) -> bool:
 
 
 # ── Seam 2: config swap (orchestrator only, injectable for tests) ─
-def swap_bus_config(active: bool) -> bool:
+LOCAL_BUS_URL = "http://127.0.0.1:8903"
+# Durable anchor for the steady-state pair, kept in .env itself so a lost state
+# file cannot make the peer URL unrecoverable (the 2026-11-23 incident: the real
+# peer URL survived only in a .env backup).
+_STEADY_MARKER = "# bus-steady-urls:"
+
+
+def _is_local_url(url: str) -> bool:
+    """True when a bus URL points at THIS host's own loopback, not a peer."""
+    try:
+        host = (urllib.parse.urlsplit(url).hostname or "").lower()
+    except ValueError:
+        return False
+    return host in ("127.0.0.1", "localhost", "::1")
+
+
+def capture_steady_urls() -> dict:
+    """The steady-state {peer, self} pair, or {} when .env holds no real peer.
+
+    Read order: the durable marker the swap writes into .env (survives a lost
+    state file AND a collapsed pair), then the live keys while they still hold
+    real URLs. A value read back after a swap is NOT the steady state — that is
+    exactly the 2026-11-23 corruption, where a repeat activation read the
+    loopback URL it had written and stored it as the peer.
+    """
+    marker = _read_steady_marker()
+    if marker.get("peer"):
+        return marker
+    url = _env_value(CONF_FILE, "FLEET_BUS_URL").strip()
+    fallback = _env_value(CONF_FILE, "FLEET_BUS_FALLBACK_URL").strip()
+    candidates = [u for u in (url, fallback) if u and not _is_local_url(u)]
+    if not candidates:
+        return {}
+    return {"peer": candidates[0],
+            "self": candidates[1] if len(candidates) > 1 else ""}
+
+
+def _read_steady_marker() -> dict:
+    """Parse the durable `# bus-steady-urls:` marker line, if present."""
+    try:
+        lines = CONF_FILE.read_text().splitlines()
+    except OSError:
+        return {}
+    for line in lines:
+        if line.startswith(_STEADY_MARKER):
+            fields = {}
+            for part in line[len(_STEADY_MARKER):].split():
+                if "=" in part:
+                    k, v = part.split("=", 1)
+                    fields[k] = v
+            if fields.get("peer") and not _is_local_url(fields["peer"]):
+                return {"peer": fields["peer"], "self": fields.get("self", "")}
+    return {}
+
+
+def _write_steady_marker(out: list, steady: dict) -> list:
+    """Insert/refresh the marker line so the anchor cannot be lost with state."""
+    line = f"{_STEADY_MARKER} peer={steady['peer']}" + (
+        f" self={steady['self']}" if steady.get("self") else "")
+    kept = [ln for ln in out if not ln.startswith(_STEADY_MARKER)]
+    kept.append(line)
+    return kept
+
+
+def swap_bus_config(active: bool, steady: dict | None = None) -> bool:
     """Rewrite .env primary/fallback URLs (Esther only).
 
-    active=True  → acting primary: URL=local :8903, FALLBACK=FLEET_BUS_URL
-                   (the other side's bus; Moses :13004 in normal operation)
-    active=False → standby restored: URL=FLEET_BUS_URL, FALLBACK =
-                   FLEET_BUS_FALLBACK_URL (Esther :14004 in operation)
+    active=True  → acting primary: URL=local :8903, FALLBACK=<the peer>
+    active=False → standby restored: URL=<the peer>, FALLBACK=<this host's own>
+
+    IDEMPOTENT and FAIL-CLOSED. The steady-state pair comes from `steady` (the
+    anchor the caller keeps in the watchdog state) or is captured from .env
+    while it still holds real URLs. A repeat activation therefore re-derives the
+    SAME peer instead of reading back the loopback URL it just wrote, and a
+    collapse with no anchor is REFUSED rather than rewritten: putting a local
+    URL in the peer slot is how the forwarder came to send Basic auth to the raw
+    local bus (401 "Missing or invalid Authorization header" every tick) while
+    the real peer URL survived only in a .env backup.
 
     Returns True on success. Creates the file if missing.
     """
-    # FLEET_BUS_URL / FLEET_BUS_FALLBACK_URL are ENV VAR NAMES — FLEET_* is the
-    # only spelling since release 2 (2026-11-13); the file/command rename (fleet-*) landed in
-    # P3 steps 2-3; the env var names follow in P4.
-    # Read from the .env (CONF_FILE) with env-var override, so this process
-    # reads what it writes: the watchdog may run under cron/systemd without
-    # FLEET_BUS_* in its process env, and the values it swaps live in .env.
-    bus_url = _env_value(CONF_FILE, "FLEET_BUS_URL").strip()
-    bus_fallback = _env_value(CONF_FILE, "FLEET_BUS_FALLBACK_URL").strip()
-    if not bus_url or not bus_fallback:
-        _log("ERROR: FLEET_BUS_URL / FLEET_BUS_FALLBACK_URL not set in env — cannot swap")
+    anchor = dict(steady) if steady else capture_steady_urls()
+    peer = (anchor.get("peer") or "").strip()
+    self_url = (anchor.get("self") or "").strip()
+    if not peer or _is_local_url(peer):
+        _log("ERROR: no peer bus URL available (both keys local, no anchor) — "
+             "REFUSING to swap; restore the peer URL in .env from a backup")
         return False
-    if active:
-        primary, fallback = "http://127.0.0.1:8903", bus_url
-    else:
-        primary, fallback = bus_url, bus_fallback
+
+    replacements = {"FLEET_BUS_URL": LOCAL_BUS_URL if active else peer}
+    # Restore needs this host's own external URL. When it is unknown, leave the
+    # existing fallback line ALONE rather than guessing or duplicating the peer.
+    fallback = peer if active else self_url
+    if fallback:
+        replacements["FLEET_BUS_FALLBACK_URL"] = fallback
 
     try:
         lines = CONF_FILE.read_text().splitlines() if CONF_FILE.exists() else []
@@ -253,21 +324,22 @@ def swap_bus_config(active: bool) -> bool:
         _log(f"ERROR: cannot read {CONF_FILE}: {e}")
         return False
 
-    seen_url = seen_fallback = False
+    seen = set()
     out = []
     for line in lines:
-        if line.startswith("FLEET_BUS_URL="):
-            out.append(f"FLEET_BUS_URL={primary}")
-            seen_url = True
-        elif line.startswith("FLEET_BUS_FALLBACK_URL="):
-            out.append(f"FLEET_BUS_FALLBACK_URL={fallback}")
-            seen_fallback = True
+        key = line.split("=", 1)[0] if "=" in line else ""
+        if key in replacements:
+            out.append(f"{key}={replacements[key]}")
+            seen.add(key)
         else:
             out.append(line)
-    if not seen_url:
-        out.append(f"FLEET_BUS_URL={primary}")
-    if not seen_fallback:
-        out.append(f"FLEET_BUS_FALLBACK_URL={fallback}")
+    for key, value in replacements.items():
+        if key not in seen:
+            out.append(f"{key}={value}")
+
+    # Persist the anchor so the pair survives a lost state file (and a later
+    # collapse of the two keys).
+    out = _write_steady_marker(out, {"peer": peer, "self": self_url})
 
     try:
         CONF_FILE.write_text("\n".join(out) + "\n")
@@ -334,10 +406,14 @@ def _activate(state: dict) -> list[str]:
         _log("FAILOVER ACTIVATED (dry-run)")
         return lines
 
-    if swap_bus_config(active=True):
-        lines.append("   ✅ .env → primary=local :8903, fallback=Moses :13004")
+    # Anchor the steady-state pair BEFORE the swap overwrites it — this is what
+    # makes a later repeat activation or restore non-destructive.
+    if not state.get("steady_urls"):
+        state["steady_urls"] = capture_steady_urls()
+    if swap_bus_config(active=True, steady=state.get("steady_urls")):
+        lines.append("   ✅ .env → primary=local :8903, fallback=<peer>")
     else:
-        lines.append("   ❌ .env swap FAILED — check permissions")
+        lines.append("   ❌ .env swap FAILED (no peer URL / permissions) — see the watchdog log")
     try:
         MARKER_FILE.write_text(_now_iso())
         lines.append("   ✅ failover marker written")
@@ -361,10 +437,10 @@ def _recover(state: dict) -> list[str]:
         _log("FAILOVER RECOVERED (dry-run)")
         return lines
 
-    if swap_bus_config(active=False):
-        lines.append("   ✅ .env → primary=Moses :13004, fallback=Esther :14004")
+    if swap_bus_config(active=False, steady=state.get("steady_urls")):
+        lines.append("   ✅ .env → primary=<peer>, fallback=<this host>")
     else:
-        lines.append("   ❌ .env restore FAILED")
+        lines.append("   ❌ .env restore FAILED (peer URL unrecoverable) — see the watchdog log")
     try:
         if MARKER_FILE.exists():
             MARKER_FILE.unlink()
