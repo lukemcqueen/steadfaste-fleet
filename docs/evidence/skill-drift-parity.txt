@@ -39,7 +39,7 @@ A file under no repo-owned skill dir is a Hermes default and stays skipped.
 **Verdict: FAIL**
 
 Stranded in place:
-- devops/linux-server-hardening/SKILL.md
+- devops/fleet-deployment-sync/SKILL.md
 - workflow/task-orient/SKILL.md
 
 Absent from the repo (deployed under a repo-owned skill):

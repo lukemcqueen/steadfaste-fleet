@@ -260,6 +260,11 @@ echo "EXIT=$?" >> ~/.hermes/cache/scratch/fleet-update-$stamp.log
   clean; warnings listed are pre-existing, not this deploy's failures). A deploy
   killed by the timeout re-locks when it dies (fail-safe), but confirm by reading
   `lsattr`, not by assuming.
+- **The deploy log is NOT guaranteed to carry a doctor `Overall:` summary — `EXIT=0`
+  only proves the deploy script completed its copy/relock steps, not that the doctor
+  sweep ran.** Do not grep the log for `Overall:` and conclude it is absent/broken;
+  run `fleet-doctor.py --quiet` (from the repo cwd, Pitfall 29) yourself as the
+  explicit final verification and read ITS `Overall:` line + warning count.
 
 ## Pitfall 1: Governance files are immutable — fleet-update is the ONLY deploy path
 
@@ -786,6 +791,25 @@ $PY ~/.steadfaste-fleet/scripts/adversarial-verify.py \
     --file skills/<cat>/<name>/SKILL.md --level A2 --gate
 # a SKILL.md is markdown — expect 0 findings, GATE_PASSED, rc=0
 ```
+
+**The adversarial gate also fires at COMMIT time on a `skills/`/`ops/scripts/` path
+touching a reconciler backport — load the verifier and run the gate BEFORE the
+commit, not only before the push.** The enforcer blocks `git commit` of those paths
+with `ADVERSARIAL VERIFICATION REQUIRED` until the skill is loaded and the gate has
+run on the changed file. A backport commit therefore needs the same two-step the
+push does; a SKILL.md is markdown, so expect GATE_PASSED / 0 findings on the first
+run.
+
+**Commit the reconciler backport with the pathspec form directly — do not `git add`
+then bare-`git commit`.** This repo's shared-index guard refuses a bare `git commit`
+(`BARE COMMIT REFUSED — it would commit whatever is staged`) because several agents
+share one index; the pathspec form stages only your files and needs no prior `git add`:
+
+```bash
+git commit -m "<msg>" -- skills/<cat>/<name>/SKILL.md docs/evidence/skill-drift-parity.txt
+```
+
+If you already `git add`ed, `git reset` first to unstage before the pathspec commit.
 
 **Recover it inside the cycle you are already in — but only if that cycle's task
 description NAMES the paths.** The doctor's own remedy line calls the recovery "its OWN
