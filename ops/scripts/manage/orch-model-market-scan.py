@@ -24,6 +24,10 @@ WHAT THIS SCRIPT DOES (deterministic, stdlib-only, portable to macOS):
   5. NEW-UNVETTED-CANDIDATE alert: any catalog model cheaper than a pool's current
      head that is not already routed/candidate/rejected in the list is reported
      as a quality-alert candidate (never auto-adopted — it needs an A/B first).
+     Free-tier candidates are classified by the list's `free_tier_policy`:
+     only USEFUL (flash-class, general-purpose) free models are offered as
+     candidates; audio/specialty free models (lyria, tts, image, ...) are
+     dropped as junk and recorded in `free_tier_junk_dropped` in the state file.
   6. Compare the re-priced/reordered list to the committed list. If they differ,
      "apply pending" is set (the orch cron's governed apply step commits it).
   7. Write ~/.steadfaste-fleet/state/model-market.json with a stable `signature`
@@ -252,6 +256,34 @@ def signature(doc: dict) -> str:
     return hashlib.sha256(raw).hexdigest()[:16]
 
 
+def classify_free_tier(model_id: str, blended_usd_per_m: float, junk_tokens) -> str:
+    """Classify a free-tier catalog candidate as 'useful' or 'junk'.
+
+    The fleet only wants USEFUL free-tier models — the deepseek-flash class:
+    cheap, general-purpose text/code chat models. An audio/specialty free model
+    (lyria, tts, image, embedding, ...) is junk for this fleet and must not be
+    surfaced as an unvetted candidate (it would be offered for an A/B that can
+    never run).
+
+    The classification is ID-TOKEN based (not catalog-metadata based) so it is
+    deterministic across the live catalog AND the cache fallback, which carry
+    different metadata shapes. `junk_tokens` comes from the list's
+    `free_tier_policy.junk_id_tokens` block — operator-extensible in config.
+
+    Returns 'junk' when the model is free AND its id contains a junk token;
+    'useful' when it is free and does not; '' when it is NOT free (paid
+    candidates are out of scope for this filter and keep the existing alert
+    path).
+    """
+    if blended_usd_per_m != 0.0:
+        return ""  # not free -> paid candidate, filter does not apply
+    low = model_id.lower()
+    for token in junk_tokens or []:
+        if token and token in low:
+            return "junk"
+    return "useful"
+
+
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if "--json" in argv:
@@ -342,6 +374,8 @@ def main(argv=None) -> int:
     #    that are not already routed/candidate/rejected. Quality gated: report only.
     existing = routed | candidates | rejected | set(prices_new)
     alerts = {}
+    junk_dropped = []
+    junk_tokens = (doc.get("free_tier_policy") or {}).get("junk_id_tokens") or []
     for tier, specs in tiers_new.items():
         for spec, models in specs.items():
             if not models:
@@ -365,6 +399,17 @@ def main(argv=None) -> int:
                     if pb >= 0 and pb < head_price:
                         full = f"{provider}/{bare}"
                         if full in existing:
+                            continue
+                        # Free-tier filter: only USEFUL (flash-class, general-
+                        # purpose) free models may be offered as candidates. A
+                        # free audio/specialty model is junk for a text/code
+                        # fleet — drop it (recorded in state, so the operator
+                        # still sees what was excluded). Paid candidates are
+                        # untouched by this filter.
+                        tier_kind = classify_free_tier(full, pb, junk_tokens)
+                        if tier_kind == "junk":
+                            if full not in junk_dropped:
+                                junk_dropped.append(full)
                             continue
                         cheaper.append((pb, full, c.get("input", 0), c.get("output", 0)))
             if cheaper:
@@ -403,6 +448,8 @@ def main(argv=None) -> int:
         "unvetted_cheaper_candidates": alerts,
         "signature": signature(refreshed_doc),
     }
+    if doc.get("free_tier_policy"):
+        state["free_tier_junk_dropped"] = junk_dropped
     try:
         Path(STATE_PATH).parent.mkdir(parents=True, exist_ok=True)
         Path(STATE_PATH).write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
@@ -447,6 +494,8 @@ def main(argv=None) -> int:
             print(f"  NEW cheaper unvetted candidates (quality-alert, NOT auto-adopted):")
             for spec, cands in alerts.items():
                 print(f"    {spec}: " + ", ".join(f"{c['model']} (${c['blended']}/M)" for c in cands))
+        if junk_dropped:
+            print(f"  free-tier junk dropped (audio/specialty, not candidates): {junk_dropped}")
     return rc
 
 

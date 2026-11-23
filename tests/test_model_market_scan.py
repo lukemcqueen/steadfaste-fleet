@@ -299,3 +299,87 @@ def test_scan_ignores_sentinel_dynamic_pricing(tmp_path, monkeypatch):
     assert any("freesrov/free-tiny" in m for m in alerted), (
         "a genuinely-free model must still be reported as an unvetted cheaper candidate"
     )
+
+
+def test_scan_drops_specialty_junk_from_free_candidates(tmp_path, monkeypatch):
+    """Free-tier candidate alerts must only carry USEFUL (flash-class, general-
+    purpose) models: an audio/specialty free model (lyria, tts, image, ...) is
+    junk for a text/code fleet and must be dropped from the alert, while a
+    genuinely useful free model (gemma-4-31b-it:free) stays. Driven by the
+    list's `free_tier_policy.junk_id_tokens` so the operator extends the junk
+    set in config, not in code.
+    """
+    mod = load_scan()
+    cat = {"fakeprov": {"models": {
+        "alpha": {"cost": {"input": 0.0000001, "output": 0.0000002}},    # $/M 0.30
+        "beta":  {"cost": {"input": 0.00000005, "output": 0.0000001}},   # $/M 0.15 head
+        "gamma": {"cost": {"input": 0.0000004, "output": 0.0000005}},    # $/M 0.90
+    }}}
+    cat["google"] = {"models": {
+        "gemma-4-31b-it:free": {"cost": {"input": 0.0, "output": 0.0}},   # useful free
+    }}
+    cat["lyriaprov"] = {"models": {
+        "lyria-3-pro-preview": {"cost": {"input": 0.0, "output": 0.0}},   # audio junk
+        "lyria-3-clip-preview": {"cost": {"input": 0.0, "output": 0.0}},  # audio junk
+    }}
+    doc = _list_doc(beta_first=True)
+    doc["free_tier_policy"] = {
+        "class": "flash",
+        "junk_id_tokens": ["lyria", "audio", "music", "tts", "speech",
+                           "voice", "image", "video", "embedding", "rerank",
+                           "moderation", "dall-e", "flux"],
+        "note": "id-based classification so it stays deterministic across the live catalog and the cache fallback",
+    }
+    list_path = tmp_path / "router-models.json"
+    list_path.write_text(json.dumps(doc), encoding="utf-8")
+    state_path = tmp_path / "state.json"
+    monkeypatch.setattr(mod, "default_list", lambda: list_path)
+    monkeypatch.setattr(mod, "get_catalog", lambda: (cat, "test"))
+    monkeypatch.setattr(mod, "STATE_PATH", str(state_path))
+
+    rc = mod.main(["--json"])
+    st = json.loads(state_path.read_text(encoding="utf-8"))
+    # rc stays 2 (quality-alert only): the useful free model is still an alert
+    assert rc == 2
+    alerted = [c["model"]
+               for cands in st["unvetted_cheaper_candidates"].values() for c in cands]
+    assert any("google/gemma-4-31b-it:free" in m for m in alerted), (
+        "a useful free model must remain a reported candidate"
+    )
+    assert all("lyriaprov/" not in m for m in alerted), (
+        "audio/specialty free models must be dropped from the unvetted alert"
+    )
+    # the dropped junk is recorded in state, so it is visible — not silently gone
+    assert any("lyria-3-pro-preview" in m for m in st.get("free_tier_junk_dropped", []))
+
+
+def test_scan_free_tier_filter_is_opt_in(tmp_path, monkeypatch):
+    """Without a `free_tier_policy` block the scan keeps today's behavior:
+    every free model is a candidate. The filter must be an explicit config
+    choice, not an implicit code default (a host that has not opted in must
+    not silently stop seeing free candidates)."""
+    mod = load_scan()
+    cat = {"fakeprov": {"models": {
+        "alpha": {"cost": {"input": 0.0000001, "output": 0.0000002}},
+        "beta":  {"cost": {"input": 0.00000005, "output": 0.0000001}},
+        "gamma": {"cost": {"input": 0.0000004, "output": 0.0000005}},
+    }}}
+    cat["lyriaprov"] = {"models": {
+        "lyria-3-pro-preview": {"cost": {"input": 0.0, "output": 0.0}},
+    }}
+    list_path = tmp_path / "router-models.json"
+    list_path.write_text(json.dumps(_list_doc(beta_first=True)), encoding="utf-8")
+    state_path = tmp_path / "state.json"
+    monkeypatch.setattr(mod, "default_list", lambda: list_path)
+    monkeypatch.setattr(mod, "get_catalog", lambda: (cat, "test"))
+    monkeypatch.setattr(mod, "STATE_PATH", str(state_path))
+
+    rc = mod.main(["--json"])
+    st = json.loads(state_path.read_text(encoding="utf-8"))
+    assert rc == 2
+    alerted = [c["model"]
+               for cands in st["unvetted_cheaper_candidates"].values() for c in cands]
+    assert any("lyriaprov/lyria-3-pro-preview" in m for m in alerted), (
+        "no free_tier_policy block -> free junk stays a candidate (opt-in filter)"
+    )
+    assert "free_tier_junk_dropped" not in st

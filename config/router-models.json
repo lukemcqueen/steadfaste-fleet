@@ -30,6 +30,14 @@
       "recorded": "2026-11-17"
     }
   },
+  "free_tier_policy": {
+    "class": "flash",
+    "junk_id_tokens": [
+      "lyria", "audio", "music", "tts", "speech", "voice",
+      "image", "video", "embedding", "rerank", "moderation", "dall-e", "flux"
+    ],
+    "note": "The fleet only wants USEFUL free-tier models — the deepseek-flash class (cheap, general-purpose text/code chat). The daily scan (orch-model-market-scan.py) classifies free-tier candidates by ID token: a free model whose id contains a junk token (audio/specialty — e.g. google/lyria-3-pro-preview, a music model) is dropped from the unvetted alert and recorded in state free_tier_junk_dropped; a free model that does not (e.g. google/gemma-4-31b-it:free) stays a candidate. Paid candidates are untouched. Classification is id-based so it is deterministic across the live catalog and the cache fallback. Routing still excludes *:free (router-pools-seed.py) — this policy gates the ALERT, not the route; enabling free models in pools is a separate operator decision."
+  },
   "effort": {
     "enabled": true,
     "levels": [

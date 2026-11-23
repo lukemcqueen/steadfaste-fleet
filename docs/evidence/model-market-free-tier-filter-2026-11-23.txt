@@ -1,0 +1,16 @@
+Running: /home/moses/.steadfaste-fleet/venv/bin/python -m pytest tests/test_model_market_scan.py tests/test_router_pools.py -q
+rc: 0
+when: 2026-11-23T01:18:58Z
+
+============================= test session starts ==============================
+platform linux -- Python 3.14.8, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/moses/steadfaste-fleet
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 39 items
+
+tests/test_model_market_scan.py ............                             [ 30%]
+tests/test_router_pools.py ...........................                   [100%]
+
+============================== 39 passed in 4.53s ==============================
+sha256: 90baef4d06489cefbce8c85f68d91816399a7654cfc7dca257f8b88cd034fe25
