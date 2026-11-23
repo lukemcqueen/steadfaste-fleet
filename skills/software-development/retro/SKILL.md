@@ -1,4 +1,5 @@
 ---
+version: 1.0.0
 name: retro
 description: "Conduct a retrospective on a coding session."
 disable-model-invocation: true

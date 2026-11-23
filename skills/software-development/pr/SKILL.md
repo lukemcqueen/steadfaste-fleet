@@ -1,4 +1,5 @@
 ---
+version: 1.0.0
 name: pr
 description: "Use when writing a PR body."
 metadata:

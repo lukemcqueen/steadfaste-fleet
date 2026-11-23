@@ -1,4 +1,5 @@
 ---
+version: 1.0.0
 name: wait-what
 description: "Stop. That last message did not land: re-pitch it."
 disable-model-invocation: true

@@ -1,4 +1,5 @@
 ---
+version: 1.0.0
 name: grill-me
 description: A relentless interview to sharpen a plan or design.
 disable-model-invocation: true

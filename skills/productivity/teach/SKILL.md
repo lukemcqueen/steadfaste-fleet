@@ -1,4 +1,5 @@
 ---
+version: 1.0.0
 name: teach
 description: Teach the user a new skill or concept, within this workspace.
 disable-model-invocation: true
