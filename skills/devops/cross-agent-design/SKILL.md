@@ -258,6 +258,50 @@ while the harness's own surface probe (`install-<h>-mcp.sh --verify`,
 not the wiring — add the missing `skills`/`governance` capability entries
 pointing at the real adapter scripts, regenerate the derived docs, re-verify.
 
+**Declaring a harness the operator ASKED FOR — `planned` is the honest status.**
+When the operator names a set of coding agents the fleet must support, the
+deliverable is one registry entry per agent, not prose in a reply: an agent
+mentioned only in chat is invisible to `fleet harness list`, to the doctor's
+per-harness rows, and to every later session. Procedure, in order:
+
+1. **Map the operator's vocabulary onto the DECLARED names first** — an agent may
+   already be declared under its own name (`claude` is `claude-code`), and adding
+   a second entry for a host that exists is the duplicate-surface defect again.
+2. **One entry per missing agent carrying `layer` + `surface` + `why` + `install` +
+   `verify`.** The generator REJECTS an entry missing `why`, `surface`, `install` or
+   `verify` ("an unverifiable instruction is how a wiring ships broken"), so a
+   declaration with no install/verify step cannot be committed at all — which is
+   the point: a requirement you cannot state a verification for is not yet known.
+3. **Use `status: planned` when the requirement is recorded but no wiring has been
+   exercised.** `shipped` and `documented` are claims about a host; never set them
+   from vendor docs alone. `planned` is the status that reads "declared, install
+   steps named, verification owed".
+4. **State what is UNVERIFIED rather than inventing a knob** — the per-harness
+   session-identity env var and an undocumented config key are exactly the debts a
+   planned entry should name. Check the vendor's OWN docs for the configured
+   surface; where only the TYPE is documented (a toolset kind, not its ref
+   spelling), say so and name the command that will settle it on a real host.
+5. **`presence:` must be the harness's OWN artifact** — its config file or its
+   launcher. A sibling that merely ships alongside it (declaring the `docker` CLI
+   as presence for a `cagent`-based agent) makes the doctor judge a host that does
+   not have the harness, and it reports a wiring fault that is really a wrong
+   declaration. A harness the doctor can never find reports SKIP forever.
+6. **Add the name to `provider-policy.py`'s `HARNESSES` in the SAME change** as a
+   DECLARED GAP (`mechanism: None`, `surface: None`, `why: ...`) —
+   `tests/test_provider_policy.py::test_registry_harnesses_are_covered_or_declared`
+   parses the registry and fails on any harness with no policy entry. That test is
+   the drift guard for exactly this: a new harness must never silently inherit no
+   policy.
+7. **Regenerate and check with the FLEET venv interpreter:**
+   `<fleet venv>/bin/python3 ops/install/harnesses/generate-harnesses.py && … --check && … --report`.
+   A bare `python3` exits 1 on the missing PyYAML — that is the interpreter, not a
+   broken registry, so do not go debugging the YAML. The `--report` line
+   (`shipped/documented/blocked/planned` counts) is the coverage statement to quote.
+8. **Never hand-edit a derived README** — it is generated from the registry, its
+   banner says so, and the CLI-brand suite re-flags the pair. Change the registry
+   entry and regenerate. A `planned` harness whose entry is absent from the daemon
+   view (`fleet harness list`) was not declared at all.
+
 **Standing rule — a diagnosed gap is not a deliverable.** Finding that a fleet
 improvement is not wired everywhere is NOT the work: describing the gap and
 offering to fix it later ("say the word") hands the work back to the operator and
@@ -526,6 +570,8 @@ orchestrators (Moses, Esther) who use `host`.
 ## Reference
 
 - `fleet-bus` skill — bus operations, DLQ management, recovery
+- `ops/install/harnesses/registry.yaml` — the single source for coding-agent
+  harnesses; `generate-harnesses.py --report` for coverage, `--check` for parity
 - `fleet-preflight` skill — general pre-flight checks (manually authored)
 - `docs/reference/fleet-bus-config.md` — detailed config and auth resolution
 - `docs/orch-bus-setup.md` — full setup guide with architecture overview

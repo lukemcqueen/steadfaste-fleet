@@ -421,6 +421,18 @@ reads as a finding. Then drive the parser with a fixture BOTH ways (well-formed
 extracts exactly; truncated returns None) and ship that as a committed test; a
 probe you retype each time cannot be re-run by the next reader, a test can.
 
+**A detector whose positive branch has never fired on REAL output is untested — and its
+"could not verify" fallback then eats every real finding.** A row detector anchored on the
+id shape someone remembered (`^[0-9a-f]{8}\s`) matched NEITHER shape the tool actually
+prints (the full uuid, and the bare 8-char prefix), so the check answered "could not
+verify" on every run and the defect it existed to catch stayed invisible — while its unit
+tests, fed the shape the author had in mind, all passed. Capture the artifact's real
+output (BOTH shapes, straight from the live tool, never from memory) and drive the
+recognition path with it; and for any check with a fallback verdict, assert the fallback
+is reached ONLY by genuinely unrecognized input. A fallback that swallows real data is a
+silent pass wearing a warning's clothes — and it hides exactly the class the check was
+written for.
+
 **Your own test fixture can be the finding — the gate scans the FILE, not the
 intent.** A test that pins a detector by embedding the offending source in a string
 literal (an empty `except` body, a `|| true` line, a swallowed command) is read as a

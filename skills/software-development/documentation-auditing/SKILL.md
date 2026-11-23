@@ -269,3 +269,12 @@ showed) — otherwise the next reader reintroduces it as "obviously true".
   finding, not a wording nit — the comment is then the ONLY thing holding the invariant, and a
   comment is not a control. Fix it by WRITING the guard, then leave the comment true. The same
   follows for a comment asserting a property is impossible; prove it or delete the claim.
+- **Editing ONE line inside an example block obliges auditing the WHOLE example.** A config,
+  YAML or command block carries an IDENTIFIER (the key, the server name, the env var) that the
+  prose beside it and the code consuming it must agree with. Fix the path inside the block and
+  leave the key stale and you have shipped an example that registers something the checker
+  cannot see — the same drift class the audit exists to catch, now authored by the fix. After
+  any edit inside a block: grep its identifier against the code that actually registers or reads
+  it, and re-read the sentence next to the block. Where one literal legitimately names two
+  things (a retired server name and a live schema name), say which is which IN the block's own
+  comment so the next sweep cannot "unify" them.

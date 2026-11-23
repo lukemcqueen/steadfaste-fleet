@@ -128,6 +128,26 @@ via a one-word comment rename in `.env`.
 - Reading the value for a scan: `V=$(sed -n 's/^NAME=//p' file)` in a subshell and
   print **counts** — never the value.
 
+### Classify the KEY before suppressing its value — a URL is the diagnostic datum, a token is not
+
+Diagnosing a config failure (which host is the peer, which port, is the key even
+present) NEEDS the non-secret values, so a blanket "never read `.env`" is the wrong
+rule and leads to guessing. Decide per key:
+
+- **URL / host / port / flag keys** — print the value; it is the datum you are
+  diagnosing: `grep -e '^FLEET_BUS_URL=' -e '^FLEET_BUS_FALLBACK_URL=' .env`. Note
+  that `grep -E` with an alternation, or any pattern containing `|`, is classified
+  write-capable by the shell gate (metacharacters inside quotes still count) — use
+  repeated `-e` flags so the read stays lock-free.
+- **Token / password / credential keys** — print presence only: `search_files` with
+  `output_mode='count'` over the file, or `grep -c KEY .env` in the shell, or a
+  length, or compare against an expected hash with a tool. Never the value.
+- **A `.env.bak-*` sibling holds the same secrets as the live file**, so the same
+  classification applies to it — it is a recovery source, not a public file.
+- The rule is therefore not "never read the file" but **"know which of its lines
+  are secrets"** — and read it with `grep` for the specific keys rather than a
+  whole-file read, which both suppresses nothing and floods context.
+
 ### Terminal output vs command display
 The `terminal` tool shows the `command` parameter in full. Even though this is tool metadata (not standard output), it IS visible to the user and recorded in the session log. Treat it as a broadcast channel.
 

@@ -135,6 +135,21 @@ task-db.py list --board --repo ALL                          # the FLEET view (ex
   view). A session whose repo cannot be resolved gets NOTHING, by design.
   A task you ADD with no `--repo` inherits your session repo, so it stays
   visible in your own strict view.
+- **On the MCP surface the fleet view is a FLAG, not a value:** pass
+  `all_repos: true` (the tools describe it as a SPECIAL REQUEST). `repo: "ALL"`
+  alone is REFUSED — the string reads like an ordinary "no filter" to a model,
+  which is how a session ends up reading every repo's tasks as its own. A refused
+  scope never reaches the store, so a refusal is a parameter problem, not an
+  empty store.
+- **A session that sees EVERY repo's tasks is running a stale engine or a
+  mis-registered server, not a looser query.** The default-scope contract is
+  enforced in code, so the failure is upstream of it: check what the host's
+  `tasks` MCP registration POINTS AT (it must be the deployed copy, never the
+  repo working tree — a stale checkout serves pre-scoping behaviour with every
+  path present) and check the deployed engine's date. The doctor has a gate for
+  exactly this — a `Task query scoping` row that FAILS when the deployed engine's
+  default query returns rows with no repo resolvable. A pre-scoping engine
+  answers such a query with the whole store instead of nothing.
 
 ## Automated layers (no manual action needed)
 

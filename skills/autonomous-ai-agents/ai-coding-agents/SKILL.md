@@ -21,6 +21,16 @@ Delegate coding tasks to external AI coding agent CLIs. This skill covers three 
 
 All three share the same orchestration pattern from Hermes: run one-shot tasks via `terminal()`, handle interactive sessions via PTY/tmux, monitor with `process(action='poll')`, and review the diff before integrating.
 
+**Do not answer "which coding agents does the fleet support?" from this page.** This skill
+covers the delegation patterns for three of them; the fleet's REQUIRED and declared set is
+data, not prose: `ops/install/harnesses/registry.yaml` is the single source, and
+`fleet harness list` renders it (layer + status per harness). Read `status`: `shipped` means
+wired on a host, `planned` means the requirement is DECLARED with install/verify steps and the
+wiring is still owed — never quote a `planned` harness as supported. Coverage counts come from
+`generate-harnesses.py --report`. Declaring a new agent there (its entry shape, the
+provider-policy entry it also needs, and what to do when the entry cannot name a verified knob)
+is in the `cross-agent-design` skill.
+
 ## Common Orchestration Pattern
 
 ### 1. One-shot tasks (headless, preferred)

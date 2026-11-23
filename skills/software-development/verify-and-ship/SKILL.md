@@ -114,6 +114,15 @@ the DB is the only place to settle it:
   with whatever the new reply contained. Do not experiment on a cycle holding a real verdict; and
   when you do re-review, the material must be a full rewrite of the FINAL state (see the folding
   rule above) — never a folding note appended under the old description.
+- **A CLEAN verdict whose own summary says it could not see the DIFF is not clearance.** The window
+  holds only the material you passed, and the summary frequently names what fell outside it ("I
+  could not check the actual diffs of the N listed files … those belong to their own
+  blobs/windows"). A note-only material therefore returns CLEAN *because* it was blind, not because
+  the code is sound — the same self-report that makes the finding non-blocking makes the verdict
+  non-authorising. Rebuild the material with the ACTUAL diffs embedded (production files, tests,
+  and every doc block the reviewer must verify), then `--re-review`; a diff-carrying pass finds
+  defects a prose pass structurally cannot, so budget that second round instead of shipping on the
+  first CLEAN.
 
 **Two hard rules:**
 - An independent review MUST happen before the solution reaches the user. If
@@ -247,6 +256,14 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   rebase can conflict in a PIPELINE-MANAGED file (a generated evidence/drift
   artifact an auto-commit on origin already updated) — take the origin version
   (`git checkout HEAD -- <f>`), not your stale local copy, then drop the stash.
+  **A tree still carrying someone else's uncommitted edits rebases at all only with
+  `git -c rebase.autoStash=true pull --rebase`** — plain `pull --rebase` refuses on a
+  dirty tree, and the skill-reconcile pipeline deliberately leaves its in-flight
+  `skills/*.md` edits uncommitted, so that dirt is normal here rather than a fault.
+  Autostash preserves the edits across the rewrite; then resolve the pipeline's
+  GENERATED artifact to HEAD's version and leave its skill edits uncommitted — landing
+  a peer's or a pipeline's in-flight work under your own name is the one outcome worse
+  than a dirty tree.
 - A suite a prior session reported 'still running' may be a ghost — the
   background process died with that session and the notification never comes.
   Check for a captured log artifact; if none exists, re-run into a log file
@@ -406,6 +423,19 @@ workflow change → AGENTS.md/SOUL.md.
 **Phase 5 — final verification:**
 - No dangling leftovers — DECIDE: land it, or state a decision backed by a
   measurement. Never land a peer's in-flight edits.
+- **Reconcile the FILE LIST against `git status --short` immediately before
+  committing — an edited file left out of the pathspec ships a half fix.** Tests
+  read the WORKING TREE; the commit carries only what you named, so a change whose
+  one-line remedy in another file (a printed fix path, a map entry, an enum) was
+  edited but omitted passes every test locally and lands incomplete. Account for
+  every `M`/`??` YOU created; the ones that are not yours (a peer's in-flight edits,
+  a pipeline-managed generated artifact) stay out of the commit and get an explicit
+  pathspec, not a stash.
+- **A pre-commit scan that flags a file you just committed but have NOT pushed is
+  fixed by AMENDING, not by a cleanup commit.** A follow-up commit leaves the flagged
+  blob in history (and on the public remote once pushed); the amend removes it. The
+  tip then moves, so the review receipt no longer matches — re-close the cycle before
+  pushing, and expect the per-blob reviewer to judge the changed blobs fresh.
 - Symptom proof — the specific error/alert/blocker is gone, not just "compiles".
 - Stale expected-lists cleaned (removed crons also removed from uninstall arrays).
 - Doctor clean — `fleet-doctor.py --quiet`; record its EXIT CODE and warning

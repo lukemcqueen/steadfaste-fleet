@@ -76,3 +76,27 @@ MISREADING of your code. Resolve both the same cheap way: write the test that
 drives the exact shape the finding describes. If it PASSES, the hypothesis was
 wrong and is now pinned by executable proof; if it FAILS, you found a real bug.
 Editing prose explains nothing and leaves the claim unverifiable.
+
+## 6. "Cannot close yet: N blob(s) not covered" with NO findings → RETRY, don't re-review
+
+This refusal is a BUDGET message, not a defect report: one close pass judges a
+bounded set of blobs (15 blobs / ~240s) and verdicts are keyed to blob CONTENT, so
+**repeated `end_change` calls RESUME** where the last one stopped and the count
+falls each pass (5 → 2 → 1 → closed). Retrying is the intended exit; do not edit
+code or re-describe the change to "fix" a message that named no finding. Contrast
+§3, which applies only when a FINDINGS verdict exists for the blob.
+
+Two shapes that otherwise send you down the wrong path:
+
+- `no blob was SENT this pass: every blob still outstanding already carries a
+  not-clean verdict for its exact content` = the reviewer TIMED OUT on that blob,
+  so nothing was left to attempt in that pass. Call `end_change` again — a later
+  pass can still cover it. Re-rolling is expected here, not a smell.
+- `rereview_change` answers `Cycle <id> has no recorded review — nothing to
+  re-review` whenever the close has not yet SUCCEEDED. That is not evidence about
+  your code and it is not the remedy: the cycle-level row is only written by a
+  successful close, and the tool exists to re-judge a recorded FINDINGS verdict.
+  Do not loop on it, and do not treat it as a missing review you must go and create.
+- A GENERATED file that needs a verdict cannot be hand-edited to force a fresh sha
+  — its own banner forbids it and the parity/derived-docs check re-flags the pair —
+  so retry the close rather than touching the artifact.
