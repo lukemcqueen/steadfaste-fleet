@@ -9,7 +9,6 @@ metadata:
     author: Dex Horthy
     organisation: Humanlayer
     url: "https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md"
-version: 1.0.0
 ---
 
 Use this template for writing the PR body:

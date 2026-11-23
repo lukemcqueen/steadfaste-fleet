@@ -3,7 +3,6 @@
 version: 1.0.0
 name: diagnosing-bugs
 description: Diagnosis loop for hard bugs and performance regressions. Use when the user says "diagnose"/"debug this", or reports something broken/throwing/failing/slow.
-version: 1.0.0
 ---
 
 # Diagnosing Bugs
