@@ -81,6 +81,18 @@ Guards with spaces mangle compound tokens. Grep for these and fix:
   `~/.mycortex` (wrong product!) — paths must map to the neutral slug.
 - `\bterm\b` misses `term_compound` — the residual grep catches these;
   fix each with an exact-token replacement.
+- **A rename landed as TWO SEQUENTIAL sweeps DOUBLES the token in any name that was
+  already compound — sweep the repeated token as its own pass.** `hermes-cortex` →
+  `steadfaste-fleet` followed by `cortex` → `fleet` turns `hermes-cortex-cortex-bus.service`
+  into `steadfaste-fleet-fleet-bus.service`; the same shape yields `mycortex-mycortex`,
+  `fleet-fleet`, `steadfaste-steadfaste`. A single sweep can never produce a repeated
+  token, so ANY hit is residue — grep `fleet-fleet|cortex-cortex|mycortex-mycortex|
+  steadfaste-steadfaste|hermes-hermes` (plus the `_`/`.` spellings) across the repo, the
+  deployed tree, the unit dirs AND the cron names. Repair to the SINGLE name (the token is
+  the product, not a prefix), and confirm the replacement against the LIVE surface
+  (`systemctl --user list-units`, `ls ~/.config/systemd/user/`, `jobs.json`) rather than the
+  doc that named it: a doctor's expected-unit list can carry a doubled name indefinitely, so
+  the unit it names simply does not exist and the check silently stops covering it.
 
 Finish with `git grep -i <term>` == 0 AND a token-mangle grep
 (`legacy brain/`, `install-legacy `, `~/.legacy `) == 0.
@@ -200,6 +212,13 @@ to satisfy a pointer, and never drop the pointer as "stale" without naming its r
   the repo, not the live service, then re-test after deploy.
 - `git grep -i <term>` == 0, doctor clean, deploy via fleet-update,
   then push.
+- **Run the residue grep against every SURFACE — and know that a home-wide search is
+  blind to hidden dirs.** `search_files` reports matches in visible files only and
+  silently skips `~/.hermes/`, `~/.steadfaste-fleet/`, `~/.config/`, so a repo-root grep
+  reads 0 while the deployed copy, the systemd units and the cron jobs still carry the
+  token. Pass each hidden path as its OWN search root, and read a
+  `0 matches in visible files, N in hidden or gitignored file(s)` footer as NOT VERIFIED —
+  never as a clean sweep.
 
 ### 6. Land it fleet-wide — 0 residuals is NOT done
 
