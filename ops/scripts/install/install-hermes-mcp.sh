@@ -79,7 +79,7 @@ cleanup_stale_orchestrator_entries() {
 cleanup_stale_orchestrator_entries
 
 # ── What is already registered? (one parse, reused per row) ──────────────────
-registered_names="$(\"${PY}\" - \"${HERMES_BIN}\" <<'PY'
+registered_names="$("${PY}" - "${HERMES_BIN}" <<'PY'
 import re, subprocess, sys
 cli = sys.argv[1]
 try:
