@@ -87,8 +87,18 @@ def test_task_claim_passes_task_id_and_no_notify(monkeypatch):
 # ── is a SPECIAL REQUEST (operator 2026-11-23: "the default is ONLY tasks for the
 # ── repo; a request for ALL tasks has to be a special request").
 
-REPO_SCOPED_TOOLS = ("task_list", "task_pending", "task_board",
-                     "task_list_claimable", "task_list_handed_out")
+# Every repo-scoped tool with the task_db function its handler calls. The gate
+# lives in the HANDLER, so each tool needs its own assertion that the handler
+# actually calls it — proving it for one tool says nothing about the other four.
+TOOL_CMD = (
+    ("task_list", "cmd_list"),
+    ("task_pending", "cmd_pending"),
+    ("task_board", "cmd_list_board"),
+    ("task_list_claimable", "cmd_list_claimable"),
+    ("task_list_handed_out", "cmd_list_assigned"),
+)
+REPO_SCOPED_TOOLS = tuple(name for name, _ in TOOL_CMD)
+_SCOPED = pytest.mark.parametrize("tool_name,cmd_name", TOOL_CMD)
 
 
 def _run_tool(tool_name, args, monkeypatch, cmd_name):
@@ -98,40 +108,87 @@ def _run_tool(tool_name, args, monkeypatch, cmd_name):
     return result, rec
 
 
-def test_the_default_query_carries_no_repo_and_no_all_repos(monkeypatch):
-    """No parameter => the ENGINE scopes to the caller's repo (its own resolver).
+def _run_tool_spying_on_the_gate(tool_name, args, monkeypatch, cmd_name):
+    """As _run_tool, but also record whether the handler called the scope gate.
 
-    The MCP layer must not smuggle a scope in: passing repo='ALL' here is
-    exactly the bug Titus reported (an agent sees every repo's tasks)."""
-    for tool_name, cmd_name in (("task_list", "cmd_list"),
-                                ("task_board", "cmd_list_board")):
-        result, rec = _run_tool(tool_name, {}, monkeypatch, cmd_name)
-        assert result.is_error is False, (tool_name, result)
-        (args, kw), = rec.calls
-        assert not any(str(a).upper() == "ALL" for a in args if a), (tool_name, args, kw)
-        assert not any(str(v).upper() == "ALL" for v in kw.values() if v), (tool_name, kw)
+    "Nothing scoped reached the engine" is satisfiable WITHOUT a gate — a
+    handler that never calls one forwards repo=None just the same — so a test
+    asserting only the forwarded value passes vacuously against a gate-less
+    handler. The spy is what makes that assertion discriminate.
+    """
+    rec = Recorder()
+    monkeypatch.setattr(tm.task_db, cmd_name, rec)
+    gate_calls = []
+    real_gate = tm._scope_gate
+
+    def spy(gate_args):
+        gate_calls.append(gate_args)
+        return real_gate(gate_args)
+
+    monkeypatch.setattr(tm, "_scope_gate", spy)
+    result = tm._HANDLERS[tool_name](args)
+    return result, rec, gate_calls
 
 
-def test_repo_ALL_alone_is_refused_with_the_special_request_message(monkeypatch):
+@_SCOPED
+def test_the_default_query_carries_no_repo_and_no_all_repos(tool_name, cmd_name, monkeypatch):
+    """No parameter => the gate RUNS and forwards no scope; the ENGINE scopes.
+
+    Two properties, both load-bearing: the MCP layer must not smuggle a scope in
+    (passing repo='ALL' here is exactly the bug Titus reported), and the handler
+    must call the gate at all — asserted through the spy, because the second
+    property is invisible to the first."""
+    result, rec, gate_calls = _run_tool_spying_on_the_gate(
+        tool_name, {}, monkeypatch, cmd_name)
+    assert result.is_error is False, (tool_name, result)
+    assert len(gate_calls) == 1, f"{tool_name} never called the scope gate"
+    (args, kw), = rec.calls
+    assert not any(str(a).upper() == "ALL" for a in args if a), (tool_name, args, kw)
+    assert not any(str(v).upper() == "ALL" for v in kw.values() if v), (tool_name, kw)
+
+
+@_SCOPED
+def test_repo_ALL_alone_is_refused_with_the_special_request_message(
+        tool_name, cmd_name, monkeypatch):
     """`repo: "ALL"` reads like an ordinary 'no filter' to a model, so it is
     REFUSED without the explicit special-request flag. The engine is never
     reached: a refused scope must not touch the store."""
-    for tool_name, cmd_name in (("task_list", "cmd_list"),
-                                ("task_board", "cmd_list_board")):
-        result, rec = _run_tool(tool_name, {"repo": "ALL"}, monkeypatch, cmd_name)
-        assert result.is_error is True, (tool_name, result)
-        assert "all_repos" in result.content[0].text, result
-        assert not rec.calls, f"{tool_name} reached the engine with a refused scope"
+    result, rec = _run_tool(tool_name, {"repo": "ALL"}, monkeypatch, cmd_name)
+    assert result.is_error is True, (tool_name, result)
+    assert "all_repos" in result.content[0].text, result
+    assert not rec.calls, f"{tool_name} reached the engine with a refused scope"
 
 
-def test_all_repos_true_is_the_only_route_to_the_fleet_view(monkeypatch):
+@_SCOPED
+def test_all_repos_true_is_the_only_route_to_the_fleet_view(
+        tool_name, cmd_name, monkeypatch):
     """The special request is a dedicated flag; it is what turns the query
     fleet-wide, and it is loud in the schema so it is not reached for by
-    accident."""
-    result, rec = _run_tool("task_list", {"all_repos": True}, monkeypatch, "cmd_list")
-    assert result.is_error is False, result
+    accident. This is also the path that CANNOT work without the gate, so it
+    falsifies 'the gate was never wired into this handler'."""
+    result, rec = _run_tool(tool_name, {"all_repos": True}, monkeypatch, cmd_name)
+    assert result.is_error is False, (tool_name, result)
     (args, kw), = rec.calls
-    assert "ALL" in args or kw.get("repo") == "ALL", (args, kw)
+    assert "ALL" in args or kw.get("repo") == "ALL", (tool_name, args, kw)
+
+
+def test_a_non_string_repo_is_refused_before_it_reaches_the_engine(monkeypatch):
+    """Defense in depth. The schema declares repo as a string, but the handler
+    must not forward a non-string scope to the engine if a transport ever lets
+    one through — and the refusal must say what is actually wrong rather than
+    reading as the repo+all_repos conflict."""
+    for bad in (True, 7, ["ALL"]):
+        result, rec = _run_tool("task_list", {"repo": bad}, monkeypatch, "cmd_list")
+        assert result.is_error is True, (bad, result)
+        assert "string" in result.content[0].text.lower(), (bad, result)
+        assert not rec.calls, bad
+    # ...and with the flag on it is STILL a type error, not "not both" (which
+    # would send the caller off to fix the wrong thing).
+    result, rec = _run_tool("task_list", {"repo": True, "all_repos": True},
+                            monkeypatch, "cmd_list")
+    assert result.is_error is True, result
+    assert "string" in result.content[0].text.lower(), result
+    assert not rec.calls
 
 
 def test_all_repos_and_an_explicit_repo_conflict_is_refused(monkeypatch):
