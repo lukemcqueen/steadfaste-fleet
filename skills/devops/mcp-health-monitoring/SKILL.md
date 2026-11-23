@@ -194,6 +194,11 @@ incident are in `references/otel-skew-incident-2026-10-06.md`.
   two trees answering one import — so reach for that diagnosis first, and check the
   interpreter's own version against the tree it is loading from.
 
+## Pitfalls
+
+- **ORCH_ONLY MCP entries on a non-orchestrator host are DURABLY ABSENT — "deliberately retained" is not a stable state.** `install-hermes-mcp.sh` `cleanup_stale_orchestrator_entries()` removes both `agent-bus` and `executor` from `hermes mcp list` / config.yaml on EVERY non-orch fleet-update (`stale_services=("agent-bus" "executor")`). So an entry you choose to keep on a worker host is silently reverted by the next deploy, and the doctor keeps WARNing it (ORCH_ONLY check keys on block PRESENCE, not `enabled:`). The durable resolution is full removal (`hermes mcp remove <name>`) — that IS the deploy-invariant state — not `enabled:false` (which silences the watchdog but leaves the doctor WARN + a phantom the deploy cleans anyway). Verify an absent-from-config state is the one `mcp_wiring.py` / `install-hermes-mcp.sh` converge to before assuming a kept entry sticks. (Titus 2026-11-23, from a pro review of removing a broken `executor` entry.)
+- **The watchdog has NO `--once` flag** — `agent-mcp-health-watchdog.py` has no argparse; `main()` takes no args and the script is single-pass by construction. A `python3 ... --once` invocation is silently accepted (token ignored) and just does the ordinary one pass. When you report a diagnostic run, name it the default single-pass run, not a "`--once` mode". "No output, exit 0" is still valid evidence — the flag label is the only inaccuracy.
+
 ## Fail-Loud Design Principles (from the 2026-08-18 party)
 
 - **Detect first, prevent second.** A watchdog that proves "governance is
