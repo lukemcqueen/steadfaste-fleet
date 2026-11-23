@@ -109,6 +109,19 @@ findings are claims to verify, not conclusions to act on:
   only the confirmed ones; for a refutation state the measurement and change no code, because
   "fixing" a non-defect to appease a finding is a defect in itself. A finding about the
   reviewer's own transport or credentials is environment — fix the setup, not the change.
+- **Persist a review/scan deliverable to a file the MOMENT it returns.** A subagent's
+  structured output arrives as a message in the parent session; if the session is compacted
+  before you act on it, that deliverable is gone — a scan brief, a candidate table, a spec is
+  not re-available from `session_search` (the archive may hold only the transcript frames, not
+  the child's final JSON). Write it to `docs/evidence/` (or scratch) as the first action after
+  the child returns, so the scope of the work survives the next compaction.
+- **Re-run the scan, do not improvise, when a brief was compacted away.** If a subagent
+  deliverable that DEFINES a task (candidate list, ranked findings, spec) was compacted out and
+  the archive no longer carries it, do not reverse-engineer scope from half-recalled titles —
+  re-spawn the same read-only review subagent against the current code to regenerate it, and
+  bind the work to that. This is especially true for mode-changing refactors on live systems
+  (a bus client, an env resolver, a deploy path): guessing the seam from a title risks breaking
+  a deliberate capability the brief explicitly protected.
 - **Refute with the smallest decisive artifact, not with prose.** A finding that misreads material
   the child could only partly see ("the range diff puts the copy-back in the wrong commit") is
   settled by the per-commit listing — `git show --stat <sha>` for each commit in the range — which

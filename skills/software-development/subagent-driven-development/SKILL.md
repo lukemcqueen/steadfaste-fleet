@@ -105,6 +105,8 @@ todo([
 
 **Key:** Read the plan ONCE. Extract everything. Don't make subagents read the plan file — provide the full task text directly in context.
 
+**If the plan came from a review subagent's deliverable (recommendations, candidate fixes), write it to disk BEFORE you start executing, even as a scratch notes file.** An archived subagent dispatch's summary survives only in the orchestrator transcript — context-compaction erases it mid-run, and `session_search` cannot recover it (it never persisted to disk). Executing a multi-candidate review-then-fix flow without first snapshotting the candidate list strands the later candidates: you are left with only the titles, not the spec each one carries, and have to stop and re-run the review. Persisting the output of a review that will drive later execution is the same discipline as persisting the plan that drives it.
+
 ### 2. Per-Task Workflow
 
 For EACH task in the plan:

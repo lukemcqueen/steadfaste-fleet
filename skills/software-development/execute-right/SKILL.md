@@ -123,6 +123,20 @@ The non-negotiable rules of doing the work. Route (`task-orient`) → execute
     headline numbers ("N files carry X", "already fixed", a named file list)
     against the live tree before building on them, and say plainly when they
     differ — a summary is a lead, never a work order.
+20. **A review candidate is a suggestion; the documented harm is the mandate.**
+    When a review subagent proposes a fix, do not treat the full proposed
+    refactor as gospel — re-derive the SPECIFIC harm it names and ship the
+    narrow seam that closes it, keeping the existing tested contract
+    byte-identical (a typed-error distinction at a boundary instead of
+    re-plumbing all fourteen data flows). Guard this with the
+    least-invasive-first discipline, and when the candidate demands a wide
+    rewrite of a security-critical or highly-tested engine, favour scoping
+    down to the harm over a blind rewrite — even when the reviewer scored the
+    wide version "Strong." If executing a multi-candidate brief, snapshot
+    every candidate's spec to disk BEFORE the first candidate is grounded,
+    because context-compaction erases a delegated deliverable mid-run and
+    `session_search` cannot resurrect it — stop and re-run the review rather
+    than improvise later candidates from bare titles.
 
 ## Survey before action (mandatory pre-flight)
 

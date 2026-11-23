@@ -153,6 +153,23 @@ pattern-matches command text can refuse the entire commit over words in the MESS
 the refusal names the command rather than the cause. Then run `git status --short`
 and check for surprise paths before pushing.
 
+## Committing: a bare `git commit` is refused; `--only` needs files known to git
+
+In a shared working tree a staged entry records nothing about who staged it, so a bare
+`git commit` is refused with `BARE COMMIT REFUSED` — the commit must name its paths ON the
+same command. Two-step trap that costs two failed attempts:
+
+1. `git commit -F <msg>` alone (or after `git add`) is refused as bare. The pathspec
+   MUST be on the commit, `git commit --only -F <file> -- path/one path/two`.
+2. `--only` resolves the pathspec against files git ALREADY knows — a NEW/untracked
+   file you have not `git add`ed fails with `pathspec did not match any file(s) known to
+   git`, even though it is right there on disk. So for a new module/test/artifact the
+   order is: `git add <the-file>` FIRST, then `git commit --only -F <msg> -- <all-paths>`.
+
+Always `git reset -q` before re-adding if an earlier attempt partially staged: an index
+entry from a refused/stale attempt makes the new `commit --only` pick up paths you did
+not intend to include.
+
 ## Restoring a file you swapped in: `git checkout --` restores the INDEX
 
 To reproduce a failure against an older revision you may copy that revision over a working
@@ -498,6 +515,17 @@ them") on nearly every push. Stash just that path by name, rebase, pop.
   again and retry the push — once it shows `A..B  main -> main` it has
   landed even if a later command in the same chain printed an earlier
   failure line. Verify with `git log --oneline -1 origin/main`.
+- **A rebase CONFLICT on a pipeline auto-reconcile commit is usually resolved
+  by `git rebase --skip`, not by hand-merging.** When your `pull --rebase`
+  stops with "Could not apply <sha>... auto: reconcile ...", the committing
+  commit is the pipeline's own stale reconcile (skill-drift parity, an
+  `auto:` commit) whose file a PEER has since refreshed on origin — `--skip`
+  is correct, because skipping discards the stale automation commit, not
+  your work. Hand-resolving rewrites a file a newer upstream commit already
+  owns, and risks landing contradictory content. Verify after the skip that
+  YOUR commit landed on top (`git log --oneline -3` shows your fix above the
+  peer's refresh) before you push; the deployment of your change is
+  unaffected because the skipped commit was never one of your files.
 
 ## Doctor skill-drift: deployed newer than repo = sync INTO the repo
 

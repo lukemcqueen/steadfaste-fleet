@@ -82,6 +82,14 @@ Let them edit before writing.
 
 Never create `AGENTS.md` when `CLAUDE.md` already exists (or vice versa); always edit the one that's already there.
 
+**The "edit CLAUDE.md if it exists" default is a heuristic — first read what CLAUDE.md IS.**
+When CLAUDE.md is a narrow per-agent governance stub that explicitly defers the
+shared/agent-facing sections to AGENTS.md ("read AGENTS.md first… this file adds only what is
+specific to this agent, do not duplicate AGENTS.md's shared sections"), the `## Agent skills`
+block belongs in AGENTS.md, not the agent-scoped CLAUDE.md — the block is fleet-wide, so it
+goes where every agent reads. Put it in AGENTS.md and tell the user why; ask only when
+neither file exists (per the steps above).
+
 If an `## Agent skills` block already exists in the chosen file, update its contents in-place rather than appending a duplicate. Don't overwrite user edits to the surrounding sections.
 
 The block:
