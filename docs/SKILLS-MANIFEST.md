@@ -564,7 +564,7 @@ their domain.
 |-------|---------|---------|-----------|
 | `social-media-analyzer` | 1.0.0 | Social media campaign analysis and performance tracking. Calculates engagement rates, ROI, and benchmarks a... | `skill_view(name='social-media-analyzer')` |
 
-## Software Development (63 skills)
+## Software Development (66 skills)
 
 | Skill | Version | Purpose | Load With |
 |-------|---------|---------|-----------|
@@ -591,11 +591,14 @@ their domain.
 | `dhh-rails-style` | 1.0.0 | Use when writing Ruby/Rails code in DHH/37signals style. | `skill_view(name='dhh-rails-style')` |
 | `documentation-auditing` | 1.0.0 | Audit documentation for stale file paths, broken cross-references, and correctness gaps. Systematic approac... | `skill_view(name='documentation-auditing')` |
 | `documentation-consolidation` | 1.0.0 | Use when reorganizing, pruning, or merging a docs corpus. | `skill_view(name='documentation-consolidation')` |
+| `domain-modeling` | 1.0.0 | Build and sharpen a project's domain model. Use when discussing codebase terminology, writing or editing a... | `skill_view(name='domain-modeling')` |
 | `engineering-approach` | 1.9.0 | Engineering and communication standards for this project: terse, direct, skip explanations, always handle e... | `skill_view(name='engineering-approach')` |
 | `enterprise-regrets` | 0.1.0 | Check proposals against enterprise regret patterns. | `skill_view(name='enterprise-regrets')` |
 | `error-handling` | 1.0.0 | Error handling patterns and idioms: structured exceptions, graceful degradation, retry strategies, circuit... | `skill_view(name='error-handling')` |
 | `execute-right` | 0.1.0 | Execution contract: real work, honest results, verified outputs, survey before creating, extend-don't-rebui... | `skill_view(name='execute-right')` |
 | `fail-closed-design` | 1.0.0 | Use when writing fail-closed security-critical code. | `skill_view(name='fail-closed-design')` |
+| `grill-with-docs` | 1.0.0 | A relentless interview to sharpen a plan or design, which also creates docs (ADR's and glossary) as we go. | `skill_view(name='grill-with-docs')` |
+| `grilling` | 1.0.0 | Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test their t... | `skill_view(name='grilling')` |
 | `hermetic-python-testing` | 1.0.0 | Write Python modules with hermetic unit-test seams. Covers sandboxed inputs AND live-side-effect output def... | `skill_view(name='hermetic-python-testing')` |
 | `large-mechanical-refactor` | 1.0.0 | Use when a wide refactor ripples across many files. | `skill_view(name='large-mechanical-refactor')` |
 | `legacy-codebase-navigation` | 1.0.0 | Navigate, understand, and debug large legacy codebases (Rails, Django, early Node). Techniques for tracing... | `skill_view(name='legacy-codebase-navigation')` |
