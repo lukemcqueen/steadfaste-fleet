@@ -758,6 +758,28 @@ python3 ops/scripts/manage/reconcile-stranded-skills.py --apply   # copies the S
    left (review or missing) · `3` **could not verify** — the detector itself failed to
    run, so never read it as a clean tree.
 
+**A deployed→repo superset backport needs NO second deploy — commit the applied
+copy and push only.** After `--apply`, repo == deployed (the content came FROM the
+deployed tree), so another `fleet-update.sh` re-copies identical bytes and is a
+5–8 min no-op. In step 4's "then commit by pathspec, deploy", the deploy is only
+needed when you CREATED content in the repo that the deployed tree lacks. For the
+superset class, verify byte-identical both sides (`sha256sum` — the SKILL.md is
+headerless, so `diff` alone is enough), then commit + push; a doctor `Deploy sync
+✅`/`Skill drift ✅` confirms the committed copy already matches the deployed one.
+
+**Pushing a `skills/` backport trips the adversarial push gate — settle it BEFORE
+`git push`, not after.** The pre-push gate blocks any push whose range touches
+`skills/` until `adversarial-verifier` is loaded AND the gate has run on the
+changed file. Do both up front so the push is not refused after a clean commit:
+
+```bash
+skill_view(name='adversarial-verifier')
+# then, with the fleet venv python:
+$PY ~/.steadfaste-fleet/scripts/adversarial-verify.py \
+    --file skills/<cat>/<name>/SKILL.md --level A2 --gate
+# a SKILL.md is markdown — expect 0 findings, GATE_PASSED, rc=0
+```
+
 **Recover it inside the cycle you are already in — but only if that cycle's task
 description NAMES the paths.** The doctor's own remedy line calls the recovery "its OWN
 governed change, not part of the update cycle", while this section's opening instruction
