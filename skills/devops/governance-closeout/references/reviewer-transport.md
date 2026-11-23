@@ -173,6 +173,35 @@ transport first — the gate log names the fault:
 `reviewer failed on <path> (HTTPError: HTTP Error 401 …)` means every call died at auth: zero blobs
 were judged, so no content change can help and the "identical bytes" line is a red herring.
 
+**The OTHER transport fault is a verdict-less reply — and the gate's own message misdiagnoses it.**
+Auth is not the only way a pass judges nothing. The gate log also carries:
+
+    ERROR: per-blob review: <path> answered and judged nothing (unparseable or verdict-less reply)
+
+That is a reviewer OUTPUT fault: the call succeeded and the reply carried no verdict. The gate then
+reports `no blob was SENT this pass: every blob still outstanding already carries a not-clean verdict
+for its exact content` — and that sentence is wrong about the store, so query it before believing it.
+`SELECT verdict, ts FROM blob_reviews WHERE blob_sha=?` for every blob the path took in the range
+returns NO ROW when nothing was recorded (the table has no not-clean class at all: its verdicts are
+CLEAN and FINDINGS). No row means the refusal is held IN-PROCESS by the MCP daemon rather than
+persisted, so no number of `end_change` retries in that daemon can resend it. `rereview_change` does
+NOT clear it either — it answers CLEAN ("nothing to clear") and the next `end_change` refuses
+identically.
+
+Count the fault before deciding it is one-off, then pick an exit that can actually work:
+
+    grep -c "answered and judged nothing" ~/.steadfaste-fleet/logs/loop-governance.log
+
+- **Change the blob's content** when the file has a real change to make — a fresh sha is judged fresh.
+- **Take the path out of the range** when the only content the range contributed was a no-op: restore
+the file to the upstream revision so the range's diff for it is empty.
+- **If neither is available, release the lock** — `advance_task_state(new_state='cancelled',
+reason=…)`, with a reason that states the work IS COMMITTED and only the close is blocked. A held
+lock past its TTL is purged and leaks a PENDING cycle with no owner, which is a doctor FAIL that
+blocks EVERY agent's push on the host — a worse, fleet-wide failure than one unclosed cycle. The next
+daemon cycle (a gateway restart from a shell outside the agent runtime) starts with fresh in-process
+state and can close the range normally.
+
 **Probe the gate's OWN call — seconds, decisive, and the only probe that reproduces the gate.**
 Import the deployed module and call the function the close itself uses; this exercises credential +
 backend + model + base URL at once, and it tells you the reviewer is fixed BEFORE spending a whole

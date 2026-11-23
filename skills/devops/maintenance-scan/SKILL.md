@@ -261,6 +261,32 @@ Known doctor-fix patterns:
     inside `description:` (YAML: "mapping values are not allowed here"). Fix the SOURCE
     plugin repo first so the next install propagates it, then the deployed and
     published copies.
+  - `Skills loadable — <cat>/<name> — duplicate mapping key(s): <key>` — frontmatter
+    carrying the SAME key twice (e.g. two `version:` lines). The usual cause is a bulk
+    field-addition made against a PRE-PULL snapshot: upstream then lands the same field
+    in its own position, so the deployed copy holds both. Keep the FIRST occurrence
+    (upstream's position), delete the duplicates, re-scan to prove zero remain, then
+    deploy. Appending the field at the END of the frontmatter is what makes the
+    collision likely — edit it where it already lives.
+  - **Re-run the doctor after the fix and compare the COUNTS, not just the FAIL set.** A
+    fix of your own can introduce failures, and a bulk edit across many repo files is the
+    classic: measured, adding one frontmatter field to 24 skills turned `0 fail` into
+    `12 fail` (11 duplicate-key `Skills loadable` plus a checksum fail), which blocks
+    every agent's push on the host. A FAIL count that went UP is your regression — fix it
+    in the same cycle, before reporting anything as done.
+  - **A prescribed doctor remedy can be DESTRUCTIVE — verify the target is not live
+    first.** The printed fix for a stale-path check is often a bare `rm -rf <dir>`, which
+    is only safe if the dir is a leftover. A running container can bind-mount it as its
+    LIVE data dir: check
+    `docker inspect <container> --format '{{range .Mounts}}{{.Source}} -> {{.Destination}}{{"\n"}}{{end}}'`
+    and confirm nothing mounts inside the directory; a path whose contents carry recent
+    mtimes is in use. Then disposition the check with that reason and hand the topology
+    decision to the operator — do not delete.
+  - **A `--reason` string is scanned like any other command text.** A guard that blocks an
+    in-session service restart matches the command name ANYWHERE in the invocation,
+    including inside a quoted `--reason`, so a deferral that names the remedy verbatim is
+    refused. Reword the reason ("the process must cycle from a shell outside the agent
+    runtime") rather than fighting the guard.
   - `CLAUDE.md (dev repos)` — agent-instruction file, approval-gated; a timed-out
     approval prompt is NO consent, so it cannot be fixed in-session — report it and
     wait for the operator's explicit authorization.
