@@ -190,7 +190,32 @@ New file `tests/test_harness_session_id_env.py`, driving the module's own
 Existing suites that must stay green: `tests/test_non_hermes_session_id.py`,
 `tests/test_non_hermes_repo_identity.py`, `tests/test_governance_lock_lifecycle_claims.py`.
 
-## 8. UNVERIFIED (stated, not claimed)
+## 8. FOLLOW-UP HARDENING (2026-11-23, Titus Pi incident — live-lock clobber)
+
+Second incident, same shared-id class, new failure path. Two env-less Pi sessions
+in one repo resolved the SAME per-repo id; session B's `begin_change` ran Step 0's
+`_purge_stale_locks()` and the purge removed session A's lock whose heartbeat had
+aged past TTL while A was still alive (same host, same session-id file, same empty
+`repo_path`). Step 1 then read "no lock" and B overwrote A's lock and resolved A's
+PENDING cycle instead of refusing.
+
+**The change (fail-closed, because a shared id cannot prove which session owns a
+lock):** `_purge_stale_locks()` now accepts `skip_session_ids`. `_begin_change` and
+`_check_lock` pass the caller's OWN id when it resolved a SHARED (per-repo
+fallback) id, so a same-value lock is never purged-and-rewritten by a peer — it
+stays visible and the refusal fires (with an explicit "NOT provably yours" hint
+naming `FLEET_SESSION_KEY` as the fix). Only the standalone sweep
+(`purge-stale-governance-locks.py`, TTL-only, no caller identity) may remove it
+once its owner is provably gone. Unique (injected/env) ids keep self-healing: a
+same-id lock IS provably the caller's, so the purge still removes it.
+
+Regression tests (section E of `tests/test_non_hermes_session_id.py`):
+E1 shared-id + stale same-id lock → begin_change REFUSES, lock + cycle intact
+   (the incident's exact shape; pre-fix it purged and overwrote).
+E2 unique-id + own stale lock → begin_change purges and proceeds (self-heal kept).
+E3 shared-id + DIFFERENT-id stale lock → purged and proceeds (crash cleanup kept).
+
+## 9. UNVERIFIED (stated, not claimed)
 
 - That `PI_SESSION_ID` reaches the MCP child on a Pi host. The evidence is the
   installer's own comment that Pi merges the env block over its own environment;

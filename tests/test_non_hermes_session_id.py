@@ -24,6 +24,7 @@ properly". Two root causes, both covered here:
 
 Run:  python3 tests/test_non_hermes_session_id.py
 """
+from datetime import datetime, timedelta, timezone
 import importlib.util
 import json
 import os
@@ -207,6 +208,170 @@ def test_same_repo_concurrent_sessions_serialize():
             os.chdir(prev_cwd)
 
 
+def _seed_stale_lock(state_dir: Path, sid: str, task_id: str, repo_path: str = ""):
+    """Write a lock under `sid` whose heartbeat aged past its TTL, deterministically.
+
+    The seeded agent name matches no commit anywhere (liveness checks return
+    False), so staleness is decided by age alone — no git history to rescue it.
+    ``repo_path=""`` mirrors the incident shape (a session launched outside any
+    git repo records an empty repo_path).
+    """
+    old = (datetime.now(timezone.utc) - timedelta(hours=2)) \
+        .isoformat(timespec="seconds").replace("+00:00", "Z")
+    lock = {
+        "task_id": task_id,
+        "description": "seeded stale lock",
+        "repo_slug": "proj-x",
+        "repo_path": repo_path,
+        "started_at": old,
+        "agent": "definitely-not-an-author",
+        "session_id": sid,
+        "session_type": "interactive",
+        "ttl_seconds": 3600,
+        "heartbeat_at": old,
+        "scored": False,
+        "status": "executing",
+    }
+    path = state_dir / f".governance-{sid}.json"
+    path.write_text(json.dumps(lock))
+    old_ts = (datetime.now(timezone.utc) - timedelta(hours=2)).timestamp()
+    os.utime(path, (old_ts, old_ts))
+    return path
+
+
+def _fresh_sandbox_module(td: str):
+    """A fresh non-Hermes MCP module in a hermetic sandbox git repo.
+
+    cwd sits INSIDE the repo (so ``_session_repo_path`` resolves and the
+    dogfood gate passes), with temp state dir + loop DB, temp HOME (the
+    anywhere-liveness scan finds nothing), and no ambient session env. Returns
+    ``(mod, repo, state)`` — the caller chdirs around the calls it makes.
+    """
+    repo = Path(td) / "sandbox-repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True, capture_output=True)
+    # core.hooksPath is GLOBAL on a fleet host, so the sandbox commit runs the
+    # pre-commit hook — point the sandbox at no hooks.
+    subprocess.run(["git", "-C", str(repo), "-c", "core.hooksPath=/nonexistent",
+                    "-c", "user.email=t@t.t", "-c", "user.name=t",
+                    "commit", "--allow-empty", "-m", "init"],
+                   check=True, capture_output=True)
+    state = Path(td) / "state"
+    state.mkdir()
+    spec = importlib.util.spec_from_file_location(
+        f"lgm_{os.urandom(4).hex()}", _MCP_PATH)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    mod.GOVERNANCE_STATE_DIR = state
+    mod.LOOP_DB = Path(td) / "loop.db"
+    mod.HOME = Path(td)  # anywhere-liveness scan finds no repos, no matching author
+    mod._PROCESS_SESSION_ID = ""  # fresh non-Hermes MCP child
+    return mod, repo, state
+
+
+def test_shared_id_stale_lock_is_refused_not_overwritten():
+    """THE 2026-11-23 regression (Titus Pi incident): session B's begin_change
+    with a STALE same-id lock must REFUSE and leave the peer's lock AND cycle
+    intact — never purge-and-rewrite.
+
+    Pre-fix, Step 0's purge removed the aged-heartbeat lock (same host, same
+    session-id file, same empty repo_path), Step 1 then read "no lock" and B
+    overwrote session A's live lock while A was still working. With a shared id
+    the purge cannot distinguish "crashed me" from "live peer", so the only
+    safe action is to refuse and disclose; the TTL sweep is the sole cleaner.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        mod, repo, state = _fresh_sandbox_module(td)
+        prev_cwd = os.getcwd()
+        os.chdir(repo)
+        try:
+            sid = mod.get_session_id(None)  # shared per-repo id (no env)
+            _seed_stale_lock(state, sid, "task-a", repo_path="")
+            # Cycle seeded under a DIFFERENT session id so the close-out gate
+            # cannot pre-empt the lock refusal — the purge must be the only
+            # thing that could have removed the lock.
+            mod._create_pending_cycle("task-a", "sess_peer_other", "seeded by test")
+
+            r = mod._begin_change({"task_id": "task-b", "description": "peer tries to begin"})
+            t = r.content[0].text
+            _check("E1: begin_change REFUSED (lock not clobbered)",
+                   "already active" in t, t[:200])
+            _check("E1: refusal names the shared-id hazard",
+                   "NOT provably yours" in t, t[:250])
+            lock_path = state / f".governance-{sid}.json"
+            _check("E1: peer lock file still exists", lock_path.exists())
+            if lock_path.exists():
+                kept = json.loads(lock_path.read_text())
+                _check("E1: lock still belongs to task-a (not overwritten)",
+                       kept.get("task_id") == "task-a", str(kept.get("task_id")))
+            conn = mod._db()
+            row = conn.execute(
+                "SELECT decision FROM loop_cycles WHERE task_id='task-a'").fetchone()
+            conn.close()
+            _check("E1: task-a cycle still PENDING (purge did not resolve it)",
+                   bool(row) and row["decision"] == "PENDING", str(dict(row) if row else None))
+            locks = list(state.glob(".governance-*.json"))
+            _check("E1: no task-b lock was created", len(locks) == 1, ", ".join(x.name for x in locks))
+        finally:
+            os.chdir(prev_cwd)
+
+
+def test_unique_id_self_heal_preserved():
+    """A session with a UNIQUE (env) id may still purge its OWN stale leftover
+    lock at begin_change — the skip applies ONLY to the shared fallback."""
+    os.environ["FLEET_SESSION_KEY"] = "e2-unique"
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            mod, repo, state = _fresh_sandbox_module(td)
+            prev_cwd = os.getcwd()
+            os.chdir(repo)
+            try:
+                sid = mod.get_session_id(None)  # env-derived unique id
+                _check("E2: env id is unique-shaped", sid.startswith("sess_") and "e2" in sid, sid)
+                _seed_stale_lock(state, sid, "e2-stale", repo_path="")
+                mod._create_pending_cycle("e2-stale", sid, "seeded by test")
+
+                r = mod._begin_change({"task_id": "e2-new", "description": "fresh start"})
+                t = r.content[0].text
+                _check("E2: begin_change SUCCEEDS (own stale lock self-healed)",
+                       "Governance session started" in t, t[:150])
+                locks = list(state.glob(".governance-*.json"))
+                _check("E2: exactly one lock, the new task",
+                       len(locks) == 1
+                       and json.loads(locks[0].read_text()).get("task_id") == "e2-new",
+                       ", ".join(x.name for x in locks))
+            finally:
+                os.chdir(prev_cwd)
+    finally:
+        os.environ.pop("FLEET_SESSION_KEY", None)
+
+
+def test_shared_caller_purges_different_id_stale_lock():
+    """A SHARED-id caller may still purge a stale lock owned by a DIFFERENT id
+    (crash cleanup for shared callers preserved) — the skip set is exactly the
+    caller's own id, never a blanket same-id exemption."""
+    with tempfile.TemporaryDirectory() as td:
+        mod, repo, state = _fresh_sandbox_module(td)
+        prev_cwd = os.getcwd()
+        os.chdir(repo)
+        try:
+            sid = mod.get_session_id(None)  # shared per-repo id (no env)
+            _seed_stale_lock(state, "sess_e3_peer_dead", "e3-peer", repo_path="")
+            mod._create_pending_cycle("e3-peer", "sess_e3_peer_dead", "seeded by test")
+
+            r = mod._begin_change({"task_id": "e3-new", "description": "cleanup and start"})
+            t = r.content[0].text
+            _check("E3: begin_change SUCCEEDS after purging the DIFFERENT-id stale lock",
+                   "Governance session started" in t, t[:150])
+            locks = list(state.glob(".governance-*.json"))
+            _check("E3: peer lock gone, exactly the new lock remains",
+                   len(locks) == 1
+                   and json.loads(locks[0].read_text()).get("task_id") == "e3-new",
+                   ", ".join(x.name for x in locks))
+        finally:
+            os.chdir(prev_cwd)
+
+
 def main():
     try:
         print("A. Hermes per-call injection (unchanged)")
@@ -217,6 +382,10 @@ def main():
         test_two_processes_get_disjoint_ids()
         print("D. Same-repo concurrent sessions serialize")
         test_same_repo_concurrent_sessions_serialize()
+        print("E. Shared-id stale locks are refused, never purged-and-rewritten")
+        test_shared_id_stale_lock_is_refused_not_overwritten()
+        test_unique_id_self_heal_preserved()
+        test_shared_caller_purges_different_id_stale_lock()
     finally:
         # Put back whatever the runner had, even when a check raises — a test that
         # leaks a mutated environment poisons every later section of the process.

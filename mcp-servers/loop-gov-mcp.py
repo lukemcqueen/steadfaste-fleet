@@ -3169,13 +3169,25 @@ def _log_force_acquire(
 _STATE_LOCK = threading.RLock()
 
 
-def _purge_stale_locks() -> int:
-    """Serialized entry point for the global stale-lock sweep."""
+def _purge_stale_locks(skip_session_ids: set[str] | None = None) -> int:
+    """Serialized entry point for the global stale-lock sweep.
+
+    ``skip_session_ids``: locks whose ``session_id`` is in this set are NEVER
+    removed here. A caller that resolved a SHARED (per-repo fallback) id passes
+    its own id, because a same-value lock is not provably its own — it may be a
+    live PEER session's, and purge-then-rewrite at begin_change is the clobber
+    the shared id makes possible (2026-11-23 Titus Pi incident: session B's
+    begin_change purged session A's aged-heartbeat lock — same host, same
+    session-id file, same empty repo_path — and overwrote it instead of
+    refusing). A skipped lock stays visible to the refusal that follows; only
+    the standalone sweep (purge-stale-governance-locks.py, TTL-only, no caller
+    identity) may remove it once its owner is provably gone.
+    """
     with _STATE_LOCK:
-        return _purge_stale_locks_unlocked()
+        return _purge_stale_locks_unlocked(skip_session_ids)
 
 
-def _purge_stale_locks_unlocked() -> int:
+def _purge_stale_locks_unlocked(skip_session_ids: set[str] | None = None) -> int:
     """Proactively remove all stale lock files from ANY session.
 
     Fix GAP #9: scans all .governance-*.json files and removes those
@@ -3209,6 +3221,15 @@ def _purge_stale_locks_unlocked() -> int:
                 # Skip symlinks — we'll process the real file separately
                 continue
             state = json.loads(lock_file.read_text())
+            if skip_session_ids and state.get("session_id") in skip_session_ids:
+                # A lock under THIS caller's resolved id — under the shared
+                # per-repo fallback that may be a live PEER's lock, not a
+                # crashed leftover. Leave file and cycle in place: the caller's
+                # begin_change/check_lock will see it and fail closed (refuse,
+                # report) instead of purge-and-rewrite. Only the standalone
+                # sweep may judge this lock, because it has no caller identity
+                # to confuse with the owner's.
+                continue
             try:
                 mtime = lock_file.stat().st_mtime
             except OSError:
@@ -4259,7 +4280,7 @@ async def call_tool(ctx, params=None) -> CallToolResult:
 
 # ── Tool Implementations ─────────────────────────────────────
 
-def _active_lock_refusal_text(existing: dict) -> str:
+def _active_lock_refusal_text(existing: dict, shared_hint: bool = False) -> str:
     """The message a session reads when it tries to begin while a lock is already active.
 
     Split out (2026-10-14) so the GUIDANCE can be tested without standing up the
@@ -4271,6 +4292,11 @@ def _active_lock_refusal_text(existing: dict) -> str:
     complexity without a governed repo), so "call end_change" is advice that cannot work
     for it. Name the release that DOES: a TERMINAL task state releases the lock and does
     not consult repo identity.
+
+    ``shared_hint`` (2026-11-23, Titus Pi incident): the existing lock's session_id equals
+    THIS caller's, but the caller resolved a SHARED (per-repo fallback) id — so the lock
+    is NOT provably the caller's own; it may be a live peer's. State that plainly: the
+    caller must never read a same-id lock as license to overwrite it.
     """
     t = existing.get("task_id")
     if existing.get("repo_path") or existing.get("repo_slug"):
@@ -4284,6 +4310,14 @@ def _active_lock_refusal_text(existing: dict) -> str:
             "new_state='cancelled', reason='<why>')\n"
             "Waiting does not help: this session's own writes refresh the lock's "
             "heartbeat, so it never goes stale while you are working.")
+    shared_note = ""
+    if shared_hint:
+        shared_note = (
+            "\n\n⚠️ This lock carries YOUR resolved session id, but this session resolved a "
+            "SHARED (per-repo fallback) id — so the lock is NOT provably yours: another "
+            "session in this repo may hold it. It is NEVER overwritten. If its owner is "
+            "gone, the TTL sweep (purge-stale-governance-locks.py) removes it; or set "
+            "FLEET_SESSION_KEY so this session gets a unique governance id.")
     return (
         f"Error: A governance session is already active:\n"
         f"  task_id:     {existing.get('task_id')}\n"
@@ -4293,6 +4327,7 @@ def _active_lock_refusal_text(existing: dict) -> str:
         f"  heartbeat:   {existing.get('heartbeat_at')}\n"
         f"  agent:       {existing.get('agent')}\n\n"
         + how_out
+        + shared_note
     )
 
 
@@ -4367,8 +4402,19 @@ def _begin_change(args: dict) -> CallToolResult:
     # resolves the orphaned PENDING cycle(s) for the tasks whose locks it
     # removes; _resolve_orphaned_pending_cycles() additionally sweeps any
     # PENDING cycle (older than TTL) that has no live lock at all.
+    # Identity is resolved ONCE, for Step 0 AND Step 1: when this caller's
+    # resolved id is shared (per-repo fallback), a same-id lock is not provably
+    # ours — Step 0's purge skips it and Step 1's refusal says so.
+    _id_src, _own_id, _shared = _identity_source(args)
     try:
-        _purge_stale_locks()
+        # Same-id no-clobber (2026-11-23, Titus Pi incident): when THIS caller
+        # resolved a SHARED (per-repo fallback) id, a stale lock under that id
+        # is not provably this caller's own leftover — it may be a live PEER
+        # session's, and purging it here would let Step 1 read "no lock" and
+        # overwrite the peer instead of refusing. Skip it; Step 1 then refuses
+        # with the lock disclosed. Unique (injected/env) ids still self-heal:
+        # a same-id lock is provably this session's, so the purge removes it.
+        _purge_stale_locks(skip_session_ids={_own_id} if (_shared and _own_id) else None)
         _resolve_orphaned_pending_cycles()  # task_ids=None → sweep all lockless
     except Exception as _purge_err:
         log.warning("begin_change: pre-purge failed (non-critical): %s", _purge_err)
@@ -4429,7 +4475,10 @@ def _begin_change(args: dict) -> CallToolResult:
     if existing is not None:
         if not force:
             return CallToolResult(content=[TextContent(
-                type="text", text=_active_lock_refusal_text(existing))])
+                type="text", text=_active_lock_refusal_text(
+                    existing,
+                    shared_hint=bool(_shared and _own_id
+                                     and str(existing.get("session_id") or "") == _own_id)))])
         # Force override: build audit note and release old lock
         released_task = existing.get("task_id", "unknown")
         released_session = existing.get("session_id", "unknown")
@@ -8330,9 +8379,15 @@ def _check_lock(args: dict | None = None) -> CallToolResult:
     the word a caller can branch on (``mine`` | ``other-session-not-mine``).
     Treat ``other-session-not-mine`` as NOT your lock: read-only, never release.
     """
-    _purge_stale_locks()
-    state = _read_lock(args)
     id_source, own_id, shared = _identity_source(args)
+    # Same-id no-clobber (2026-11-23, Titus Pi incident): a stale lock under
+    # THIS caller's resolved id is not provably the caller's own when the id is
+    # shared — purging it here would erase a live PEER's lock from the report
+    # (and resolve its cycle) while the caller reads "no lock". The report's
+    # ownership logic below (this_mine → never true when shared) is the whole
+    # fail-closed story; the purge must not run ahead of it.
+    _purge_stale_locks(skip_session_ids={own_id} if (shared and own_id) else None)
+    state = _read_lock(args)
     # LOCK-OWNERSHIP HARDENING (2026-11-10, Titus Pi incident): `_read_lock` reads
     # THIS session's lock, but when the caller resolved a SHARED (per-repo) id the
     # file it points to may be a PEER's. Every live lock now carries its own
