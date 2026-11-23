@@ -2,6 +2,7 @@
 version: 1.0.0
 name: domain-modeling
 description: Build and sharpen a project's domain model. Use when discussing codebase terminology, writing or editing a GLOSSARY.md, or recording or editing an ADR.
+version: 1.0.0
 ---
 
 # Domain Modeling
