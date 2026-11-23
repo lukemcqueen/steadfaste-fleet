@@ -148,7 +148,7 @@ Platform guides: [`docs/linux-service-layer.md`](docs/linux-service-layer.md), [
 | Python modules | snake_case (PEP 8) | `loop_scorer.py` |
 | Documentation | kebab-case | `git-enforcement.md` |
 
-#### Cortex-Update.sh MAP Registration
+#### fleet-update.sh MAP Registration
 
 If you add a script that needs deployment to `~/.steadfaste-fleet/scripts/`, register
 it in `fleet-update.sh`:

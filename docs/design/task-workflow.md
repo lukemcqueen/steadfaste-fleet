@@ -369,7 +369,7 @@ stays orchestrator-only). Registered for all agents in install.sh + a
 fleet-update.sh ensure-step (idempotent `hermes mcp add tasks`).
 
 **Deploy runbook (B-7):** fleet-update.sh → **fleet-wide gateway restart**
-(orchestrator action — agents can't restart their own gateway, rule 7b) →
+(orchestrator action — agents can't restart their own gateway, AGENTS.md RULE 7b) →
 doctor verifies the *running* gateway exposes `task_*` tools (new check) →
 JSON-RPC `initialize` + `tools/list` handshake per host type.
 

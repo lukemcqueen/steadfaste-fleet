@@ -1145,7 +1145,7 @@ action items for hardening the loop-governance system:
 | P2 | Graceful degradation: `embed()` returns None on failure, all scorers fall back to heuristics | ✅ Complete |
 | P3 | Wire `verify.sh --quick --json` into 10-min `loop-governance-health` cron (auto-restarts Ollama) | ✅ Complete |
 | P4 | DB retention: `vacuum_old_cycles(days=90)` added to loop_db.py, called weekly | ✅ Complete |
-| P5 | Add "TDD scoring workflow" to AGENTS.md (non-negotiable rule #10) | ✅ Complete |
+| P5 | Add "TDD scoring workflow" to AGENTS.md (non-negotiable rule #11) | ✅ Complete |
 
 These items are tracked here for reference. Each should be implemented before the
 next version bump.

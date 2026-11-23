@@ -529,7 +529,7 @@ The MCP server exposes 7 tools: `cache_search`, `config_show`, `config_set`, `cy
 
 **Verification:** After registering, run `hermes mcp list`. The loop-governance server should show `✓ enabled` with 7 tools. If MCP tools return "Error: no such column", kill stale `loop-gov-mcp.py` processes and let Hermes restart them.
 
-**4. AGENTS.md rule #10 — Score every change (non-negotiable)**
+**4. AGENTS.md rule #11 — Score every change (non-negotiable)**
 
 After every change (code, config, script, or deployment), log it to the loop-governance DB. Two paths:
 

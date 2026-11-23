@@ -34,7 +34,7 @@ They're part of the Agent Execution Contract (rules #10 and #13) and apply to ev
 
 ## The Two Hooks
 
-### `pre-commit` (rule #10: Score Every Change)
+### `pre-commit` (rule #11: Score Every Change)
 
 Source: `ops/scripts/pre-commit-score`
 
@@ -100,7 +100,7 @@ There is **no sanctioned bypass**. The pre-commit hook runs scoring **and** the 
 
 **When the hook blocks you:** fix the finding (the gate prints what it found), then commit normally through the hook. If the scoring stack itself is broken, repair via the sanctioned path: `bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh`.
 
-These are documented in AGENTS.md rule #13 and mentioned in each hook's header comment.
+These are documented in AGENTS.md Agent Execution Contract item 13 (DOGFOOD EVERY CHANGE) and mentioned in each hook's header comment.
 
 ---
 
@@ -129,7 +129,7 @@ If you're an agent working on this repo:
 
 ## Related
 
-- AGENTS.md — rule #10 (scoring), rule #13 (pull before push)
+- AGENTS.md — rule #11 (Score every change), rule #15 (Pull before push)
 - `mcp-servers/loop-gov-mcp.py` — primary enforcer MCP server
 - `ops/scripts/pre-push-pull` — the push hook implementation
 - `ops/scripts/pre-commit-score` — the commit hook implementation

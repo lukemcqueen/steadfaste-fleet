@@ -435,7 +435,7 @@ QA-gated). $0 infra. ~1–2 hrs/wk maintenance.
 
 ---
 
-## 14. Documentation Updates (same commit — RULE 4)
+## 14. Documentation Updates (same commit — document every change in the commit that makes it)
 
 - `task-persistence` skill: v2 lifecycle protocol (before/during/switching/
   after table), `switch` command, paused semantics, untrusted-inbox restore

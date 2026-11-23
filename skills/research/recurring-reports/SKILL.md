@@ -52,7 +52,7 @@ Write a one-page spec before building anything:
 - On failure: retry once with backoff, then notify the failure contact with the error and a partial report if available.
 - Log every run: start time, duration, rows processed, success/failure, delivery status.
 - A report that silently fails for 3 runs is worse than no report — add a heartbeat/health check to the job.
-- When a cron job is renamed or removed, update both the create and uninstall references in the same commit (see AGENTS.md Rule 5).
+- When a cron job is renamed or removed, update both the create and uninstall references in the same commit — a cron left half-registered is worse than none.
 
 ## Pitfalls
 - Don't hardcode dates — derive the period from run time.

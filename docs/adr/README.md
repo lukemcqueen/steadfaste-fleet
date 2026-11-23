@@ -53,8 +53,8 @@ reproduce the reasoning>
 3. **Never secrets.** ADRs go in the public repo — env VALUES stay in
    `.env`; ADRs cite env var NAMES only.
 4. **Record at decision time.** When a non-obvious choice is made during
-   implementation, add the ADR in the same commit (Rule 13: fix stale
-   references now — same energy).
+   implementation, add the ADR in the same commit (SOUL.md Principle 13,
+   "Fix Stale References Now" — same energy).
 5. **Supersede, don't edit.** Changed your mind? New ADR, status
    `superseded-by-ADRNNNN` on the old one.
 

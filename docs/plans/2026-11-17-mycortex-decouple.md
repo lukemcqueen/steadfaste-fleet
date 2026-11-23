@@ -82,7 +82,7 @@ through the harness's own API → the deploy RUNS it → one doctor row):
 - **Fail closed, never silent-empty.** A harness present + unwired is a WARN naming the
   exact remedy command; a harness absent is PASS/information.
 - **Deploy must RUN the adapter** — a registration file written but not executed is the
-  defect this whole cycle exists to fix (rule 9).
+  defect this whole cycle exists to fix (cross-agent-design rule 9).
 - **No data risk:** the Postgres store (`mycortex_mem`) is never migrated or altered by
   this change. Only the *access layer* moves.
 - **`mem_reasoning` must keep working** on Hermes after the change (it is the one tool
@@ -96,10 +96,10 @@ through the harness's own API → the deploy RUNS it → one doctor row):
   assigns that trigger to the harness explicitly. Deleting the plugin loses auto-capture.
 - **Move `mem_reasoning` into `context_tools.py`.** Rejected: it calls the host's own LLM
   (`agent.auxiliary_client.call_llm`); putting it in the shared contract re-imports a
-  harness into the contract and breaks rule 2.
+  harness into the contract and breaks cross-agent-design rule 2.
 - **Hand-edit `config.yaml` to add the server.** Rejected: security-sensitive file; and it
   bypasses the harness's own API, which is what the per-harness adapter pattern forbids.
-- **A new daemon for memory.** Rejected: rule 13 — a process that starts, does one thing
+- **A new daemon for memory.** Rejected: cross-agent-design rule 13 — a process that starts, does one thing
   and exits needs no port or health check. The CLI + MCP stdio surfaces already cover it.
 - **Hardcode the Hermes server list in a new script.** Rejected: that is a second
   definition of the surface and it drifts from `install-pi-mcp.sh`'s tuple (it already has).

@@ -725,8 +725,15 @@ The Steadfaste Fleet Dashboard is a Flask app at `ops/services/dashboard/server.
 # Install Flask (in Hermes venv)
 ~/.hermes/hermes-agent/venv/bin/pip3 install flask
 
-# Create systemd user service (unit name: hermes-cortex-dashboard.service — the
-# dashboard service deliberately keeps its pre-rename name)
+# Create systemd user service.
+# UNIT NAME IS UNDER RENAME REVIEW — do not treat any name here as final. The
+# authoritative decision docs/rename-cortex-to-fleet.md Q2 says the dashboard JOINS
+# the rename → fleet-dashboard.service. But live hosts disagree (fleet-update.sh
+# checks `steadfaste-fleet-dashboard.service` + `hermes-fleet-dashboard.service`),
+# so the canonical unit name is a pending operator decision — see docs/GLOSSARY.md
+# Part 3 "Dashboard systemd unit name". This snippet keeps the pre-rename
+# `hermes-cortex-dashboard.service` ONLY to match hosts that already run it; it is
+# NOT a deliberate keep. Renaming it is Rule 9c-gated (identifier change).
 cat > ~/.config/systemd/user/hermes-cortex-dashboard.service << 'EOF'
 [Unit]
 Description=Steadfaste Fleet Dashboard

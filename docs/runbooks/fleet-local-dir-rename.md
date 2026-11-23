@@ -304,7 +304,11 @@ sweep them; each is labeled `STALE` in the code and documented in
 - The doctor's `Stale pre-migration home folders` check + its test keep the old
   home-dir paths (`~/hermes-cortex`, `~/.hermes-cortex`, `~/.local/lib/hermes-cortex`)
   — they exist to DETECT those leftovers.
-- `hermes-cortex-dashboard.service` — the dashboard service keeps its name.
+- ~~`hermes-cortex-dashboard.service` — the dashboard service keeps its name.~~
+  **SUPERSEDED by `docs/rename-cortex-to-fleet.md` Q2:** the dashboard JOINS the
+  rename → `fleet-dashboard.service`. It is NOT a keep-exception. The unit name is
+  still inconsistent across live hosts (see `docs/GLOSSARY.md` Part 3); the rename
+  itself is Rule 9c-gated.
 - Migration tools keep the old paths on purpose: `fleet-set-origin.sh` (LEGACY
   origin URL), `migrate-home-dirs.sh` (old→new pairs), `verify-rename-local.sh`
   (OLD_REPO/OLD_HOME).

@@ -194,7 +194,7 @@ These run on this machine but use `agent-*` naming. Not in repo installers (inte
 1. Created `ops/scripts/manage/fix-cron-duplicates.py` — detects + removes duplicates
 2. Aligned `install-orch-crons.sh` create sections and uninstall arrays to `orch-bus-*`
 3. Removed dead `agent-apply-fixes` create_cron block
-4. Added AGENTS.md Rule 3 (doc) and Rule 4 (cleanup) to prevent recurrence
+4. Added fleet-reference.md Rule 3 (doc) and Rule 4 (cleanup) to prevent recurrence
 5. Added install-array-sync check to change-checklist Phase 0
 
 **Detection script:** `fix-cron-duplicates.py` is safe to run on ALL agent types (Linux/macOS, with/without sudo, with/without cron MCP tool). It falls back to direct `jobs.json` patching when the hermes CLI is unavailable.

@@ -16,7 +16,7 @@ A standalone template for adopting loop-governance scoring in any project's
 
 ## What it covers
 
-- Rule #10 with MCP dual-path (MCP tools for agents, CLI for hooks/scripts)
+- Rule #11 with MCP dual-path (MCP tools for agents, CLI for hooks/scripts)
 - Session initialization sequence (config_show + cycle_stats + cache_search)
 - Multi-file change scoring guidance
 - Troubleshooting table for common scoring failures

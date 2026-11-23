@@ -73,7 +73,7 @@ bash ~/.steadfaste-fleet/scripts/consolidate-env.sh
 **NAMES ONLY — values live in the gitignored env file.** An agent needing a
 value reads it from the env file, never from this doc or from memory. These
 names are the contract — never invent a new name without checking here first
-(Rule 11: never invent config or env names).
+(SOUL.md Principle 11, "Do It the Right Way" — never invent config or env names).
 
 | Variable | Purpose |
 |---|---|

@@ -131,7 +131,7 @@ CONTRACT   mcp-servers/loop-gov-mcp.py  (+ loop-gov.py CLI, one dispatch → bot
   that motivated the pi extension's own deny-by-default rewrite.
 - **Unknown until probed:** whether `claude-code` and `codex` expose a pre-tool interception hook
   equivalent to pi's `tool_call`. CR4 measures each host's own API; if a host has none, it is
-  declared `layer: none` **with the reason**, per Rule 2.
+  declared `layer: none` **with the reason**, per cross-agent-design Rule 2.
 - **Not verified in this plan:** the exact set of Hermes plugin hooks that must remain host-local.
   CR1's extraction boundary is decided by measurement (what the contract can express without a
   harness import), and the boundary is recorded in the plan's next revision.

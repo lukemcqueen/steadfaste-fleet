@@ -56,7 +56,7 @@ DEFAULT_CONFIG = {
                 "Doc Freshness",
                 "Agent Cron Management",
                 "Governance lock",
-                "Rule #10: Score Every Change",
+                "Score Every Change",
                 "Real execution, no simulation",
             ],
         },
@@ -64,7 +64,7 @@ DEFAULT_CONFIG = {
     # Pre-commit hook checks these sections when --repo is passed
     "hook_sections": [
         "Agent Execution Contract",
-        "Rule #10: Score Every Change",
+        "Score Every Change",
         "Real execution, no simulation",
         "Pre-commit / pre-push hooks",
     ],
@@ -571,8 +571,8 @@ SECTION_PATTERNS = {
         r"(?:begin_change|end_change|governance.lock|governance-active)",
         re.MULTILINE | re.IGNORECASE,
     ),
-    "Rule #10: Score Every Change": re.compile(
-        r"(?:Rule #10|Score Every Change|score.change|loop governance.*score)",
+    "Score Every Change": re.compile(
+        r"(?:Score Every Change|score.change|loop governance.*score)",
         re.MULTILINE | re.IGNORECASE,
     ),
     "Real execution, no simulation": re.compile(
@@ -763,7 +763,7 @@ def audit():
         config = load_config(args.config)
         hook_sections = config.get("hook_sections", DEFAULT_CONFIG.get("hook_sections", [
             "Agent Execution Contract",
-            "Rule #10: Score Every Change",
+            "Score Every Change",
             "Real execution, no simulation",
             "Pre-commit / pre-push hooks",
         ]))

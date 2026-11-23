@@ -57,7 +57,7 @@ On first install, `install.sh` Step 9 copies `docs/templates/SOUL.md` to `~/.her
 - Inbox Message Decision Framework
 - Doc Freshness: AGENTS.md + SOUL.md
 - Governance lock (begin_change / end_change)
-- Rule #10: Score Every Change
+- Score Every Change
 - Real execution, no simulation
 - Pre-commit / pre-push hooks
 
@@ -161,7 +161,7 @@ python3 ~/.steadfaste-fleet/scripts/agents-doc-audit.py --repo /path/to/repo --j
 
 **Required sections for hook mode** (defined in `hook_sections` config key):
 - Agent Execution Contract
-- Rule #10: Score Every Change
+- Score Every Change
 - Real execution, no simulation
 - Pre-commit / pre-push hooks
 
@@ -195,12 +195,12 @@ agents_files:
       - Inbox Message Decision Framework
       - Doc Freshness
       - Governance lock
-      - Rule #10: Score Every Change
+      - Score Every Change
       - Real execution, no simulation
 # Optional: hook sections for pre-commit gate
 hook_sections:
   - Agent Execution Contract
-  - Rule #10: Score Every Change
+  - Score Every Change
   - Real execution, no simulation
   - Pre-commit / pre-push hooks
 ```
