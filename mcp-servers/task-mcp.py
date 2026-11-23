@@ -167,6 +167,15 @@ def _run(fn: Any) -> CallToolResult:
     task-db.py commands print results to stdout and call sys.exit() on
     validation/db errors — both are captured so a failure returns a clean
     error result instead of killing the MCP server process.
+
+    The exit code is CARRIED, not swallowed: task-db uses 2 = a validation /
+    usage refusal (the caller passed something wrong) and 1 = a db / resolve /
+    store failure (the caller's request was fine but the store or lookup
+    failed). The two have different remedies and must not be conflated into a
+    bare "Error: <stderr>" — a model told only the text cannot tell a bad
+    argument from a Postgres outage (the type-distinguishability gap this
+    wrapper once had). The code is surfaced as a leading marker the tool text
+    keeps, and the log tags the class.
     """
     out, err = io.StringIO(), io.StringIO()
     try:
@@ -178,8 +187,10 @@ def _run(fn: Any) -> CallToolResult:
         return _ok(text)
     except SystemExit as e:
         detail = err.getvalue().strip() or str(e) or "command failed"
-        log.error("task-db command failed: %s", detail)
-        return _err(detail)
+        code = e.code if isinstance(e.code, int) else 1
+        cls = "validation" if code == 2 else "store"
+        log.error("task-db command failed (%s, exit %s): %s", cls, code, detail)
+        return _err(f"[task-db:{cls}(exit {code})] {detail}")
     except Exception as e:  # noqa: BLE001 — MCP boundary: never crash the server
         log.error("unexpected error in %s: %s", getattr(fn, "__name__", "?"), e, exc_info=True)
         return _err(str(e))

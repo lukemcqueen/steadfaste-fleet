@@ -906,6 +906,23 @@ def test_mcp_tool_registry_and_confirm_gate():
     r = task_mcp._task_switch({})
     assert r.is_error and "task_id" in r.content[0].text
 
+    # ── exit-code classes are distinguished at the MCP boundary (candidate 2) ──
+    # task-db uses exit 2 = validation/usage refusal, exit 1 = store/resolve
+    # failure. `_run` must carry that distinction into the tool result instead
+    # of flattening both to bare "Error: <stderr>", so a model can tell a bad
+    # argument from a Postgres outage and remediate the right one.
+
+    def _fail(code):
+        def _fn():
+            print(flush=True)  # produce the "unexpected raw stdout" shape
+            raise SystemExit(code)
+        return _fn
+
+    _res = task_mcp._run(_fail(2))
+    assert _res.is_error and "validation" in _res.content[0].text and "(exit 2)" in _res.content[0].text
+    _res = task_mcp._run(_fail(1))
+    assert _res.is_error and "store" in _res.content[0].text and "(exit 1)" in _res.content[0].text
+
     # unknown tool
     import asyncio
     r = asyncio.run(task_mcp.call_tool("task_nope", {}))
