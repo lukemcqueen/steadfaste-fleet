@@ -1,19 +1,20 @@
-Running: <HOME>/.steadfaste-fleet/venv/bin/python3 -m pytest -q tests/test_task_query_scoping.py tests/test_task_mcp_v3.py tests/test_mcp_wiring.py tests/test_mcp_wiring_artifact.py tests/test_task_db_v4.py
+Running: <HOME>/.steadfaste-fleet/venv/bin/python3 -m pytest -q tests/test_task_query_scoping.py tests/test_task_mcp_v3.py tests/test_mcp_wiring.py tests/test_mcp_wiring_artifact.py tests/test_task_query_repo_scope.py tests/test_task_db_v4.py
 rc: 0
-when: 2026-11-23T06:08:15Z
+when: 2026-11-23T06:52:59Z
 
 ============================= test session starts ==============================
 platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
 rootdir: <HOME>/steadfaste-fleet
 configfile: pytest.ini
 plugins: anyio-4.15.1
-collected 54 items
+collected 100 items
 
-tests/test_task_query_scoping.py .......                                 [ 12%]
-tests/test_task_mcp_v3.py ..............                                 [ 38%]
-tests/test_mcp_wiring.py ..................                              [ 72%]
-tests/test_mcp_wiring_artifact.py ....                                   [ 79%]
+tests/test_task_query_scoping.py .......                                 [  7%]
+tests/test_task_mcp_v3.py ...........................                    [ 34%]
+tests/test_mcp_wiring.py ..................                              [ 52%]
+tests/test_mcp_wiring_artifact.py ....                                   [ 56%]
+tests/test_task_query_repo_scope.py .................................    [ 89%]
 tests/test_task_db_v4.py ...........                                     [100%]
 
-============================== 54 passed in 5.65s ==============================
-sha256: 11b5c2b6498d4827050079d982f09e8cb6b1ec059c5a859ec2055c451f7df483
+============================= 100 passed in 6.27s ==============================
+sha256: 09b101bb97a915b012969b2969229ba947bd63060b6be0ed71c145b49f3bb9e1

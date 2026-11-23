@@ -353,7 +353,10 @@ it.
 
 ```yaml
 mcp_servers:
-  todos:
+  tasks:            # the MCP server is named `tasks` (`todos` is the RETIRED
+                    # server spelling — and, separately, the live SQL schema
+                    # name used by todos.profile_of / todos_fleet_writer above;
+                    # do not "unify" the two)
     command: /home/<user>/.steadfaste-fleet/venv/bin/python3
     args:
       - /home/<user>/.steadfaste-fleet/scripts/task-mcp.py

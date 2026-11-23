@@ -1,0 +1,26 @@
+Running: bash tests/falsify-scope-gate-tests.sh
+rc: 0
+when: 2026-11-23T06:54:26Z
+
+mutant written: gate call removed from _task_list_claimable
+
+== mutant run: the same tests against a gate-less task_list_claimable ==
+E   assert ('ALL' in (10, None, None, None, False) or None == 'ALL')
+E    +  where None = <built-in method get of dict object at 0x7ed90932f900>('repo')
+E    +    where <built-in method get of dict object at 0x7ed90932f900> = {}.get
+=========================== short test summary info ============================
+FAILED tests/test_task_mcp_v3.py::test_the_default_query_carries_no_repo_and_no_all_repos[task_list_claimable-cmd_list_claimable]
+FAILED tests/test_task_mcp_v3.py::test_repo_ALL_alone_is_refused_with_the_special_request_message[task_list_claimable-cmd_list_claimable]
+FAILED tests/test_task_mcp_v3.py::test_all_repos_true_is_the_only_route_to_the_fleet_view[task_list_claimable-cmd_list_claimable]
+========================= 3 failed, 24 passed in 3.33s =========================
+  ok   mutant: task_list_claimable cases fail (expected 3, got 3)
+  ok   mutant: every other case still passes (expected 24, got 24)
+
+== control run: the unmutated module ==
+tests/test_task_mcp_v3.py ...........................                    [100%]
+
+============================== 27 passed in 3.49s ==============================
+  ok   control: no failures (expected 0, got 0)
+
+failed claims: 0
+sha256: 06f2c64c1c719af31d6559aee1f19cba6d175f11ded66e65aed7ff54d1c19111

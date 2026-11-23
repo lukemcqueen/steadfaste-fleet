@@ -203,6 +203,14 @@ def _scope_gate(args: dict) -> tuple[Any, str | None]:
     scope never reaches the engine.
     """
     explicit = args.get("repo")
+    if explicit is not None and not isinstance(explicit, str):
+        # Defense in depth: the schema declares repo as a string, but a scope
+        # must never be forwarded unvalidated — and the refusal has to name the
+        # TYPE, not read as the repo+all_repos conflict (which would send the
+        # caller off to fix the wrong thing).
+        return None, (f"repo must be a string label (letters/digits/._- only) — "
+                      f"got {type(explicit).__name__}. Omit it to use your "
+                      "session's repo, or pass all_repos=true for the fleet-wide view.")
     if isinstance(explicit, str):
         explicit = explicit.strip() or None
     want_all = bool(args.get("all_repos"))
