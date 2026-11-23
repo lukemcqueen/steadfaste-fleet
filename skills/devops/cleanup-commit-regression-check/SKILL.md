@@ -34,6 +34,21 @@ rollback script, and `def _analyze_python(...)` + `return files` + two
 append lines from a project-map script. The bus forwarder cron crashed
 every 2 minutes with `NameError: name '_resolve_var' is not defined`.
 
+## The Bash Sibling — over-escaped quotes pass `bash -n`, fail rc=127
+
+The same mass-edit residue hits shell scripts as LITERAL `\"` escape
+sequences where plain `"` belongs (a scripted replace that double-escapes
+quotes inside `$( ... )` or heredocs). This is NOT a syntax error —
+`bash -n` passes, because a backslash-quote is valid inside a
+double-quoted string. At runtime the escaped quotes reach the command
+substitution as literal characters, so bash executes a command whose NAME
+includes the quotes: `"/path/to/python3": No such file or directory` for
+a file that verifiably EXISTS. The signature is the error message showing
+the path WITH quotes around it. Detection: grep the script for `\"`
+residue inside `$( ... )` / heredocs and restore the plain `"` — do NOT
+chase permissions, symlinks, or venvs on a path that exists. Verify with a
+REAL run of the script, never `bash -n` alone.
+
 ## Detection — compare function sets, not just syntax
 
 `py_compile` passes on these files (the damage is semantically wrong but

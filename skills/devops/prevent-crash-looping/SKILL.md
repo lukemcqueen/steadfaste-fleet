@@ -65,6 +65,31 @@ ExecStopPost=/bin/rm -f %h/.service-name/service.pid
   - Manual instance conflicts → exit 0 → no restart triggered
 - `systemctl reset-failed` is a workaround, not a fix. Fix the root cause.
 
+## Enabled unit whose OWN guard fails closed (not a port, a policy)
+
+A service whose `ExecStartPre` guard deliberately refuses to start — a
+"distinct token" check, a missing required env var (`X is not set in the
+environment — cannot start`), a fail-closed prerequisite — crash-loops
+forever when it is ENABLED but the condition is unmet. The guard is doing
+its job; the unit should not be enabled. This is the migration-target shape:
+unit A is the live canonical service, unit B (the future replacement) is
+enabled on the same host where A owns the resource (bot token, port), and
+B's guard correctly fails closed so they never collide — but the 10k
+restart cycles are pure waste.
+
+Diagnosis: read the journal line — a guard refusal names the missing
+condition, NOT a code bug. `systemctl --user is-enabled <unit>` tells you
+it is enabled; check whether the canonical sibling is active
+(`systemctl --user is-active <canonical>`). If the canonical is live and
+the failing unit is the migration target, the fix is
+`systemctl --user disable --now <unit>` — never "fix" the guard to make
+it start (that would create the very collision the guard prevents) and
+ever leave it enabled to keep burning restarts. The doctor's crash-loop
+check flags the unit; masking a failed headless service (e.g. a desktop
+portal with "cannot open display" on a headless-boot host) is the
+sanctioned disposal when the doctor's own stale-units check skips masked
+portal services.
+
 ## Testing
 1. Start the service: `systemctl --user start service-name`
 2. Verify running: `systemctl --user status service-name`

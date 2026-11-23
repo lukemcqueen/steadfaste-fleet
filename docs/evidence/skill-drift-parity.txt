@@ -29,14 +29,18 @@ A file under no repo-owned skill dir is a Hermes default and stays skipped.
 
 | Measure | Value |
 |---|---|
-| Stranded in place (path in repo, content only deployed) | 0 |
-| Absent from the repo (deployed under a repo-owned skill) | 128 |
+| Stranded in place (path in repo, content only deployed) | 2 |
+| Absent from the repo (deployed under a repo-owned skill) | 127 |
 |   ↳ path dropped from repo history | 5 |
-|   ↳ path never committed | 123 |
-| Files in sync | 1008 |
-| Skipped (Hermes defaults, or repo ahead) | 884 |
+|   ↳ path never committed | 122 |
+| Files in sync | 1011 |
+| Skipped (Hermes defaults, or repo ahead) | 887 |
 
 **Verdict: FAIL**
+
+Stranded in place:
+- devops/cleanup-commit-regression-check/SKILL.md
+- devops/prevent-crash-looping/SKILL.md
 
 Absent from the repo (deployed under a repo-owned skill):
 - autonomous-ai-agents/steadfaste-fleet/references/project-cortex-directory.md (dropped-from-repo)
@@ -101,7 +105,6 @@ Absent from the repo (deployed under a repo-owned skill):
 - devops/cron-job-management/references/local-model-setup.md (never-committed)
 - devops/cron-job-management/references/opencode-zen-content-policy.md (never-committed)
 - devops/cron-job-management/references/stateful-cron-wrapper-pattern.md (never-committed)
-- devops/cron-job-management/references/tiered-schedule-pattern.md (never-committed)
 - devops/cron-job-management/templates/watchdog-script.sh (never-committed)
 - devops/cross-agent-design/references/adversarial-verify-pattern.md (never-committed)
 - devops/doc-freshness/references/template-sync-verification.md (never-committed)
