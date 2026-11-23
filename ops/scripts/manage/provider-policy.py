@@ -106,6 +106,44 @@ HARNESSES = {
                 "carries this harness as layer `none` / status `blocked`, so there "
                 "is nothing to wire against yet."),
     },
+    # Declared with the operator's required agent set (2026-11-23). These four
+    # carry NO provider-exclusion mechanism: the registry declares their MCP
+    # wiring as `planned`, and no provider-exclusion knob has been probed for
+    # any of them. On a host where one IS installed this is a real coverage gap
+    # for this policy (reported, never folded into silence) — see
+    # test_a_present_harness_with_no_knob_is_a_finding_not_silence.
+    "copilot": {
+        "presence": "~/.copilot/mcp-config.json",
+        "surface": None,
+        "mechanism": None,
+        "why": ("No provider-exclusion knob verified. Copilot CLI's MCP config path "
+                "is documented; its provider/routing surface has not been probed on "
+                "any host. Declared gap."),
+    },
+    "cursor": {
+        "presence": "~/.cursor/mcp.json",
+        "surface": None,
+        "mechanism": None,
+        "why": ("No provider-exclusion knob verified. Cursor reads MCP servers from "
+                "mcp.json; nothing about model/provider routing has been probed. "
+                "Declared gap."),
+    },
+    "opencode": {
+        "presence": "~/.config/opencode/opencode.json",
+        "surface": None,
+        "mechanism": None,
+        "why": ("No provider-exclusion knob verified. OpenCode's own config carries "
+                "providers and MCP servers, but the exclusion surface has not been "
+                "probed on a host. Declared gap."),
+    },
+    "docker-agent": {
+        "presence": None,
+        "surface": None,
+        "mechanism": None,
+        "why": ("No provider-exclusion knob verified, and no config artifact is "
+                "declared either (the registry declares this harness by its binary, "
+                "`cagent`). Declared gap."),
+    },
 }
 
 

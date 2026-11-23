@@ -22,6 +22,13 @@
 #   cli-hook       harness only needs a lifecycle command run at a boundary
 #   none           declared as unsupported, with the reason — so the gap is
 #                  visible instead of silently absent
+#
+# REQUIRED AGENT SET (operator, 2026-11-23): the fleet must support
+#   claude · codex · copilot · cursor · opencode · pi · docker agent
+# Every one of those seven is a declared entry in this file. `status: planned`
+# means DECLARED, NOT WIRED: the requirement is recorded and the gap is visible
+# to the doctor/report instead of silently absent. Coverage:
+#   python3 generate-harnesses.py --report
 version: 1
 
 defaults:
@@ -392,6 +399,126 @@ harnesses:
           Same shared server; registration is a [mcp_servers] entry in
           ~/.codex/config.toml. The installer is idempotent and reports what it
           added, already had, or could not add.
+
+  # ── Required agent set, declared but NOT yet wired (operator, 2026-11-23) ──
+  # These four carry `status: planned` on purpose: the operator's requirement is
+  # recorded so the gap is visible, and the layer below is evidence from each
+  # vendor's OWN docs (read 2026-11-23) — the wiring has NOT been exercised on a
+  # live host. Do not read a planned entry as "supported"; read it as "declared,
+  # install steps named, verification owed". Promote to `documented`/`shipped`
+  # only after the verify steps below have been run on a host with the tool.
+
+  - name: copilot
+    layer: mcp
+    status: planned
+    presence:
+      - ~/.copilot/mcp-config.json
+      - cmd:copilot
+    surface: '~/.copilot/mcp-config.json [mcpServers] (or `copilot mcp add`)'
+    why: |
+      GitHub Copilot CLI is MCP-native: it reads servers from
+      ~/.copilot/mcp-config.json, so its TOOL surface needs no shim — the same
+      shared fleet-context MCP server Claude Code, Codex and Pi use. Declared
+      from GitHub's own CLI docs ("Adding MCP servers for GitHub Copilot CLI",
+      read 2026-11-23), which also document `copilot mcp list` as the read-back.
+
+      OWED BEFORE `documented`: which env var carries the harness's session id
+      into the MCP child is UNVERIFIED for Copilot CLI (see the per-harness
+      table in the cross-agent-design skill). If none reaches the child the
+      resolver answers "per-repo, shared" — a real defect for lock ownership,
+      not a cosmetic one.
+    install: |
+      copilot mcp add fleet-context -- \
+          ~/.steadfaste-fleet/venv/bin/python3 <mcp_server>
+      # (equivalent: add the [mcpServers] entry to ~/.copilot/mcp-config.json)
+    verify:
+      - 'copilot mcp list shows fleet-context (and agent-bus once the reply path is wired).'
+      - 'In a Copilot CLI session call mem_context — the peer card must come back.'
+      - 'copilot ... session identity: the resolver must answer env,unique, not per-repo/shared (`fleet-context session_identity` style probe) — UNVERIFIED until run.'
+
+  - name: cursor
+    layer: mcp
+    status: planned
+    presence:
+      - ~/.cursor/mcp.json
+      - cmd:cursor
+    surface: '~/.cursor/mcp.json [mcpServers] (project: .cursor/mcp.json)'
+    why: |
+      Cursor (IDE and the `agent` CLI) is MCP-native and the two share ONE
+      config: servers declared in ~/.cursor/mcp.json (global) or
+      .cursor/mcp.json (project), merged with project taking precedence.
+      Declared from Cursor's own MCP docs (read 2026-11-23). Registration is a
+      config entry, so the layer matches the shared server — no shim.
+    install: |
+      Add to ~/.cursor/mcp.json (global) or .cursor/mcp.json (project):
+        { "mcpServers": { "fleet-context": {
+            "command": "<fleet venv python>", "args": ["<mcp_server>"] } } }
+      # read back:  agent mcp list   (same servers as the editor's Customize > MCPs)
+    verify:
+      - 'agent mcp list shows fleet-context.'
+      - 'In a Cursor session call the fleet-context tools; mem_context returns the peer card.'
+      - 'Session identity (which env var reaches the MCP child) is UNVERIFIED for Cursor — resolve it before promoting this entry.'
+
+  - name: opencode
+    layer: mcp
+    status: planned
+    presence:
+      - ~/.config/opencode/opencode.json
+      - cmd:opencode
+    surface: '~/.config/opencode/opencode.json "mcp": {"servers": {…}}'
+    why: |
+      OpenCode is MCP-native with its own config shape: MCP servers live under
+      the top-level `mcp.servers` key of ~/.config/opencode/opencode.json (or a
+      project opencode.json). Declared from OpenCode's own config docs (read
+      2026-11-23). Local servers take a `command` ARRAY (not a string), so this
+      entry cannot be a copy of the Claude/Codex one — the shape is the
+      harness's own.
+    install: |
+      Add to ~/.config/opencode/opencode.json:
+        { "mcp": { "servers": { "fleet-context": {
+            "type": "local",
+            "command": ["<fleet venv python>", "<mcp_server>"] } } } }
+    verify:
+      - 'The fleet-context server appears in OpenCode''s MCP view and its tools are callable.'
+      - 'In an OpenCode session call mem_context — the peer card must come back.'
+      - 'Session identity is UNVERIFIED for OpenCode — resolve it before promoting this entry.'
+
+  - name: docker-agent
+    layer: mcp
+    status: planned
+    presence:
+      - cmd:cagent
+    surface: 'cagent agent YAML — toolsets: [{type: mcp, ref: <server>}]'
+    why: |
+      Docker Agent (cagent, and the Docker Agent surface in Docker Desktop) is
+      declared as a REQUIRED harness by the operator. Its MCP consumption is
+      declarative: an agent definition lists toolsets, and an MCP server is one
+      of those toolset types (Docker's cagent docs, read 2026-11-23), so the
+      shared fleet-context server is reachable without a shim.
+
+      The exact server reference form (a `cagent mcp` registry entry vs a
+      literal command in the toolset block) is NOT yet verified on a host —
+      the toolset TYPE is documented, the ref spelling is not. Resolve it by
+      reading cagent's own `--help`/docs on a host with the binary; never guess
+      the key.
+
+      IDENTITY NOT CONFIRMED: "docker agent" is taken to mean Docker's agent
+      CLI (cagent), whose own binary is the presence declared here. If the
+      operator means instead Docker Desktop's agent surface or a
+      container-hosted agent, say so and re-point this entry — the layer would
+      be the same (MCP) but `presence:` must name the artifact the doctor can
+      actually find, or the entry reports SKIP forever on a host that has it.
+    install: |
+      In the agent definition (cagent.yaml), add the fleet-context MCP server to
+      the agent's toolsets:
+        agents:
+          root:
+            toolsets:
+              - type: mcp
+                ref: fleet-context      # exact ref form UNVERIFIED — confirm
+    verify:
+      - 'cagent runs an agent whose toolsets include fleet-context and the fleet-context tools are listed.'
+      - 'In that session call mem_context — the peer card must come back.'
 
   - name: steadfaste-tui
     layer: none

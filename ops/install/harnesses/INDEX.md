@@ -4,7 +4,7 @@
 
 Generated from `registry.yaml`. **Add a harness by adding a registry entry**, not by writing a new doc.
 
-Declared harnesses: **5**
+Declared harnesses: **9**
 
 | Harness | Layer | Status | Surface |
 |---|---|---|---|
@@ -13,6 +13,10 @@ Declared harnesses: **5**
 | `pi` | `mcp` | shipped | `MCP (fleet-context) + pi.on("tool_call" write gate | "turn_end" | "before_agent_start" | "session_before_compact")` |
 | `codex` | `mcp` | documented | `~/.codex/config.toml [mcp_servers]` |
 | `steadfaste-tui` | `none` | blocked | `unknown` |
+| `copilot` | `mcp` | planned | `~/.copilot/mcp-config.json [mcpServers] (or `copilot mcp add`)` |
+| `cursor` | `mcp` | planned | `~/.cursor/mcp.json [mcpServers] (project: .cursor/mcp.json)` |
+| `docker-agent` | `mcp` | planned | `cagent agent YAML — toolsets: [{type: mcp, ref: <server>}]` |
+| `opencode` | `mcp` | planned | `~/.config/opencode/opencode.json "mcp": {"servers": {…}}` |
 
 ## Layer meanings
 
