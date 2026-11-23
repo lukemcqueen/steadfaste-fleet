@@ -162,9 +162,13 @@ test ! -e ~/.hermes-cortex && test ! -e ~/hermes-cortex && echo "fully migrated:
 were still resolving the transition symlink after §1–§7):
 
 - `~/.hermes/config.yaml` — `mcp_servers.*.command` + `args` for agent-bus, tasks, executor,
-  review, loop-governance (5 servers / 10 `~/.hermes-cortex/…` refs). File-writing tools REFUSE
+  review, loop-governance (5 servers / 10 `~/.hermes-cortex/…` refs). **On a non-orchestrator
+  host, `agent-bus` and `executor` are absent by design** (ORCH_ONLY — `install-hermes-mcp.sh`
+  `cleanup_stale_orchestrator_entries()` removes them on every non-orch deploy), so only
+  loop-governance, review, tasks carry the old path there. File-writing tools REFUSE
   config.yaml as security-sensitive, so repoint with `hermes config set <dotted.key> <value>`
   (list values as JSON): `hermes config set mcp_servers.review.args '["…", "--role", "review"]'`.
+  Remove an entry (not just repoint it) with `hermes mcp remove <name>`.
 - `~/.hermes/repos.yaml` — `path: ~/hermes-cortex` / `name: hermes-cortex` → `~/steadfaste-fleet`
   / `steadfaste-fleet` (lesson-harvesting registration).
 - `~/.hermes/skills` + `~/.agents/skills` + `~/.hermes/scripts` symlinks — repoint DIRECT to
