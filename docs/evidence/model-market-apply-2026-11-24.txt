@@ -1,0 +1,14 @@
+Running: bash docs/evidence/model-market-apply-2026-11-24.sh
+rc: 0
+when: 2026-11-23T15:51:39Z
+
+config == scan snapshot: prices, tier order, recomputed heads; captured=2026-11-24
+  PASS  config == committed scan snapshot (prices, tier order, recomputed heads)
+  PASS  selftest: SELFTEST PASSED — 3 tiers, 12 routed model(s), baseline $0.350/M, every non-hard head cheaper, every simple pool within its ceiling, 5 model(s) on the hard whitelist and nothing dearer than $3.00/M listed at all
+  PASS  pytest: ============================== 58 passed in 8.09s ==============================
+  PASS  OK  docs/evidence/model-market-apply-2026-11-24.txt  (sha256 4d80cd36d1b1ec3fc56fd181d5e1b3eec90429066b4561ed67ca714e6e3e8e52)
+  PASS  surfaces: session default == list baseline (bare id); reviewer bare + priced in list
+  INFO  live scan state still matches the snapshot (fields: prices, tiers, signature, missing_models, violations)
+  INFO  sha256 config/router-models.json = b628df7d367ee8bf7059fa385f60ee434056feab9ee70713cf74d32f70f73d8f
+failed claims: 0
+sha256: 949fc9663a00a5ee622ec1a5d0a04aa35fcc9332cf19377d2cc2ee0f1215c1d5
