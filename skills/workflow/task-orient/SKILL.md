@@ -109,8 +109,15 @@ primitive) or read_file/search_files; a PIPE joining two read primitives
 
 Measured traps (each costs a turn):
 - A metacharacter INSIDE quotes still counts (`grep -iE "a|b"` → write-class);
-  use repeated `-e` flags instead.
+  use repeated `-e` flags instead (`grep -i -e "a" -e "b"`).
 - A command outside the read-primitive list is write-class even bare (`sensors`).
+  `ssh-keygen -lf`, `getfacl`, `namei` are all read-only in spirit but NOT in the
+  primitive list — they are refused bare; `stat -c '%a %U:%G %n' <paths>` IS
+  allowed lock-free and covers the same verification for SSH-perms/ownership
+  checks. Reach for `stat`/`ls`/`read_file` first when inspecting modes.
+- A metacharacter inside the COMMAND's arguments — a `|` in a regex pattern
+  (`grep -iE "a|b"`), a `>`/`<` in a file path, a `&` in a URL — counts the same
+  as a bare metacharacter; repeated flags (`-e`) or quoted single args avoid it.
 - An INTERPRETER pointed at a file is write-class, metacharacters or not
   (`python3 script.py`, `bash script.sh` — the classifier can't see inside).
   So any verification that must RUN a script happens INSIDE the cycle while the
