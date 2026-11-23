@@ -157,3 +157,112 @@ def _clear_cache() -> None:
     """Clear the cached steadfaste-fleet.env contents (for testing)."""
     global _CACHE
     _CACHE = None
+
+
+# ── Fleet-owned session/cron model resolvers (decouple-fleet-model-materializer,
+#    cycle 8566) ──────────────────────────────────────────────────────────────
+# steadfaste-fleet is the SINGLE authority for the session/cron model; Hermes
+# config.yaml is a MATERIALIZED artifact, not the source. The derive-and-decide
+# logic lives ONLY here in Python (reviewer ADV-0-2) so it is directly testable;
+# the shell materializer (materialize-fleet-model.sh) is a thin caller.
+#
+# Source priority (highest -> lowest):
+#   1. process env / env-dict (SESSION_MODEL / SESSION_PROVIDER)   — one-off override
+#   2. ~/steadfaste-fleet/.env                                      — per-host override
+#   3. config/router-models.json `baseline`                        — fleet canonical
+# The baseline is a routing-labelled `<provider>:<provider>/<model>` id; the
+# resolver STRIPS the label prefix to the bare `provider/model` that hermes
+# config.yaml must hold (a label 400s every turn).
+
+_FLEET_ROUTER_MODELS = os.path.expanduser("~/steadfaste-fleet/config/router-models.json")
+
+
+def _router_models_baseline(router_models_path: str = "") -> str:
+    """Return the `baseline` field of the fleet router-models.json, or '' if absent."""
+    path = router_models_path or _FLEET_ROUTER_MODELS
+    try:
+        with open(path) as f:
+            import json
+            doc = json.load(f)
+            return str(doc.get("baseline") or "")
+    except (OSError, ValueError):
+        return ""
+
+
+def _strip_routing_label(value: str) -> tuple[str, str, bool]:
+    """Split a routing-labelled `<label>:<org>/<model>` id into (model, provider, had_label).
+
+    A routing label is `label:org/model` — a colon AND a slash AFTER it
+    (hermes-model-config: an Ollama tag like `qwen2.5:3b` has a colon but no slash
+    after it, and is NOT a routing label). Returns the bare `org/model` id as
+    `model`, the `label` as `provider` (the fleet convention: the label names the
+    provider/key), and whether a label was present.
+    """
+    if ":" in value and "/" in value.split(":", 1)[1]:
+        label, _, model = value.partition(":")
+        return model, label, True
+    return value, "", False
+
+
+def resolve_session_target(source_env: dict[str, str] | None = None,
+                           router_models: dict | None = None) -> dict:
+    """Resolve the canonical session model target (model, provider) from fleet sources.
+
+    Pure derive step — the idempotence decision and validation live here so they are
+    testable independent of Hermes. Returns a dict with keys:
+      model, provider, has_label, source
+    where `source` is one of "env", "envfile", "baseline".
+    """
+    src_env = dict(source_env or os.environ)
+    model = src_env.get("SESSION_MODEL", "") or load_models_env().get("SESSION_MODEL", "")
+    provider = src_env.get("SESSION_PROVIDER", "") or load_models_env().get("SESSION_PROVIDER", "")
+    if model:
+        return {"model": model, "provider": provider,
+                "has_label": _is_label_pattern(model), "source": "env"}
+    # fall back to the router-models.json baseline (fleet canonical), label-stripped
+    baseline = ""
+    if router_models and isinstance(router_models, dict):
+        baseline = str(router_models.get("baseline") or "")
+    if not baseline:
+        baseline = _router_models_baseline()
+    bare, implied_provider, _ = _strip_routing_label(baseline)
+    return {"model": bare, "provider": provider or implied_provider,
+            "has_label": _is_label_pattern(bare), "source": "baseline"}
+
+
+def _is_label_pattern(value: str) -> bool:
+    """True when `value` still carries a routing label (`label:org/model`).
+
+    The fleet baseline is legitimately routing-labelled (`openrouter:org/model`);
+    after `_strip_routing_label` the bare id must be clean. This check catches a
+    DOUBLE label (openrouter:nous:deepseek/x) or a leaked label that would 400
+    every turn if written into model.default. An Ollama tag (`qwen2.5:3b`) has a
+    colon but no slash after it, and is not a routing label.
+    """
+    return ":" in value and "/" in value.split(":", 1)[1]
+
+
+def session_change_decision(current_model: str, target: dict) -> bool:
+    """Idempotence check: True only when the materializer must write model.default.
+
+    A routing label on the target is a RED state that must never be written (a label
+    in model.default 400s every turn) — but the decision here is about WRITE-versus-noop,
+    so a labelled target counts as "change" (the caller then fails closed rather than
+    writing). The bare-id VALIDATION is the caller's job (fail loudly, do not write).
+    """
+    return current_model != target["model"] or target["has_label"] is True
+
+
+def get_session_model() -> dict:
+    """Return the resolved session model target as a dict (callers read .model/.provider)."""
+    return resolve_session_target()
+
+
+def get_cron_model() -> str:
+    """Resolve the fleet cron model id (primary): SESSION or CRON env -> baseline."""
+    env = dict(os.environ)
+    for k in ("CRON_MODEL", "SESSION_MODEL"):
+        v = env.get(k, "") or load_models_env().get(k, "")
+        if v:
+            return v
+    return get_session_model()["model"]

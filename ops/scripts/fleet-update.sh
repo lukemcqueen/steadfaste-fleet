@@ -389,6 +389,7 @@ register "ops/scripts/install/install-gateway-cron-timeout.sh" "${FLEET_DEPLOY_H
 register "ops/scripts/install/install-gateway-timezone.sh" "${FLEET_DEPLOY_HOME}/scripts/install-gateway-timezone.sh"
 register "ops/scripts/manage/fleet-health.sh"           "${FLEET_DEPLOY_HOME}/scripts/fleet-health.sh"
 register "ops/scripts/manage/consolidate-env.sh"         "${FLEET_DEPLOY_HOME}/scripts/consolidate-env.sh"
+register "ops/scripts/manage/materialize-fleet-model.sh" "${FLEET_DEPLOY_HOME}/scripts/materialize-fleet-model.sh"
 register "ops/scripts/manage/gen-skills-manifest.py"      "${FLEET_DEPLOY_HOME}/scripts/gen-skills-manifest.py"
 register "ops/scripts/manage/gen-skills-manifest.sh"      "${FLEET_DEPLOY_HOME}/scripts/gen-skills-manifest.sh"
 register "ops/scripts/manage/task-db.py"                "${FLEET_DEPLOY_HOME}/scripts/task-db.py"
@@ -4060,6 +4061,25 @@ print("in-sync" if (d.get("drifted") == [] and d.get("missing") == []
   if [[ -f "${FLEET_DEPLOY_HOME}/scripts/install-provider-timeouts.sh" ]]; then
     bash "${FLEET_DEPLOY_HOME}/scripts/install-provider-timeouts.sh" 2>&1 | sed 's/^/    /' || \
       warn "  install-provider-timeouts.sh failed (non-fatal)"
+  fi
+
+  # Materialize the fleet-owned session/cron model into THIS host's Hermes
+  # config.yaml (decouple-fleet-model-materializer, cycle 8566). steadfaste-fleet
+  # is the authority; every host runs this on its own sync cycle, so a baseline
+  # change propagated by orch-model-market-scan reaches ALL agents automatically
+  # — no orchestrator hand-stamping per host. Fail-open with a visible warning,
+  # matching consolidate-env.sh (a materialize failure must not block the deploy).
+  if [[ -f "${FLEET_DEPLOY_HOME}/scripts/materialize-fleet-model.sh" ]]; then
+    if ! {
+      out=$(bash "${FLEET_DEPLOY_HOME}/scripts/materialize-fleet-model.sh" 2>&1)
+      rc=$?
+      printf '    %s\n' "$out" | sed 's/^/    /'
+      exit "$rc"
+    }; then
+      warn "  materialize-fleet-model.sh failed (non-fatal)"
+    fi
+  else
+    warn "  materialize-fleet-model.sh not deployed — registering next cycle"
   fi
 
   # Per-profile mycortex reader role (schema-native multi-tenant, 2026-08-06) —

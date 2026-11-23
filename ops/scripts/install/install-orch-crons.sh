@@ -476,13 +476,19 @@ STEP 1 — governed apply (open begin_change first):
 1. Copy the refreshed prices + reordered tiers from ~/.steadfaste-fleet/state/model-market.json
    into config/router-models.json (the scan's output is the source of truth).
 2. If the cheapest-vetted model for the SESSION DEFAULT or the REVIEWER changed, re-point
-   config.yaml model.default (hermes config set) and .env ADVERSARIAL_REVIEWER_MODEL to the
-   new head. Verify each surface actually resolved to the new model.
+   the FLEET CANONICAL: set config/router-models.json "baseline" to the new session-default
+   head (bare openrouter:org/model id) and commit it. Do NOT run `hermes config set
+   model.default` yourself — the fleet materializer (materialize-fleet-model.sh, run by
+   fleet-update.sh) propagates the baseline to every host's config.yaml automatically on
+   their own sync cycle. If the REVIEWER head changed, update ADVERSARIAL_REVIEWER_MODEL in
+   the hosted .env template / config as documented. Verify the baseline is committed and
+   reflects the new head before committing.
 3. Rebuild the live router: python3 ops/scripts/manage/router-pools.py --write. Validate the
    list: python3 ops/scripts/manage/router-pools.py --selftest (must PASS).
 4. Run the doctor (0 fail) and the router/scanner tests (tests/test_router_pools.py,
-   tests/test_model_market_scan.py) — all green.
-5. Commit, deploy (fleet-update.sh), push. Confirm HEAD == origin/main.
+   tests/test_model_market_scan.py, tests/test_fleet_lib_model_resolvers.py) — all green.
+5. Commit, deploy (fleet-update.sh — this runs the materializer), push. Confirm HEAD ==
+   origin/main and (on this host) that config.yaml model.default now equals the new baseline.
 
 Report: the per-model price delta (old -> new $/M), which pool heads re-ordered, doctor verdict,
 and the unvetted-candidate list (if any). Never introduce a model not already in the vetted
