@@ -29,24 +29,21 @@ A file under no repo-owned skill dir is a Hermes default and stays skipped.
 
 Re-verification: `python3 ops/scripts/manage/check-skill-drift-parity.py
 --check` re-derives every count below from the live trees and exits
-non-zero on any mismatch, so these counts are continuously re-verified
-rather than asserted once - a stale artifact cannot survive a deploy,
-because the deploy runs that check. The record of the run is therefore
-the check itself: re-run it to reproduce these numbers, and diff this
-file against its parent revision to read the previous counts.
+non-zero on any mismatch, so these counts are checkable rather than
+asserted once. The record of the run is the check itself: re-run it to
+reproduce these numbers, and diff this file against its parent revision
+to read the previous counts. Callers of --check:
+ops/scripts/manage/capture-crons-receipt-evidence.py and the
+soul-refinement evidence script. NOTE: the fleet deploy does NOT run it -
+an earlier version of this paragraph claimed it did, which was wrong.
 
 | Measure | Value |
 |---|---|
-| Stranded in place (path in repo, content only deployed) | 3 |
+| Stranded in place (path in repo, content only deployed) | 0 |
 | Absent from the repo (deployed under a repo-owned skill) | 0 |
 |   ↳ path dropped from repo history | 0 |
 |   ↳ path never committed | 0 |
-| Files in sync | 1035 |
-| Skipped (Hermes defaults, or repo ahead) | 582 |
+| Files in sync | 1066 |
+| Skipped (Hermes defaults, or repo ahead) | 554 |
 
-**Verdict: FAIL**
-
-Stranded in place:
-- devops/linux-server-hardening/SKILL.md
-- software-development/execute-right/SKILL.md
-- software-development/verify-and-ship/references/close-gate-review.md
+**Verdict: PASS**

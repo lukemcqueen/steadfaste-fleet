@@ -12,6 +12,15 @@
 # it will report drift by design - the transcript (.txt) records the state at
 # THIS apply. Same shape as model-market-apply-2026-11-21.sh.
 #
+# PROVENANCE (added after a close-gate finding asked where the siblings live):
+# both artifacts are committed AT THE TIP in the SAME commit as this script -
+# commit e0eb3a2a ("model market: apply 2026-11-24 scan (rc=1 apply_pending,
+# prices only)"), which creates all three files together. Checkable:
+#   git ls-tree -r --name-only HEAD | grep model-market-apply-2026-11-24
+#   git log --oneline -1 -- docs/evidence/model-market-apply-2026-11-24.state.json
+# so the claims below are exercisable from the tip with no companion commit, and
+# a missing sibling still counts as a FAILED claim (fail-closed), never a pass.
+#
 # CONCURRENCY: this script is read-only. The apply it verifies was performed
 # under the per-repo governance lock (state/.governance-*.json; begin_change ->
 # work -> feedback -> end_change), which is the guard against two applies racing
