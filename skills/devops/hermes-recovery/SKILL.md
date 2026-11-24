@@ -301,7 +301,7 @@ The Hermes gateway blocks `systemctl start` commands (SIGTERM propagation concer
 ```bash
 # Create service file (this is fine)
 mkdir -p ~/.config/systemd/user
-cat > ~/.config/systemd/user/steadfaste-fleet-dashboard.service << 'SVC'
+cat > ~/.config/systemd/user/fleet-dashboard.service << 'SVC'
 [Unit]
 Description=Steadfaste Fleet Dashboard
 After=network-online.target
@@ -316,7 +316,7 @@ WantedBy=default.target
 SVC
 
 # Enable works — start will be blocked during this session
-systemctl --user enable steadfaste-fleet-dashboard
+systemctl --user enable fleet-dashboard
 
 # Instead, launch directly as a background process:
 # Use terminal(background=true, command="...") to start

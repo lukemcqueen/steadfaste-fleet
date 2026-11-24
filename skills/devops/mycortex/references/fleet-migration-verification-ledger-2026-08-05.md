@@ -61,7 +61,7 @@ explicitly. The fleet migration script now does this automatically (step 4b).
 
 ## 3. Dashboard unit consolidation (unrelated but same session)
 
-`steadfaste-fleet-dashboard.service` crash-looped ("Address already in use") for
+`fleet-dashboard.service` crash-looped ("Address already in use") for
 weeks because an OLD duplicate unit `cortex-dashboard.service` (different
 name, same server.py) had been running since Jul 23 and owned port 8901.
 The doctor's crash-loop check only names the unit in auto-restart, not the

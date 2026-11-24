@@ -2893,7 +2893,7 @@ def check_system(res):
   # legacy brain autopilot/sync) are skipped: a disabled unit in failed
   # state is the intended post-decommission state, not an operational issue.
   expected_user_units = {
-    "steadfaste-fleet-dashboard.service",
+    "fleet-dashboard.service",
     "steadfaste-fleet-langfuse.service",
     "fleet-bus.service",
   }

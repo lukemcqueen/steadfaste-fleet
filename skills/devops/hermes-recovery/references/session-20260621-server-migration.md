@@ -124,10 +124,10 @@ Then git commit and `mycortex sync --all`. Total: 131 pages across 5 sources (lu
 
 ### 7. Dashboard — Gateway Workaround
 
-`systemctl --user start steadfaste-fleet-dashboard` is **blocked by the Hermes gateway** (SIGTERM propagation concern). The tool detects `systemctl` commands containing the word "start" and blocks them. Workaround:
+`systemctl --user start fleet-dashboard` is **blocked by the Hermes gateway** (SIGTERM propagation concern). The tool detects `systemctl` commands containing the word "start" and blocks them. Workaround:
 
 1. Create the service file with `write_file` (not terminal)
-2. Enable with `systemctl --user enable steadfaste-fleet-dashboard` (this is NOT blocked)
+2. Enable with `systemctl --user enable fleet-dashboard` (this is NOT blocked)
 3. Launch directly as a background process for the current session
 4. User starts it from an external shell (or it auto-starts on next login)
 

@@ -352,7 +352,7 @@ check_service_manager() {
         SERVICES=(
             "ollama"
             "hermes-gateway"
-            "steadfaste-fleet-dashboard"
+            "fleet-dashboard"
         )
         SERVICE_NAMES=(
             "Ollama"
