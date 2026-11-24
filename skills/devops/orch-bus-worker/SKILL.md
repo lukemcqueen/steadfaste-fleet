@@ -19,9 +19,13 @@ metadata:
 
 ## When to Use
 
-- This is the **orchestrator's daily work driver** (cron `orch-bus-worker`,
-  LLM-driven, ~hourly). It answers: *"What is the most important pending task,
-  and can I make progress on it right now?"*
+- This is the **orchestrator's work driver** (cron `orch-bus-worker`,
+  LLM-driven, twice daily — morning and evening). It answers: *"What is the
+  most important pending task, and can I make progress on it right now?"* Read
+  the schedule off the job itself (`cronjob_manage action=list`) rather than
+  trusting this line — a schedule is a fact about the job, not about the skill,
+  and a wrong cadence here misleads you about how long a failure has been
+  standing and when it will next be superseded.
 - Also load it when Luke asks "what's outstanding?" or "work the backlog".
 
 ## The Loop
@@ -235,3 +239,21 @@ metadata:
   every result away and the read-back reports all hosts MISSING while the data
   sits on the bus. Match on the top-level `correlation_id` and read `subject`
   from inside `body`.
+- **A `last_status: error` on this job is usually a MODEL degeneration, not a
+  backlog fault — classify it before acting, and do not re-fire it to clear
+  the status.** `RuntimeError: Model output entered a repetition loop and the
+  stream was cut mid-loop` is the LLM degenerating, and it is INTERMITTENT: the
+  same job, and sibling LLM crons on the same fleet model, return `ok` on runs
+  minutes apart, so a single error status is not evidence the job is broken.
+  Enumerate the real failure set instead of reasoning from one check name — a
+  single `python3 -c` over `~/.hermes/cron/jobs.json` listing every job whose
+  `last_status not in ('ok', None)` tells you whether this is one bad job or a
+  model-wide pattern, which is a different decision for the operator. **Do not
+  fire it to flip the status while an interactive session is live:** this job
+  carries a `session-active-guard.py` pre-script, so a re-fire no-ops the run —
+  the status clears to green WITHOUT the backlog pass happening, and the fire
+  can race the governance lock you are holding. Record the fact and let the
+  next scheduled run supersede it for real: `fleet-doctor.py --disposition
+  "Cron status (orch-bus-worker)" --as deferred --owner <you> --reason
+  "<why>"`. A disposition EXPIRES and is reported STALE until renewed — it is
+  a note, never a fix.

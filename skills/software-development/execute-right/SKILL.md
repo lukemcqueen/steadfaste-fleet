@@ -77,6 +77,12 @@ The non-negotiable rules of doing the work. Route (`task-orient`) → execute
     say it in one clause, start — don't hand the sequencing back.
 13. **Cron fixes run through the scheduler** — `python3 script.py` does not
     update the cron scheduler's status; run the cron, confirm the doctor clears.
+    The exception is a job whose own pre-script guard will SKIP the run: a
+    session-active guard no-ops while an interactive session holds the lock, so
+    a re-fire there flips the status to green WITHOUT the work happening and can
+    race the lock you hold. Record the fact instead of manufacturing a green —
+    `fleet-doctor.py --disposition "<check name>" --as deferred --owner <you>
+    --reason "<why>"` — and let the next scheduled run supersede it for real.
 14. **No PII in the repo** — placeholders only; the PII gate also rejects what
     it can't distinguish from PII (epoch-style ids, surnames) — rewrite the
     VALUE, never delete the field. The gate's URL heuristic ALSO fires on text
@@ -253,10 +259,16 @@ canonical-ambiguity — compounds with every file.
    `hermes config set <dotted.key> <value>`, never a raw shell write.
    **`skill_manage` writes to the DEPLOYED skill tree, not the repo** —
    `~/.hermes/skills/<cat>/<name>/` is a symlink into the deployed copy
-   (`~/.steadfaste-fleet/skills/...`), so a skill_manage patch leaves the repo
+   `~/.steadfaste-fleet/skills/...`), so a skill_manage patch leaves the repo
    copy stale: the next fleet-update reverts it and the doctor's `Skill drift`
    check flags the pair. After any skill_manage edit, backport repo ← deployed
    (`cp` the deployed file over the repo path; `diff` empty), then commit.
+   **Run `git status --short` on the repo skills tree BEFORE that `cp`** — the
+   skill-reconcile pipeline deliberately leaves its `skills/*.md` edits
+   uncommitted, so a bare `cp` over a path showing ` M` silently discards a
+   peer's in-flight work. If the target or the tree is dirty, leave the
+   deployed patch un-backported and report it rather than clobber: the drift
+   warn is recoverable, the deleted edits are not.
 4. Foreign working-tree check — git status; never stash/clean a peer's work.
 5. Agent type — orchestrator (Moses/Esther): fleet/bus; server-agent: local
    maintenance; dev-agent: local reports.
