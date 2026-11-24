@@ -55,6 +55,10 @@ The non-negotiable rules of doing the work. Route (`task-orient`) → execute
    with "did not match any file(s) known to git" — `git add` the new files
    first, then `--only -F msg -- <all three paths>`; the pathspec keeps peer
    in-flight edits out of the commit.
+   **Pass the message with `-F <file>`, never a multi-line `-m`** — the commit-scope
+   guard reads a newline inside `-m` as a BARE commit and refuses it, because a bare
+   commit would sweep whatever a peer has staged. Write the message to a file and
+   `git commit --only -F /tmp/msg.txt -- <paths>`; a single-line `-m` still works.
 8. **Follow repo conventions** over generic advice. **Keep context lean** —
    load only needed skills.
 9. **Stop before destruction** — approval for data loss, security risk,
@@ -115,7 +119,13 @@ The non-negotiable rules of doing the work. Route (`task-orient`) → execute
     even its write side — survive, so citing the doc as current behavior is a
     false claim. Before asserting what a system DOES ("X resolves through Y",
     "every agent reads Z"), read the code path that does it and check for a
-    removed branch; then report the fact with its source (file:line). The
+    removed branch; then report the fact with its source (file:line). A claim that
+    one mechanism INVOKES another — "the deploy runs this check", "the installer
+    applies this", "the gate calls that script" — is the same class and is settled
+    by grepping the CALLER: list the invocations and assert only what the caller
+    list shows, naming it. A plausible-sounding wiring claim is the easiest one to
+    get wrong, because the check often exists, runs elsewhere, and is never called
+    by the step you named. The
     operator's bar is plain: "Just state facts." Lead with what was measured,
     name the source, and do not extrapolate a mechanism's reach beyond what you
     verified — an overstatement is a broken trust even when the fix underneath
@@ -304,7 +314,13 @@ inputs in BOTH directions — never a live ambient state (it flaps).
 
 Reporting order — **defects outrank ceremony**: lead with what is BROKEN or
 unproven; process items go last. "Fixed" is a claim that requires a test
-failing without it — otherwise write "code changed, unverified". When asked
+failing without it — otherwise write "code changed, unverified". **A failure
+observed twice is not a deterministic failure** — report it as INTERMITTENT and
+say how many runs you saw, because escalating a flaky fault to the operator as
+systemic misdirects the decision they make from it; "it always fails" needs a
+controlled repeat, not the sample that happened to arrive. And when a later
+retry SUCCEEDS, correct the earlier claim in your next report — an uncorrected
+overstatement stands as your position, and the operator has already acted on it. When asked
 what is left, answer with the INVENTORY (blocking state → known defects →
 unverified → owed), never the wins. Plain words, no history. A direct question
 gets the direct answer in the FIRST word. A BLOCKAGE IS WORK, NOT A STATUS:
