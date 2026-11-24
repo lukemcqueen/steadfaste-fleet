@@ -57,7 +57,7 @@ items are explicitly marked gated: changing an identifier needs a scope doc plus
 review before it lands. Consult that authority doc for every survivor BEFORE editing — it is
 also the cheapest work list, because it enumerates the items already classified as
 "wording, not renames — safe to fix" and separates them from the gated ones. Sweeping a gated
-Sweeping a gated item is not thoroughness, it is an unauthorized rename: a live unit whose name the operator
+item is not thoroughness, it is an unauthorized rename: a live unit whose name the operator
 has reserved for a reviewed change. Report a gated item as its ONE command, never as a
 surprise commit.
 
@@ -475,7 +475,7 @@ treat that as part of the deliverable, not a follow-up.
 - **A home-dir rename leaves PHANTOM old paths in compiled bytecode — a traceback naming the
   old dir with `??` source lines is `.pyc`, not source.** Python's `__pycache__` caches modules
   compiled before the rename; the bytecode embeds the pre-rename absolute path, so a failing
-  test or import after a clean sweep still raises `FileNotFoundError: ���/old-dir/…` (or a
+  test or import after a clean sweep still raises `FileNotFoundError: …/old-dir/…` (or a
   failing test asserts a deliberately-removed constant and reads as a phantom regression).
   Confirm with `strings <file>.pyc | grep <old-path>` — a source grep returns 0 while the pyc
   greps hit — then delete the `__pycache__` dirs: they regenerate on next import, and removal
