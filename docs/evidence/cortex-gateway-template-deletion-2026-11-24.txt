@@ -1,0 +1,148 @@
+Running: bash -c set -u; cd "$HOME/.steadfaste-fleet" || exit 1; Q="state/deploy-quarantine/20261124T083008Z/templates"; echo "== counterparts (the condition the operator set: they must exist) =="; ls -l templates/fleet-gateway.service templates/com.hermes.fleet-gateway.plist; echo; echo "== content: the quarantined pair differs ONLY by the rename (fleet copies are newer) =="; diff -u templates/fleet-gateway.service "$Q/cortex-gateway.service"; echo "diff_rc_service=$?"; diff -u templates/com.hermes.fleet-gateway.plist "$Q/com.hermes.cortex-gateway.plist"; echo "diff_rc_plist=$?"; echo; echo "== pre-delete hashes =="; sha256sum "$Q/cortex-gateway.service" "$Q/com.hermes.cortex-gateway.plist"; echo; echo "== quarantine dir holds ONLY these two before the delete =="; ls -1 "$Q/"; echo; echo "== delete (operator override 2026-11-24 of the quarantine-never-rm default) =="; rm -v "$Q/cortex-gateway.service" "$Q/com.hermes.cortex-gateway.plist"; echo; echo "== after =="; ls -1 "$Q/" ; echo "remaining_entries=$(ls -1 "$Q/" | wc -l)"
+rc: 0
+when: 2026-11-24T08:38:44Z
+
+== counterparts (the condition the operator set: they must exist) ==
+-rw-r--r-- 1 esther esther 3703 Nov  6 22:19 templates/com.hermes.fleet-gateway.plist
+-rw-r--r-- 1 esther esther 4726 Nov 24 14:39 templates/fleet-gateway.service
+
+== content: the quarantined pair differs ONLY by the rename (fleet copies are newer) ==
+--- templates/fleet-gateway.service	2026-11-24 14:39:55.871722683 +0900
++++ state/deploy-quarantine/20261124T083008Z/templates/cortex-gateway.service	2026-11-06 21:02:51.505735854 +0900
+@@ -1,18 +1,18 @@
+-# fleet-gateway.service — Steadfaste Fleet standalone messaging gateway
++# cortex-gateway.service — Steadfaste Fleet standalone messaging gateway
+ #
+ # ⚠️ USER-LEVEL ONLY — must live in ~/.config/systemd/user/
+ #    Linux/systemd ONLY. macOS has no systemd: use the launchd counterpart
+-#    docs/templates/com.hermes.fleet-gateway.plist (~/Library/LaunchAgents/),
++#    docs/templates/com.hermes.cortex-gateway.plist (~/Library/LaunchAgents/),
+ #    which sources the same canonical env before exec'ing the daemon.
+ #    Never copy to /etc/systemd/system/ (a second poller on the same bot
+ #    token gets a Telegram 409 Conflict).
+-#    Enable/start: systemctl --user enable --now fleet-gateway.service
+-#    Template source: docs/templates/fleet-gateway.service (steadfaste-fleet repo)
++#    Enable/start: systemctl --user enable --now cortex-gateway.service
++#    Template source: docs/templates/cortex-gateway.service (steadfaste-fleet repo)
+ #
+ # This is the DECOUPLED replacement for the in-process `hermes gateway run`
+ # loop. It shares NO process, unit dependency, or env file with
+ # hermes-gateway.service — that independence is the point (see
+-# docs/design/fleet-gateway.md). Do NOT add After=/Wants=/Requires=
++# docs/design/cortex-gateway.md). Do NOT add After=/Wants=/Requires=
+ # hermes-gateway.service here.
+ #
+ # Config:  %h/.steadfaste-fleet/gateway.yaml   (see ops/scripts/gateway.yaml.example)
+@@ -25,8 +25,8 @@
+ #                                   Telegram user could talk to the agent
+ #            TELEGRAM_HOME_CHANNEL  default delivery target — REQUIRED
+ #            GATEWAY_SECRET         HMAC signing secret for bus envelopes — REQUIRED
+-#            FLEET_BUS_URL         (or set bus_url in gateway.yaml)
+-#            FLEET_BUS_TOKEN  or  FLEET_BASIC_AUTH
++#            CORTEX_BUS_URL         (or set bus_url in gateway.yaml)
++#            CORTEX_BUS_TOKEN  or  CORTEX_BASIC_AUTH
+ #            TELEGRAM_API_BASE      (optional)
+ #          Same NAMES as Hermes (no invented config), but the VALUES live here,
+ #          in the cortex env — copy them over once during migration.
+@@ -34,18 +34,11 @@
+ #            grep -E '^TELEGRAM_(BOT_TOKEN|ALLOWED_USERS|HOME_CHANNEL)=' \
+ #              "$HOME/.hermes/.env" >> "$HOME/steadfaste-fleet/.env"
+ #
+-# ⚠️ ONE poller per bot token. Read the subject, not the headline: this applies to a
+-#    config that names the PRIMARY bot (`gateway.yaml` -> TELEGRAM_BOT_TOKEN). Starting
+-#    a unit with that config needs the incumbent stopped first
+-#    (systemctl --user stop hermes-gateway.service) or the two 409.
+-#    A config naming an ADDITIONAL bot (TELEGRAM_BOT_TOKEN_<NAME>, e.g.
+-#    gateway-esther0001.yaml) needs NO such thing — a sibling unit on a distinct bot
+-#    coexists with Hermes fine, and must be able to. That is what the ExecStartPre guard
+-#    below enforces. Carried as prose for years and it misled a reader into asserting a
+-#    cutover requirement that does not exist.
++# ⚠️ Only ONE poller per bot token. Before enabling this, stop the incumbent
++#    (systemctl --user stop hermes-gateway.service) or the two will 409.
+ 
+ [Unit]
+-Description=Steadfaste Fleet Gateway (fleet-gateway)
++Description=Steadfaste Fleet Gateway (cortex-gateway)
+ After=network-online.target
+ Wants=network-online.target
+ 
+@@ -61,7 +54,7 @@
+ #
+ # The FLEET venv, not the system python (2026-10-13): it is the interpreter
+ # fleet-update.sh registers every MCP server against, and the one the macOS
+-# counterpart (docs/templates/com.hermes.fleet-gateway.plist) execs. The shared
++# counterpart (docs/templates/com.hermes.cortex-gateway.plist) execs. The shared
+ # launcher guard runs first, so a missing venv or daemon is logged as
+ # "NO INTERPRETER at <path> … how to fix it" (rc 78) instead of an unexplained
+ # exec failure — the same diagnosis the plist gives on macOS.
+diff_rc_service=1
+--- templates/com.hermes.fleet-gateway.plist	2026-11-06 22:19:28.639771097 +0900
++++ state/deploy-quarantine/20261124T083008Z/templates/com.hermes.cortex-gateway.plist	2026-11-06 21:02:51.537127723 +0900
+@@ -1,11 +1,11 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+ <!--
+-  Steadfaste Fleet — fleet-gateway Launchd Plist (macOS counterpart of
+-  docs/templates/fleet-gateway.service, which is Linux/systemd only).
++  Steadfaste Fleet — cortex-gateway Launchd Plist (macOS counterpart of
++  docs/templates/cortex-gateway.service, which is Linux/systemd only).
+ 
+   The decoupled messaging gateway daemon. Independent of com.hermes.gateway:
+-  no dependency on the Hermes runtime (see docs/design/fleet-gateway.md).
++  no dependency on the Hermes runtime (see docs/design/cortex-gateway.md).
+ 
+   launchd has no systemd-style EnvironmentFile, so the wrapper sources the ONE
+   canonical cortex env (~/steadfaste-fleet/.env) before exec'ing the daemon. That
+@@ -22,12 +22,12 @@
+       of an unexplained exec failure.
+ 
+   Setup:
+-    1. cp this file to ~/Library/LaunchAgents/com.hermes.fleet-gateway.plist
+-    2. launchctl load ~/Library/LaunchAgents/com.hermes.fleet-gateway.plist
++    1. cp this file to ~/Library/LaunchAgents/com.hermes.cortex-gateway.plist
++    2. launchctl load ~/Library/LaunchAgents/com.hermes.cortex-gateway.plist
+ 
+-  Check:  launchctl list com.hermes.fleet-gateway
+-          tail -f ~/Library/Logs/com.hermes.fleet-gateway.log
+-  Remove: launchctl unload ~/Library/LaunchAgents/com.hermes.fleet-gateway.plist
++  Check:  launchctl list com.hermes.cortex-gateway
++          tail -f ~/Library/Logs/com.hermes.cortex-gateway.log
++  Remove: launchctl unload ~/Library/LaunchAgents/com.hermes.cortex-gateway.plist
+ 
+   ⚠️ Only ONE poller per bot token — stop com.hermes.gateway first, or the two
+   will 409 against each other.
+@@ -35,7 +35,7 @@
+ <plist version="1.0">
+ <dict>
+     <key>Label</key>
+-    <string>com.hermes.fleet-gateway</string>
++    <string>com.hermes.cortex-gateway</string>
+ 
+     <!-- Source the canonical env, check the pieces, then exec the daemon (no
+          shell left running). The guard exits 78 with a named path if the venv
+@@ -44,7 +44,7 @@
+     <array>
+         <string>/bin/bash</string>
+         <string>-lc</string>
+-        <string>mkdir -p "$HOME/Library/Logs"; exec >>"$HOME/Library/Logs/com.hermes.fleet-gateway.log" 2>&amp;1; set -a; . "$HOME/steadfaste-fleet/.env"; set +a; . "$HOME/.steadfaste-fleet/scripts/lib/require-fleet-venv.sh"; require_fleet_venv "$HOME/.steadfaste-fleet/scripts/fleet_gateway/daemon.py"; exec "$HOME/.steadfaste-fleet/venv/bin/python3" "$HOME/.steadfaste-fleet/scripts/fleet_gateway/daemon.py" --config "$HOME/.steadfaste-fleet/gateway.yaml"</string>
++        <string>mkdir -p "$HOME/Library/Logs"; exec >>"$HOME/Library/Logs/com.hermes.cortex-gateway.log" 2>&amp;1; set -a; . "$HOME/steadfaste-fleet/.env"; set +a; . "$HOME/.steadfaste-fleet/scripts/lib/require-fleet-venv.sh"; require_fleet_venv "$HOME/.steadfaste-fleet/scripts/fleet_gateway/daemon.py"; exec "$HOME/.steadfaste-fleet/venv/bin/python3" "$HOME/.steadfaste-fleet/scripts/fleet_gateway/daemon.py" --config "$HOME/.steadfaste-fleet/gateway.yaml"</string>
+     </array>
+ 
+     <key>EnvironmentVariables</key>
+diff_rc_plist=1
+
+== pre-delete hashes ==
+d8ac1f31c7185e043bbb95509da4e3acdd7d2f8e196757fead6dcdf64669aa39  state/deploy-quarantine/20261124T083008Z/templates/cortex-gateway.service
+ff2a07dfdb829e883781fb25b75fee34db09a8f025d115ea9d259bcb7b1e0900  state/deploy-quarantine/20261124T083008Z/templates/com.hermes.cortex-gateway.plist
+
+== quarantine dir holds ONLY these two before the delete ==
+com.hermes.cortex-gateway.plist
+cortex-gateway.service
+
+== delete (operator override 2026-11-24 of the quarantine-never-rm default) ==
+removed 'state/deploy-quarantine/20261124T083008Z/templates/cortex-gateway.service'
+removed 'state/deploy-quarantine/20261124T083008Z/templates/com.hermes.cortex-gateway.plist'
+
+== after ==
+remaining_entries=0
+sha256: 7095ca4c977804e0c007868a287d0441dd977958fef61c02583beacdf14126f8
