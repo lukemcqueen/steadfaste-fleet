@@ -155,6 +155,14 @@ says the HISTORY is right, nothing about whether the HOST was updated.
      `--disposition "nightly-handoff.py"` (real name `Stale deploy: scripts/nightly-handoff.py`) each
      refused. Read the exact name from the UNDISPOSED list and paste it; check the name of an
      already-disposed item from the doctor's own line (it prints `[deferred (owner, since date)]`).
+   - **A check that repeats per ITEM is disposed ONCE by its shared name — never by weaving the
+     item's detail text (or part of it) into the name.** `Cron bridge ownership` prints a line per
+     stray timer, each with a different `UNDECLARED TIMER: <name> …` detail, but the posted name is
+     identical (`Cron bridge ownership`) on every line. Crafting `"Cron bridge ownership: <timer> …"`
+     from the detail is refused (`no check named …`) and burning a call per timer is wasted — one
+     `--disposition "Cron bridge ownership"` records the whole repeated check. Same shape as a
+     `Stale deploy: scripts/<old>.py` check that prints once per orphan: dispose by the exact shared
+     name printed, not by the per-item tail.
    - **The UNDISPOSED text block TRUNCATES at ~12 entries (`… and N more`) — and `--json` carries NO
      disposition state, so neither view alone lists the full undisposed set.** Each json check object
      has only `name/status/detail/fix` — the `[deferred (owner, since date)]` marker lives ONLY in
@@ -389,8 +397,19 @@ verify on the SAME tree: it deploys exactly what you would, so wait for it and r
 (its scratch dir, e.g. `~/.hermes/cache/scratch/<tag>/dogfood*.txt`) rather than queueing your own
 run.
 
-- **One deploy per host.** Never kill it, retry in a loop, or route around the mutex:
-  interleaved unlock/relock cycles are how enforcement files end up WRITABLE.
+- **One deploy per host — and do not QUEUE a fresh deploy right after a commit while a prior
+  run is still draining.** Firing `fleet-update.sh` again right after each commit (a common reflex
+  in a multi-commit fix session) bounces every run after the first off the mutex: the log reads
+  `fleet-update mutex held: another deploy is running` then
+  `relock ran on a FAILED exit (rc=1) — enforcement files re-secured`, and `EXIT=1` leans on the
+  relock line as if it were a second fault. That runner did nothing (the mutex is held, not a
+  FAIL) and the trailing `relock … re-secured` is the fail-safe doing its job — re-securing
+  enforcement is a GOOD outcome, not a failure marker to chase. Wait for the background run's
+  notification or poll `ps` until `fleet-update` procs == 0 AND read the doctor's own
+  `Overall:` line before firing the next; a clean exit-0 run that actually copied the files you
+  committed supersedes the bounced ones.
+- **Never kill it, retry in a loop, or route around the mutex:
+  interleaved unlock/relock cycles are how enforcement files end up WRITABLE.**
 - **Verify the peer's deploy instead of re-running yours** — doctor reads `Deploy sync — deployed
   commit matches HEAD`. Your own source edits then show as
   `Checksum: <file> — MD5 mismatch … Run: fleet-update.sh to resync`: those FAILs are the pending
