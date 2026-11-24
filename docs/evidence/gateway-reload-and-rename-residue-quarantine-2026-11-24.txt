@@ -1,0 +1,38 @@
+Running: bash -c set -u; cd "$HOME/.steadfaste-fleet" || exit 1; TS=$(date -u +%Y%m%dT%H%M%SZ); Q="state/deploy-quarantine/$TS/templates"; echo "== pre-state: deployed rename residue, no repo source registers these =="; sha256sum templates/cortex-gateway.service templates/com.hermes.cortex-gateway.plist; echo; echo "== templates/ before =="; ls -1 templates/; echo; echo "== quarantine (mv, never rm) =="; mkdir -p "$Q" && mv -v templates/cortex-gateway.service templates/com.hermes.cortex-gateway.plist "$Q/"; echo; echo "== templates/ after =="; ls -1 templates/; echo "restore: mv -v $Q/* templates/  (from $HOME/.steadfaste-fleet)"; echo; echo "== doctor rows =="; "$HOME/.steadfaste-fleet/venv/bin/python3" "$HOME/.steadfaste-fleet/scripts/fleet-doctor.py" 2>&1 > /tmp/doc.txt; d=$?; grep -i -e "Stale enforcer plugin" -e "loop-gov daemon" -e "Overall" /tmp/doc.txt; echo "doctor_rc=$d"
+rc: 0
+when: 2026-11-24T08:30:37Z
+
+== pre-state: deployed rename residue, no repo source registers these ==
+d8ac1f31c7185e043bbb95509da4e3acdd7d2f8e196757fead6dcdf64669aa39  templates/cortex-gateway.service
+ff2a07dfdb829e883781fb25b75fee34db09a8f025d115ea9d259bcb7b1e0900  templates/com.hermes.cortex-gateway.plist
+
+== templates/ before ==
+adversarial-reviewer-prompt.md
+com.hermes.cortex-gateway.plist
+com.hermes.fleet-gateway.plist
+cortex-gateway.service
+fleet-gateway.service
+repo-efficiency-block.md
+
+== quarantine (mv, never rm) ==
+renamed 'templates/cortex-gateway.service' -> 'state/deploy-quarantine/20261124T083008Z/templates/cortex-gateway.service'
+renamed 'templates/com.hermes.cortex-gateway.plist' -> 'state/deploy-quarantine/20261124T083008Z/templates/com.hermes.cortex-gateway.plist'
+
+== templates/ after ==
+adversarial-reviewer-prompt.md
+com.hermes.fleet-gateway.plist
+fleet-gateway.service
+repo-efficiency-block.md
+restore: mv -v state/deploy-quarantine/20261124T083008Z/templates/* templates/  (from <HOME>/.steadfaste-fleet)
+
+== doctor rows ==
+[mcp-server] DEBUG: Initializing server 'loop-governance/sdk-capability-probe'
+[mcp-server] DEBUG: Initializing server 'loop-governance'
+[mcp-server] DEBUG: HTTPError 401 for Bearer auth — trying Basic fallback
+[mcp-server] DEBUG: HTTPError 401 for Bearer auth — trying Basic fallback
+[mcp-server] DEBUG: HTTPError 401 for Bearer auth — trying Basic fallback
+  ✅ loop-gov daemon — running module is current (2 daemon(s) verified by content hash)
+  ✅ Stale enforcer plugin — running gateway loaded the current enforcer revision (1 process(es) checked)
+  ⚠️  Overall: WARNING  (529 pass · 14 warn · 0 fail · 2 info)  · 6 undisposed
+doctor_rc=1
+sha256: c4de4d8bc16956cbf44648307d45dfa57ddc417f1f0e4f06cacd0b5dc79e600d
