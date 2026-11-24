@@ -114,3 +114,32 @@ def test_check_is_inert_on_import(tmp_path):
         assert res.checks[0][1] == "PASS", res.checks[0]
     finally:
         mod.ENV_ROOTS = old
+
+
+def test_vanished_candidate_is_skipped_not_crashed(tmp_path):
+    """A backup deleted between the glob and the mtime read must be SKIPPED, not raise.
+
+    The glob and the stat are separate syscalls: a concurrent fleet-update or a manual
+    prune can remove a file in between, and an unguarded stat then raises out of the
+    check — which the runner logs as an ERROR, so the check reports NEITHER PASS NOR
+    WARN while live sprawl sits on disk. Going silent exactly when the state is
+    changing is worse than a false warn.
+    """
+    real = tmp_path / ".env.bak-real"
+    real.write_text("PLACEHOLDER=1\n")
+    ghost = tmp_path / ".env.bak-vanished"          # never created
+    stamped = mod._stamped([real, ghost])
+    assert [p.name for p, _ in stamped] == [".env.bak-real"], stamped
+
+
+def test_vanished_candidate_fixture_is_not_vacuous(tmp_path):
+    """Anti-vacuity sibling: the ghost must REALLY be unstattable, or the skip test
+    above proves nothing about the guard — it would also pass against an implementation
+    that silently dropped every candidate."""
+    ghost = tmp_path / ".env.bak-vanished"
+    raised = False
+    try:
+        ghost.stat()
+    except OSError:
+        raised = True
+    assert raised, "fixture is stattable — the skip test measures nothing"

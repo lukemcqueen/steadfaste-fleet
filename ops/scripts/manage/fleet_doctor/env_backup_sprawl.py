@@ -52,8 +52,28 @@ NOT_BACKUPS = {".env.example", ".env.lock"}
 CHECK_NAME = "Env backup sprawl"
 
 
+def _stamped(paths):
+    """Return (path, mtime) pairs, SKIPPING any candidate that vanished or became
+    unstattable between the glob and here.
+
+    The glob and this stat are two separate syscalls, so a backup deleted in between
+    (a concurrent fleet-update, an operator pruning by hand) would raise OSError out
+    of the check — and the runner would log an ERROR, leaving the check reporting
+    NEITHER PASS NOR WARN while live sprawl sits on disk. A check that goes silent
+    precisely when the state is changing is worse than a false warn, so an
+    unstattable candidate is dropped, exactly as a symlink is.
+    """
+    out = []
+    for p in paths:
+        try:
+            out.append((p, p.stat().st_mtime))
+        except OSError:
+            continue
+    return out
+
+
 def backup_candidates(roots=None):
-    """Return the `.env.*` backup copies present, newest last. Never reads content."""
+    """Return the `.env.*` backup copies present, newest first. Never reads content."""
     found = []
     for root in (ENV_ROOTS if roots is None else roots):
         root = Path(root)
@@ -68,7 +88,7 @@ def backup_candidates(roots=None):
                 continue
             found.append(p)
     # Newest first: the remedy keeps the head of this list and prunes the tail.
-    return sorted(found, key=lambda p: p.stat().st_mtime, reverse=True)
+    return [p for p, _ in sorted(_stamped(found), key=lambda t: t[1], reverse=True)]
 
 
 def check_env_backup_sprawl(res) -> None:

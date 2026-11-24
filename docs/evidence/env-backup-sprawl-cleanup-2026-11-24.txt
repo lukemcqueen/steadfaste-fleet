@@ -49,3 +49,80 @@ e6ecbda74fa7811821da5996a40ce8921c8aaae6fc206ba010d576d3be8c2e9a  .env.dual-bak-
 ## LIVE .env INTEGRITY (this cleanup did not touch it)
 mode + size: 600 5945
 distinct key count: 48
+
+
+## ADDENDUM — the deleted values: BROADENED PROOF (adversarial finding ADV-15105-2)
+
+An independent adversarial review (cycle 15105) filed the original claim 3 as too
+narrowly scoped, and it was RIGHT: the grep covered only *.sh *.py *.yaml *.yml, while
+the reviewer named systemd units, nginx config, crontab, dotfiles, nonstandard
+extensions, container env and other hosts. The action was irreversible, so the proof had
+to be widened after the fact. Re-swept:
+
+### The full sweep, every surface the reviewer named
+
+  A. WHOLE HOME, ALL extensions (not just the four), excluding .git/node_modules/venv/
+     caches: 808 files match a CORTEX_ name. Every one classified below.
+  B. systemd — `~/.config/systemd/user/` and `/etc/systemd/system/`: NO match. No unit
+     reads a CORTEX_ variable.
+  C. `crontab -l`: 0 matches.
+  D. Every running container's environment (`docker inspect ... .Config.Env`): no
+     container carries a CORTEX_ variable.
+  E. nginx: `/etc/nginx/sites-available/hermes-services.conf:37` — a COMMENT
+     ("# are substituted from CORTEX_SSL_CERT_PATH / CORTEX_SSL_CERT_KEY_PATH").
+     `~/.steadfaste-fleet/bus/nginx.conf:101` — a COMMENT
+     ("# Replace {{BUS_TOKEN}} with the value of CORTEX_BUS_TOKEN").
+
+### What the 808 hits actually are
+
+Historical material only — comments, placeholder templates, docs, archives, logs:
+  * `docs/evidence/*` and `docs/older/*` — dated transcripts from the cortex era.
+  * `docs/plans/cortex-to-fleet-rename-plan.md` — the migration PLAN.
+  * `~/.steadfaste-fleet/state/deploy-backups/*.bak` and
+    `state/scripts-unique-backup-20260802/*` — pre-deploy rollback copies.
+  * `~/.steadfaste-fleet/skills/.archive/*` and `.../state/skill-reports/*` —
+    archived skills and old report fragments.
+  * `~/.hermes/sessions/request_dump_*.json`, `~/.hermes/cron/output/*`,
+    `~/.hermes/logs/*` — recorded transcripts and logs.
+  * `~/.steadfaste-fleet/templates/cortex-gateway.service` — an UNINSTALLED template;
+    its two hits are comment lines. (Confirmed against B: nothing installed reads it.)
+  * `~/brain/**` — memory/lesson archives.
+  * `~/langfuse/.env` — a THIRD env file (langfuse's own), carrying CORTEX_NGINX_PORT_PREFIX,
+    CORTEX_DOCTOR_BASE, CORTEX_SUDO_USERS. Its compose files do NOT read them, and no code
+    anywhere reads those three names. Flagged as its own finding: a retired-spelling
+    residue outside the fleet env, untouched by this cleanup.
+
+### The decisive point: a BACKUP is never a reader
+
+Code reads `.env`. Nothing in the fleet reads `.env.bak-*` — the only glob of that shape
+in the tree is the human recovery command in the fleet-bus skill ("Recover the pair:
+`grep -e '^FLEET_BUS_URL=' ... .env.bak-*`"), which a person types, not a program. So
+even had a live CORTEX_ reader existed, deleting backup copies could not have broken it.
+
+### And the values were never destroyed — they are live today under their canonical names
+
+The two backups whose only unique content was the 13 retired CORTEX_* names held the
+PRE-CONVERSION spelling of settings that `consolidate-env.sh` converted in place
+(CORTEX_X -> FLEET_X, same value). All 13 names resolve in the live .env today, each
+exactly once:
+
+  FLEET_BUS_URL 1 · FLEET_BUS_TOKEN 1 · FLEET_BUS_PG_HOST 1 · FLEET_BUS_PG_PORT 1 ·
+  FLEET_BUS_PG_DB 1 · FLEET_BUS_PG_USER 1 · FLEET_BUS_PG_PASS 1 · FLEET_BUS_FALLBACK_URL 1 ·
+  FLEET_BASIC_AUTH 1 · FLEET_DOMAIN 1 · FLEET_INBOX_URL 1 · FLEET_NGINX_PORT_PREFIX 1 ·
+  FLEET_BASE 1
+
+STATED HONESTLY: byte-equality between the deleted CORTEX_ values and today's FLEET_
+values can no longer be re-measured — the copies are gone. What IS measured: no reader
+exists for any of the 13 names, and every setting survives under the canonical name in
+both the live .env and the kept recovery copy. The retained backup
+(`.env.bak-steady-20261123T0728Z`) itself declares NO CORTEX_ key, so it never held the
+retired spellings and its values are complete today.
+
+### The lesson this cost
+
+The original proof was scoped to four file extensions and cited as if it covered a
+host. For an IRREVERSIBLE action the sweep must be enumerated surface by surface —
+systemd, nginx, crontab, container env, every extension, every dotfile — and the
+enumeration stated, because "grep across *.sh *.py" answers a much weaker question than
+"does any consumer exist". Re-sweeping afterwards is possible; re-creating the deleted
+bytes is not.
