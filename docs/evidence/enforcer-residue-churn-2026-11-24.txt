@@ -1,0 +1,84 @@
+Running: bash -c set -u; cd "$HOME/steadfaste-fleet" || exit 1; F=plugins/governance-enforcer/__init__.py; echo "subject: $F   lines: $(wc -l < $F)   commits touching it: $(git log --oneline -- $F | wc -l)"; echo; echo "=== A. occurrence-count churn (git log -S<NAME>) — UNDERCOUNTS value edits: -S counts commits where the NUMBER OF OCCURRENCES of the literal changed, so editing a tables CONTENTS does not register. Shown only to document the probe defect. ==="; for n in WRITE_TOOLS WRITE_CRON_ACTIONS _ADVERSARIAL_COMMIT_PATTERNS _PII_EMAIL_RE _TDD_CODE_EXTS; do printf "%-32s %s\n" "$n" "$(git log --oneline -S"$n" -- $F | wc -l)"; done; echo; echo "=== B. region churn (git log -L start,end:FILE) — commits that actually MODIFIED the line region, following the code through history. This is the measure the plan cites. ==="; for r in 87,95 383,417 445,450 489,512 1808,1860 1882,1886 1981,1990 2266,2440 2619,2640; do printf "%-10s %s\n" "$r" "$(git log --oneline -L $r:$F | grep -c "^[0-9a-f]\{7,\} " || true)"; done; echo; echo "=== C. module-level constants in the DEPLOYED plugin (line:decl) ==="; grep -n "^[A-Z_][A-Z0-9_]* *[:=]" "$HOME/.hermes/plugins/governance-enforcer/__init__.py"
+rc: 0
+when: 2026-11-24T08:44:13Z
+
+subject: plugins/governance-enforcer/__init__.py   lines: 3656   commits touching it: 102
+
+=== A. occurrence-count churn (git log -S<NAME>) — UNDERCOUNTS value edits: -S counts commits where the NUMBER OF OCCURRENCES of the literal changed, so editing a tables CONTENTS does not register. Shown only to document the probe defect. ===
+WRITE_TOOLS                      3
+WRITE_CRON_ACTIONS               3
+_ADVERSARIAL_COMMIT_PATTERNS     1
+_PII_EMAIL_RE                    1
+_TDD_CODE_EXTS                   1
+
+=== B. region churn (git log -L start,end:FILE) — commits that actually MODIFIED the line region, following the code through history. This is the measure the plan cites. ===
+87,95      7
+383,417    5
+445,450    1
+489,512    3
+1808,1860  13
+1882,1886  2
+1981,1990  8
+2266,2440  17
+2619,2640  2
+
+=== C. module-level constants in the DEPLOYED plugin (line:decl) ===
+48:GOVERNANCE_STATE_DIR = Path.home() / ".steadfaste-fleet" / "state"
+49:SURVEY_MARKER = GOVERNANCE_STATE_DIR / ".cron-survey-done"
+54:_SKILL_HASH_CACHE: Dict[str, tuple] = {}
+65:SKILLS_MARKER = GOVERNANCE_STATE_DIR / ".skills-loaded"          # legacy — inert
+66:SKILLS_STATE_FILE = GOVERNANCE_STATE_DIR / "skills-state.json"   # legacy — inert
+67:SKILLS_MARKER_DIR = GOVERNANCE_STATE_DIR / "skills-loaded"       # per-session markers
+68:SKILLS_STATE_DIR = GOVERNANCE_STATE_DIR / "skills-state"         # per-session state
+87:_REQUIRED_SKILLS_DEFAULT: set = {
+90:_REQUIRED_SKILLS: set = set(_REQUIRED_SKILLS_DEFAULT)
+93:_REQUIRED_MANIFEST_PATH = Path.home() / ".steadfaste-fleet" / "skills.yaml"
+94:_REQUIRED_MANIFEST_FP: int = -1
+153:SKILLS_CREDIT_DIR_NAME = "skills-credit"
+217:_CACHE_LOCK = threading.Lock()
+219:_HC_STORE_MOD = None
+220:_HC_STORE_TRIED = False
+383:_EXT_DOMAIN_SKILLS = {
+396:_FILENAME_DOMAIN_SKILLS = {
+402:_PATH_CTX_HINTS = {
+415:_YAML_DOCKER_MARKERS = ("docker", "compose")
+445:_TDD_CODE_EXTS = {
+449:_TDD_TEST_PATH_MARKERS = ("/tests/", "/test/", "/spec/", "__test__")
+489:_ADVERSARIAL_COMMIT_PATTERNS = [
+498:_ADVERSARIAL_CRITICAL_PATHS = [
+510:_ADVERSARIAL_DISPLAY = {
+1028:_LAST_MARKER_SESSION: str = ""
+1069:_PATH_ARG_KEYS = ("path", "file_path", "workdir", "cwd", "directory")
+1119:_CWD_ARG_KEYS = ("workdir", "cwd")
+1123:_FILE_ARG_KEYS = ("path", "file_path", "directory")
+1465:_RECEIPT_CHECK_REL = "ops/scripts/lib/review-receipt-check.py"
+1466:_RECEIPT_CHECK_MOD = None
+1808:WRITE_TOOLS = {
+1819:READ_TOOLS = {
+1833:CONDITIONAL_WRITE_TOOLS = {
+1842:WRITE_PROCESS_ACTIONS = {"write", "submit", "close", "kill"}
+1845:WRITE_COMPUTER_USE_ACTIONS = {
+1856:WRITE_CRON_ACTIONS = {"create", "update", "remove"}
+1859:WRITE_SKILL_ACTIONS = {"create", "edit", "delete", "write_file", "remove_file", "patch"}
+1882:_COMMAND_FORBIDDEN_METACHARS = re.compile(r"[<>`]|\$\(|\|\||\n|(?<!&)&(?!&)")
+1885:_COMMAND_SEPARATORS = re.compile(r"&&|;|\|")
+1887:_CLASSIFY_CLI_BASENAME = "loop-gov-classify.py"
+1981:_SANCTIONED_FLEET_UPDATE_RE = re.compile(
+2266:_PII_EMAIL_RE = re.compile(
+2269:_PLACEHOLDER_DOMAIN_RE = re.compile(
+2294:_PII_SENSITIVE_DIGESTS = frozenset(
+2308:_PII_SENSITIVE_LENGTHS = (7, 10, 11, 13, 17)
+2313:_PII_SENSITIVE_URL_ALLOWED = frozenset({
+2316:_PII_SENSITIVE_OK_RE = re.compile(r"fleet-operator(/|$)", re.IGNORECASE)
+2329:_PII_REPO_URL_RE = re.compile(
+2378:_PII_PHONE_RE = re.compile(
+2404:_PII_UUID_RE = re.compile(
+2412:_PII_SERVER_URL_RE = re.compile(r"https?://([a-z0-9.-]+)", re.IGNORECASE)
+2417:_HOME_ABS_RE = re.compile(
+2421:_PUBLIC_HOST_RE = re.compile(
+2438:_HERMES_FLEET_REPO = Path.home() / "steadfaste-fleet"
+2439:_HERMES_SKILLS_DIR = Path.home() / ".hermes" / "skills"
+2619:_COMMIT_BYPASS_TOKENS = ("--no-verify", "-n")
+2620:_COMMIT_SCOPE_BARE_MSG = (
+2631:_COMMIT_SCOPE_BYPASS_MSG = (
+sha256: ebb42d688e5d745bbf89137cc2d51fde82f2d1bcb904ce953dfab53194da0744

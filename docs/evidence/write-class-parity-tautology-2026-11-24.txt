@@ -1,0 +1,45 @@
+Running: bash -c set -u; cd "$HOME/steadfaste-fleet" || exit 1; echo "== HEAD =="; git log --oneline -1; echo; echo "== the test in question, tests/test_write_class_parity.py:190-201 =="; sed -n "188,201p" tests/test_write_class_parity.py; echo; echo "== the delegation it actually exercises (repo source, plugin 1946-1953) =="; grep -n "def _is_readonly_terminal_command" -A 8 plugins/governance-enforcer/__init__.py; echo; echo "== RUN (rc captured bare, before any pipe) =="; out="$(<HOME>/.steadfaste-fleet/venv/bin/python3 -m pytest tests/test_write_class_parity.py -q 2>&1)"; rc=$?; printf "%s\n" "$out" | sed "s|$HOME|<HOME>|g" | tail -8; echo "pytest_rc=$rc"
+rc: 0
+when: 2026-11-24T08:49:11Z
+
+== HEAD ==
+01617793 docs(governance): scope the enforcer residue shrink, and record the measured finding that CR3 parity is still outstanding
+
+== the test in question, tests/test_write_class_parity.py:190-201 ==
+    "sqlite3 ~/.steadfaste-fleet/data/loop-governance.db \"SELECT * FROM adversarial_reviews;\"",
+]
+
+
+@pytest.mark.parametrize("cmd", READ_ONLY + COMPOUND_READ_ONLY)
+def test_readonly_parity(cmd):
+    assert _CONTRACT.is_readonly_command(cmd) == \
+        _ENFORCER._is_readonly_terminal_command(cmd), f"parity break on: {cmd}"
+
+
+@pytest.mark.parametrize("cmd", WRITES + EVASIONS)
+def test_write_parity(cmd):
+    assert _CONTRACT.is_readonly_command(cmd) is False, f"contract let a write through: {cmd}"
+    assert _ENFORCER._is_readonly_terminal_command(cmd) is False, f"enforcer: {cmd}"
+
+== the delegation it actually exercises (repo source, plugin 1946-1953) ==
+1946:def _is_readonly_terminal_command(command: str) -> bool:
+1947-    """Fail-closed read-only terminal check — DELEGATED to the contract.
+1948-
+1949-    Kept as a function so every existing gate test and the block-message path
+1950-    keeps its call shape; the verdict comes from the shared implementation.
+1951-    """
+1952-    v = _classify_terminal(command)
+1953-    return bool(v and v.get("read_only"))
+1954-
+
+== RUN (rc captured bare, before any pipe) ==
+collected 209 items
+
+tests/test_write_class_parity.py ....................................... [ 18%]
+........................................................................ [ 53%]
+........................................................................ [ 87%]
+..........................                                               [100%]
+
+============================= 209 passed in 9.09s ==============================
+pytest_rc=0
+sha256: 0aaa70b5c75f363bfdaae22f51aa91db4194d117d31807d2336a56348d364fee
