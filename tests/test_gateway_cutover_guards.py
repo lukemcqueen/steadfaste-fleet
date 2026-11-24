@@ -31,7 +31,9 @@ import fleet_gateway.transport as TRANSPORT  # noqa: E402
 
 GUARD = _REPO / "ops" / "scripts" / "fleet_gateway" / "guard_distinct_token.py"
 LIVE = "TELEGRAM_BOT_TOKEN"
-SECOND = "ESTHER0001_BOT_TOKEN"
+# The family scheme (docs/env-vars.md): additional bots extend the primary name, so one
+# prefix scan enumerates every Telegram bot token on the host.
+SECOND = "TELEGRAM_BOT_TOKEN_ESTHER0001"
 
 # Synthetic tokens — never the real ones.
 LIVE_VALUE = "111111:AAAA-live-bot-token-placeholder"
@@ -58,6 +60,57 @@ def _run_guard(config_text: str, env_extra: dict) -> subprocess.CompletedProcess
 
 def _config(token_ref: str) -> str:
     return json.dumps({"bots": [{"token_ref": token_ref, "channel": "telegram"}]})
+
+
+def _multi_config(*token_refs: str) -> str:
+    """A config with SEVERAL bots — the shape the multi-token family encourages."""
+    return json.dumps({"bots": [{"token_ref": r, "channel": "telegram"}
+                                for r in token_refs]})
+
+
+# ── the token guard: EVERY bot, not just the first ──────────────────
+
+def test_guard_checks_every_bot_not_only_the_first():
+    """A multi-bot config must be refused if ANY bot is the live one.
+
+    DISCRIMINATES: the original guard read `bots[0]` only, so this config — live
+    token in the SECOND entry — was ACCEPTED and the unit started. That is the
+    exact 409 the guard exists to prevent, and multi-bot configs are now the
+    normal shape.
+    """
+    cfg = _multi_config(SECOND, LIVE)
+    env = {SECOND: SECOND_VALUE, LIVE: LIVE_VALUE}
+    r = _run_guard(cfg, env)
+    assert r.returncode == 1, (r.returncode, r.stdout, r.stderr)
+    assert "bots[1]" in r.stderr, r.stderr
+
+
+def test_guard_refuses_two_bots_in_one_config_sharing_a_token():
+    """Two bots in ONE config with the same value 409 each other.
+
+    Nothing else in the guard catches this: neither is the primary, so both pass
+    the live-token checks and the daemon would poll one token from two adapters.
+    """
+    cfg = _multi_config(SECOND, "TELEGRAM_BOT_TOKEN_PI")
+    env = {SECOND: SECOND_VALUE, "TELEGRAM_BOT_TOKEN_PI": SECOND_VALUE}
+    r = _run_guard(cfg, env)
+    assert r.returncode == 1, (r.returncode, r.stdout, r.stderr)
+    assert "share a token" in r.stderr, r.stderr
+
+
+def test_guard_accepts_several_distinct_bots():
+    """Positive control: the multi-bot path can PASS.
+
+    Without this, the two refusals above would also be satisfied by a guard that
+    refuses EVERY multi-bot config — a check that cannot pass is as useless as one
+    that cannot fail.
+    """
+    cfg = _multi_config(SECOND, "TELEGRAM_BOT_TOKEN_PI")
+    env = {SECOND: SECOND_VALUE, "TELEGRAM_BOT_TOKEN_PI": "333333:CCCC-third-token",
+           LIVE: LIVE_VALUE}
+    r = _run_guard(cfg, env)
+    assert r.returncode == 0, (r.returncode, r.stdout, r.stderr)
+    assert "distinct from" in r.stderr, r.stderr
 
 
 # ── the token guard ─────────────────────────────────────────────────

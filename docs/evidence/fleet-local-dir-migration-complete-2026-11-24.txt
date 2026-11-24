@@ -187,9 +187,77 @@ would refuse the unit if the tokens ever collided. Verified 2026-11-24: no `pi_c
 errors in that unit's journal since the argv was repointed to the real script, and
 `fleet-gateway-esther0001.service` reports `active`.
 
-Discrimination of the new check, proven rather than asserted: the absence condition
-PASSES when the path is absent and FAILS when it is present, so it is not another
-check-that-cannot-fail.
+=============================================================================
+5. FLEET GATEWAY vs HERMES — they DO coexist (operator was right, measured)
+=============================================================================
+
+OPERATOR CORRECTION, and the measurement confirms him: "pi should work with fleet
+gateway and it shouldn't conflict (different telegram IDs)" and "they should both be
+able to run at the same time."
+
+Both gateways ARE running side by side, verified:
+
+    hermes-gateway.service               -> active  (PID 1934506, since 09:54:46)
+    fleet-gateway-esther0001.service     -> active  (PID 4232,    since Nov 22 18:57)
+    genuine "409 Conflict" in 7 days of either journal -> 0
+
+The first grep for `409|Conflict` returned 41 hits, ALL false positives — process IDs
+(`sg[3154094]`), log timestamps (`20:33:32,409`), byte counts (`4096`), and
+"...Connecting to Telegram (attempt 3/8)". Every one came from `hermes-gateway.service`,
+zero from the fleet gateway. Counted, then read, rather than trusting the count.
+
+I had written "standing it up means stopping hermes-gateway.service first" — that framing
+was WRONG for the gateway that matters. `fleet-gateway-esther0001.service` runs pi on
+@Esther0001Bot with a DISTINCT token and coexists with Hermes by construction.
+
+Token identity, by fingerprint (sha256[:12] — never the value):
+
+    VAR                    fleet-env       hermes-env     conclusion
+    TELEGRAM_BOT_TOKEN     6893ea418c8e    6893ea418c8e   SAME -> the live bot
+    ESTHER0001_BOT_TOKEN   1708eb76325e    absent         distinct -> safe to coexist
+
+So what is genuinely different about the production unit is ONE thing: its config
+(`gateway.yaml`) names `TELEGRAM_BOT_TOKEN`, the live bot. That is the config whose
+whole purpose was replacing Hermes's in-process gateway (design doc: "live cutover =
+S2d window"), not one that runs alongside it.
+
+### The real defect this exposed: the DEPLOYED unit had no guard
+
+The repo template `docs/templates/fleet-gateway.service` ALREADY carried the fail-closed
+guard (its `ExecStartPre` runs `guard_distinct_token.py`). The unit installed on this host
+did NOT: 54 lines vs the template's 69, still titled `cortex-gateway.service`, still
+referencing the dead `docs/design/cortex-gateway.md`, and ZERO `ExecStartPre`.
+
+That is the exact failure its own guard script warns about, quoted from its docstring:
+"That separation used to live only in a comment at the top of the unit file. **A comment
+is not a guard — it cannot fail, and it never runs.**" On this host the production unit
+was still relying on the comment: it could have been started against the live bot with
+nothing stopping it, 409ing the live channel.
+
+FIX: `install -m 644 docs/templates/fleet-gateway.service ~/.config/systemd/user/` +
+`daemon-reload`. The deployed unit now runs the guard.
+
+### The guard matrix, verified with the unit's real EnvironmentFile loaded
+
+    gateway-esther0001.yaml  -> rc=0  ACCEPTED ("ESTHER0001_BOT_TOKEN (1708eb76325e)
+                                        is distinct from TELEGRAM_BOT_TOKEN")
+    gateway.yaml             -> rc=1  REFUSED ("token_ref is TELEGRAM_BOT_TOKEN, the LIVE bot")
+
+The first attempt at the ACCEPTED half was INVALID — run without the EnvironmentFile the
+var was simply unset, and the guard correctly failed for the wrong reason. Re-run with the
+canonical env loaded (48 vars, no values printed) to get a real result. No regression: the
+running pi gateway is untouched and stays restartable.
+
+STILL THE OPERATOR'S CALL, not decided here: if `fleet-gateway.service` should run
+ALONGSIDE Hermes rather than replace its gateway, `gateway.yaml` needs its own distinct
+bot token ref. No third bot token exists in the canonical env today (only
+`TELEGRAM_BOT_TOKEN` and `ESTHER0001_BOT_TOKEN`), so that needs a new bot from Luke.
+
+### Deploy gap worth noting
+
+The unit is not in the deploy manifest, so nothing refreshes it — that is how the host
+ended up 15 lines and a guard behind its own template. Whoever installs it next should
+copy the template rather than hand-writing a unit.
 
 REVERSIBLE: `ln -s <HOME>/.steadfaste-fleet <HOME>/.hermes-cortex` restores the old path.
 No data was moved or deleted by this step — only the symlinks were removed.

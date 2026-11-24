@@ -132,6 +132,30 @@ Hermes-owned — never merged into the Fleet env.
 | `TELEGRAM_HOME_CHANNEL` | Default delivery channel (Esther: Luke DM) |
 | `TELEGRAM_API_BASE` | Telegram Bot API base URL for the messaging gateway (`msg-gateway.py`) |
 
+### Telegram bot tokens — ONE family, N bots (`~/steadfaste-fleet/.env`)
+
+`TELEGRAM_BOT_TOKEN` is the **primary** bot — the name Hermes itself uses, and the bot
+`hermes-gateway.service` polls. Every ADDITIONAL bot extends that name:
+
+| Variable | Purpose |
+|---|---|
+| `TELEGRAM_BOT_TOKEN` | Primary bot (live; Hermes polls it — do not re-point) |
+| `TELEGRAM_BOT_TOKEN_<NAME>` | An additional bot. `<NAME>` = uppercase `[A-Z0-9_]`, e.g. `TELEGRAM_BOT_TOKEN_ESTHER0001`, `TELEGRAM_BOT_TOKEN_PI` |
+
+**Why a prefix family and not `<NAME>_BOT_TOKEN`:** every Telegram bot token is then
+enumerable by ONE prefix scan (`^TELEGRAM_BOT_TOKEN`), so a gate can assert "every
+Telegram bot token on this host has a distinct VALUE" without a hand-maintained list.
+The repo carried three ad-hoc spellings for this one concept
+(`ESTHER0001_BOT_TOKEN`, `PI_TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_TOKEN_1`); the family
+replaces all of them.
+
+**How the bots coexist.** A config names the variable in `bots[].token_ref`; the VALUE
+lives only in the env. `ops/scripts/fleet_gateway/guard_distinct_token.py` runs as
+`ExecStartPre` and refuses to start a gateway when ANY configured bot is the primary name
+or resolves to the primary's value — so a second and third bot run alongside Hermes with
+no Telegram 409. One poller per token, enforced at unit start rather than documented in a
+comment.
+
 ### Rules
 
 1. **Never hardcode a value that has an env var.** The bus URLs were

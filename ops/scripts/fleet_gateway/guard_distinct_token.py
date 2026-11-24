@@ -55,44 +55,68 @@ def main(argv: list[str]) -> int:
     if not bots:
         print(f"guard: {config_path} configures no bots", file=sys.stderr)
         return 1
-    token_ref = str((bots[0] or {}).get("token_ref") or "")
-    if not token_ref:
-        print(f"guard: {config_path} bot has no token_ref", file=sys.stderr)
-        return 1
-
-    # Naming the live var IS the production config, whatever it currently holds.
-    # Refuse on the name as well as the value: a rotated live token must not turn
-    # a dangerous config into an accepted one.
-    if token_ref == LIVE_TOKEN_REF:
-        print(
-            f"guard: REFUSING TO START — token_ref is {LIVE_TOKEN_REF}, the LIVE bot.\n"
-            "  This unit exists to run a SECOND bot. Point it at a distinct token "
-            "(see gateway-esther0001.yaml).",
-            file=sys.stderr)
-        return 1
-
-    mine = os.environ.get(token_ref, "")
-    if not mine:
-        print(f"guard: {token_ref} is not set in the environment — the gateway "
-              "cannot start without its token", file=sys.stderr)
-        return 1
 
     live = os.environ.get(LIVE_TOKEN_REF, "")
-    if live and mine == live:
-        print(
-            "guard: REFUSING TO START — this config resolves to the LIVE bot's token.\n"
-            f"  config token_ref  : {token_ref}\n"
-            f"  token fingerprint : {_fingerprint(mine)}\n"
-            f"  {LIVE_TOKEN_REF}  : {_fingerprint(live)}  "
-            "(the bot hermes-gateway.service polls)\n"
-            "  A second poller on one bot token gets a Telegram 409 and the live "
-            "channel is the casualty. Point this unit at a DISTINCT bot token, or "
-            "stop hermes-gateway.service first.",
-            file=sys.stderr)
-        return 1
+    live_fp = _fingerprint(live) if live else "(unset)"
 
-    print(f"guard: ok — {token_ref} ({_fingerprint(mine)}) is distinct from "
-          f"{LIVE_TOKEN_REF}", file=sys.stderr)
+    # Check EVERY configured bot, not just bots[0]. A config with several bots could
+    # carry the primary token in its SECOND entry and slip through a bots[0]-only check
+    # — which is exactly the shape the multi-token naming family encourages.
+    seen: dict[str, str] = {}          # fingerprint -> token_ref (self-collision)
+    for idx, bot in enumerate(bots):
+        token_ref = str((bot or {}).get("token_ref") or "")
+        if not token_ref:
+            print(f"guard: {config_path} bots[{idx}] has no token_ref", file=sys.stderr)
+            return 1
+
+        # Naming the primary var IS the production config, whatever it currently holds.
+        # Refuse on the NAME as well as the value: a rotated live token must not turn a
+        # dangerous config into an accepted one.
+        if token_ref == LIVE_TOKEN_REF:
+            print(
+                f"guard: REFUSING TO START — bots[{idx}].token_ref is {LIVE_TOKEN_REF}, "
+                "the PRIMARY bot that hermes-gateway.service already polls.\n"
+                "  This unit exists to run an ADDITIONAL bot. Point it at a distinct "
+                "token from the family TELEGRAM_BOT_TOKEN_<NAME> "
+                "(see gateway-esther0001.yaml, docs/env-vars.md).",
+                file=sys.stderr)
+            return 1
+
+        mine = os.environ.get(token_ref, "")
+        if not mine:
+            print(f"guard: {token_ref} is not set in the environment — the gateway "
+                  "cannot start without its token", file=sys.stderr)
+            return 1
+
+        if live and mine == live:
+            print(
+                "guard: REFUSING TO START — this config resolves to the PRIMARY bot's "
+                "token.\n"
+                f"  bots[{idx}].token_ref  : {token_ref}\n"
+                f"  token fingerprint     : {_fingerprint(mine)}\n"
+                f"  {LIVE_TOKEN_REF}       : {live_fp}  "
+                "(the bot hermes-gateway.service polls)\n"
+                "  A second poller on one bot token gets a Telegram 409 and the live "
+                "channel is the casualty. Point this at a DISTINCT token.",
+                file=sys.stderr)
+            return 1
+
+        # Two bots in ONE config sharing a token collide with each other, not with the
+        # primary — the same 409, and nothing above would catch it.
+        fp = _fingerprint(mine)
+        if fp in seen:
+            print(
+                "guard: REFUSING TO START — bots in this config share a token.\n"
+                f"  bots[{idx}].token_ref {token_ref} and {seen[fp]} both resolve to "
+                f"fingerprint {fp}\n"
+                "  One poller per token: these two would 409 each other.",
+                file=sys.stderr)
+            return 1
+        seen[fp] = token_ref
+
+    refs = ", ".join(str((b or {}).get("token_ref")) for b in bots)
+    print(f"guard: ok — {refs} ({', '.join(sorted(seen))}) distinct from {LIVE_TOKEN_REF}",
+          file=sys.stderr)
     return 0
 
 
