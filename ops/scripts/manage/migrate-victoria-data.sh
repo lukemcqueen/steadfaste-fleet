@@ -36,12 +36,21 @@ CONTAINER_MNT="/victoria-metrics-data"
 APPLY=0
 [ "${1:-}" = "--apply" ] && APPLY=1
 
+# The startup markers the verification gate keys on. DEFAULTS ARE MEASURED, not
+# guessed: docs/evidence/victoria-metrics-startup-log-2026-11-24.txt records these
+# exact strings on 22 consecutive startups of this image (2026-08-31 .. 2026-11-22).
+# They are overridable because a future image could reword them: if a healthy
+# migration ever fails this gate, set these and re-run rather than editing the
+# script. A failed gate ROLLS BACK SAFELY (the data is moved back), so a marker
+# mismatch costs a retry, never data.
+OPEN_MARKER="${VICTORIA_OPEN_MARKER:-successfully opened storage}"
+START_MARKER="${VICTORIA_START_MARKER:-started VictoriaMetrics in}"
+
 log() { echo "migrate-victoria-data: $*"; }
 die() { echo "migrate-victoria-data: ERROR: $*" >&2; exit 1; }
 
 command -v docker >/dev/null 2>&1 || die "docker not found"
 command -v python3 >/dev/null 2>&1 || die "python3 not found"
-[ "$(id -u)" = "0" ] || die "must run as root (the data dir is root-owned); use sudo"
 docker inspect "$CONTAINER" >/dev/null 2>&1 || die "container '$CONTAINER' not found"
 
 inspect() { docker inspect "$CONTAINER" --format "$1"; }
@@ -81,6 +90,11 @@ if [ "$APPLY" -ne 1 ]; then
   log "DRY RUN — nothing changed. Re-run with --apply to execute."
   exit 0
 fi
+
+# root is needed only to WRITE (the data dir is root-owned). Requiring it up front
+# made the PLAN un-inspectable without sudo, which is backwards: the operator
+# should be able to read what the script would do before granting privilege.
+[ "$(id -u)" = "0" ] || die "must run as root (the data dir is root-owned); use sudo"
 
 [ -d "$OLD_DIR" ] || die "old data dir missing: $OLD_DIR"
 [ ! -e "$NEW_DIR" ] || die "target $NEW_DIR already exists — resolve manually (never merge two TSDB trees)"
@@ -161,10 +175,10 @@ verify() {
   [ "$got_src" = "$NEW_DIR" ] || { echo "mount source '$got_src' != '$NEW_DIR'"; return 1; }
   docker inspect "$CONTAINER" --format '{{.State.Running}}' 2>/dev/null | grep -q '^true$' \
     || { echo "container is not running"; return 1; }
-  docker logs "$CONTAINER" 2>&1 | grep -q 'successfully opened storage' \
-    || { echo "TSDB never reported 'successfully opened storage'"; return 1; }
-  docker logs "$CONTAINER" 2>&1 | grep -q 'started VictoriaMetrics in' \
-    || { echo "http server never started"; return 1; }
+  docker logs "$CONTAINER" 2>&1 | grep -qF "$OPEN_MARKER" \
+    || { echo "TSDB never reported '$OPEN_MARKER' (override: VICTORIA_OPEN_MARKER=...)"; return 1; }
+  docker logs "$CONTAINER" 2>&1 | grep -qF "$START_MARKER" \
+    || { echo "http server never reported '$START_MARKER' (override: VICTORIA_START_MARKER=...)"; return 1; }
   return 0
 }
 
@@ -186,8 +200,26 @@ docker inspect "$CONTAINER" --format '{{.State.Running}}' 2>/dev/null | grep -q 
 log "verified: TSDB opened, http server started, $NEW_COUNT file(s), survived settle"
 
 # ---- 5. cleanup (only reached when every gate above passed) -----------------
+# Final health re-check AT THE MOMENT the rollback path is about to be destroyed.
+# The gates above ran seconds ago; the rollback artefact must not be deleted on
+# the strength of a stale observation. If the container has stopped passing, we
+# destroy NOTHING and say so — an operator can then resolve it with both the new
+# container and the rollback artefact still on disk.
+if ! WHY="$(verify)"; then
+  log "WARNING: the new container stopped passing verification before cleanup ($WHY)"
+  log "WARNING: keeping BOTH the rollback container and the old data dir — nothing removed"
+  log "WARNING: inspect '$CONTAINER' and '${CONTAINER}-rollback', then clean up manually"
+  exit 1
+fi
+
+# Ordered AND logged so a partial failure leaves a recoverable state: the old DATA
+# is removed only after the rollback CONTAINER has gone, so an interruption can
+# never leave the data deleted while a rollback path still appears to exist.
+log "cleanup 1/3: removing the rollback container ${CONTAINER}-rollback"
 docker rm "${CONTAINER}-rollback" >/dev/null
+log "cleanup 2/3: removing the old data dir $OLD_DIR"
 rm -rf "$OLD_DIR"
+log "cleanup 3/3: removing the stale parent dir if it is now empty"
 STALE="$(dirname "$OLD_DIR")"
 if [ -d "$STALE" ]; then
   if find "$STALE" -mindepth 1 -print -quit | grep -q .; then

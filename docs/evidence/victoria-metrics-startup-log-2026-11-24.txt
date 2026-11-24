@@ -1,0 +1,89 @@
+# VictoriaMetrics startup markers — captured from the LIVE container on 2026-11-24
+# Purpose: committed evidence for the log markers migrate-victoria-data.sh gates on.
+# Command: docker logs victoria-metrics 2>&1 | grep -E "successfully opened storage|started VictoriaMetrics in|started server at"
+# Redaction check: startup lines only; no credentials appear in them.
+
+2026-08-31T08:35:52.601Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.071 seconds; partsCount: 1; blocksCount: 1; rowsCount: 1; sizeBytes: 136
+2026-08-31T08:35:52.610Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.080 seconds
+2026-08-31T08:35:52.610Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-08-31T14:20:53.328Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.213 seconds; partsCount: 12; blocksCount: 253; rowsCount: 553; sizeBytes: 9663
+2026-08-31T14:20:53.343Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.230 seconds
+2026-08-31T14:20:53.349Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-09-01T06:43:07.615Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.157 seconds; partsCount: 20; blocksCount: 518; rowsCount: 6173; sizeBytes: 41641
+2026-09-01T06:43:07.632Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.175 seconds
+2026-09-01T06:43:07.634Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-09-01T12:38:43.966Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.286 seconds; partsCount: 23; blocksCount: 640; rowsCount: 8131; sizeBytes: 53904
+2026-09-01T12:38:43.995Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.317 seconds
+2026-09-01T12:38:44.001Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-09-05T01:00:53.210Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.177 seconds; partsCount: 24; blocksCount: 790; rowsCount: 45921; sizeBytes: 186893
+2026-09-05T01:00:53.224Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.192 seconds
+2026-09-05T01:00:53.226Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-09-05T04:11:03.839Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.312 seconds; partsCount: 24; blocksCount: 790; rowsCount: 45921; sizeBytes: 186893
+2026-09-05T04:11:03.864Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.339 seconds
+2026-09-05T04:11:03.872Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-09-05T05:20:17.319Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.259 seconds; partsCount: 27; blocksCount: 892; rowsCount: 46329; sizeBytes: 192438
+2026-09-05T05:20:17.338Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.280 seconds
+2026-09-05T05:20:17.342Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-09-05T05:38:28.983Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.281 seconds; partsCount: 26; blocksCount: 892; rowsCount: 46431; sizeBytes: 193175
+2026-09-05T05:38:29.005Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.305 seconds
+2026-09-05T05:38:29.011Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-09-05T05:58:34.261Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.276 seconds; partsCount: 32; blocksCount: 994; rowsCount: 46533; sizeBytes: 196468
+2026-09-05T05:58:34.281Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.304 seconds
+2026-09-05T05:58:34.288Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-09-05T06:08:06.212Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.255 seconds; partsCount: 29; blocksCount: 960; rowsCount: 46601; sizeBytes: 196077
+2026-09-05T06:08:06.235Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.283 seconds
+2026-09-05T06:08:06.243Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-09-05T06:17:31.045Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.250 seconds; partsCount: 31; blocksCount: 994; rowsCount: 46635; sizeBytes: 197168
+2026-09-05T06:17:31.063Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.271 seconds
+2026-09-05T06:17:31.067Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-09-05T06:21:48.447Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.229 seconds; partsCount: 33; blocksCount: 1028; rowsCount: 46669; sizeBytes: 198260
+2026-09-05T06:21:48.461Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.250 seconds
+2026-09-05T06:21:48.468Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-09-05T06:32:10.169Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.264 seconds; partsCount: 30; blocksCount: 994; rowsCount: 46737; sizeBytes: 197838
+2026-09-05T06:32:10.188Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.283 seconds
+2026-09-05T06:32:10.191Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-09-05T06:42:04.018Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.265 seconds; partsCount: 32; blocksCount: 1028; rowsCount: 46771; sizeBytes: 198935
+2026-09-05T06:42:04.038Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.288 seconds
+2026-09-05T06:42:04.042Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-09-05T07:25:01.805Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.231 seconds; partsCount: 28; blocksCount: 892; rowsCount: 47026; sizeBytes: 194955
+2026-09-05T07:25:01.823Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.253 seconds
+2026-09-05T07:25:01.827Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-09-05T07:27:21.676Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.235 seconds; partsCount: 29; blocksCount: 909; rowsCount: 47043; sizeBytes: 195503
+2026-09-05T07:27:21.698Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.262 seconds
+2026-09-05T07:27:21.702Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-09-05T07:31:21.738Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.260 seconds; partsCount: 30; blocksCount: 926; rowsCount: 47060; sizeBytes: 196065
+2026-09-05T07:31:21.757Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.282 seconds
+2026-09-05T07:31:21.761Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-09-05T08:47:28.665Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.252 seconds; partsCount: 27; blocksCount: 943; rowsCount: 47485; sizeBytes: 199288
+2026-09-05T08:47:28.694Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.279 seconds
+2026-09-05T08:47:28.697Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-09-12T09:04:43.855Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.403 seconds; partsCount: 30; blocksCount: 897; rowsCount: 103891; sizeBytes: 378923
+2026-09-12T09:04:43.879Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.437 seconds
+2026-09-12T09:04:43.883Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-09-21T00:51:44.791Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.320 seconds; partsCount: 34; blocksCount: 1067; rowsCount: 174491; sizeBytes: 607971
+2026-09-21T00:51:44.851Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.380 seconds
+2026-09-21T00:51:44.856Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-10-02T05:16:27.534Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.292 seconds; partsCount: 27; blocksCount: 849; rowsCount: 260408; sizeBytes: 872072
+2026-10-02T05:16:27.551Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.309 seconds
+2026-10-02T05:16:27.554Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-10-13T02:13:08.736Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.355 seconds; partsCount: 28; blocksCount: 749; rowsCount: 258774; sizeBytes: 751608
+2026-10-13T02:13:08.756Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.375 seconds
+2026-10-13T02:13:08.764Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-10-17T15:02:00.779Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.377 seconds; partsCount: 30; blocksCount: 766; rowsCount: 234668; sizeBytes: 624497
+2026-10-17T15:02:00.811Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.415 seconds
+2026-10-17T15:02:00.822Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-10-17T17:41:17.966Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.382 seconds; partsCount: 29; blocksCount: 749; rowsCount: 235229; sizeBytes: 623213
+2026-10-17T17:41:17.984Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.400 seconds
+2026-10-17T17:41:17.985Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-10-22T09:31:52.904Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.302 seconds; partsCount: 29; blocksCount: 732; rowsCount: 216088; sizeBytes: 511174
+2026-10-22T09:31:52.921Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.320 seconds
+2026-10-22T09:31:52.923Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-11-04T00:21:05.305Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.373 seconds; partsCount: 33; blocksCount: 4409; rowsCount: 572378; sizeBytes: 662091
+2026-11-04T00:21:05.341Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.409 seconds
+2026-11-04T00:21:05.348Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-11-17T01:03:26.548Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.096 seconds; partsCount: 0; blocksCount: 0; rowsCount: 0; sizeBytes: 0
+2026-11-17T01:03:26.552Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.100 seconds
+2026-11-17T01:03:26.558Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
+2026-11-22T09:57:11.167Z	info	VictoriaMetrics/app/vmstorage/main.go:176	successfully opened storage "victoria-metrics-data" in 0.552 seconds; partsCount: 11; blocksCount: 2338; rowsCount: 147601; sizeBytes: 138506
+2026-11-22T09:57:11.213Z	info	VictoriaMetrics/app/victoria-metrics/main.go:103	started VictoriaMetrics in 0.603 seconds
+2026-11-22T09:57:11.222Z	info	VictoriaMetrics/lib/httpserver/httpserver.go:152	started server at http://0.0.0.0:8428/
