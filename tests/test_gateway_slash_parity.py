@@ -171,7 +171,7 @@ def test_model_reset_returns_the_chat_to_the_default(tmp_path):
 
 def test_model_is_rejected_when_the_backend_says_it_does_not_exist(tmp_path):
     """`/bin/false` = the agent's own check said "no". Nothing may be stored."""
-    gw, transport, _ = _gateway(tmp_path, commands={"check_model": ["/bin/false"]})
+    gw, transport, _ = _gateway(tmp_path, commands={"check_model": ["/usr/bin/false"]})
     _tell(gw, "/model no/such-model")
     assert "not a model" in transport.last()
     assert MODELS.ModelBook(tmp_path / "models.json").get(CHAT) == ""
@@ -353,7 +353,7 @@ def test_compact_reports_could_not_run_separately_from_a_refusal(tmp_path):
 
 
 def test_compact_reports_a_refusal_from_the_agent(tmp_path):
-    gw, transport, _ = _gateway(tmp_path, commands={"compact": ["/bin/false"]})
+    gw, transport, _ = _gateway(tmp_path, commands={"compact": ["/usr/bin/false"]})
     _tell(gw, "/compact")
     assert "refused" in transport.last()
 

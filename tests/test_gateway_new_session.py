@@ -63,7 +63,7 @@ def _real_backend():
     The env block mirrors the live config exactly: it is what pins session identity.
     """
     spec = AGENTS.AgentSpec.from_dict({
-        "name": "pi", "kind": "command", "command": ["/bin/true"],
+        "name": "pi", "kind": "command", "command": ["/usr/bin/true"],
         "session": "per_chat", "session_args": ["--session-id", "{session_id}"],
         "env": {"FLEET_SESSION_HARNESS": "pi", "FLEET_SESSION_KEY": "{session_id}"},
     })

@@ -205,7 +205,7 @@ def test_every_shipped_backend_DECLARES_its_reply_mode():
         "HermesBackend must DECLARE async_replies (its reply arrives on the bus)"
     assert HermesBackend.async_replies is True
 
-    built = A.CommandBackend(A.AgentSpec(name="pi", kind="command", command=["/bin/true"]))
+    built = A.CommandBackend(A.AgentSpec(name="pi", kind="command", command=["/usr/bin/true"]))
     assert built.async_replies is False
     print("  both shipped backends declare their reply mode; neither relies on a default ✓")
 
@@ -245,13 +245,13 @@ def test_a_partial_answer_from_a_failed_turn_is_marked_not_silently_truncated():
 
 def test_a_successful_turn_that_prints_nothing_is_still_silent():
     """The failure path must not turn a legitimate silent turn into a message."""
-    ok = A.AgentSpec(name="pi", kind="command", command=["/bin/true"], timeout_s=5)
+    ok = A.AgentSpec(name="pi", kind="command", command=["/usr/bin/true"], timeout_s=5)
     assert A.CommandBackend(ok).dispatch(_inbound()) is None
     print("  a clean turn with no output is still silent ✓")
 
 
 def test_command_backend_survives_a_failing_agent_without_crashing_the_loop():
-    spec = A.AgentSpec(name="pi", kind="command", command=["/bin/false"], timeout_s=5)
+    spec = A.AgentSpec(name="pi", kind="command", command=["/usr/bin/false"], timeout_s=5)
     assert A.CommandBackend(spec).dispatch(_inbound()) is not None   # loud, no crash
     missing = A.AgentSpec(name="pi", kind="command", command=["/nonexistent/agent"])
     assert A.CommandBackend(missing).dispatch(_inbound()) is not None
