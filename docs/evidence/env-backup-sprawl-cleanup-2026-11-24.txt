@@ -118,6 +118,17 @@ both the live .env and the kept recovery copy. The retained backup
 (`.env.bak-steady-20261123T0728Z`) itself declares NO CORTEX_ key, so it never held the
 retired spellings and its values are complete today.
 
+### Rename note (2026-11-24)
+
+The backup named above as `.env.bak-steady-20261123T0728Z` was renamed to
+`.env.bak-steadfaste-20261123T0728Z`. **`steadfaste` is the fleet name**, and this file was
+the only FILENAME on the host using the other spelling — it was a slip in the name only,
+not a truncation or an abbreviation, so the rename is cosmetic and the file's contents are
+untouched (same inode, same size, same mode 600). Every occurrence of the old name above
+records the PRE-rename name, which is correct for the state this record describes; the
+ordinary English word "steady" elsewhere in the repo ("steady state", "holds steady") is
+unrelated and deliberately unchanged.
+
 ### The lesson this cost
 
 The original proof was scoped to four file extensions and cited as if it covered a

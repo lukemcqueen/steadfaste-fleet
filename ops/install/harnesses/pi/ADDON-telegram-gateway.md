@@ -45,7 +45,7 @@ per bot, so there is no 409 conflict.
 
 ```bash
 # Bot token — NEVER this repo; keep it outside
-PI_TELEGRAM_BOT_TOKEN=<read from ~/.titus_pi_bot_telegram.txt>
+TELEGRAM_BOT_TOKEN_PI=<read from ~/.titus_pi_bot_telegram.txt>
 
 # Same allowlist / home channel names Hermes uses
 # (fill in your numeric chat id — message @userinfobot in Telegram to get it)
@@ -66,7 +66,7 @@ FLEET_BUS_PG_USER=mycortex
 FLEET_BUS_PG_PASS=<same as MYFLEET_PG_PASSWORD>
 ```
 
-The daemon reads `PI_TELEGRAM_BOT_TOKEN` because `gateway.yaml` names it in
+The daemon reads `TELEGRAM_BOT_TOKEN_PI` because `gateway.yaml` names it in
 `bots[].token_ref` — this keeps the Hermes token (`TELEGRAM_BOT_TOKEN`) untouched.
 
 ---
@@ -110,7 +110,7 @@ The daemon reads `PI_TELEGRAM_BOT_TOKEN` because `gateway.yaml` names it in
   ],
   "bots": [
     {
-      "token_ref": "PI_TELEGRAM_BOT_TOKEN",
+      "token_ref": "TELEGRAM_BOT_TOKEN_PI",
       "channel": "telegram",
       "initial_offset": 0,
       "routing": {
@@ -221,7 +221,7 @@ plist's `KeepAlive` is wrong. Fix it, `launchctl unload`, `launchctl load`, retr
 launchctl list com.steadfaste.gateway | grep PID
 
 # Bot reachable?
-curl -s "https://api.telegram.org/bot<PI_TELEGRAM_BOT_TOKEN>/getMe"
+curl -s "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN_PI>/getMe"
 
 # Config valid? (dry-run: builds gateway, does not poll)
 cd ~/.steadfaste-fleet/scripts && \

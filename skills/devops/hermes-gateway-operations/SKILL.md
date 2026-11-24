@@ -351,9 +351,12 @@ Enablement is a concrete sequence; books/detail: `pi-coding-agent`, `steadfaste-
 Pitfalls that cost a cycle here:
 
 - **One poller per bot token — Telegram 409.** The unit's `ExecStartPre` guard
-  (`guard_distinct_token.py`) REFUSES a config whose `token_ref` IS (or resolves to) the live
-  `TELEGRAM_BOT_TOKEN`. Give the second gateway its OWN bot and its OWN token var
-  (e.g. `MOSESPI_BOT_TOKEN`); two pollers on one token drop the live channel. This is the guard
+  (`guard_distinct_token.py`) REFUSES a config where ANY `bots[].token_ref` IS (or resolves
+  to) the primary `TELEGRAM_BOT_TOKEN`. Give a second gateway its OWN bot via the naming
+  family (`docs/env-vars.md`): `TELEGRAM_BOT_TOKEN_<NAME>`, e.g. `TELEGRAM_BOT_TOKEN_PI`
+  or `TELEGRAM_BOT_TOKEN_MOSESPI` — the old ad-hoc `<NAME>_BOT_TOKEN` spellings are
+  retired. Two pollers on one token drop the live channel; a unit on a distinct bot
+  coexists with `hermes-gateway.service` and needs no incumbent stopped. This is the guard
   working, not a bug to bypass.
 - **The unit's `ExecStart` interpreter must actually have the deps.** The template defaults to
   `/usr/bin/python3`; the fleet deps live in the fleet venv `~/.steadfaste-fleet/venv/bin/python3`.

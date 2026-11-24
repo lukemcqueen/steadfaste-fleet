@@ -34,8 +34,15 @@
 #            grep -E '^TELEGRAM_(BOT_TOKEN|ALLOWED_USERS|HOME_CHANNEL)=' \
 #              "$HOME/.hermes/.env" >> "$HOME/steadfaste-fleet/.env"
 #
-# ⚠️ Only ONE poller per bot token. Before enabling this, stop the incumbent
-#    (systemctl --user stop hermes-gateway.service) or the two will 409.
+# ⚠️ ONE poller per bot token. Read the subject, not the headline: this applies to a
+#    config that names the PRIMARY bot (`gateway.yaml` -> TELEGRAM_BOT_TOKEN). Starting
+#    a unit with that config needs the incumbent stopped first
+#    (systemctl --user stop hermes-gateway.service) or the two 409.
+#    A config naming an ADDITIONAL bot (TELEGRAM_BOT_TOKEN_<NAME>, e.g.
+#    gateway-esther0001.yaml) needs NO such thing — a sibling unit on a distinct bot
+#    coexists with Hermes fine, and must be able to. That is what the ExecStartPre guard
+#    below enforces. Carried as prose for years and it misled a reader into asserting a
+#    cutover requirement that does not exist.
 
 [Unit]
 Description=Steadfaste Fleet Gateway (fleet-gateway)

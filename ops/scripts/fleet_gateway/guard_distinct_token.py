@@ -4,8 +4,12 @@
 Both gateway units read the SAME canonical env (`~/steadfaste-fleet/.env`). What
 separates them is only the ``token_ref`` in their config:
 
-    gateway.yaml                token_ref: TELEGRAM_BOT_TOKEN    <- the LIVE bot
-    gateway-esther0001.yaml     token_ref: ESTHER0001_BOT_TOKEN  <- the second bot
+    gateway.yaml                token_ref: TELEGRAM_BOT_TOKEN                  <- the PRIMARY bot
+    gateway-esther0001.yaml     token_ref: TELEGRAM_BOT_TOKEN_ESTHER0001        <- a SECOND bot
+
+The family is documented in docs/env-vars.md: TELEGRAM_BOT_TOKEN is the primary, and
+each additional bot is TELEGRAM_BOT_TOKEN_<NAME>. Never name the primary here — a
+gateway unit exists to run an ADDITIONAL bot.
 
 ``TELEGRAM_BOT_TOKEN`` is byte-identical to ``~/.hermes/.env`` — the bot
 ``hermes-gateway.service`` is already polling. A second poller on one bot token

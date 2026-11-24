@@ -100,7 +100,7 @@ def test_block_is_installable_in_a_config_the_daemon_already_accepts(helper, tmp
 def test_write_preserves_every_other_key(helper, tmp_path):
     original = {
         "backends": [{"name": "pi", "kind": "command", "model": "openrouter/openai/gpt-5"}],
-        "bots": [{"token_ref": "TITUS_BOT_TOKEN"}],
+        "bots": [{"token_ref": "TELEGRAM_BOT_TOKEN_TITUS"}],
         "routing": {"default": "pi", "overrides": {"123": "pi"}},
     }
     cfg = tmp_path / "gateway.yaml"

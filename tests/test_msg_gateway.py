@@ -134,7 +134,7 @@ def _make_gateway(gw_env, tmp_path, secret="test-secret",
         "secret": secret,
         "bus_url": gw_env["bus_url"],
         "bots": [{
-            "token_ref": "TEST_BOT_TOKEN",
+            "token_ref": "TELEGRAM_BOT_TOKEN_TEST",
             "channel": "telegram",
             "initial_offset": 0,
             "routing": {
@@ -143,13 +143,13 @@ def _make_gateway(gw_env, tmp_path, secret="test-secret",
             },
         }],
     }))
-    os.environ["TEST_BOT_TOKEN"] = "test-bot-token"
+    os.environ["TELEGRAM_BOT_TOKEN_TEST"] = "test-bot-token"
     os.environ["TELEGRAM_API_BASE"] = gw_env["tg_url"]
 
     gw = GW.Gateway(cfg, gw_env["bus_url"], {"Authorization": "Bearer t"},
                     secret)
     gw.load_config()
-    adapter = gw.adapters["TEST_BOT_TOKEN"]
+    adapter = gw.adapters["TELEGRAM_BOT_TOKEN_TEST"]
     adapter._api = lambda method, params: (
         gw_env["tg"].handle("/" + method,
                             json.dumps(params).encode() if method == "sendMessage" else b""))
@@ -177,7 +177,7 @@ def test_inbound_routes_and_signs(gw_env, tmp_path):
     assert body["channel_user_id"] == CHAT
     assert body["kind"] == "user_message"
     assert ENV.verify_signature(body, "test-secret") is True
-    assert gw.offsets["TEST_BOT_TOKEN"] == 2
+    assert gw.offsets["TELEGRAM_BOT_TOKEN_TEST"] == 2
 
 
 def test_inbound_override_routing(gw_env, tmp_path):
@@ -194,7 +194,7 @@ def test_bus_down_does_not_advance_offset(gw_env, tmp_path):
     gw_env["tg"].updates.append(_upd(3, 12, "x"))
     gw.bus_url = "http://" + LOOPBACK + ":1"  # unreachable
     gw.run_once()
-    assert gw.offsets["TEST_BOT_TOKEN"] == 0  # NOT advanced
+    assert gw.offsets["TELEGRAM_BOT_TOKEN_TEST"] == 0  # NOT advanced
 
 
 def test_outbound_delivers_and_archives(gw_env, tmp_path):

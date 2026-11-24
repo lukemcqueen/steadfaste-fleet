@@ -4,7 +4,7 @@
   "backends": ["hermes"],
   "bots": [
     {
-      "token_ref": "TELEGRAM_BOT_TOKEN",
+      "token_ref": "TELEGRAM_BOT_TOKEN_<NAME>",
       "channel": "telegram",
       "initial_offset": 0,
       "routing": {

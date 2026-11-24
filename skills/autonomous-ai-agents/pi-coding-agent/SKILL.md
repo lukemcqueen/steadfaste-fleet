@@ -485,13 +485,15 @@ backend. `pi` itself needs no new adapter — it is DECLARED, not coded:
   GATEWAY's to handle via pi RPC (`fleet_gateway/pi_control.py`), never forwarded
   as prompts.
 - **A second Telegram bot must use a DISTINCT token var — never
-  `TELEGRAM_BOT_TOKEN`.** `fleet-gateway.service` runs
-  `guard_distinct_token.py` as `ExecStartPre`, which REFUSES to start when
-  `gateway.yaml`'s `bots[].token_ref` is the live bot's var/name — two pollers on
-  one bot token get a Telegram **409 Conflict** and the casualty is the LIVE
-  channel. Give the pi bot its own env token (e.g. `MOSESPI_BOT_TOKEN`=
-  `PI_BOT_TOKEN`) and reference that; `guard_distinct_token.py` confirms it is
-  distinct (prints the value's hash, never the value) before the unit starts.
+  `TELEGRAM_BOT_TOKEN`.** The naming family (`docs/env-vars.md`) is
+  `TELEGRAM_BOT_TOKEN` for the PRIMARY bot and `TELEGRAM_BOT_TOKEN_<NAME>` for every
+  ADDITIONAL bot — e.g. `TELEGRAM_BOT_TOKEN_PI`, or `TELEGRAM_BOT_TOKEN_MOSESPI` for a
+  moses-host pi bot. `fleet-gateway.service` runs `guard_distinct_token.py` as
+  `ExecStartPre`, which REFUSES to start when ANY `bots[].token_ref` names the primary
+  or resolves to its value — two pollers on one bot token get a Telegram **409
+  Conflict** and the casualty is the LIVE channel. The guard confirms distinctness by
+  fingerprint (sha256[:12], never the value) before the unit starts. A sibling unit on
+  an ADDITIONAL bot needs no incumbent stopped — it coexists with Hermes by design.
 - **The sender allowlist IS the security perimeter** — a bot answered by pi can
   execute bash, so set `TELEGRAM_ALLOWED_USERS` (and `TELEGRAM_HOME_CHANNEL`) to
   the operator's chat id ONLY; likewise `GATEWAY_SECRET` (HMAC signing key) is
