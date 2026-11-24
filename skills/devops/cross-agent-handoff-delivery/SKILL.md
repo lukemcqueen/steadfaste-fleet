@@ -141,7 +141,17 @@ only as good as its measurements. Never `git apply` it blind, and never relay it
    working-tree stub on their host is invisible to you until it is pushed; search YOUR repo for the
    named files and read them before assuming they exist — the claim can be true on their box and
    false on yours.
-8. **Run the peer's own stated verify step before landing — a prompt-redaction pass can leave
+8. **A named commit hash or handoff-doc in a cross-host summary is a LOOKUP, not a fact — and an
+   unresolvable one means rebuild from the design docs that are present, never chase the phantom.**
+   The prior host may record "committed ce05c9a" when that commit never left its tree (an un-pushed
+   sandbox handoff this session: `git cat-file -t <sha>` → "Not a valid object", `git log --all`
+   empty). Resolve the hash with `git cat-file -t` and `git log --all` before treating the written
+   file as something you can `read_file`; if it does not resolve, do NOT try to synchronise the
+   absent artifact or re-derive the whole plan from scratch — locate the in-tree design docs that
+   already carry the content (this session: the sandbox design docs did, so the handoff-plan doc was
+   rebuilt from them and the stranded sha superseded cleanly), and note the stranded commit in the
+   commit message so the reader knows the old sha is a dead pointer.
+9. **Run the peer's own stated verify step before landing — a prompt-redaction pass can leave
    literal placeholder tokens that are syntax errors in the file.** A redaction artifact
    (`API_KEY = [SECRET]"..."`) is real file bytes, so the draft fails the compiler even though the
    prose around it reads complete and "already tested". Executing the sender's own stated check
@@ -152,14 +162,14 @@ only as good as its measurements. Never `git apply` it blind, and never relay it
    fleet serves from `mcp.server.Server` + `mcp.types`), which kills the module at load on every
    host. Import/run the draft under the venv that will actually serve it, not the one that merely
    compiles it, before calling the peer's "code is written" claim true.
-9. **Secret-redaction is INTENDED on any transferred prompt — treat `[SECRET]` as deliberate, not a
+10. **Secret-redaction is INTENDED on any transferred prompt — treat `[SECRET]` as deliberate, not a
    sender error.** Secrets never travel in-band between agents, so any prompt is redacted as a matter
    of course. When the redaction removed code the receiver needs (the exact key-resolution call),
    reconstruct it from the documented intent (an env var name, a `.env` path, the fleet's convention)
    and resolve the credential from env/`.env` at runtime — never ask the sender to re-send the secret,
    and never report "the redaction corrupted the code" as a defect. The redaction is security working;
    only an OUTPUT it left as literal bytes (a code span that fails to parse) is worth flagging, and
-   then by executing the sender's stated check (rule 8), not by re-requesting the secret.
+   then by executing the sender's stated check (rule 9), not by re-requesting the secret.
 
 ## An inbound FINDING is a partial survey — widen it before you implement
 

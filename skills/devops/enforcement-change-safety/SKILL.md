@@ -1486,7 +1486,10 @@ is the worked example.
 - **All-repos discipline gates, the session split, & the lockout rule** (fire where
   the agent works and skip no-session commits; a gate whose REMEDY the target agent
   cannot reach — an artifact only an orchestrator can write — is a structural
-  lockout, not enforcement; block messages must name the live MCP tool prefix):
+  lockout, not enforcement; block messages must name the live MCP tool prefix;
+  the tool-event WRITE key and the gate's CHECK key must BOTH be the lock's
+  `effective_session_id`, never an env-derived default — a mismatch makes the gate
+  refuse a genuinely-loaded skill):
   `references/all-repos-session-split-gate.md`
 
 ## References
