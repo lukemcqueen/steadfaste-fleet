@@ -11,6 +11,14 @@ metadata:
     tags: [cleanup, maintenance, hermes, stale-files, disk-space]
     related_skills: [hermes-backup, steadfaste-fleet-maintenance, repo-organization, survey-before-action]
 ---
+<!-- Backport provenance (deployed -> repo): the DEPLOYED copy of this file was the
+     newer side — a SUPERSET carrying lessons the repo lacked (verification step 5, the
+     bind-mount trap section, four pitfalls) — so the reconciler's convergence direction
+     is deployed -> repo. The two lines it reported as would-be "drops" are superseded IN
+     PLACE, not lost: "Zero references in ALL FOUR" became "ALL FIVE" once the docker
+     mount check was added as step 5, and the fleet-update.sh pitfall was reflowed to
+     backtick the script name. No repo-only line is dropped. Everything below this note
+     was NOT authored in the backporting cycle; it is the deployed lesson copied verbatim. -->
 
 # Hermes Home Cleanup — Safe Stale-File Removal
 
@@ -36,9 +44,36 @@ grep -rn '<name>' ~/steadfaste-fleet/ ~/.steadfaste-fleet/scripts/ ~/.hermes/plu
 python3 -c "import json;d=json.load(open('$HOME/.hermes/cron/jobs.json'));jobs=d.get('jobs',d) if isinstance(d,dict) else d;print([j.get('name') for j in jobs if isinstance(j,dict)])"
 # 4. Is it a symlink target or consumed by install scripts?
 grep -rn '<name>' ~/.steadfaste-fleet/scripts/install*.sh ~/steadfaste-fleet/ops/scripts/install*.sh 2>/dev/null
+# 5. Is anything still MOUNTED from it? A Docker bind mount survives the rename
+#    that made the path "stale", so a stale PATH can still be a LIVE data directory.
+docker ps --format '{{.Names}}' | while read -r c; do
+  docker inspect "$c" --format '{{range .Mounts}}{{.Source}} -> {{.Destination}}{{"\n"}}{{end}}'
+done | grep -F '<path>'
+# Also: systemd unit files, crontab -l, and /etc/nginx can hold the same reference.
 ```
 
-**Zero references in ALL FOUR = candidate. One reference = LIVE. Never guess.**
+**Zero references in ALL FIVE = candidate. One reference = LIVE. Never guess.**
+
+### The bind-mount trap (a stale path with LIVE data)
+
+A "stale path" in a doctor or tool report means *nothing references that NAME any
+more* — it does not mean the bytes are dead. A container started earlier keeps its
+bind mount working after the source directory is renamed, so deleting a
+pre-migration home directory can destroy a **running service's database**. Measured:
+a pre-migration home holding `victoria-data/` (a root-owned VictoriaMetrics TSDB) was
+bind-mounted **RW** into a live container and written to *days after* the path went
+stale; the tool's own suggested `rm -rf` would have destroyed the metrics history.
+
+Order of operations for this shape:
+
+1. Run verification step 5 above. Any mount line = LIVE, so stop and migrate; never delete.
+2. `migrate-home-dirs.sh` **cannot** handle it when the target already exists — it
+   refuses with `target <t> already exists as a real dir; refusing to nest`. That
+   refusal is correct: it means the whole-dir rename does not apply, so the LIVE
+   subtree needs a targeted move instead.
+3. Migrate the subtree to the canonical new path, repoint the consumer, verify it
+   still serves, and only then remove the stale dir. See `docker-management` →
+   "Migrating a live bind-mount off a stale path" for the reversible recipe.
 
 ## LIVE — Do NOT Touch (agent-owned)
 
@@ -168,7 +203,19 @@ hermes profile list        # the duplicate-credential warning must be gone
   deployed bytes verbatim. Land the deployed content as its own commit first, then add
   your lesson on top. Use `ops/scripts/manage/reconcile-stranded-skills.py` (reports by
   default, `--apply` copies only the pure-superset class) rather than copying by hand.
-- **fleet-update.sh purges governance locks mid-run** — if you run it during a cleanup session, re-acquire `begin_change` before continuing.
+- **`fleet-update.sh` purges governance locks mid-run** — if you run it during a cleanup session, re-acquire `begin_change` before continuing.
+- **A tool's `rm -rf` suggestion is a hypothesis, not a clearance.** It was computed
+  from path NAME references and knows nothing about open mounts, running processes, or
+  service-owned data. Re-run the five-step chain yourself before acting on it.
+- **Do not work around a restricted access boundary.** When the target is owned by
+  another user and non-interactive privileged access is limited to a short allowlist,
+  the delete needs the operator: hand over the exact command, or ask for a rule scoped
+  to the single script. Reaching the write through some other root-capable path is
+  circumventing a deliberate access control, not resourcefulness. And silence is not
+  consent — an unanswered request leaves the destructive step UNDONE.
+- **Never dump raw container-inspect output into a repo-tracked path.** It prints the
+  container's full command line, and container args routinely carry credentials. Redact
+  first, then verify the redaction landed before staging.
 
 ## Related
 

@@ -1,0 +1,51 @@
+# .env backup sprawl cleanup — consolidation to a single recovery point
+date: 2026-11-24T12:54:18+09:00
+repo HEAD: 75339fc9
+
+## WHY THIS IS A MISHAP
+The deploy root held the live .env plus SIX .env.* backups (~5.8 KB each, mode 600,
+gitignored, none tracked). Each is an independent plaintext copy of the FULL secret
+set — including the VictoriaMetrics basic-auth password — and nothing in the fleet
+collected them: they accumulated from ad-hoc .env edits with no retention policy.
+Seven independent exposure paths for one secret set is the defect; six of them
+carried no information the seventh did not.
+
+## PROVEN BEFORE DELETING (nothing of value lost)
+1. No secret reached a TRACKED file:
+   git grep -I -l -F $PW -- .   ->  0 files
+   (PW = the running container's -httpAuth.password, extracted to a var, never echoed)
+2. FOUR of the six backups declare NO key absent from the live .env — pure copies.
+3. TWO (reviewer-max-tokens-20261018, dual-bak-20261113132648) declare 13 CORTEX_*
+   keys that exist nowhere in the live .env (live .env has 0 CORTEX_ lines): a retired
+   naming generation. grep for readers of CORTEX_BUS_URL/CORTEX_BASE/CORTEX_BUS_TOKEN/
+   CORTEX_DOMAIN across *.sh *.py *.yaml *.yml finds NO code — only historical
+   docs/evidence and docs/older/ archaeology. The generation is DEAD; its values are
+   worthless to every runtime.
+4. The KEPT backup covers EVERY live key and differs on only two:
+   FLEET_BUS_URL, FLEET_BUS_FALLBACK_URL (the bus pair, re-anchored in the DB, not the file).
+
+## BEFORE (metadata only — values are never printed)
+600 esther:esther 5945 bytes  .env
+600 esther:esther 5796 bytes  .env.bak-20261113T1005Z
+600 esther:esther 5816 bytes  .env.bak-peerurl-20261123T0725Z
+600 esther:esther 4560 bytes  .env.bak-reviewer-max-tokens-20261018
+600 esther:esther 5830 bytes  .env.bak-steady-20261123T0728Z
+600 esther:esther 5809 bytes  .env.dual-bak-20261113132648
+664 esther:esther 7126 bytes  .env.example
+600 esther:esther 6326 bytes  .env.r2-bak
+
+## DELETED (sha256 recorded; a hash is not reversible)
+fd56a0337297f56f7a430060eba162f446db8eac808a06c8d12a857ddf8d45bb  .env.bak-20261113T1005Z
+5ce9b8a872b3895f82e4c234fcd631e347a968b2499da486e929a72a88d58250  .env.bak-peerurl-20261123T0725Z
+97985a7624110931d5fafb906b61aadd23c8f5e74f18b246c6c012171676145a  .env.bak-reviewer-max-tokens-20261018
+e6ecbda74fa7811821da5996a40ce8921c8aaae6fc206ba010d576d3be8c2e9a  .env.dual-bak-20261113132648
+4a01b7f9da029fb79b9d2a7105a2f53d75f06c823240fd2a1cdee706696bdc96  .env.r2-bak
+
+## AFTER
+600 esther:esther 5945 bytes  .env
+600 esther:esther 5830 bytes  .env.bak-steady-20261123T0728Z
+664 esther:esther 7126 bytes  .env.example
+
+## LIVE .env INTEGRITY (this cleanup did not touch it)
+mode + size: 600 5945
+distinct key count: 48

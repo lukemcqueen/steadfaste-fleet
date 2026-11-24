@@ -12,6 +12,7 @@ from .results import Results
 from .router_layer import check_jev_layer, check_provider_policy
 from .mcp_names import check_mcp_role_names
 from .stale_premigration_home import check_stale_premigration_home
+from .env_backup_sprawl import check_env_backup_sprawl
 from .checks import (
     check_repo,
     check_deployed_gate_smoke,
@@ -143,6 +144,7 @@ def main():
         check_stale_deploys,
         check_repo_local_cortex_dir,
         check_stale_premigration_home,
+        check_env_backup_sprawl,
         check_stale_skills,
         check_deploy_checksums,
         check_script_naming,
