@@ -37,8 +37,12 @@ APPLY=0
 [ "${1:-}" = "--apply" ] && APPLY=1
 
 # The startup markers the verification gate keys on. DEFAULTS ARE MEASURED, not
-# guessed: docs/evidence/victoria-metrics-startup-log-2026-11-24.txt records these
-# exact strings on 22 consecutive startups of this image (2026-08-31 .. 2026-11-22).
+# guessed. Committed evidence: docs/evidence/victoria-metrics-startup-log-2026-11-24.txt
+# — these strings occur on 29 startups of this image spanning 2026-08-31 .. 2026-11-22.
+# Checkable from the repo, and the count is COUNTED, not asserted (an earlier
+# version of this comment said 22; that number was unverified and wrong):
+#   grep -c 'successfully opened storage' docs/evidence/victoria-metrics-startup-log-2026-11-24.txt
+#   grep -c 'started VictoriaMetrics in'  docs/evidence/victoria-metrics-startup-log-2026-11-24.txt
 # They are overridable because a future image could reword them: if a healthy
 # migration ever fails this gate, set these and re-run rather than editing the
 # script. A failed gate ROLLS BACK SAFELY (the data is moved back), so a marker
@@ -164,10 +168,22 @@ while IFS= read -r e; do
 done < <(json_args_to_nul "$ENV_JSON" | tr '\0' '\n')
 RUN+=(-v "$NEW_DIR:$CONTAINER_MNT")
 
+# `docker run` accepts only ONE --entrypoint value, so a MULTI-element entrypoint
+# cannot be reconstructed faithfully. Keeping just the first element would silently
+# change the container's startup semantics while still looking like success — the
+# exact "failure reframed as partial success" the safety model forbids — so a
+# multi-element entrypoint REFUSES instead of being truncated. (Measured on this
+# host: victoria-metrics has a single-element entrypoint, ["/victoria-metrics-prod"],
+# so this branch is inert here; it exists so a future image cannot be mangled.)
 if [ "$ENTRY_JSON" != "null" ]; then
   entry_tmp="$(mktemp)"
   json_args_to_nul "$ENTRY_JSON" > "$entry_tmp"
-  if [ -s "$entry_tmp" ]; then
+  ENTRY_COUNT=0
+  while IFS= read -r -d '' _e; do ENTRY_COUNT=$((ENTRY_COUNT + 1)); done < "$entry_tmp"
+  if [ "$ENTRY_COUNT" -gt 1 ]; then
+    rm -f "$entry_tmp"
+    rollback "container has a ${ENTRY_COUNT}-element Entrypoint, which 'docker run' cannot reconstruct (it accepts one --entrypoint value); refusing rather than silently dropping elements"
+  elif [ "$ENTRY_COUNT" -eq 1 ]; then
     while IFS= read -r -d '' a; do RUN+=(--entrypoint "$a"); break; done < "$entry_tmp"
   fi
   rm -f "$entry_tmp"
