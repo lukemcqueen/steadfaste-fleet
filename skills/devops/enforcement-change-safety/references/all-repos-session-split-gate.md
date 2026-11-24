@@ -37,6 +37,47 @@ commit time via the generic skill-checker loop and the write gate (lock-only is
 not enough); put aircraft rules where the agent always reads them (AGENTS.md) AND
 make them bind (ritual-gate loop).
 
+## The write/check SESSION KEY must be identical — resolve `effective_session_id`, never the env default
+
+A skill-load event recorded without an explicit `session_key` lands under the
+env-derived identity (`resolve_identity` → `FLEET_SESSION_KEY`, else
+`harness:repo:branch`), BUT the gate reads `session_loaded_skill` keyed to the
+ACTIVE GOVERNANCE LOCK's session id — the value `session_identity` reports as
+`effective_session_id`. Those two keys disagree whenever the env var (or the
+git-derived fallback) does not equal the lock's id, and the consequence is a
+refusal loop with the look of a bug: the agent loaded `task-orient` /
+`execute-right` / `verify-and-ship`, `session_loaded_skill` under the env key
+returns `loaded:true`, and the commit is STILL refused — because the gate asked
+under the lock's key, not the env key the agent recorded under. Re-loading the
+skills repeats the refusal; the load was fine, the RECORDING went under the
+wrong key.
+
+Rules (bind for every harness that writes the tool-event store):
+1. **Resolve the id the gate will check ONCE, then reuse it.** Call
+   `mcp__review__session_identity(repo_path="<abs-repo>")` and take its
+   `effective_session_id` — it is the covering lock's id when one exists, else
+   the per-repo id `begin_change` will stamp, so it is correct whether the skill
+   loads before or after the lock. Read the returned value; never guess it in
+   the mirror of the env var.
+2. **Record every always-skill load under THAT explicit key** — pass
+   `session_key="<effective_session_id>"` to `session_tool_event`, never rely on
+   the env default. Use the exact string `session_identity` returned (it is one
+   value used for BOTH the write and the read).
+3. **Verify with `session_loaded_skill` using that same explicit key.** A
+   `loaded:true` under a DIFFERENT key is a false positive — the gate still
+   refuses, and you loop. Confirm the key matches, then commit.
+4. **When the gate still refuses a skill you demonstrably loaded, diagnose the
+   KEY mismatch first** — compare `session_identity().effective_session_id`
+   against the key the events went under — before re-loading or forcing. The
+   fix is RE-RECORDING the events under the correct key (the load itself was
+   correct), not loading again.
+5. **Ship the resolved `effective_session_id` in your final notes** so a
+   handoff to a verifier/reviewer can pass it along instead of re-deriving it.
+
+Hallmark: gate refuses with `❌ Ritual gated: '<skill>' not loaded this session`
+while a load plus a same-looking `session_loaded_skill` both appear to have
+succeeded — that is the two-keys-disagree signature, not an unloadable skill.
+
 ## Block messages must name the LIVE tool prefix
 
 A gate's block message that NAMES a tool must name the prefix the registered MCP
