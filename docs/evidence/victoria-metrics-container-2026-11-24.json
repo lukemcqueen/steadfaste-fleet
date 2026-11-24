@@ -1,0 +1,243 @@
+[
+    {
+        "Id": "df304f6d2cb00534f01bbda0ef5f9f3fd95e734040ba39e5108fd81e44a3a07a",
+        "Created": "2026-08-31T08:35:52.228296845Z",
+        "Path": "/victoria-metrics-prod",
+        "Args": [
+            "-httpAuth.username=esther",
+            "-httpAuth.password=<REDACTED - see container args on host>"
+        ],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 3118,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-11-22T09:57:08.948378353Z",
+            "FinishedAt": "2026-11-19T13:06:08.629679634Z"
+        },
+        "Image": "sha256:54467c7764a3e6579199af1914bb779f01ce32265cd552eb5ae0d4f8a2b80a97",
+        "ResolvConfPath": "/var/lib/docker/containers/df304f6d2cb00534f01bbda0ef5f9f3fd95e734040ba39e5108fd81e44a3a07a/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/df304f6d2cb00534f01bbda0ef5f9f3fd95e734040ba39e5108fd81e44a3a07a/hostname",
+        "HostsPath": "/var/lib/docker/containers/df304f6d2cb00534f01bbda0ef5f9f3fd95e734040ba39e5108fd81e44a3a07a/hosts",
+        "LogPath": "/var/lib/docker/containers/df304f6d2cb00534f01bbda0ef5f9f3fd95e734040ba39e5108fd81e44a3a07a/df304f6d2cb00534f01bbda0ef5f9f3fd95e734040ba39e5108fd81e44a3a07a-json.log",
+        "Name": "/victoria-metrics",
+        "RestartCount": 0,
+        "Driver": "overlayfs",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "docker-default",
+        "ExecIDs": null,
+        "HostConfig": {
+            "Binds": [
+                "/home/esther/.hermes-cortex/victoria-data:/victoria-metrics-data"
+            ],
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {}
+            },
+            "NetworkMode": "bridge",
+            "PortBindings": {
+                "8428/tcp": [
+                    {
+                        "HostIp": "",
+                        "HostPort": "14005"
+                    }
+                ]
+            },
+            "RestartPolicy": {
+                "Name": "unless-stopped",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "ConsoleSize": [
+                0,
+                0
+            ],
+            "CapAdd": null,
+            "CapDrop": null,
+            "CgroupnsMode": "private",
+            "Dns": [],
+            "DnsOptions": [],
+            "DnsSearch": [],
+            "ExtraHosts": null,
+            "GroupAdd": null,
+            "IpcMode": "private",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": false,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": null,
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "runc",
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 0,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": [],
+            "BlkioDeviceReadBps": [],
+            "BlkioDeviceWriteBps": [],
+            "BlkioDeviceReadIOps": [],
+            "BlkioDeviceWriteIOps": [],
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": [],
+            "DeviceCgroupRules": null,
+            "DeviceRequests": null,
+            "MemoryReservation": 0,
+            "MemorySwap": 0,
+            "MemorySwappiness": null,
+            "OomKillDisable": null,
+            "PidsLimit": null,
+            "Ulimits": [],
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0,
+            "MaskedPaths": [
+                "/proc/acpi",
+                "/proc/asound",
+                "/proc/interrupts",
+                "/proc/kcore",
+                "/proc/keys",
+                "/proc/latency_stats",
+                "/proc/sched_debug",
+                "/proc/scsi",
+                "/proc/timer_list",
+                "/proc/timer_stats",
+                "/sys/devices/virtual/powercap",
+                "/sys/firmware",
+                "/sys/devices/system/cpu/cpu0/thermal_throttle",
+                "/sys/devices/system/cpu/cpu1/thermal_throttle",
+                "/sys/devices/system/cpu/cpu2/thermal_throttle",
+                "/sys/devices/system/cpu/cpu3/thermal_throttle",
+                "/sys/devices/system/cpu/cpu4/thermal_throttle",
+                "/sys/devices/system/cpu/cpu5/thermal_throttle",
+                "/sys/devices/system/cpu/cpu6/thermal_throttle",
+                "/sys/devices/system/cpu/cpu7/thermal_throttle"
+            ],
+            "ReadonlyPaths": [
+                "/proc/bus",
+                "/proc/fs",
+                "/proc/irq",
+                "/proc/sys",
+                "/proc/sysrq-trigger"
+            ]
+        },
+        "Storage": {
+            "RootFS": {
+                "Snapshot": {
+                    "Name": "overlayfs"
+                }
+            }
+        },
+        "Mounts": [
+            {
+                "Type": "bind",
+                "Source": "/home/esther/.hermes-cortex/victoria-data",
+                "Destination": "/victoria-metrics-data",
+                "Mode": "",
+                "RW": true,
+                "Propagation": "rprivate"
+            }
+        ],
+        "Config": {
+            "Hostname": "df304f6d2cb0",
+            "Domainname": "",
+            "User": "",
+            "AttachStdin": false,
+            "AttachStdout": false,
+            "AttachStderr": false,
+            "ExposedPorts": {
+                "8428/tcp": {}
+            },
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Cmd": [
+                "-httpAuth.username=esther",
+                "-httpAuth.password=<REDACTED - see container args on host>"
+            ],
+            "Image": "victoriametrics/victoria-metrics:latest",
+            "Volumes": null,
+            "WorkingDir": "/",
+            "Entrypoint": [
+                "/victoria-metrics-prod"
+            ],
+            "Labels": {
+                "org.opencontainers.image.created": "2026-08-14T12:36:45Z",
+                "org.opencontainers.image.documentation": "https://docs.victoriametrics.com/",
+                "org.opencontainers.image.source": "https://github.com/VictoriaMetrics/VictoriaMetrics",
+                "org.opencontainers.image.title": "victoria-metrics",
+                "org.opencontainers.image.vendor": "VictoriaMetrics",
+                "org.opencontainers.image.version": "v1.150.0"
+            }
+        },
+        "NetworkSettings": {
+            "SandboxID": "325523df727416f841a426c28c39af5337b2099f389eb873a14e1bdd4138eb64",
+            "SandboxKey": "/var/run/docker/netns/325523df7274",
+            "Ports": {
+                "8428/tcp": [
+                    {
+                        "HostIp": "0.0.0.0",
+                        "HostPort": "14005"
+                    },
+                    {
+                        "HostIp": "::",
+                        "HostPort": "14005"
+                    }
+                ]
+            },
+            "Networks": {
+                "bridge": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": null,
+                    "DriverOpts": null,
+                    "GwPriority": 0,
+                    "NetworkID": "4e5b4f8db6b948c1f73271b2ece8e7c86454febaad9a6292fb7f53f5a881536a",
+                    "EndpointID": "c8e2692c683b6cc24a85cf28806c36cdddc549cf0776008a0bfc9a858b90eeae",
+                    "Gateway": "172.17.0.1",
+                    "IPAddress": "172.17.0.2",
+                    "MacAddress": "ea:fd:4c:88:b5:3d",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "DNSNames": null
+                }
+            }
+        },
+        "ImageManifestDescriptor": {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:aea44b421244dce14e5bae51be1c45a249f9cc8b6d6e79ef33680776fd514e7f",
+            "size": 865,
+            "platform": {
+                "architecture": "amd64",
+                "os": "linux"
+            }
+        }
+    }
+]

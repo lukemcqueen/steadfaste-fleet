@@ -63,6 +63,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]   # ops/scripts/manage/ -> repo 
 HARNESSES = {
     "hermes": {
         "presence": "~/.hermes/config.yaml",
+        "bin": "hermes",
         "surface": "provider_routing.ignore (config.yaml)",
         "mechanism": "config-cli",
         "get": ["config", "get", "provider_routing", "--json"],
@@ -179,33 +180,131 @@ def _run(argv, timeout=30):
     return proc.stdout, None
 
 
+class ProviderExclusionAdapter:
+    """THE INTEGRATION SEAM — one interface every harness adapter implements.
+
+    This is what "ready for true integration" means concretely: a new harness is a
+    SUBCLASS plus one registry entry, never a new branch in `check()`. The seam has
+    four operations and nothing else, so a real integration (an MCP surface, a
+    plugin, a remote agent) can implement it without knowing how `check()` works.
+
+      present()  -> bool                 is this harness installed on THIS host?
+      read()     -> (value|None, err|None)   the harness's live exclusions
+      write(v)   -> err|None             project the policy through its OWN api
+      describe() -> str                  what/where the knob is (for the doctor)
+
+    Two invariants, both load-bearing:
+      * an error is NEVER agreement — `read()` returns an error and the caller
+        turns it into exit 3 (could-not-verify), never into a pass;
+      * the projection goes through the harness's OWN api, never a config-file
+        edit behind its back (interop doc rule: a harness that owns a lifecycle
+        keeps owning it).
+    """
+
+    kind = "adapter"
+
+    def __init__(self, name: str, spec: dict):
+        self.name = name
+        self.spec = spec
+
+    # -- required by the interface -------------------------------------------
+    def present(self) -> bool:
+        path = self.spec.get("presence")
+        return bool(path) and Path(path).expanduser().exists()
+
+    def read(self):
+        raise NotImplementedError
+
+    def write(self, providers: list):
+        raise NotImplementedError
+
+    def describe(self) -> str:
+        return str(self.spec.get("surface") or self.spec.get("why") or "undeclared")
+
+
+class ConfigCliAdapter(ProviderExclusionAdapter):
+    """A harness whose exclusions live behind its OWN command-line interface.
+
+    `bin` is per-harness DATA, not a literal: the projection must shell out to the
+    harness it is projecting onto. (An earlier version hardcoded "hermes" here, so
+    a second harness with a real knob would have silently written to the WRONG
+    harness — the de-naming failure rule 17 is about.)
+    """
+
+    kind = "config-cli"
+
+    def _bin(self) -> str:
+        return str(self.spec.get("bin") or self.name)
+
+    def read(self):
+        argv = [self._bin()] + list(self.spec["get"])
+        out, err = _run(argv)
+        if out is None:
+            return None, err
+        try:
+            parsed = json.loads(out)
+        except json.JSONDecodeError:
+            return None, f"{' '.join(argv)} did not return JSON (got {out.strip()[:120]!r})"
+        if not isinstance(parsed, dict):
+            return None, f"{' '.join(argv)} returned {type(parsed).__name__}, expected an object"
+        ignore = parsed.get("ignore")
+        return (sorted(ignore) if isinstance(ignore, list) else []), None
+
+    def write(self, providers: list):
+        argv = [self._bin()] + list(self.spec["set"]) + [json.dumps(providers)]
+        out, err = _run(argv)
+        return err if out is None else None
+
+
+class DeclaredGap(ProviderExclusionAdapter):
+    """A harness with NO verified exclusion knob.
+
+    A gap is a FIRST-CLASS adapter, not a missing branch: it still answers
+    `present()` and `describe()`, so the policy reports it as a finding when the
+    harness is installed (it can still reach an excluded upstream) instead of
+    folding it into silence. Declaring a gap is honest; guessing a knob is not
+    (interop rule 7: never infer an API from a doc).
+    """
+
+    kind = "gap"
+
+    def read(self):
+        return None, "no verified provider-exclusion knob"
+
+    def write(self, providers: list):
+        return (f"{self.name}: no verified provider-exclusion knob — the policy is "
+                f"NOT enforced for it; {self.spec.get('why', '')}".strip())
+
+
+# THE ONE DISPATCH TABLE — mechanism -> adapter class. Adding a projection style
+# (e.g. "config-file", "mcp") is a data change here plus one subclass; `check()`,
+# `--write` and the doctor row all pick it up without modification.
+ADAPTERS = {
+    "config-cli": ConfigCliAdapter,
+    None: DeclaredGap,
+}
+
+
+def adapter_for(name: str, spec: dict) -> ProviderExclusionAdapter:
+    """Build the adapter for one harness. Unknown mechanism fails CLOSED."""
+    cls = ADAPTERS.get(spec.get("mechanism"))
+    if cls is None:
+        return DeclaredGap(name, spec)   # fail closed: unenforced is a gap, never a pass
+    return cls(name, spec)
+
+
 def read_live(spec: dict):
     """The harness's live value for this policy, via its own API.
 
     Returns (value-or-None, error-or-None). An error is NEVER agreement: the
     caller turns it into exit 3.
     """
-    argv = ["hermes"] + spec["get"]
-    out, err = _run(argv)
-    if out is None:
-        return None, err
-    try:
-        parsed = json.loads(out)
-    except json.JSONDecodeError:
-        return None, f"{' '.join(argv)} did not return JSON (got {out.strip()[:120]!r})"
-    if not isinstance(parsed, dict):
-        return None, f"{' '.join(argv)} returned {type(parsed).__name__}, expected an object"
-    ignore = parsed.get("ignore")
-    return (sorted(ignore) if isinstance(ignore, list) else []), None
+    return ConfigCliAdapter("hermes", spec).read()
 
 
 def write_live(spec: dict, providers: list):
     """Apply the artifact through the harness's own API (no file editing)."""
-    argv = ["hermes"] + spec["set"] + [json.dumps(providers)]
-    out, err = _run(argv)
-    if out is None:
-        return err
-    return None
+    return ConfigCliAdapter("hermes", spec).write(providers)
 
 
 def check(doc: dict, only_present: bool = True) -> list:
@@ -213,19 +312,20 @@ def check(doc: dict, only_present: bool = True) -> list:
     want = excluded_providers(doc)
     findings = []
     for name, spec in HARNESSES.items():
-        present = bool(spec["presence"]) and Path(spec["presence"]).expanduser().exists()
+        adapter = adapter_for(name, spec)
+        present = adapter.present()
         if only_present and not present:
-            if spec["mechanism"] is None:
+            if adapter.kind == "gap":
                 findings.append({"harness": name, "kind": "gap-absent",
                                  "detail": f"no projection mechanism declared — {spec['why']}"})
             continue
-        if spec["mechanism"] is None:
+        if adapter.kind == "gap":
             findings.append({"harness": name, "kind": "gap-present",
-                             "detail": ("this harness is installed on this host but has no "
+                             "detail": (f"this harness is installed on this host but has no "
                                         f"verified provider-exclusion knob, so the policy is "
                                         f"NOT enforced for it — {spec['why']}")})
             continue
-        got, err = read_live(spec)
+        got, err = adapter.read()
         if err is not None:
             findings.append({"harness": name, "kind": "could-not-verify", "detail": err})
             continue
