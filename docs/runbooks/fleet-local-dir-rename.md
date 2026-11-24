@@ -103,14 +103,37 @@ systemctl --user restart fleet-gateway health-vector fleet-dashboard 2>/dev/null
 > measured from real startups, and only then removes the stale dir. See
 > `docs/runbooks/live-bindmount-stale-dir.md`.
 >
-> **The end state for BOTH old paths is a transition symlink**, not an absence:
-> `~/hermes-cortex -> ~/steadfaste-fleet` and `~/.hermes-cortex -> ~/.steadfaste-fleet`,
-> laid by `migrate-home-dirs.sh` for the repo pair and manually for the pair whose
-> target already existed. `ops/scripts/manage/verify-rename-local.sh` asserts both
-> are symlinks to the new dirs and is the authority on "migrated" — the doctor's
-> `Stale pre-migration home folders` warning fires on any remaining old path
-> INCLUDING a correct transition symlink, so read the two together and do not
-> treat that warning as proof the symlink is unwanted.
+> **The end state for BOTH old paths is ABSENCE** — removed, not symlinked.
+> `migrate-home-dirs.sh` lays a transition symlink as an INTERMEDIATE step, but a
+> transition is a transition: retire it once nothing reads the old name. The
+> doctor's `Stale pre-migration home folders` check counts ANY remaining old path —
+> a symlink included — as not fully migrated, and it is right to. Keep the two checks
+> honest together: `verify-rename-local.sh` asserts the old paths are GONE (`! -e` AND
+> `! -L`, so a dangling symlink fails too) and that the new dirs are real; the doctor
+> passes only when both are true. Reversible: `ln -s` restores an old path if
+> something turns out to need it.
+>
+> **Before removing one**, confirm nothing still reads the old name:
+>
+> ```bash
+> # live code/config refs only — logs, state/, data/ archives and eval reports are history
+> grep -rn 'hermes-cortex' --include='*.py' --include='*.sh' --include='*.yaml' \
+>   --include='*.conf' --include='*.service' ~/.steadfaste-fleet \
+>   | grep -v '/state/' | grep -v '/data/' | grep -v '/cron-output/'
+> grep -rn 'hermes-cortex' ~/.hermes --include='*.yaml' --include='*.json'
+> ls -l /proc/*/cwd 2>/dev/null | grep -c hermes-cortex   # nothing cwd'd there => 0
+> ```
+>
+> Also confirm any running container's bind-mount SOURCE names the real new path
+> rather than resolving through the symlink (`docker inspect <c> --format '{{range
+> .Mounts}}{{.Source}}{{end}}'`). Removing the symlink does not move data, but a
+> container restarted later would follow it to the same place — verify, don't assume.
+>
+> Measured on esther when this was retired: 0 processes cwd'd there, no unit/nginx/cron
+> reference, container bound to the real path, and the three live code readers
+> (`agent-inbox/server.py` `.hermes-cortex/a2a`, `bus/server.py`
+> `hermes-cortex/runtime`, `gateway-esther0001.yaml` + `gateway-pi-rehearsal.yaml`
+> argv) repointed FIRST. The doctor then flipped from WARN to PASS.
 
 ### 4. Remove stale deployed scripts
 

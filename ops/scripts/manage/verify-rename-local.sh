@@ -22,9 +22,17 @@ ck(){ if eval "$2"; then echo "PASS: $1"; else echo "FAIL: $1"; fails=$((fails+1
 # `\$(...)` is escaped so the command substitution runs (not at build time).
 # Paths have no spaces, so word-splitting is not a concern.
 
-# --- 1. transition symlinks resolve to new dirs ---
-ck "old-repo symlink -> new" "[[ -L $OLD_REPO ]] && [[ \$(readlink $OLD_REPO) = $NEW_REPO ]]"
-ck "old-home symlink -> new" "[[ -L $OLD_HOME ]] && [[ \$(readlink $OLD_HOME) = $NEW_HOME ]]"
+# --- 1. pre-migration paths are GONE, and the new dirs are real -----------------
+# The transition symlinks are RETIRED (operator decision 2026-11-24): the end state is
+# ABSENCE, not a symlink. This reverses what this script asserted earlier the same day —
+# and the doctor's `Stale pre-migration home folders` check was RIGHT to count any
+# remaining old path (symlink included) as not-fully-migrated. The two checks directly
+# contradicted each other; the doctor's position won, so this one moves to match reality.
+# Asserted POSITIVELY (neither exists NOR is a dangling symlink): the previous
+# `-L && readlink == target` form would have kept passing on a half-removed state, and a
+# check that cannot fail is not a check. Reversible: `ln -s` restores the old paths.
+ck "old-repo path absent (retired symlink)" "[[ ! -e $OLD_REPO ]] && [[ ! -L $OLD_REPO ]]"
+ck "old-home path absent (retired symlink)" "[[ ! -e $OLD_HOME ]] && [[ ! -L $OLD_HOME ]]"
 ck "new-repo is a real dir" "[[ -d $NEW_REPO ]]"
 ck "new-home is a real dir" "[[ -d $NEW_HOME ]]"
 

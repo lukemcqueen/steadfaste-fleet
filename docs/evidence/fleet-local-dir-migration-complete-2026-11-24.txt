@@ -108,22 +108,56 @@ AND assert the superseded one is gone — a form that CAN fail, unlike the
 "accept any of 3 spellings" loop it replaced.
 
 =============================================================================
-4. STILL OPEN — a doctor/verifier contradiction, recorded not hidden
+4. RESOLVED — the contradiction was real, and the DOCTOR was right
 =============================================================================
 
-`verify-rename-local.sh` REQUIRES `<HOME>/.hermes-cortex` to be a symlink to the
-new dir. The doctor's check `Stale pre-migration home folders`
-(ops/scripts/manage/fleet_doctor/stale_premigration_home.py) WARNs whenever an
-old path `exists() or is_symlink()` — i.e. it warns on exactly the transition
-symlink the verifier demands, and `tests/test_fleet_doctor_stale_old_home.py::
-test_stale_symlink_warns` asserts that behaviour.
+A transition symlink was laid at `<HOME>/.hermes-cortex -> <HOME>/.steadfaste-fleet`
+as an intermediate step (the migration design's documented behaviour). That exposed a
+direct contradiction between two committed checks:
 
-Both cannot be "correct" as written. This is not newly introduced: the repo pair
-`<HOME>/hermes-cortex -> <HOME>/steadfaste-fleet` has been in place and PASSing
-the verifier while the doctor WARNs about it, and that warning is currently
-dispositioned `deferred (esther, since 2026-11-23)`.
+  - `verify-rename-local.sh` REQUIRED the transition symlink, and
+  - `stale_premigration_home.py` WARNed on any remaining old path INCLUDING a symlink
+    (`tests/test_fleet_doctor_stale_old_home.py::test_stale_symlink_warns` asserts it).
 
-Resolving it needs a judgement this evidence cannot supply on its own — whether a
-transition symlink counts as "migrated" (verifier's position, and what
-migrate-home-dirs.sh's design produces) or as a leftover to be swept once nothing
-needs the old name (doctor's position). It is NOT silently reconciled here.
+Both cannot be right as written. The operator ruled: **remove the symlinks if we can.**
+So the doctor's position won, and it is the correct one — a transition is a transition;
+it retires when nothing reads the old name.
+
+RESOLUTION, in order (repoint-then-remove, never remove-then-hope):
+
+  1. Repointed every live reader of an old path FIRST. Measured: three code/config
+     consumers, all host-local (none is in the deploy manifest):
+       gateway-esther0001.yaml        -> scripts/fleet_gateway/pi_control.py
+         (its old target `.hermes-cortex/scripts/cortex_gateway/pi_control.py` did not
+          exist in EITHER tree — a dead reference in the config of an ACTIVE service)
+       agent-inbox/server.py          -> Path.home()/".steadfaste-fleet"/"a2a"   (x2)
+       bus/server.py                  -> Path.home()/"steadfaste-fleet"/"runtime"
+       gateway-pi-rehearsal.yaml      -> the same dead pi_control path (x2)
+       nginx/hermes-esther.conf       -> the old path in a `sudo cp` instruction (x1)
+  2. Proved the removal was safe before doing it:
+       no unit/cron/nginx config uses an old path
+       0 processes had an old path as cwd
+       the container's bind-mount SOURCE names the REAL new path, not the symlink
+       the TSDB resolves inside the new home either way
+  3. REMOVED both symlinks (`rm <HOME>/hermes-cortex`, `rm <HOME>/.hermes-cortex`).
+  4. Flipped `verify-rename-local.sh` to assert ABSENCE, asserted POSITIVELY
+     (`! -e` AND `! -L`, so a dangling symlink fails too) — the old
+     `-L && readlink == target` form would have kept passing on a half-removed state.
+
+POST-REMOVAL STATE, measured:
+
+    systemctl --user is-active fleet-bus fleet-dashboard health-vector   -> active (x3)
+    fleet-gateway.service                                                -> inactive (BY DESIGN:
+        the fleet gateway would put a second poller on the live Telegram token and 409 it)
+    fleet-gateway-esther0001.service                                     -> active
+    victoria-metrics                                                     -> Up, /health OK
+    doctor "Stale pre-migration home folders"                            -> PASS
+        "pre-migration home folders absent — host fully migrated"
+    verify-rename-local                                                  -> ALL CHECKS PASS
+
+Discrimination of the new check, proven rather than asserted: the absence condition
+PASSES when the path is absent and FAILS when it is present, so it is not another
+check-that-cannot-fail.
+
+REVERSIBLE: `ln -s <HOME>/.steadfaste-fleet <HOME>/.hermes-cortex` restores the old path.
+No data was moved or deleted by this step — only the symlinks were removed.
