@@ -104,17 +104,48 @@ docker stop "$CONTAINER" >/dev/null
 docker rename "$CONTAINER" "${CONTAINER}-rollback"
 
 rollback() {
-  log "ROLLING BACK: $1"
+  local reason="$1" data_state ctr_state mv_err mv_tmp
+  log "ROLLING BACK: $reason"
   docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
-  # return the DATA too — the move must be reversible, not just the container
-  if [ -d "$NEW_DIR" ] && [ ! -e "$OLD_DIR" ]; then
+
+  # Return the DATA too — the move must be reversible, not just the container.
+  # The outcome is TRACKED, never assumed: an earlier version logged a silenced mv
+  # and then unconditionally announced "data returned to $OLD_DIR", so a failed
+  # move-back told the operator the data was at a path it had left. A recovery
+  # message that overstates what happened is worse than no message.
+  if [ -e "$OLD_DIR" ] && [ ! -e "$NEW_DIR" ]; then
+    data_state="already at $OLD_DIR (nothing to return)"
+  elif [ -d "$NEW_DIR" ]; then
     mkdir -p "$(dirname "$OLD_DIR")"
-    mv "$NEW_DIR" "$OLD_DIR" 2>/dev/null \
-      || log "WARNING: could not move the data back to $OLD_DIR — it is at $NEW_DIR"
+    mv_tmp="$(mktemp)"
+    if mv "$NEW_DIR" "$OLD_DIR" 2>"$mv_tmp"; then
+      data_state="returned to $OLD_DIR"
+    else
+      mv_err="$(cat "$mv_tmp" 2>/dev/null || true)"
+      rm -f "$mv_tmp"
+      log "WARNING: move-back FAILED: ${mv_err:-no reason reported}"
+      log "WARNING: the data is AT $NEW_DIR, not at $OLD_DIR"
+      data_state="MOVE-BACK FAILED — data is at $NEW_DIR"
+    fi
+    rm -f "$mv_tmp"
+  else
+    data_state="UNDETERMINED — neither $OLD_DIR nor $NEW_DIR exists"
   fi
-  docker rename "${CONTAINER}-rollback" "$CONTAINER" >/dev/null 2>&1 || true
-  docker start "$CONTAINER" >/dev/null 2>&1 || true
-  die "$1 — old container restored and data returned to $OLD_DIR"
+
+  if docker rename "${CONTAINER}-rollback" "$CONTAINER" >/dev/null 2>&1; then
+    if docker start "$CONTAINER" >/dev/null 2>&1; then
+      ctr_state="restored and started"
+    else
+      ctr_state="restored but NOT started — start it manually"
+    fi
+  else
+    ctr_state="NOT restored — '${CONTAINER}-rollback' still holds the old container"
+  fi
+
+  die "$reason
+  rollback outcome (verified per step, not assumed):
+    data      : $data_state
+    container : $ctr_state"
 }
 
 log "moving data"
