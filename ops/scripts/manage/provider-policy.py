@@ -77,11 +77,16 @@ HARNESSES = {
         "presence": "~/.claude.json",
         "surface": None,
         "mechanism": None,
-        "why": ("No provider-exclusion knob verified. Claude Code's provider/route "
-                "surface has NOT been probed on this host, and interop rule 7 "
-                "forbids inferring one from a version in a doc. Declared, not "
-                "guessed: on a host where Claude Code is present, this is a real "
-                "coverage gap for this policy."),
+        "probed": ("2026-11-24: ~/.claude.json carries NO provider/routing surface — its top-level "
+                   "keys are onboarding/telemetry (hasCompletedOnboarding, numStartups, "
+                   "firstStartVersion, tipsHistory, …) plus `mcpServers` and `projects`. A "
+                   "provider-exclusion knob does not exist in the artifact this policy would "
+                   "have to write."),
+        "why": ("No provider-exclusion knob, VERIFIED not assumed (probed 2026-11-24): "
+                "~/.claude.json has no provider/routing keys at all — only onboarding/telemetry, "
+                "`mcpServers` and `projects`. Declared, not guessed: on a host where Claude Code "
+                "is present this is a real coverage gap for this policy. Reopen this entry only "
+                "with a fresh probe of the harness's OWN api (interop rule 7), never from a doc."),
     },
     "codex": {
         "presence": "~/.codex/config.toml",
@@ -95,9 +100,20 @@ HARNESSES = {
         "presence": "~/.pi/agent",
         "surface": None,
         "mechanism": None,
-        "why": ("No provider-exclusion knob verified. Pi's model calls go through "
-                "its own provider config, which has not been probed here. "
-                "Declared gap."),
+        "probed": ("2026-11-24: Pi DOES have a provider surface but NOT an exclusion one. "
+                   "~/.pi/agent/settings.json carries `defaultProvider` (openrouter) and "
+                   "`defaultModel`; ~/.pi/agent/models-store.json is provider-keyed "
+                   "(openrouter, typesafe). Its only config writer is an INTERACTIVE TUI — "
+                   "`pi config` opens 'resource configuration' and has no non-interactive "
+                   "write form — and `--provider` / `--models` are per-invocation flags. There "
+                   "is no denylist/ignore list anywhere, so nothing maps onto "
+                   "provider_routing.ignore."),
+        "why": ("Provider surface present, exclusion knob absent — VERIFIED not assumed (probed "
+                "2026-11-24): settings.json has defaultProvider/defaultModel and "
+                "models-store.json is provider-keyed, but the only writer is the interactive "
+                "`pi config` TUI and there is no ignore/denylist. Removing a provider from "
+                "models-store.json is NOT equivalent to excluding it (openrouter is Pi's "
+                "default). Declared gap."),
     },
     "steadfaste-tui": {
         "presence": None,
