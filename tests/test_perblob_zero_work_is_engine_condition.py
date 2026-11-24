@@ -182,6 +182,29 @@ def test_one_path_is_never_printed_in_both_lists():
         f"the never-judged set needs a heading of its own:\n{text}")
 
 
+def test_timed_out_calls_are_not_reported_as_nothing_eligible():
+    """F. calls == 0 because every call TIMED OUT is a latency condition, not a
+    content condition. Measured 2026-11-24 on cycle 15130: the close said "no blob
+    was SENT ... every blob already carries a not-clean verdict" while the sole
+    remaining blob had NO verdict in the store at all — its call had been cut at
+    the reviewer deadline. The remedy is to retry, not to edit the file.
+    """
+    mod = _mod()
+    pb = {"verdicts": {}, "remaining": [SHA_LEFT], "calls": 0,
+          "already_judged": [], "failed": [SHA_LEFT]}
+    res, refusals, _, _ = _close(mod, budget_s=240.0, pb=pb)
+    text = _text(res)
+
+    assert refusals == ["REVIEW_PENDING"], f"{refusals}"
+    low = text.lower()
+    assert "timed out" in low or "timeout" in low, (
+        f"the refusal must name the reviewer deadline as the cause:\n{text}")
+    assert "retry" in low, f"the remedy for a timeout is to retry the close:\n{text}"
+    assert "already carries" not in low, (
+        "a timed-out blob carries NO verdict; claiming it does sends the operator "
+        f"to edit a file that needs no edit:\n{text}")
+
+
 def test_clean_count_asks_with_the_current_rules_revision():
     """E. `CLEAN in the range` must be able to report a real count, not a structural 0."""
     mod = _mod()

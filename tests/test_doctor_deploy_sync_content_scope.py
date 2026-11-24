@@ -62,6 +62,11 @@ def _mk_repo(tmp: Path) -> Path:
     _git(repo, "init", "-q", "-b", "main")
     _git(repo, "config", "user.email", "t@t.t")
     _git(repo, "config", "user.name", "t")
+    # Hermetic: this host sets core.hooksPath globally to the fleet hooks, whose
+    # bare-commit guard refuses the fixture commits. A throwaway repo must not run
+    # fleet hooks — otherwise every fixture commit silently fails and the checks
+    # under test never see a moved HEAD.
+    _git(repo, "config", "core.hooksPath", "/dev/null")
     (repo / "ops" / "scripts").mkdir(parents=True)
     # The register map the check reads: probe.sh -> the deploy home's copy.
     (repo / "ops" / "scripts" / "fleet-update.sh").write_text(
@@ -182,6 +187,44 @@ def test_unresolvable_deployed_revision_is_could_not_verify():
               "could not verify" in detail, detail)
     else:
         check("unresolvable revision -> reported", False, "no Deploy sync entry")
+
+
+def test_module_imported_but_not_deployed_fails():
+    """THE false green measured 2026-11-24. A module added to a deployed package
+    but never registered is never copied, so the deployed program crashes on
+    import — while HEAD equals the deployed revision, so a revision comparison
+    cannot see it.
+
+    Real incident: fleet_doctor/env_backup_sprawl.py was added and committed, the
+    deploy shipped without it, and the deployed doctor died with
+    ModuleNotFoundError while "Deploy sync" said PASS.
+    """
+    tmp = Path(tempfile.mkdtemp(prefix="deploysync-unregistered-"))
+    repo = _mk_repo(tmp)
+    pkg = repo / "ops" / "scripts" / "pkg"
+    pkg.mkdir()
+    (pkg / "runner.py").write_text("from . import helper\n\ndef run():\n    return helper.VALUE\n")
+    (pkg / "helper.py").write_text("VALUE = 1\n")
+    (repo / "ops" / "scripts" / "fleet-update.sh").write_text(
+        'register "ops/scripts/probe.sh"  "${FLEET_DEPLOY_HOME}/scripts/probe.sh"\n'
+        'register "ops/scripts/pkg/runner.py"  "${FLEET_DEPLOY_HOME}/scripts/pkg/runner.py"\n')
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "add pkg/runner.py (helper.py NOT registered)")
+    deployed = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    home = tmp / "deploy"
+    _setup(tmp, deployed, home)
+    _deploy_copy(home, (repo / "ops" / "scripts" / "probe.sh").read_text())
+    (home / "scripts" / "pkg").mkdir(parents=True)
+    (home / "scripts" / "pkg" / "runner.py").write_text((pkg / "runner.py").read_text())
+
+    res = Res()
+    checks.check_repo(res)
+    entries = res.deploy_sync()
+    check("missing imported module -> reported once", len(entries) == 1, str(entries))
+    if entries:
+        _n, status, detail = entries[0]
+        check("missing imported module -> FAIL, not PASS", status == "FAIL", f"{status}: {detail}")
+        check("missing imported module -> named in the detail", "helper" in detail, detail)
 
 
 def test_matching_revision_still_passes():

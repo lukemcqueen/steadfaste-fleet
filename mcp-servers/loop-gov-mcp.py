@@ -2648,10 +2648,21 @@ def _complete_push_range_blobs(lock: dict, cycle: dict, cx: Optional[dict] = Non
         # at — the same sentence for both is what made this a one-way gate.
         no_work_line = ""
         if not pb.get("calls"):
-            no_work_line = (
-                "  no blob was SENT this pass: every blob still outstanding already carries a "
-                "not-clean verdict for its exact content (nothing was left to attempt)\n"
-            )
+            if pb.get("failed"):
+                # A timeout is NOT "nothing left to try": the blob was attempted and
+                # the reviewer did not answer in time. Retrying the close is the fix;
+                # editing the file is not. Measured 2026-11-24: the sole outstanding
+                # blob carried NO verdict at all, yet the close blamed content.
+                no_work_line = (
+                    "  no blob was JUDGED this pass: every outstanding blob's review timed out "
+                    "before the deadline — this is a reviewer-latency condition, NOT a content "
+                    "problem. Retry end_change; do not edit the file.\n"
+                )
+            else:
+                no_work_line = (
+                    "  no blob was SENT this pass: every blob still outstanding already carries a "
+                    "not-clean verdict for its exact content (nothing was left to attempt)\n"
+                )
         # NAME THE PATHS, not just a count: the agent's next action is to fix a file, and one
         # review window judges ONE blob, so a count forces a database query per round trip
         # (operator directive, 2026-10-18). Also report the CLEAN count honestly — the previous

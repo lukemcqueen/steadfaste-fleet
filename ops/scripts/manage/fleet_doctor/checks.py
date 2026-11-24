@@ -4,6 +4,7 @@ Checks — all health check functions for fleet-doctor.
 Each check_* function accepts a Results object and appends results.
 """
 
+import ast
 import hashlib
 import json
 import logging
@@ -119,6 +120,55 @@ def _read_config_from_bus_conf(key: str) -> str:
   return ""
 
 
+_CODE_SUFFIXES = (".py", ".sh")
+# The deployer script IS the register map — it is never registered in itself.
+_NOT_DEPLOYED = {"ops/scripts/fleet-update.sh"}
+
+
+def _missing_imports_in_deployed_packages(dmap: dict) -> list:
+  """Deployed modules that import a sibling module the deploy tree does not have.
+
+  The deployer copies ONLY what register() names. A module added to a deployed
+  package but never registered is therefore never copied, and the deployed program
+  crashes on import — while HEAD equals the deployed revision, so a revision
+  comparison cannot see it. Measured 2026-11-24: fleet_doctor/env_backup_sprawl.py
+  shipped in the repo but not in the deploy tree, and "Deploy sync" reported PASS
+  while the deployed doctor died on ModuleNotFoundError.
+
+  Detection is by IMPORT, not by directory listing: a shared directory like
+  ops/scripts/ deploys only some of its files by design, so "unregistered file in a
+  deployed dir" would flag dozens of legitimate helpers. An import that cannot be
+  resolved in the deploy tree is the defect that actually crashes.
+  """
+  missing: list = []
+  seen: set = set()
+  for src, dest in dmap.items():
+    if not str(src).endswith(".py"):
+      continue
+    dest_dir = Path(dest).parent
+    if dest_dir in seen or not dest_dir.is_dir():
+      continue
+    seen.add(dest_dir)
+    for py in sorted(dest_dir.glob("*.py")):
+      try:
+        tree = ast.parse(py.read_text(errors="replace"))
+      except (OSError, SyntaxError):
+        continue
+      for node in ast.walk(tree):
+        names = []
+        if isinstance(node, ast.ImportFrom) and node.level >= 1:
+          if node.module:
+            names = [node.module.split(".")[0]]
+          else:
+            names = [a.name for a in node.names]
+        for name in names:
+          if not name or name == "*":
+            continue
+          if not (dest_dir / f"{name}.py").exists() and not (dest_dir / name).is_dir():
+            missing.append(f"{py.name} imports {name} (not deployed)")
+  return sorted(set(missing))
+
+
 def _deploy_map() -> dict:
   """repo-relative source path -> deployed absolute path, parsed from fleet-update.sh.
 
@@ -215,6 +265,12 @@ def check_repo(res: "Results") -> None:
   if update_commit_file.exists():
     deployed_commit = update_commit_file.read_text().strip()
     head_commit = run_bg(["git", "-C", str(FLEET_REPO), "rev-parse", "HEAD"])
+    dmap = _deploy_map()
+    # A revision comparison cannot see a module the register map never names: the
+    # deployer never copies it, so HEAD can equal the deployed revision while the
+    # deployed package is missing an importable file. Check the deployed modules'
+    # own imports instead.
+    unregistered = _missing_imports_in_deployed_packages(dmap)
     if deployed_commit and head_commit and deployed_commit != head_commit:
       resolvable = run_bg(["git", "-C", str(FLEET_REPO), "rev-parse", "--verify", "--quiet",
                            deployed_commit + "^{commit}"])
@@ -226,8 +282,9 @@ def check_repo(res: "Results") -> None:
       else:
         changed = run_bg(["git", "-C", str(FLEET_REPO), "diff", "--name-only",
                           f"{deployed_commit}..HEAD"]) or ""
-        dmap = _deploy_map()
-        not_deployed = []
+        # Seed with the unregistered sweep: a file the map never names cannot be
+        # caught by the changed-file loop below (it skips unmapped paths).
+        not_deployed = list(unregistered)
         checked = 0
         for rel in [ln.strip() for ln in changed.splitlines() if ln.strip()]:
           dest = dmap.get(rel)
@@ -257,6 +314,14 @@ def check_repo(res: "Results") -> None:
           res.add("Deploy sync", "PASS",
               f"content-current — every deploy-map file changed since the last deploy "
               f"({deployed_commit[:12]}) matches its deployed copy ({checked} checked)")
+    elif unregistered:
+      shown = ", ".join(unregistered[:5])
+      if len(unregistered) > 5:
+        shown += f" (+{len(unregistered) - 5} more)"
+      res.add("Deploy sync", "FAIL",
+          f"deployed revision matches HEAD, but {len(unregistered)} repo code file(s) in a "
+          f"deployed directory are NOT in the deploy map and are missing from the deploy tree: {shown}",
+          "REQUIRED: register the file(s) in ops/scripts/fleet-update.sh, then Run: fleet-update.sh")
     else:
       res.add("Deploy sync", "PASS", "deployed commit matches HEAD")
   else:
