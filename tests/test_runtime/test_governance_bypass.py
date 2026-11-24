@@ -1422,3 +1422,121 @@ class TestGateCrossReferenceMessages:
         result = hook("write_file", {"path": "/tmp/x"}, session_id="sess_gate4")
         assert result is not None and result["action"] == "block"
         assert "compound" not in result["message"].lower()
+
+
+class TestSessionTypeModernCronId:
+    """The unified runtime mints cron sessions under local-* ids while
+    recording source='cron' in state.db (gateway/session_cron.py) — so
+    _session_type() must classify them as cron even though the id carries no
+    legacy prefix. Regression (dream-nightly stall 2026-11-24): a local-*
+    cron id classified "interactive", the skills bootstrap never ran, and
+    every write deadlocked in a cron harness with no skill_view.
+    """
+
+    def test_local_cron_id_classifies_cron_via_db(self, monkeypatch):
+        """A local-* session whose state.db source is 'cron' is cron."""
+        monkeypatch.setattr(enforcer, "_session_source_from_db",
+                            lambda sid: "cron" if sid.startswith("local-") else "")
+        assert enforcer._session_type("local-6170bdc5cron") == "cron"
+
+    def test_local_telegram_id_stays_interactive(self, monkeypatch):
+        """A local-* session whose source is NOT cron stays interactive —
+        the db lookup must not widen the cron class to every local id."""
+        monkeypatch.setattr(enforcer, "_session_source_from_db",
+                            lambda sid: "telegram")
+        assert enforcer._session_type("local-6170bdc5telegram") == "interactive"
+
+    def test_legacy_prefixes_unchanged(self, monkeypatch):
+        """Legacy prefix classification is preserved (no db needed)."""
+        monkeypatch.setattr(enforcer, "_session_source_from_db", lambda sid: "")
+        assert enforcer._session_type("cron_batch_job") == "cron"
+        assert enforcer._session_type("bg_subagent_alpha") == "bg"
+        assert enforcer._session_type("20260731_interactive_zzz") == "interactive"
+
+    def test_db_unavailable_returns_empty(self, monkeypatch, tmp_path):
+        """Missing/unreadable state.db fails toward "" (no false cron)."""
+        import pathlib
+
+        class _FakeHomePath(pathlib.Path):
+            _home = tmp_path.parent
+
+            @classmethod
+            def home(cls):
+                return cls._home
+
+        monkeypatch.setattr(enforcer, "Path", _FakeHomePath)
+        assert enforcer._session_source_from_db("local-any") == ""
+
+    def test_bootstrap_fires_for_local_cron_id(self, temp_state_dir, monkeypatch):
+        """End-to-end: _on_session_start bootstraps a local-* cron session
+        (the exact stall: marker must be created so gate-1 passes)."""
+        calls = []
+        monkeypatch.setattr(enforcer, "_session_source_from_db",
+                            lambda sid: "cron" if sid.startswith("local-") else "")
+        monkeypatch.setattr(enforcer, "_bootstrap_cron_skills",
+                            lambda sid: (calls.append(sid) or True))
+        enforcer._on_session_start("local-6170bdc5cron")
+        assert calls == ["local-6170bdc5cron"], \
+            "local-* cron session was NOT bootstrapped — dream write-back deadlocks"
+
+
+class TestSessionSourceFromDbReader:
+    """The real db reader: reads state.db sessions.source read-only, in a
+    hermetic temp db (never the live ~/.hermes/state.db)."""
+
+    def test_reads_cron_source(self, monkeypatch, tmp_path):
+        import sqlite3
+        import pathlib
+        db = tmp_path / ".hermes" / "state.db"
+        db.parent.mkdir(parents=True)
+        conn = sqlite3.connect(db)
+        conn.execute("CREATE TABLE sessions (id TEXT PRIMARY KEY, source TEXT)")
+        conn.execute("INSERT INTO sessions (id, source) VALUES (?, ?)",
+                     ("local-cron-abc", "cron"))
+        conn.commit()
+        conn.close()
+
+        class _FakeHomePath(pathlib.Path):
+            _home = tmp_path
+
+            @classmethod
+            def home(cls):
+                return cls._home
+
+        monkeypatch.setattr(enforcer, "Path", _FakeHomePath)
+        assert enforcer._session_source_from_db("local-cron-abc") == "cron"
+        assert enforcer._session_source_from_db("missing-id") == ""
+
+    def test_missing_row_returns_empty(self, monkeypatch, tmp_path):
+        import sqlite3
+        import pathlib
+        db = tmp_path / ".hermes" / "state.db"
+        db.parent.mkdir(parents=True)
+        conn = sqlite3.connect(db)
+        conn.execute("CREATE TABLE sessions (id TEXT PRIMARY KEY, source TEXT)")
+        conn.commit()
+        conn.close()
+
+        class _FakeHomePath(pathlib.Path):
+            _home = tmp_path
+
+            @classmethod
+            def home(cls):
+                return cls._home
+
+        monkeypatch.setattr(enforcer, "Path", _FakeHomePath)
+        assert enforcer._session_source_from_db("nobody") == ""
+
+    def test_missing_db_returns_empty(self, monkeypatch, tmp_path):
+        """No state.db at all → "" (fail toward the caller's default)."""
+        import pathlib
+
+        class _FakeHomePath(pathlib.Path):
+            _home = tmp_path
+
+            @classmethod
+            def home(cls):
+                return cls._home
+
+        monkeypatch.setattr(enforcer, "Path", _FakeHomePath)
+        assert enforcer._session_source_from_db("local-any") == ""

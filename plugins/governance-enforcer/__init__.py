@@ -756,18 +756,61 @@ def _is_subagent_session(session_id: str) -> bool:
     return False
 
 
+def _session_source_from_db(session_id: str) -> str:
+    """Read the authoritative source of a session from state.db (read-only).
+
+    The Hermes unified runtime mints cron sessions under runtime local-*
+    ids (gateway/session_cron.py) while recording source='cron' in the
+    sessions table — so the id prefix alone is no longer a reliable signal
+    for modern sessions. Precedent: _is_subagent_session uses the same
+    read-only lookup for subagent detection. Returns "" when the db is
+    absent/unreadable or the session row does not exist (fail toward the
+    caller's default, never toward a false cron classification).
+    """
+    if not session_id:
+        return ""
+    try:
+        db = Path.home() / ".hermes" / "state.db"
+        if not db.exists():
+            return ""
+        conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=3)
+        try:
+            row = conn.execute(
+                "SELECT source FROM sessions WHERE id = ?",
+                (session_id,),
+            ).fetchone()
+            return str(row[0]) if row else ""
+        finally:
+            conn.close()
+    except Exception:
+        log.warning("Cannot query state.db for session source", exc_info=True)
+    return ""
+
+
 def _session_type(session_id: str) -> str:
     """Classify a session for lock-lifecycle purposes.
 
     P1-A: cron/daemon locks must not purge interactive locks. The prefix
-    is the reliable signal (cron_ = scheduler, bg_ = background subagent).
-    Everything else (date-based interactive, cli-source) is interactive.
+    is the reliable signal for LEGACY ids (cron_ = scheduler, bg_ =
+    background subagent). The unified runtime mints cron sessions under
+    local-* ids (source='cron' in state.db), so ids that do not carry a
+    legacy prefix fall back to the sessions-table source — a local-* cron
+    session must classify as cron for the skills bootstrap and the
+    domain/adversarial exemptions, exactly like its legacy cron_ sibling
+    (dream-nightly stall 2026-11-24: a local-* cron id classified
+    "interactive", the bootstrap never created the skills marker, and every
+    write deadlocked in a harness with no skill_view).
     """
     if not session_id:
         return "interactive"
     if session_id.startswith("cron_"):
         return "cron"
     if session_id.startswith("bg_"):
+        return "bg"
+    source = _session_source_from_db(session_id)
+    if source == "cron":
+        return "cron"
+    if source in ("subagent", "bg"):
         return "bg"
     return "interactive"
 
