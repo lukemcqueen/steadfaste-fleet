@@ -82,14 +82,35 @@ systemctl --user enable cortex-bridge-agent-steadfaste-fleet-sync.timer
 ### 3. Repoint standalone unit paths
 
 Any unit whose `ExecStart`/`WorkingDirectory` reads `hermes-cortex` (e.g. `fleet-gateway*`,
-`hermes-cortex-dashboard`, `health-vector`) — sweep the path token, then `daemon-reload`:
+`fleet-dashboard`, `health-vector`) — sweep the path token, then `daemon-reload`:
 
 ```bash
 grep -rl hermes-cortex ~/.config/systemd/user/   # list them first
 # edit each `hermes-cortex` path token → `steadfaste-fleet`, then:
 systemctl --user daemon-reload
-systemctl --user restart fleet-gateway health-vector hermes-cortex-dashboard 2>/dev/null
+systemctl --user restart fleet-gateway health-vector fleet-dashboard 2>/dev/null
 ```
+
+> ⚠️ **Before you `rm -rf` a stale `~/.hermes-cortex`: it may hold LIVE data.**
+> On a Docker host that directory can be the bind-mount SOURCE of a running
+> container — measured here, `victoria-data/` inside it was the live
+> VictoriaMetrics time-series DB, mounted RW into `victoria-metrics`. The stale
+> pair therefore does **not** migrate with `migrate-home-dirs.sh` (that script
+> refuses when the target already exists), and a naive `rm -rf` **destroys the
+> database**. Use `ops/scripts/manage/migrate-victoria-data.sh` (dry run first,
+> then `--apply`): it parks the old container as a rollback artefact, **moves**
+> the data atomically rather than copying, verifies against startup markers
+> measured from real startups, and only then removes the stale dir. See
+> `docs/runbooks/live-bindmount-stale-dir.md`.
+>
+> **The end state for BOTH old paths is a transition symlink**, not an absence:
+> `~/hermes-cortex -> ~/steadfaste-fleet` and `~/.hermes-cortex -> ~/.steadfaste-fleet`,
+> laid by `migrate-home-dirs.sh` for the repo pair and manually for the pair whose
+> target already existed. `ops/scripts/manage/verify-rename-local.sh` asserts both
+> are symlinks to the new dirs and is the authority on "migrated" — the doctor's
+> `Stale pre-migration home folders` warning fires on any remaining old path
+> INCLUDING a correct transition symlink, so read the two together and do not
+> treat that warning as proof the symlink is unwanted.
 
 ### 4. Remove stale deployed scripts
 

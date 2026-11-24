@@ -1,0 +1,129 @@
+Fleet local-dir migration — COMPLETE on esther
+Captured 2026-11-24. Home prefix normalised to <HOME> (this repo is public).
+
+=============================================================================
+1. THE LAST TWO PIECES, operator-ordered ("FINISH FIXING THESE!")
+=============================================================================
+
+Item 1 — dashboard unit renamed to the canonical `fleet-dashboard.service`:
+  commit dddff114, pushed. Live assertions re-runnable from the repo:
+
+    bash ops/scripts/manage/verify-rename-local.sh
+      PASS: fleet-dashboard.service active (got active)
+      PASS: fleet-dashboard.service enabled (got enabled)
+      PASS: superseded hermes-fleet-dashboard.service is gone (got 0)
+
+Item 2 — the root-owned live-TSDB migration. `sudo -n true` ->
+"a password is required", so it was performed by the operator (Luke), who ran:
+
+    sudo bash <HOME>/steadfaste-fleet/ops/scripts/manage/migrate-victoria-data.sh --apply
+
+  Script output, verbatim:
+
+    migrate-victoria-data: plan:
+    migrate-victoria-data:   container : victoria-metrics  (image victoriametrics/victoria-metrics:latest, restart unless-stopped)
+    migrate-victoria-data:   ports     : 14005:8428/tcp
+    migrate-victoria-data:   data move : <HOME>/.hermes-cortex/victoria-data  ->  <HOME>/.steadfaste-fleet/victoria-data
+    migrate-victoria-data:   then      : recreate container on <HOME>/.steadfaste-fleet/victoria-data, verify, then remove the stale dir
+    migrate-victoria-data: stopping victoria-metrics and parking it as victoria-metrics-rollback
+    migrate-victoria-data: moving data
+    migrate-victoria-data: recreating victoria-metrics bound to <HOME>/.steadfaste-fleet/victoria-data
+    migrate-victoria-data: started victoria-metrics (3e2fb457a8bb)
+    migrate-victoria-data: verified: TSDB opened, http server started, 165 file(s), survived settle
+    migrate-victoria-data: cleanup 1/3: removing the rollback container victoria-metrics-rollback
+    migrate-victoria-data: cleanup 2/3: removing the old data dir <HOME>/.hermes-cortex/victoria-data
+    migrate-victoria-data: cleanup 3/3: removing the stale parent dir if it is now empty
+    migrate-victoria-data: done — stale dir removed, container live on <HOME>/.steadfaste-fleet/victoria-data
+
+  Note the ORDER, which is the whole point of that script: the data is MOVED
+  (atomic, one filesystem) not copied; the container is verified against startup
+  markers and a settle window BEFORE anything is removed; the rollback container
+  is destroyed before the old data dir, so an interruption can never leave the
+  data gone while a rollback path still appears to exist. Compare the copy I
+  attempted earlier in this session, which the integrity gate correctly rejected
+  as a mid-write snapshot (134 files/1.1M vs 457/4.0M) because the live TSDB was
+  still writing — that is why the move, not a copy, is the design.
+
+=============================================================================
+2. POST-MIGRATION STATE — measured, not asserted
+=============================================================================
+
+Transition symlink laid (the migration design's documented end state):
+
+    ls -ld <HOME>/.hermes-cortex
+      lrwxrwxrwx 1 esther esther 30 Nov 24 14:09 <HOME>/.hermes-cortex -> <HOME>/.steadfaste-fleet
+    readlink <HOME>/.hermes-cortex
+      <HOME>/.steadfaste-fleet
+
+The container is live on the NEW path, old path absent:
+
+    docker ps --filter name=victoria-metrics --format '{{.Names}}  {{.Status}}'
+      victoria-metrics  Up 59 seconds
+    docker inspect victoria-metrics --format '{{range .Mounts}}{{.Source}} -> {{.Destination}}{{end}}'
+      <HOME>/.steadfaste-fleet/victoria-data -> /victoria-metrics-data
+    curl -s --max-time 8 http://localhost:14005/health
+      OK
+    docker ps -a --filter name=rollback --format '{{.Names}}' | wc -l
+      0            # the rollback artefact was cleaned up only after verification
+
+The data still resolves through the OLD path, which is what a transition symlink
+is for:
+
+    ls -A <HOME>/.hermes-cortex/victoria-data
+      cache
+      data
+      flock.lock
+
+=============================================================================
+3. THE COMPLETION PROOF — verify-rename-local, ALL CHECKS PASS
+=============================================================================
+
+    bash ops/scripts/manage/verify-rename-local.sh
+      PASS: old-repo symlink -> new
+      PASS: old-home symlink -> new
+      PASS: new-repo is a real dir
+      PASS: new-home is a real dir
+      PASS: brain dir present (resolved: <HOME>/brain)
+      PASS: brain dir non-empty
+      PASS: mycortex compose present (renamed home or Hermes home)
+      PASS: 0 unit files carry a `.hermes-cortex` path token (got 0)
+      PASS: fleet-dashboard.service active (got active)
+      PASS: fleet-dashboard.service enabled (got enabled)
+      PASS: superseded hermes-fleet-dashboard.service is gone (got 0)
+      PASS: fleet-bus.service active (got active)
+      PASS: health-vector.service active (got active)
+      PASS: fleet-gateway.service unit-clean
+      PASS: fleet-bridge timers scheduled (got 59)
+      PASS: bus /health == 200 (got 200)
+      PASS: new fleet present
+      PASS: deployed enforcer intact
+      ------------------------------------
+      verify-rename-local: ALL CHECKS PASS
+
+That is 0 failures, down from the 3 this session started with. The two checks
+that had silently stopped checking anything are green for the right reason:
+`old-home symlink -> new` now covers a real symlink instead of asserting a unit
+that no longer existed, and the dashboard assertions name the canonical unit
+AND assert the superseded one is gone — a form that CAN fail, unlike the
+"accept any of 3 spellings" loop it replaced.
+
+=============================================================================
+4. STILL OPEN — a doctor/verifier contradiction, recorded not hidden
+=============================================================================
+
+`verify-rename-local.sh` REQUIRES `<HOME>/.hermes-cortex` to be a symlink to the
+new dir. The doctor's check `Stale pre-migration home folders`
+(ops/scripts/manage/fleet_doctor/stale_premigration_home.py) WARNs whenever an
+old path `exists() or is_symlink()` — i.e. it warns on exactly the transition
+symlink the verifier demands, and `tests/test_fleet_doctor_stale_old_home.py::
+test_stale_symlink_warns` asserts that behaviour.
+
+Both cannot be "correct" as written. This is not newly introduced: the repo pair
+`<HOME>/hermes-cortex -> <HOME>/steadfaste-fleet` has been in place and PASSing
+the verifier while the doctor WARNs about it, and that warning is currently
+dispositioned `deferred (esther, since 2026-11-23)`.
+
+Resolving it needs a judgement this evidence cannot supply on its own — whether a
+transition symlink counts as "migrated" (verifier's position, and what
+migrate-home-dirs.sh's design produces) or as a leftover to be swept once nothing
+needs the old name (doctor's position). It is NOT silently reconciled here.
