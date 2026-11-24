@@ -140,6 +140,16 @@ else** — a run that dies after unlocking leaves them modifiable. `sudo -n
 hermes-plugin-lock lock` relocks every target in one call, and the doctor's
 `Immutable:` lines are the authoritative confirmation.
 
+**A successful enforcer deploy still ends with a GATEWAY RESTART REQUIRED banner — that is the
+expected deploy≠load state, not a failed run.** The disable/enable plugin reload re-imports hooks,
+but the pre_tool_call enforcement chain in the running gateway stays the OLD revision until the
+process cycles, and the restart is OPERATOR-ONLY: the lifecycle guard refuses it from inside the
+gateway and there is no lock to run it with after the close either. Report it as the one remaining
+operator action (`hermes gateway restart` from a separate shell), expect the doctor's deferred
+`Stale enforcer plugin` warning to name the same state, and gate any end-to-end proof that needs
+the new chain (a cron write-back, a live classification check) on the restart happening — the old
+revision keeps enforcing correctly meanwhile.
+
 ## Quoting in commit messages
 
 Never put backticks in a shell-quoted commit message: the shell substitutes them

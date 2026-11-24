@@ -78,6 +78,9 @@ the DB is the only place to settle it:
   reviewer_model, verdict, findings_json, summary`), with superseded rows in
   `adversarial_reviews_history`; `review_calls` records `prompt_tokens / completion_tokens /
   `reasoning_tokens` per call. Query both. Never report "no review ran" — or "CLEAN" — from stdout.
+  The store is sqlite at `~/.steadfaste-fleet/data/loop-governance.db` (LOOP_DB in loop-gov-mcp.py;
+  the `state/*.db` files are 0-byte placeholders, not the DB). It is PER-HOST: a peer's PENDING
+  cycle id lives on the peer's host DB and cannot be closed from yours — message the peer to close it.
 - **The row's `verdict` column reads `FINDINGS` whenever ANY finding exists — including info-only
   findings whose JSON verdict is `CLEAN`.** So take the verdict AND the severities from the JSON you
   parse out of `summary`; the column alone cannot tell you whether you are blocked. A finding whose
@@ -330,6 +333,7 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
 - Static gate per changed script: `adversarial-verify.py --file <f> --level
   A2 --gate`; A4 for plugins/, hooks/, mcp-servers/, ops/scripts/manage/,
   fleet_doctor/, enforcer, tests. Critical/high → block. No --no-verify.
+- **The enforcer ALSO demands the `adversarial-verifier` SKILL loaded in-session — running the tool alone does not count.** A commit or push naming plugins/, tests/, ops/scripts/, skills/ or hooks/ is refused with `ADVERSARIAL VERIFICATION REQUIRED` until `skill_view(name='adversarial-verifier')` lands in this session (credit is content-hashed, so a deploy that rewrote the skill clears it). Load it together with the always-skills whenever the change touches those paths, or the first push attempt is a wasted round trip.
 - Pin before/after comparisons to an immutable revision (the RANGE BASE —
   `git merge-base origin/main HEAD`), name both shas in the artifact; assert
   the baseline reproduces the defect or the comparison proves nothing. **Put

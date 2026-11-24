@@ -163,6 +163,12 @@ incident are in `references/otel-skew-incident-2026-10-06.md`.
   stdin (`printf 'y\n' | hermes mcp add <name> --command … --args …`), back the config up
   first, and verify by reading the resulting block plus the wiring audit — never by exit code.
   Recipe: `references/mcp-registration-runbook.md`.
+- **`hermes mcp remove` is INTERACTIVE too — driving it from a subprocess/execute_code times out.**
+  It prompts `Remove server 'X'? [Y/n]` and waits on stdin; a runner that passes no input blocks
+  until its own timeout fires (the remove does NOT complete). Feed the answer the same way as
+  `add`: `printf 'y\n' | hermes mcp remove <name>` (or `timeout 90 …` so a mistaken assumption
+  about interactivity fails fast). Then `hermes mcp add` with its own `printf 'y\n'`. Verify by
+  reading the resulting config block back, not by exit code.
 - **A check that cannot RUN must not look like a passing check.** If the loader
   that pulls in the auditor fails (missing file, syntax error), a bare
   `except: pass` that sets the auditor to `None` removes the check entirely and

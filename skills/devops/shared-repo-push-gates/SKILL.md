@@ -18,6 +18,8 @@ metadata:
 
 # Shared-Repo Push Gates
 
+> Depth: `references/dogfood-gate-and-post-close-writes.md` — the DOGFOOD gate on begin_change (deployed ≠ repo), the exact sanctioned lock-free fleet-update command, and the two write paths that survive after end_change.
+
 ## Two gates that block AFTER a clean close — each names its own remedy
 
 **A rebase can invalidate the receipt — but it usually survives on CONTENT.** The receipt records
