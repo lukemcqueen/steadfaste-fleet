@@ -83,3 +83,41 @@ def test_stale_symlink_warns(tmp_path):
         assert res.checks[0][1] == "WARN", res.checks[0]
     finally:
         mod.STALE_PREMIGRATION_PATHS = old
+
+
+def test_fix_advice_is_not_unconditionally_destructive(tmp_path):
+    """REGRESSION — the fix text must never hand the operator a bare `rm -rf <path>`.
+
+    MEASURED harm: on a Docker host the stale home folder holds the RUNNING
+    VictoriaMetrics time-series DB at `victoria-data/`, bind-mounted RW into the
+    `victoria-metrics` container. The pre-fix advice ended
+    "... run migrate-home-dirs.sh; then `rm -rf <path>`" — following it WIPES the live
+    metrics DB. The check's own premise ("stale folder = dead weight") is false for a
+    live bind-mount source, so the advice must name that precondition and the
+    purpose-built script rather than printing a destructive command unconditionally.
+
+    Discriminates: the first assertion FAILS against the pre-fix message and passes
+    after the fix (proven by driving this same probe at the pre-fix module).
+    """
+    p = tmp_path / ".hermes-cortex"
+    p.mkdir()
+    old = mod.STALE_PREMIGRATION_PATHS
+    try:
+        mod.STALE_PREMIGRATION_PATHS = [p]
+        res = FakeRes()
+        mod.check_stale_premigration_home(res)
+        fix = res.checks[0][3]
+
+        # 1. NEGATIVE: the exact destructive shape the old message emitted.
+        assert "rm -rf " + str(p) not in fix, (
+            f"fix hands out a bare destructive command: {fix!r}"
+        )
+        # 2. POSITIVE CONTROL: the safe path must actually be named, so the test cannot
+        #    pass merely because the advice went empty or was gutted.
+        assert "migrate-victoria-data.sh" in fix, fix
+        assert "live-bindmount" in fix, fix
+        assert "DESTROYS" in fix, fix
+        # 3. the runbook pointer the original test already relies on survives.
+        assert "fleet-local-dir-rename" in fix, fix
+    finally:
+        mod.STALE_PREMIGRATION_PATHS = old

@@ -30,8 +30,28 @@
 set -euo pipefail
 
 CONTAINER="${VICTORIA_CONTAINER:-victoria-metrics}"
-OLD_DIR="${VICTORIA_OLD_DIR:-$HOME/.hermes-cortex/victoria-data}"
-NEW_DIR="${VICTORIA_NEW_DIR:-$HOME/.steadfaste-fleet/victoria-data}"
+# Resolve the INVOKING user's home — never bare $HOME. This script is DOCUMENTED to run
+# as `sudo bash <script>` (usage above), and sudo's default env_reset sets HOME to ROOT's
+# home, so the defaults below resolved under root's home and the mount guard refused with
+# "container source mount is <caller-home>/.hermes-cortex/victoria-data, expected
+# <root-home>/.hermes-cortex/victoria-data". The guard was RIGHT — the paths were wrong —
+# and refusing rather than guessing is why this was a clean failure instead of a move
+# FROM THE WRONG DIRECTORY. Reproducible WITHOUT root and without a password; any HOME
+# other than the target user's triggers it:
+#   HOME=/tmp/not-a-home bash ops/scripts/manage/migrate-victoria-data.sh
+# SUDO_USER is the caller under sudo; getent is Linux, dscl is macOS; $HOME is the last
+# resort for a non-sudo run. VICTORIA_OLD_DIR/NEW_DIR still override everything.
+TARGET_USER="${SUDO_USER:-$(id -un)}"
+TARGET_HOME=""
+if command -v getent >/dev/null 2>&1; then
+  TARGET_HOME="$(getent passwd "$TARGET_USER" 2>/dev/null | cut -d: -f6 || true)"
+fi
+if [ -z "$TARGET_HOME" ] && command -v dscl >/dev/null 2>&1; then
+  TARGET_HOME="$(dscl . -read "/Users/$TARGET_USER" NFSHomeDirectory 2>/dev/null | awk '{print $2}' || true)"
+fi
+[ -n "$TARGET_HOME" ] || TARGET_HOME="${HOME}"
+OLD_DIR="${VICTORIA_OLD_DIR:-$TARGET_HOME/.hermes-cortex/victoria-data}"
+NEW_DIR="${VICTORIA_NEW_DIR:-$TARGET_HOME/.steadfaste-fleet/victoria-data}"
 CONTAINER_MNT="/victoria-metrics-data"
 APPLY=0
 [ "${1:-}" = "--apply" ] && APPLY=1

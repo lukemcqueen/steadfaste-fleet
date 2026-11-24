@@ -40,10 +40,26 @@ def check_stale_premigration_home(res) -> None:
         res.add(CHECK_NAME, "PASS",
                 "pre-migration home folders absent — host fully migrated")
         return
+    # SAFETY — the advice this check prints must not be unconditionally destructive.
+    # MEASURED: on this host `.hermes-cortex/victoria-data` is the RUNNING
+    # VictoriaMetrics time-series DB, bind-mounted RW into the `victoria-metrics`
+    # container. The bare `rm -rf` this check used to print would WIPE the metrics DB,
+    # because the check's own premise ("stale folder = dead weight") is false for a live
+    # bind-mount source. A doctor that tells an operator to destroy data is worse than no
+    # doctor: it launders the destructive step as maintenance. Name the precondition and
+    # the purpose-built tool instead.
+    #   migrate-victoria-data.sh — stops+renames the container (rollback artefact), MOVES
+    #   the data atomically (never copy-then-delete), verifies against markers measured
+    #   from real startups, and only then removes the stale dir.
+    #   docs/runbooks/live-bindmount-stale-dir.md — the runbook for this exact trap.
     res.add(
         CHECK_NAME, "WARN",
         "pre-migration home folder(s) remain (STALE paths): " + ", ".join(present),
-        "Complete the migration, then remove them as the completion proof: read "
-        f"{RUNBOOK} and run migrate-home-dirs.sh; then `rm -rf "
-        + " ".join(present) + "`",
+        "Complete the migration, then remove them as the completion proof. CHECK FIRST "
+        "whether any path is a live bind-mount source: a naive `rm -rf` on one DESTROYS "
+        "live data (on a Docker host, a stale `.hermes-cortex` can hold the running "
+        "VictoriaMetrics TSDB at `victoria-data/`). If it is a live mount source, use "
+        "ops/scripts/manage/migrate-victoria-data.sh (see "
+        "docs/runbooks/live-bindmount-stale-dir.md). If it is confirmed dead weight, read "
+        f"{RUNBOOK} and run migrate-home-dirs.sh, then remove it.",
     )
