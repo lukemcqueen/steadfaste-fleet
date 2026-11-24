@@ -59,22 +59,23 @@ if [ "$IS_MAC" = 1 ]; then
 else
   left=$(grep -Rl '\.hermes-cortex' "$HOME/.config/systemd/user" 2>/dev/null | wc -l)
   ck "0 unit files carry a \`.hermes-cortex\` path token (got $left)" "[ $left = 0 ]"
-  # The dashboard unit NAME is under RENAME REVIEW — canonical target is
-  # `fleet-dashboard.service` (docs/rename-cortex-to-fleet.md Q2), but live hosts
-  # still install `steadfaste-fleet-dashboard.service` or
-  # `hermes-fleet-dashboard.service` while that rename stays Rule 9c-gated
-  # (docs/GLOSSARY.md Part 3). Accept any of the three.
-  # `hermes-cortex-dashboard.service` was the RETIRED pre-rename name and is NOT a
-  # keep (docs/templates/adversarial-reviewer-prompt.md): a migrated host no longer
-  # has that unit, so asserting it reported "inactive" while covering NO service at
-  # all — a check that had silently stopped checking anything.
+  # The dashboard unit NAME was RENAMED to the canonical `fleet-dashboard.service`
+  # on 2026-11-24 (operator-ordered; docs/GLOSSARY.md line 18 = the `fleet-` family,
+  # docs/rename-cortex-to-fleet.md Q2 = the target). This assertion is deliberately
+  # the canonical name ONLY, plus the absence of the superseded one — because the
+  # previous "accept any of 3 spellings" form could not FAIL, so it could not detect
+  # a regression back to a legacy name. That is the same defect class that let
+  # `hermes-cortex-dashboard.service` keep being asserted after that unit ceased to
+  # exist: it then reported "inactive" while covering NO service at all.
+  # A check that cannot fail is not a check.
+  dash_st=$(systemctl --user is-active fleet-dashboard.service 2>/dev/null)
+  ck "fleet-dashboard.service active (got ${dash_st:-inactive})" "[ '$dash_st' = 'active' ]"
+  dash_en=$(systemctl --user is-enabled fleet-dashboard.service 2>/dev/null)
+  ck "fleet-dashboard.service enabled (got ${dash_en:-disabled})" "[ '$dash_en' = 'enabled' ]"
+  old_n=$(systemctl --user list-unit-files 'hermes-fleet-dashboard.service' --no-legend 2>/dev/null | wc -l)
+  ck "superseded hermes-fleet-dashboard.service is gone (got $old_n)" "[ $old_n = 0 ]"
   st=$(systemctl --user is-active fleet-bus.service 2>/dev/null)
   ck "fleet-bus.service active (got $st)" "[ '$st' = 'active' ]"
-  dash=""
-  for _s in fleet-dashboard.service steadfaste-fleet-dashboard.service hermes-fleet-dashboard.service; do
-    [ "$(systemctl --user is-active "$_s" 2>/dev/null)" = 'active' ] && { dash="$_s"; break; }
-  done
-  ck "dashboard unit active (got ${dash:-none of the 3 known names})" "[ -n '$dash' ]"
   st=$(systemctl --user is-active health-vector.service 2>/dev/null)
   ck "health-vector.service active (got $st)" "[ '$st' = 'active' ]"
   ck "fleet-gateway.service unit-clean" "[ -f '${HOME}/.config/systemd/user/fleet-gateway.service' ]"
