@@ -147,13 +147,45 @@ RESOLUTION, in order (repoint-then-remove, never remove-then-hope):
 POST-REMOVAL STATE, measured:
 
     systemctl --user is-active fleet-bus fleet-dashboard health-vector   -> active (x3)
-    fleet-gateway.service                                                -> inactive (BY DESIGN:
-        the fleet gateway would put a second poller on the live Telegram token and 409 it)
-    fleet-gateway-esther0001.service                                     -> active
+    fleet-gateway-esther0001.service                                     -> active, and pi runs
+        through scripts/fleet_gateway/pi_control.py on it (the path repaired this cycle)
+    fleet-gateway.service                                                -> disabled + NEVER
+        started (ExecMainStartTimestamp is EMPTY)
     victoria-metrics                                                     -> Up, /health OK
     doctor "Stale pre-migration home folders"                            -> PASS
         "pre-migration home folders absent — host fully migrated"
     verify-rename-local                                                  -> ALL CHECKS PASS
+
+### CORRECTION (operator, after this file was first written)
+
+This file originally said `fleet-gateway.service -> inactive (BY DESIGN: the fleet
+gateway would put a second poller on the live Telegram token and 409 it)`. That was
+WRONG on both counts and is corrected here rather than left to mislead:
+
+  1. It conflated two DIFFERENT gateways. The 409 caveat belongs only to the
+     PRODUCTION gateway (`fleet-gateway.service`, config `gateway.yaml`), which shares
+     Hermes's live `TELEGRAM_BOT_TOKEN` — the unit header says so: "Only ONE poller per
+     bot token. Before enabling this, stop the incumbent (systemctl --user stop
+     hermes-gateway.service) or the two will 409."
+     The SECOND-bot gateway (`fleet-gateway-esther0001.service`, config
+     `gateway-esther0001.yaml`) uses a DISTINCT token (`ESTHER0001_BOT_TOKEN`) and
+     therefore cannot conflict. Luke's ruling: **pi should work with the fleet gateway
+     and it should not conflict — different Telegram IDs.**
+  2. The production unit is not "inactive by design" — it has simply NEVER BEEN
+     STARTED. `ExecMainStartTimestamp` is empty and it is `disabled`. Its absence is the
+     un-done step of migrating OFF Hermes, not a deliberate safety posture.
+
+The distinct-ID property is ENFORCED IN CODE, not left to convention — the unit runs a
+guard before its main process, measured in the journal:
+
+    ExecStartPre=/usr/bin/python3 .../fleet_gateway/guard_distinct_token.py \
+        .../gateway-esther0001.yaml
+    guard: ok — ESTHER0001_BOT_TOKEN (<redacted>) is distinct from TELEGRAM_BOT_TOKEN
+
+So the second-bot gateway and Hermes coexist by construction, and the boot-time guard
+would refuse the unit if the tokens ever collided. Verified 2026-11-24: no `pi_control`
+errors in that unit's journal since the argv was repointed to the real script, and
+`fleet-gateway-esther0001.service` reports `active`.
 
 Discrimination of the new check, proven rather than asserted: the absence condition
 PASSES when the path is absent and FAILS when it is present, so it is not another
