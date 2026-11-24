@@ -630,6 +630,12 @@ grep -rc 'old-deploy-dir/' target-dir/ 2>/dev/null | grep -v ':0$'
   for their target platform.
 - **Shebangs** (`#!/usr/bin/env bash`) are standard and portable. Do not
   change them.
+- **Executed fixture paths must exist on BOTH platforms.** `/bin/true` and
+  `/bin/false` exist on Ubuntu (where `/bin` is a symlink to `/usr/bin`) but NOT on
+  macOS; use `/usr/bin/true` and `/usr/bin/false`, which exist on both. Before
+  reporting a test failure as a product parity gap, grep the production code for the
+  same path — if only fixtures reference it, the defect is in the fixtures, not the
+  product.
 - **`/etc/nginx` on Linux** is a standard OS path, not project-specific.
   OS-aware dispatch is the right fix, not removing it.
 - **A hardcoded `/home/<operator>/` path in a repo is ALSO PII, not just a portability bug** — it leaks the local username and machine home layout. Target the REAL resolver (`Path.home().name`), not every `/home/*/` (generic `/home/user/` placeholders are intentional). Replace shell script defaults with `$HOME/`, docs with `~/`, and Python TEST FIXTURES with `pathlib.Path.home()` at runtime — a fixture that hardcodes the operator home is non-hermetic AND leaks it.

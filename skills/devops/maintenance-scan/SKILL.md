@@ -100,6 +100,15 @@ cronjob(action='run', job_id='<id>')
 A manual `python3`/`bash` run of the job's script does NOT update `last_status` — a hand-run "pass"
 leaves the doctor warning standing and reads to the next session as an unfixed failure.
 
+**A `last_error` of `Model output entered a repetition loop … discarding the degenerate
+response` is a REPORT failure, not necessarily a WORK failure.** The job can have finished its
+real work — the commit it names, the artifact it writes, the config it applies — and then
+degenerated while composing the final summary, so `last_status: error` sits on top of a job that
+succeeded. Before repairing anything, check whether the work LANDED (read the commit/artifact it
+names); if it did, the defect is the runner model's summarisation, not the job, and re-firing it
+may loop identically rather than clear the status. Report that distinction — and if the status
+cannot be cleared, disposition the check naming the model fault — instead of re-running in a loop.
+
 ### Step 5: Git
 ```
 cd ~/steadfaste-fleet && git status --short
@@ -248,6 +257,21 @@ Known doctor-fix patterns:
     are COPY deployed→repo and commit; paths deleted from repo history
     (`dropped-from-repo` — renames, decommissions) are DELETE the deployed leftover —
     never restore a deliberate deletion just to silence a parity row.
+  - **`--apply` clears only the PURE-SUPERSET class; the REVIEW class is where a
+    blind copy DESTROYS content.** A REVIEW line reading `would drop N line(s),
+    add M` means the DEPLOYED copy is a thin SUBSET of the repo — applying it
+    deletes those N lines (measured: 58 / 14 / 3 lines on three skills, hardening
+    content among them). Read every `DROP:` line: take the deployed side only where
+    the dropped text is superseded IN PLACE; otherwise hand-merge the additions onto
+    the repo body, or defer the whole recovery to its own cycle with that reason.
+    Never `cp` a REVIEW-class file wholesale, and never report the drift as cleared
+    when you only applied the supersets.
+  - **A generated artifact you commit must be byte-deterministic — never embed a
+    timestamp, hostname or run id.** Its `--check` mode compares the committed bytes
+    to a live re-derivation, so any run-varying field makes it report STALE forever
+    and the check can never pass. Record the RUN as a pointer to the re-runnable
+    command instead; and when the artifact's own prose needs correcting, fix the
+    GENERATOR and regenerate — a hand-edit is reverted by the next regeneration.
   - `USER.md template (~/.hermes)` — mtime-only check (seed newer than live ⇒ "review the
     template"). The seed is generic new-user boilerplate and a personalized live profile
     is already the superset — nothing to merge; `touch` the live file to record the

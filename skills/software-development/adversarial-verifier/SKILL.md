@@ -346,6 +346,13 @@ feedback:
 2. **Enforcer plugin** — blocks `git commit`/`git push` of `ops/scripts/`, `plugins/`, `skills/`, `hooks/`, `mcp-servers/`, `tests/` until this skill is loaded
 3. **change-checklist Phase 1.5** — the agent-level pass
 
+**This layer keys on the TREE, not on your pathspec — a doc-only commit is refused while unrelated
+`skills/*.md` edits sit dirty in the working tree.** The refusal names the path CLASS it saw, not the
+paths you staged, so do not go hunting for a skills change inside your own commit: a dirty
+`skills/` tree is the skill-reconcile pipeline's normal uncommitted state. One `skill_view` of this
+skill clears it (credit is kept unless this file's content changed); never stash or clean a peer's or
+the pipeline's in-flight edits to silence it, and never `--no-verify`.
+
 Run the gate on every changed script file:
 
 ```bash

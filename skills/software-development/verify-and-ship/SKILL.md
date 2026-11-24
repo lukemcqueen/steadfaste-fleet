@@ -294,6 +294,11 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   really does reproduce the failure, so the pair shows the fix is load-bearing.
   This is Phase 1.5's "assert the baseline reproduces the defect" applied to a
   unit test, and it is the difference between a regression test and a decoration.
+  The same shape applies to a test asserting something is **SKIPPED or DROPPED**:
+  it goes just as green against an implementation that skips EVERYTHING, so it
+  cannot fail for the reason its name gives. Pair it with a sibling that asserts
+  the skip-trigger is real — the vanished path genuinely raises, the malformed
+  input genuinely fails to parse.
 - **A test that guards a whole-interpreter condition must run in a SUBPROCESS.**
   Once `sys.modules` holds a module, an in-process test of import/loader
   behaviour passes on the already-correct module and proves nothing; run the
@@ -312,6 +317,14 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   present-but-unmeasurable case its own WARN naming the pid, never report the host clean while
   anything went unjudged, and test both branches separately — an independent reviewer files the
   collapsed version as a real gap, and it is right.
+- **Every enumeration inside a check is a syscall that can FAIL — wrap each item so the check
+  still RETURNS A VERDICT.** A check that globs a directory and then `stat()`s the results (a sort
+  key, an mtime comparison, a size report) makes two passes over the filesystem, and a file removed
+  in between raises `OSError` straight out of the check. The runner logs that as an ERROR, so the
+  check reports **neither PASS nor WARN while the condition it guards is live** — it goes silent at
+  exactly the moment the state is changing, which is the worst possible failure mode for a gate:
+  whoever is acting on it sees nothing at all. Skip an unstattable item the way the check already
+  skips a symlink, and add a test that removes the target between the two passes.
 
 **Phase 1.5 — adversarial verification (mandatory, no bypass):**
 - Static gate per changed script: `adversarial-verify.py --file <f> --level
@@ -341,6 +354,7 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   lives only in the close note is filed unverified-claim and refuses the
   close. Run the checks, capture real output (command + its own rc, measured
   unpiped) into `docs/evidence/`, commit it in the SAME cycle.
+  - **A claim about DEPLOYED or LIVE state needs a committed CHECK that RE-VERIFIES it, not only a snapshot that recorded it once — and that check must be able to FAIL.** A captured `is-active -> active` proves the state at capture time and nothing later, so the reviewer files the claim unverified-claim no matter how true it was; a committed assertion (`is-active` AND `is-enabled` AND the superseded artifact's count == 0) is re-runnable by any reader. The trap is that the check you leave behind after fixing a defect is often the NEXT defect: a resolver written to tolerate several spellings ("accept any of the 3 known names") cannot fail, so it silently tolerates a regression to the very name the change retired. When a change NARROWS a set of accepted values, tighten the assertion with it — assert the canonical value AND the absence of the superseded one, and prove the check discriminates by pointing it at a case it must reject. "A check that cannot fail is not a check" applies to the one you just wrote.
   - `ops/scripts/make-evidence.sh <out> -- <command...>` writes exactly that shape (timestamp,
     the command, its own BARE rc, sha256) and `--verify <out>` recomputes the hash, so prefer it
     to a hand-assembled log; `-k` keeps the file when the command exits non-zero. Normalise this
@@ -390,6 +404,17 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   derive expectations from the in-range source of truth, and exit a refused
   close via `rereview_change` (NEW note + evidence), never an unchanged
   `end_change`. Mechanics: `references/close-gate-review.md`.
+  **A close refusal that lists blobs "never judged" is RESUMABLE, not a failure** —
+  the per-close budget covers only a few blobs and the message says it continues from
+  where it stopped. Call `end_change` again for the next batch; do not rewrite the
+  material, re-roll the review, or open a new cycle. Verdicts are keyed by blob
+  CONTENT, so a blob already judged is never re-judged.
+  **Zero blobs reviewed does NOT mean the blobs already carry verdicts.** The
+  message blames existing verdicts, but the usual cause is reviewer TIMEOUTS
+  consuming the pass budget — large blobs time out intermittently and the next
+  call gets a fresh budget. Confirm against the store (`blob_reviews`, keyed by
+  the git blob sha) before rewriting anything: when no row exists for the blob,
+  the remedy is simply to call `end_change` again, not to change the file.
 - **The per-blob window cannot see git rename pairs** — a rename-heavy range makes
   EVERY renamed file come back as 'is this a rename? / confirm provenance'
   (scope-drift), and a constitution rule claiming 'the file list shows both

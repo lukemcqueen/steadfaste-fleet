@@ -39,11 +39,32 @@ an earlier version of this paragraph claimed it did, which was wrong.
 
 | Measure | Value |
 |---|---|
-| Stranded in place (path in repo, content only deployed) | 0 |
-| Absent from the repo (deployed under a repo-owned skill) | 0 |
+| Stranded in place (path in repo, content only deployed) | 13 |
+| Absent from the repo (deployed under a repo-owned skill) | 4 |
 |   ↳ path dropped from repo history | 0 |
-|   ↳ path never committed | 0 |
-| Files in sync | 1066 |
-| Skipped (Hermes defaults, or repo ahead) | 554 |
+|   ↳ path never committed | 4 |
+| Files in sync | 1052 |
+| Skipped (Hermes defaults, or repo ahead) | 556 |
 
-**Verdict: PASS**
+**Verdict: FAIL**
+
+Stranded in place:
+- devops/cross-agent-handoff-delivery/SKILL.md
+- devops/deploy-load-verification/SKILL.md
+- devops/git-forensics/SKILL.md
+- devops/governance-lock-lifecycle/SKILL.md
+- devops/hermes-gateway-operations/SKILL.md
+- devops/hermes-home-cleanup/SKILL.md
+- devops/rename-sweep/SKILL.md
+- devops/task-queue-workflow/SKILL.md
+- software-development/adversarial-verifier/SKILL.md
+- software-development/documentation-auditing/SKILL.md
+- software-development/execute-right/SKILL.md
+- software-development/hermetic-python-testing/SKILL.md
+- software-development/verify-and-ship/SKILL.md
+
+Absent from the repo (deployed under a repo-owned skill):
+- devops/governance-closeout/references/finding-triage.md (never-committed)
+- devops/governance-closeout/templates/adversarial-review-brief.md (never-committed)
+- devops/shell-scripting/references/exit-status-and-sudo-home.md (never-committed)
+- software-development/verify-and-ship/references/plan-review-loop.md (never-committed)

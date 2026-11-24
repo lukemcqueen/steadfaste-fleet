@@ -94,6 +94,32 @@ pending → (claim) → in_progress → (report) → review → (verify) → com
   trigger refuses review→completed on every write path unless verify_capable_for admits the
   caller for that slice.
 
+## Decomposing a reviewed plan into a story + slices (orchestrator)
+
+When the owner says "scope it properly … to story/slice for you to integrate", the deliverable is
+not the plan alone — it is the plan PLUS the queue rows that carry it:
+
+1. **Plan first, reviewed to CLEAN** (the operator's standing rule). The plan file is the shared
+   artefact every slice cites by PATH, so no slice re-derives the design.
+2. **ONE parent story** (`kind: story`, no parent): the deliverable in one paragraph, the plan path,
+   and the evidence committed in the same range. Stories are never claimable.
+3. **One slice per work unit** (`kind: slice`, `parent: <story>`), each carrying:
+   - the WHY as the MEASURED number that justifies it ("17 commits of region churn"), never adjectives;
+   - ACCEPTANCE phrased as **what the test asserts** — "both directions asserted", "rc captured
+     bare", "measured p50/p95 committed". Acceptance written as prose cannot be verified, so the
+     slice cannot be closed honestly;
+   - its prerequisite, and for a genuine GATE slice the instruction that NOTHING else starts before
+     it is green;
+   - a STOP CONDITION where the slice could fail on a measurement (report the number instead of
+     adopting the change on an unverified performance claim).
+4. **Add the story FIRST, then the slices** — `parent` needs the story id (the add echoes an 8-char
+   prefix), and a story that arrives after its slices leaves them unparented.
+5. **Leave them `pending` with NO assignee** when the work is for a later session: an assignee on a
+   pending row STRANDS it (pitfall below), and claim is self-only — you cannot hand a slice to
+   another agent by assigning it.
+6. **Re-read the rows** (`task_list` / `--board`): confirm each slice's parent link, its kind, and
+   its scope. The add's echo is not the store.
+
 ## Worker commands (any agent)
 
 ```bash
@@ -369,6 +395,14 @@ derivation CHECK and RLS path, and every orchestrator plan restates the rule.
  (they are not its deliverables, not claimable, not actionable) + you confirm
  the real work is intact — never a re-delivery. Judge the lane from the slice
  subject, not from the peer's framing.
+- **A `scope: fleet` add can land as `scope: personal`, and the add still SUCCEEDS.** The store's
+  B-5 scrub gate refuses fleet scope on a body whose content smells of paths/emails/IPs — exactly
+  what a plan-derived slice is full of — and downgrades it, returning the row with a warning TAIL
+  ("fleet content rejected by the B-5 scrub gate … stored scope=personal"). Read the tail of every
+  add result, then re-read the row in the store for `scope` and `repo`: a downgraded row is not
+  invisible (both scopes are host-local until transport ships), but it is not the scope you asked
+  for, so either accept it and say so in the report, or trim the body and re-add. Never assume the
+  scope you passed is the scope you got.
 
 ## Compete mode (opt-in, orchestrator)
 

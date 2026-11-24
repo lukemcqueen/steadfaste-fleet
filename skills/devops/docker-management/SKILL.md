@@ -291,6 +291,63 @@ and the probe endpoint.
 - **Keeping the IMAGE is fine** (re-pulling costs more than the measurement); it is the CONTAINER the
   script must clean up, via an `EXIT` trap — and state that in the artifact instead of asserting it.
 
+## Migrating a live bind-mount off a stale path
+
+Use when a directory is being retired or renamed while a container still mounts from
+it. A container's bind mount is established at creation and keeps working after the
+source is renamed — so a "stale" path can still be a running service's live data dir,
+and a plain `mv` out from under it means the next RESTART re-resolves the old path
+(and, if it is gone, Docker silently creates an empty directory there and mounts that).
+
+**Enumerate before touching anything** — never delete a path until you know what mounts from it:
+
+```bash
+docker ps --format '{{.Names}}' | while read -r c; do
+  docker inspect "$c" --format '{{range .Mounts}}{{.Source}} -> {{.Destination}} (rw={{.RW}}){{"\n"}}{{end}}'
+done
+```
+
+**The reversible recipe.** Build every step so the previous state survives until the new
+one is PROVEN.
+
+1. **Read all relaunch facts from the LIVE container**, never from memory or a doc: image,
+   `RestartPolicy`, port bindings, env, entrypoint, cmd. Deriving them at run time is what
+   makes the script survive config drift.
+2. **Refuse rather than guess.** Validate the thing you are about to change (e.g. that the
+   container's mount source is exactly the path you expect) and abort if it is not.
+3. **Stop and RENAME the container** to `<name>-rollback` — do not remove it. That keeps a
+   complete, startable rollback artefact.
+4. **MOVE the data** (atomic within one filesystem). Never copy-then-delete: an interrupted
+   copy leaves a partial tree that looks complete.
+5. **Recreate bound to the new path, then VERIFY before destroying anything:**
+   - **Re-inspect the NEW container's mount source** equals the intended path. Do not trust
+     the run command you just built.
+   - **Poll for the service's REAL startup markers from `docker logs`.** `State.Running=true`
+     a few seconds after start is NOT proof a data store opened — a container can report
+     Running and exit on a store it could not open. Take the markers from the image's own
+     logs (measure them once, keep them as overridable defaults) and fail loudly if they never
+     appear. Confirm the gate disCRIMINATES: positive AND negative control.
+   - **Re-check health immediately before removing the rollback artefact.** The earlier gates
+     ran seconds ago; do not delete the escape hatch on a stale observation.
+6. **Clean up ordered and logged, data last** — so an interruption can never leave the data
+   destroyed while a rollback path still appears available.
+
+**Pitfalls specific to this recipe**
+
+- **`docker run` accepts only ONE `--entrypoint` value.** A multi-element entrypoint
+  (`["/bin/sh","-c","exec …"]`) cannot be reconstructed faithfully, so COUNT the array and
+  REFUSE if it has more than one element. Keeping the first element silently changes the
+  container's startup semantics while the verification gate still sees its startup markers
+  and calls it success.
+- **A rollback must report only what it VERIFIED.** Track each step's outcome (data returned?
+  container restored? started?) and print that. Ending a silenced failure path with an
+  unconditional "restored, data returned" tells the operator the data is somewhere it is not
+  — and the recovery message is the one thing they act on blind. Print the move's stderr too:
+  the reason a move-back failed is exactly what they need.
+- **Put the privilege check AFTER the dry-run exit.** A migration script only needs elevated
+  privilege to WRITE; requiring it up front makes the plan un-inspectable without it, which
+  is backwards. Default to a dry run that prints the plan and touches nothing.
+
 ## Pitfalls
 
 | Problem | Cause | Fix |
@@ -309,6 +366,7 @@ and the probe endpoint.
 | Compose fails with "invalid interpolation format" | `***` used to mask credentials in compose.yml | Never mask secrets with `***` in docker-compose.yml — it breaks variable substitution. Use `.env` file or Docker secrets instead |
 | Build cache not working | Layer order wrong in Dockerfile | Put rarely-changing layers first (deps before source code) |
 | Image too large | No multi-stage build, no .dockerignore | Use multi-stage builds, add `.dockerignore` |
+| Credentials appear in a repo-tracked file | `docker inspect` (and `docker compose config`) print the container's FULL command line, and args routinely carry secrets (`-httpAuth.password=…`, `-e API_KEY=…`) | Never redirect container-inspect output into a repo path. Redact first, then VERIFY the redaction landed (`grep -F` must show only placeholders) before staging. Prefer deriving config in-process over persisting it |
 
 ## Verification
 

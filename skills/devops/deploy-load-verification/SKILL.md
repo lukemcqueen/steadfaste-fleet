@@ -553,6 +553,14 @@ fails will keep failing while the fix looks broken.
 - **Read the deploy's own commit line, not its file count.** A run on an unchanged
   HEAD still re-checks every mapped file and can print a large `N file(s) updated`
   summary; `✓ Updated: <sha> → <sha>` is what actually moved.
+- **A new file in a deployed PACKAGE is invisible to the deploy map until it is
+  registered.** Deploy scripts copy files one by one from a `register()` list; a module
+  added to a deployed package but not registered never reaches a host, and the
+  deploy-sync check compares ONLY registered files — so it reports PASS while the
+  deployed app dies on `ModuleNotFoundError` at import. When adding a module to a
+  deployed package, add its `register()` line in the SAME change, then run the
+  DEPLOYED entry point (not the repo copy) to prove the import resolves. A green
+  deploy-sync check is not evidence the package is complete.
 
 ## Coda: a lesson written only into the DEPLOYED skill copy is not landed
 

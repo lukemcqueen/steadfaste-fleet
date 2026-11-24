@@ -485,6 +485,13 @@ provenance block still empty.
   guard. This case is worth a real test because it is the whole point of the
   fallback — and it is exactly where a pre-existing hard exit or an
   unreachable guard hides.
+- **A fixture git repo inherits the HOST's git config — a global `core.hooksPath` makes every
+  fixture commit fail.** A test that builds a throwaway repo and commits into it (to move HEAD, to
+  prove a deploy check reacts) silently produces NO commit when the host routes hooks to a
+  fleet-wide hook directory that rejects the fixture's identity or paths. The symptom lands on the
+  check under test, not on the hook: several cases report FAIL against a repo whose HEAD never
+  moved. Set `core.hooksPath=/dev/null` in every fixture repo alongside `user.email`/`user.name`,
+  then assert HEAD actually advanced before asserting on the check.
 - **A test that reads AMBIENT state tests the machine, not the code.** A refusal
   case passed for as long as an unrelated stale lock file happened to exist in the
   host's state dir, and went red the moment it was cleared — it had never once

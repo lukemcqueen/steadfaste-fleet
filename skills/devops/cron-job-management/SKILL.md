@@ -504,6 +504,26 @@ as a workaround — pinning bypasses future env-driven changes.
   fix the mechanism named by the run. Confirm the claim against the gate's own logic
   before acting: the enforcer EXEMPTS cron/bg sessions from the skills gate, so an alert
   blaming "the skills gate" is a hypothesis to verify, not a cause to code against.
+- **Never let a non-zero exit code be a job's NORMAL outcome — the wrapper scores any
+  non-zero pre-script exit as a FAILED run, so a healthy routine reports `error` on
+  exactly the days it did its work.** A detector whose documented contract is
+  `rc=1 = a change is pending` is read by the cron wrapper and the doctor as a script
+  error: the delivery carries a "Script Error / the data-collection script failed"
+  header and `last_status` sits at `error` through a successful apply. That trains every
+  reader to ignore the one status that matters, and it is a defect in the EXIT CONTRACT,
+  not in the alert's wording. Keep the code a genuine pass/fail (`0` = it ran) and carry
+  the outcome where the prompt can read it — a state file or stdout ("apply_pending:
+  true") — with a distinct code reserved for "could not verify". A non-zero code that is
+  a legitimate signal belongs in the SCAN's own CLI contract (callers that read it
+  directly), not in the script a cron wrapper scores.
+- **A job's report is a SELF-REPORT — re-run the check it names before relaying its
+  claim as fact.** A run that says "the drift was repaired", "the pool now matches", or
+  "verified: tests pass" is asserting its own success; a run can also be scored `ok`
+  while its own transcript contains a failed step, and `error` while its work landed
+  (a model degeneration in the final summary does not un-apply the change). Re-run the
+  cheap deterministic probe the job named (the bare detector, the selftest, the doctor)
+  and quote ITS output before you tell the operator the state of the system — the
+  status field and the report are both claims, and only the probe is evidence.
 - **Manual `cronjob action='run'` sessions are tool-restricted BY DESIGN — not a regression (2026-08-18).** A manually-triggered run (`cronjob action='run' job_id=<id>`) executes as a delegation-style session with only the 17 core tools — **no governance MCP tools** (`begin_change`/`end_change` unreachable), so the enforcer fail-closes every write path and the run can't make changes. Scheduled ticks, by contrast, get the full toolset (proven: scheduled ticks scored governance cycles #5108/#5109 the same morning). Diagnosis rule: if a manual run reports "governance tools unavailable / write blocked", that is the design working, NOT a toolset regression — verify with the next scheduled tick before declaring an MCP outage. (Real case 2026-08-18: manual `orch-backlog-driver` run deadlocked on governance while scheduled ticks were healthy; the cron agent correctly rejected all bypasses and left the repo untouched.)
 - **Live schedule edits via the cronjob MCP tool get reverted by the next fleet-update reinstall — patch the installer `create_cron` block (repo) for durable changes (2026-08-18).** The installer's drift-edit path rewrites schedules from the `create_cron` blocks, so a `cronjob action='update'` schedule change survives only until the next `fleet-update.sh` reinstall. Real case (2026-08-18): off-peak schedule moves (agent-fixer-evening, fleet-bus-evening, judge-scorer-weekday) applied live via the MCP tool were reverted by a reinstall; the repo change was the durable fix and live values had to be re-applied afterward. **Rule: schedule edits must land in THREE places in the same change — the installer `create_cron` block AND the `cron-manifest.yaml` entry (durable) plus the live job (`cronjob action='update'`) if the next install isn't imminent.** REMOVALS are not durable either: `cronjob action='remove'` on a cron whose `create_cron` block survives just re-creates it on the next fleet-update (measured: a paused self-update cron removed live was re-created by the very next deploy). Check the installer create block BEFORE removing — a paused cron with a live create block is a deliberate state, not garbage; deleting it live resurrects it. Durable removal = delete the create_cron block + its uninstall-array line + the manifest entry in ONE commit, deploy, then remove the live job last. Once the repo installers change, the push gate blocks on doctor (Checksum: install-crons.sh, Deploy sync, Crons missing) until you deploy — and the deploy needs its OWN governance cycle (begin_change → fleet-update.sh → doctor clean → end_change) before the receipt-authorised lone push passes.
 

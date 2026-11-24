@@ -10,6 +10,8 @@ platforms: [linux, macos]
 
 Patterns, pitfalls, and portability guidance for shell scripts in the Steadfaste Fleet ecosystem. Covers bash and awk — the two most common scripting languages in the repo.
 
+See `references/exit-status-and-sudo-home.md` — two traps that fail SILENTLY: a `||` fallback on a pipeline, and `$HOME` under `sudo`.
+
 ## Bash Pitfalls
 
 ### `sed -i` on a symlinked config replaces the link with a regular file

@@ -161,6 +161,18 @@ only as good as its measurements. Never `git apply` it blind, and never relay it
    only an OUTPUT it left as literal bytes (a code span that fails to parse) is worth flagging, and
    then by executing the sender's stated check (rule 8), not by re-requesting the secret.
 
+## An inbound FINDING is a partial survey — widen it before you implement
+
+A peer's verification report names the lines it happened to see. Treat its file/line list as a
+STARTING SET, not the scope: grep the whole tree for the same class before editing (`grep -rn`
+for the offending literal/pattern across every source tree, not just the named file), and count
+what you find against their list. A fix confined to the named lines leaves the same defect in the
+sibling files and the report's "fixed" claim is then false. Also re-check their stated cause
+against the code before accepting it — a correct symptom with a wrong mechanism leads to a fix
+that is either invasive or incomplete. Say in the delivery which instances you found beyond the
+report, and why the remaining ones were left alone (e.g. a reference in a string literal that
+never executes).
+
 ## Pitfalls
 
 - **Blind-applying an inbound patch.** "The orchestrator can apply each patch directly" is the

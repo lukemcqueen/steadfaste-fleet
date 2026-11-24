@@ -92,6 +92,23 @@ Two shapes that otherwise send you down the wrong path:
   not-clean verdict for its exact content` = the reviewer TIMED OUT on that blob,
   so nothing was left to attempt in that pass. Call `end_change` again — a later
   pass can still cover it. Re-rolling is expected here, not a smell.
+- **That message can be a MISDIAGNOSIS — check the store before believing it.**
+  It asserts a not-clean verdict exists for the blob, but a timed-out or verdict-less
+  reply is held IN-PROCESS by the MCP daemon, so no row need exist at all. Settle it
+  by sha: `git hash-object <path>` for each file the range touches (and
+  `git rev-parse <commit>:<path>` for the older blobs the range carried), then
+  `SELECT blob_sha, verdict FROM blob_reviews WHERE blob_sha=?`. **NO ROW means NEVER
+  JUDGED, not refused** — and while that daemon lives, retries will not resend it. The
+  gate log names the real fault: `grep -n 'answered and judged nothing'` in
+  `~/.steadfaste-fleet/logs/loop-governance.log` (it is a recurring reviewer-output
+  fault, not a property of your change).
+- **When retries genuinely cannot clear it, change the blob or RELEASE the cycle —
+  never hold the lock hoping.** Two honest exits: make the blob byte-identical to the
+  base revision, so it leaves the range and needs no verdict; or, when the work is done
+  and only the close is blocked, `advance_task_state(new_state='cancelled', reason=...)`
+  naming the tooling fault and the evidence for it. Holding the lock is the one option
+  that is not safe: past its TTL it is purged and leaks a PENDING cycle with no owner
+  left to score it, which is a doctor FAIL that blocks every agent's push on the host.
 - `rereview_change` answers `Cycle <id> has no recorded review — nothing to
   re-review` whenever the close has not yet SUCCEEDED. That is not evidence about
   your code and it is not the remedy: the cycle-level row is only written by a
@@ -100,3 +117,22 @@ Two shapes that otherwise send you down the wrong path:
 - A GENERATED file that needs a verdict cannot be hand-edited to force a fresh sha
   — its own banner forbids it and the parity/derived-docs check re-flags the pair —
   so retry the close rather than touching the artifact.
+- **When the generated file's own TEXT is the defect, the fix belongs in the
+  GENERATOR — hand-editing the artifact is overwritten by the next regeneration
+  and re-flagged as a repo-vs-deployed drift.** A finding that a paragraph inside
+  a generated artifact asserts something false ("the deploy runs this check") is
+  not answered by rewording the artifact: patch the emitting script, regenerate,
+  and commit the generator and the regenerated artifact in the SAME commit, then
+  run the generator's own `--check` (it must report the artifact matches the live
+  derivation). Re-word only after confirming the generator is the sole writer —
+  and say plainly in the commit message that the earlier claim was wrong, so the
+  corrected text is not read as the original intent.
+- **Retry `end_change` a few times BEFORE reaching for the blob-change or release
+  exits — the verdict-less timeout shape usually clears on the very next call.**
+  Measured: the identical `no blob was SENT this pass … already carries a not-clean
+  verdict` message on a 1-blob range closed on one further `end_change` with no blob
+  edited and no cycle released. So the ordering is: retry (each call costs one round
+  and the outstanding count falls) → only if the SAME blob survives several passes,
+  change the blob or release the cycle. Cancelling on the first occurrence of the
+  misdiagnosis shape discards a cycle that was one call from closing, and the cancel
+  itself is recorded work the operator has to read.
