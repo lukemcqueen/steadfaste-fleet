@@ -38,6 +38,21 @@ The three layers, per that doc:
 
 Exit codes: 0 = every present harness matches, 1 = drift or gap findings,
 3 = could not verify (fail closed - never reported as agreement).
+
+THE ADAPTER INTERFACE (the integration seam)
+Every harness is handled by a `ProviderExclusionAdapter` (present/read/write/
+describe) selected from the ONE `ADAPTERS` dispatch table by its declared
+`mechanism`. `check()`, `--write` and `--selftest` all go through it, so there is
+exactly one code path that decides whether a harness is enforced, declared as a
+gap, or unverifiable. Adding a projection style (config-file, mcp) is a subclass
+plus a dispatch-table entry — not a new branch anywhere else — and an unknown
+mechanism FAILS CLOSED to a declared gap. A harness with no verified knob is a
+`DeclaredGap`, a first-class adapter, so it is always REPORTED rather than folded
+into silence.
+
+Tests: `tests/test_provider_policy_adapters.py` (18 tests, pytest or standalone)
+drives the seam with the subprocess call monkeypatched, so it needs no live
+harness binary.
 """
 from __future__ import annotations
 
@@ -368,19 +383,20 @@ def _selftest(doc: dict) -> int:
         for field in ("reason", "evidence", "scope"):
             if not entry.get(field):
                 failures.append(f"provider_exclusions[{provider}] must carry {field}")
-    for name, spec in HARNESSES.items():
-        if spec["mechanism"] is None and not spec["why"]:
+    adapters = {name: adapter_for(name, spec) for name, spec in HARNESSES.items()}
+    for name, adapter in adapters.items():
+        if adapter.kind == "gap" and not adapter.spec.get("why"):
             failures.append(f"HARNESSES[{name}] declares no mechanism and no reason")
     if failures:
         print(f"SELFTEST FAILED ({len(failures)}):")
         for f in failures:
             print("  -", f)
         return RC_FINDINGS
+    implemented = sum(1 for a in adapters.values() if a.kind != "gap")
+    gaps = sum(1 for a in adapters.values() if a.kind == "gap")
     print(f"SELFTEST PASSED — {len(block)} excluded provider(s), each with reason, evidence "
-          f"and scope; {sum(1 for s in HARNESSES.values() if s['mechanism'])} projection "
-          f"mechanism(s) implemented, "
-          f"{sum(1 for s in HARNESSES.values() if s['mechanism'] is None)} harness(es) declared "
-          f"as gaps with a reason")
+          f"and scope; {implemented} projection mechanism(s) implemented, "
+          f"{gaps} harness(es) declared as gaps with a reason")
     return RC_OK
 
 
@@ -413,11 +429,12 @@ def main(argv=None) -> int:
     if args.write:
         applied, failed = [], []
         for name, spec in HARNESSES.items():
-            if spec["mechanism"] is None or not spec["presence"]:
+            # route through the SAME interface check() uses — reaching into
+            # spec["mechanism"] here would be a second, silently divergent path
+            adapter = adapter_for(name, spec)
+            if adapter.kind == "gap" or not adapter.present():
                 continue
-            if not Path(spec["presence"]).expanduser().exists():
-                continue
-            err = write_live(spec, want)
+            err = adapter.write(want)
             (failed if err else applied).append(f"{name}: {err}" if err else name)
         for name in applied:
             print(f"wrote {name} {HARNESSES[name]['surface']} = {want}")
