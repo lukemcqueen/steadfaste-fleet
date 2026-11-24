@@ -1970,13 +1970,31 @@ WantedBy=default.target
 SYSTEMDEOF
   fi
   systemctl --user daemon-reload 2>/dev/null || true
-  systemctl --user enable steadfaste-fleet-dashboard 2>/dev/null || true
-  systemctl --user restart steadfaste-fleet-dashboard 2>/dev/null || true
-  if systemctl --user is-active --quiet steadfaste-fleet-dashboard; then
+  # The dashboard unit NAME is a 3-way collision (docs/GLOSSARY.md Part 3): the
+  # canonical target is `fleet-dashboard.service` (Q2), but live hosts install
+  # `steadfaste-fleet-dashboard.service` or `hermes-fleet-dashboard.service`, and
+  # the rename itself stays Rule 9c-gated. Hardcoding ONE spelling made this block
+  # silently no-op (every call ended `|| true`) on any host carrying a different
+  # one — measured: esther's dashboard was disabled AND inactive, and the installer
+  # had been reporting success by warning nobody. Resolve whichever unit the host
+  # actually has; `grep -qx` is an EXACT match so `fleet-dashboard` cannot be
+  # selected by matching inside `steadfaste-fleet-dashboard`.
+  DASH_UNIT=""
+  for _u in fleet-dashboard steadfaste-fleet-dashboard hermes-fleet-dashboard; do
+    if systemctl --user list-unit-files --no-legend "$_u.service" 2>/dev/null \
+         | awk '{print $1}' | grep -qx "$_u.service"; then
+      DASH_UNIT="$_u"; break
+    fi
+  done
+  if [[ -n "$DASH_UNIT" ]]; then
+    systemctl --user enable "$DASH_UNIT" 2>/dev/null || true
+    systemctl --user restart "$DASH_UNIT" 2>/dev/null || true
+  fi
+  if [[ -n "$DASH_UNIT" ]] && systemctl --user is-active --quiet "$DASH_UNIT"; then
    ok
    info " Dashboard running at http://localhost:8901"
   else
-   warn "Dashboard service may not be running — check: systemctl --user status steadfaste-fleet-dashboard"
+   warn "Dashboard service may not be running — check: systemctl --user status ${DASH_UNIT:-<no dashboard unit installed>}"
   fi
  fi
 fi

@@ -59,10 +59,24 @@ if [ "$IS_MAC" = 1 ]; then
 else
   left=$(grep -Rl '\.hermes-cortex' "$HOME/.config/systemd/user" 2>/dev/null | wc -l)
   ck "0 unit files carry a \`.hermes-cortex\` path token (got $left)" "[ $left = 0 ]"
-  for s in fleet-bus.service hermes-cortex-dashboard.service health-vector.service; do
-    st=$(systemctl --user is-active "$s" 2>/dev/null)
-    ck "$s active (got $st)" "[ '$st' = 'active' ]"
+  # The dashboard unit NAME is under RENAME REVIEW — canonical target is
+  # `fleet-dashboard.service` (docs/rename-cortex-to-fleet.md Q2), but live hosts
+  # still install `steadfaste-fleet-dashboard.service` or
+  # `hermes-fleet-dashboard.service` while that rename stays Rule 9c-gated
+  # (docs/GLOSSARY.md Part 3). Accept any of the three.
+  # `hermes-cortex-dashboard.service` was the RETIRED pre-rename name and is NOT a
+  # keep (docs/templates/adversarial-reviewer-prompt.md): a migrated host no longer
+  # has that unit, so asserting it reported "inactive" while covering NO service at
+  # all — a check that had silently stopped checking anything.
+  st=$(systemctl --user is-active fleet-bus.service 2>/dev/null)
+  ck "fleet-bus.service active (got $st)" "[ '$st' = 'active' ]"
+  dash=""
+  for _s in fleet-dashboard.service steadfaste-fleet-dashboard.service hermes-fleet-dashboard.service; do
+    [ "$(systemctl --user is-active "$_s" 2>/dev/null)" = 'active' ] && { dash="$_s"; break; }
   done
+  ck "dashboard unit active (got ${dash:-none of the 3 known names})" "[ -n '$dash' ]"
+  st=$(systemctl --user is-active health-vector.service 2>/dev/null)
+  ck "health-vector.service active (got $st)" "[ '$st' = 'active' ]"
   ck "fleet-gateway.service unit-clean" "[ -f '${HOME}/.config/systemd/user/fleet-gateway.service' ]"
   n=$(systemctl --user list-timers --no-legend 2>/dev/null | grep -c 'fleet-bridge' || true)
   ck "fleet-bridge timers scheduled (got $n)" "[ '$n' -ge 15 ]"

@@ -17,7 +17,7 @@
 Feature: Agent Credential Provisioning
 
   Scenario: Add a new agent with all credentials created
-    Given the fleet operator runs `hermes cortex agent add gisu --role worker`
+    Given the fleet operator runs `fleet agent add gisu --role worker`
     Then a Bearer token is generated and stored in `bus.tokens`
     And a permissions row is created in `bus.permissions` for `inbox_gisu`
     And an nginx htpasswd entry is created for `gisu`
@@ -27,7 +27,7 @@ Feature: Agent Credential Provisioning
     And the credentials are stored in a secrets file for recovery
 
   Scenario: Add an orchestrator agent
-    Given the fleet operator runs `hermes cortex agent add esther --role orchestrator`
+    Given the fleet operator runs `fleet agent add esther --role orchestrator`
     Then all worker-role setup is performed
     And the agent can also send to all inboxes (orch privilege)
     And the agent can also create queues
@@ -35,14 +35,14 @@ Feature: Agent Credential Provisioning
 
   Scenario: Agent name already exists
     Given agent `gisu` already exists
-    When the operator runs `hermes cortex agent add gisu --role worker`
+    When the operator runs `fleet agent add gisu --role worker`
     Then the command fails with "Agent gisu already exists"
     And no credentials are modified
     And the exit code is non-zero
 
   Scenario: Revoke an agent
     Given agent `titus` exists with active credentials
-    When the operator runs `hermes cortex agent remove titus`
+    When the operator runs `fleet agent remove titus`
     Then the Bearer token is removed from `bus.tokens`
     And the permissions row is removed from `bus.permissions`
     And the nginx htpasswd entry is removed
@@ -50,11 +50,11 @@ Feature: Agent Credential Provisioning
 ```
 
 **Acceptance criteria:**
-- [ ] `hermes cortex agent add <name> --role worker|orchestrator` completes in < 2 seconds
+- [ ] `fleet agent add <name> --role worker|orchestrator` completes in < 2 seconds
 - [ ] All bus artifacts created (token, permissions, htpasswd, queues)
 - [ ] Output includes copy-pasteable config snippet
-- [ ] `hermes cortex agent list` shows all agents with their roles and status
-- [ ] `hermes cortex agent remove <name>` fully decommissions an agent
+- [ ] `fleet agent list` shows all agents with their roles and status
+- [ ] `fleet agent remove <name>` fully decommissions an agent
 - [ ] All operations are logged in `bus.audit_log`
 
 ---
@@ -123,7 +123,7 @@ Feature: Targeted Fleet Updates via Agent Labels
 
   Scenario: Agent labels managed via CLI
     Given agent `gisu` exists
-    When the operator runs `hermes cortex agent label set gisu group=general`
+    When the operator runs `fleet agent label set gisu group=general`
     Then gisu's labels are updated in `bus.permissions`
     And the change is logged in `bus.audit_log`
 ```
@@ -303,7 +303,7 @@ Feature: Per-Queue Circuit Breaker
     And the message is stored normally
 
   Scenario: Configuration per agent
-    Given the operator runs `hermes cortex agent config set gisu max_inbox_depth=10000`
+    Given the operator runs `fleet agent config set gisu max_inbox_depth=10000`
     Then only gisu's threshold changes
     And the default is 5000 for all other agents
 
@@ -352,7 +352,7 @@ Feature: Bus Audit Log
     Then `bus.audit_log` has an entry for the archive
 
   Scenario: Permission changes logged
-    Given the operator runs `hermes cortex agent remove titus`
+    Given the operator runs `fleet agent remove titus`
     Then `bus.audit_log` has entries for:
     - token removal
     - permission removal

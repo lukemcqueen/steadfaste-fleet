@@ -60,7 +60,7 @@ def test_log_file():
         r = _run(td)
         _check("the module imports with the file handler installed", "IMPORT_OK" in r.stdout,
                (r.stderr or "")[-300:])
-        _check("the cortex log file is created", "FILE_EXISTS True" in r.stdout, r.stdout)
+        _check("the fleet log file is created", "FILE_EXISTS True" in r.stdout, r.stdout)
         _check("a gate log line lands in the CORTEX log, not only Hermes's",
                "MARKER_IN_FILE True" in r.stdout, r.stdout)
         _check("stderr logging still happens too (harness capture unchanged)",

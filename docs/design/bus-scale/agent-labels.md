@@ -71,16 +71,16 @@ def _should_process(body, agent_name, agent_labels):
 
 ```bash
 # Set labels
-hermes cortex agent label set gisu group=canary region=us-east-1
+fleet agent label set gisu group=canary region=us-east-1
 
 # Remove a label
-hermes cortex agent label unset gisu region
+fleet agent label unset gisu region
 
 # Show labels
-hermes cortex agent label show gisu
+fleet agent label show gisu
 
 # List all agents with labels
-hermes cortex agent list --show-labels
+fleet agent list --show-labels
 ```
 
 Labels are stored in `bus.permissions.labels` and cached in the

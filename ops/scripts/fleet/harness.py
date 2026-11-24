@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""harness.py — `fleet harness`: wire any coding agent to the cortex context store.
+"""harness.py — `fleet harness`: wire any coding agent to the fleet context store.
 
 WHY THIS EXISTS: the fleet will consume ONE capability from N heterogeneous
 coding agents (Pi, Hermes, Claude Code, Codex, …). That knowledge was already
@@ -563,7 +563,7 @@ def _unknown(name: str) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="fleet harness",
-                                 description="Wire a coding agent to the cortex context store.")
+                                 description="Wire a coding agent to the fleet context store.")
     ap.add_argument("cmd", nargs="?", default="list",
                     choices=["list", "show", "install", "verify", "add", "help"])
     ap.add_argument("name", nargs="?")

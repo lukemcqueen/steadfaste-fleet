@@ -23,7 +23,7 @@ the reflexion gate already carries:
 - a human `git commit` by hand holds no lock → no session resolvable → skip (exit 0),
   via a `--skip-no-session` verifier flag.
 
-Missing that split is both failure modes at once: cortex-only placement misses the
+Missing that split is both failure modes at once: fleet-only placement misses the
 agent the gate was meant to change, and an unscoped host-wide version blocks manual
 commits. When a negative-case test cannot manufacture a governed session, stub the
 checker (python stub asserting the `--skip-no-session` flag is forwarded) so the

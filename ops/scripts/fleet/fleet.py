@@ -1280,7 +1280,7 @@ def _harness_resolver():
 
 
 def cmd_harness(cfg: dict, args: list):
-    """`fleet harness` — wire any coding agent to the cortex context store.
+    """`fleet harness` — wire any coding agent to the fleet context store.
 
     A THIN DRIVER over ops/install/harnesses/registry.yaml (the single source of
     harness knowledge) — it never re-encodes a harness's layer or tool list, so
@@ -1473,7 +1473,7 @@ def cmd_help(cfg: dict, args: list):
     print("  fleet watch              — watch ALL inbox queues (default)")
     print("  fleet watch moses        — watch only moses' inbox")
     print("  fleet doctor             — run fleet-doctor")
-    print("  fleet harness <cmd>      — wire a coding agent to the cortex context store")
+    print("  fleet harness <cmd>      — wire a coding agent to the fleet context store")
     print("                          (list | show | install | verify | add)")
     print("  fleet pi <cmd>           — Pi's cortex wiring on THIS host, user scope")
     print("                          (install | check | skills)")

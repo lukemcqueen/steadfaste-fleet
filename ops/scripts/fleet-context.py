@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""fleet-context — CLI access layer for the cortex context store (S2c).
+"""fleet-context — CLI access layer for the fleet context store (S2c).
 
 The harness-facing CLI: Pi's extension API is hooks + `registerTool`, not an MCP
 client, so a Pi extension reaches the shared tool surface through this instead

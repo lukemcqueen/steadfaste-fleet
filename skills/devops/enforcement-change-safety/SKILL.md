@@ -439,7 +439,7 @@ structural and greppable: the gate sits ABOVE the `IS_FLEET_REPO` assignment
 - If the guard is computed late, either move it above the gate or inline the
   cheap equivalent (`_TOP=$(git rev-parse --show-toplevel)` +
   `[[ "$_TOP" == "${HOME}/steadfaste-fleet" ]]`) rather than reordering a long
-  script. Use the SAME `${HOME}/steadfaste-fleet` comparison the other cortex-only
+  script. Use the SAME `${HOME}/steadfaste-fleet` comparison the other fleet-only
   gates use, so there is one scoping idiom to audit.
 - Prove it by real execution, not inspection: run the deployed hook from a
   throwaway `git init` repo and assert the gate does NOT fire (the hook still
@@ -1465,7 +1465,7 @@ the same signal the reflexion gate already uses:
 
 A host-wide gate is therefore safe only when it SKIPS on "no session resolvable" and fires only
 on "active governance session present". Missing that split is both failure modes at once:
-cortex-only placement misses the agent the gate was meant to change, and an unscoped host-wide
+fleet-only placement misses the agent the gate was meant to change, and an unscoped host-wide
 version blocks manual commits. (Same signal as `reflexion-check.py active_session_id()`.)
 
 Reuse the shared session-resolution implementation (`reflexion-check.py active_session_id()`,

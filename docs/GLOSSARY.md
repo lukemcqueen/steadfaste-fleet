@@ -195,11 +195,39 @@ The false "keeps its name" claims are corrected (see below); the actual unit ren
 is **RENAME — gated**.
 
 **Residual `cortex*` / `hermes-cortex*` outside keeps (content bugs, fixed below or
-tracked):** `AGENTS.md` "cortex-only gates"; `CONTRIBUTING.md` "Cortex-Update.sh"
-heading; `steadfaste-fleet` skills referencing `cortex-dashboard`; `fleet-update.sh`
-case pattern matching `cortex-dashboard`; `docs/design/bus-scale/*` `hermes cortex`
-CLI examples; `enforcement-change-safety` skill "cortex-only"; code docstrings
-"cortex log"/"cortex context store". These are wording, not renames — safe to fix.
+tracked):** these were wording, not renames, and are **FIXED as of 2026-11-24**
+(measured: `git grep` for each family in the repo):
+
+- `AGENTS.md` "cortex-only gates" → the file already reads **"Scope fleet-only gates"**.
+- `CONTRIBUTING.md` "Cortex-Update.sh" heading → **already corrected** (no match).
+- `skills/autonomous-ai-agents/steadfaste-fleet-setup/SKILL.md` (dashboard unit) →
+  **already corrected**: it now says the name is UNDER RENAME REVIEW, cites Q2, and
+  states explicitly that the retired `hermes-cortex-dashboard.service` is **NOT a
+  deliberate keep**. The earlier "keeps its name" claim is gone.
+- `skills/devops/enforcement-change-safety/SKILL.md` + its reference
+  `all-repos-session-split-gate.md`, and
+  `skills/devops/file-ownership-boundaries/references/ownership-map.md`:
+  "cortex-only" → **"fleet-only"** (fixed).
+- `docs/design/bus-scale/agent-labels.md` + `stories.md`:
+  `hermes cortex agent …` → **`fleet agent …`** (fixed; the `hermes cortex` CLI family
+  does not exist).
+- code docstrings/help "cortex context store" → **"fleet context store"**
+  (`mcp-servers/fleet-context-mcp.py`, `ops/scripts/fleet/fleet.py`,
+  `ops/scripts/fleet/harness.py`, `ops/scripts/fleet-context.py`) and the test label in
+  `tests/test_gate_log_file.py` (fixed).
+- `ops/scripts/manage/verify-rename-local.sh` asserted the RETIRED
+  `hermes-cortex-dashboard.service` — a live check naming a unit that no longer exists,
+  so it reported "inactive" while covering **no service at all**. It now accepts the three
+  installed spellings (fixed).
+- `ops/install/install.sh` hardcoded `steadfaste-fleet-dashboard` behind `|| true`, so on
+  any host carrying a different spelling the enable/restart block **silently no-opped** —
+  measured: esther's dashboard was disabled AND inactive. It now resolves the unit the
+  host actually has (fixed; `fleet-update.sh` already accepted two spellings).
+
+What remains is genuinely gated, not stale: the **unit rename itself** (below), and the
+`cortex-dashboard` mentions inside `docs/rename-followups-*.md`, `docs/rename-cortex-to-fleet.md`
+and `docs/plans/cortex-to-fleet-rename-plan.md`, which are the migration's own mapping
+records — they NAME the old spelling as the thing being renamed.
 
 **Agent identity env var.** Code reads **`AGENT_NAME`** (`loop-gov-mcp.py`,
 `fleet-bus-mcp.py`). The legacy `hc` admin CLI resolves `HC_AGENT` first, then

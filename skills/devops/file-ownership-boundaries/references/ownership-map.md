@@ -5,7 +5,7 @@
 | Domain | Base path | Config | Skills | Scripts | State |
 |--------|-----------|--------|--------|---------|-------|
 | **Hermes Agent** | `~/.hermes/` | `config.yaml` | `skills/` (built-in) | `scripts/` | Plugins, sessions, memory |
-| **Our Repo** | `~/steadfaste-fleet/` | N/A (git tracked) | `skills/` (cortex-only) | `ops/scripts/` | N/A (git tracked) |
+| **Our Repo** | `~/steadfaste-fleet/` | N/A (git tracked) | `skills/` (fleet-only) | `ops/scripts/` | N/A (git tracked) |
 | **Deployed** | `~/.steadfaste-fleet/` | `skills.yaml` | `skills/` (synced from repo) | `scripts/` (synced from repo) | `state/`, `data/` |
 
 ## Ownership Test
