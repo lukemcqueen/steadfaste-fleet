@@ -584,6 +584,7 @@ register "ops/scripts/manage/fleet_doctor/checks.py"   "${FLEET_DEPLOY_HOME}/scr
 register "ops/scripts/manage/fleet_doctor/cli.py"     "${FLEET_DEPLOY_HOME}/scripts/fleet_doctor/cli.py"
 register "ops/scripts/manage/fleet_doctor/config.py"  "${FLEET_DEPLOY_HOME}/scripts/fleet_doctor/config.py"
 register "ops/scripts/manage/fleet_doctor/dispositions.py" "${FLEET_DEPLOY_HOME}/scripts/fleet_doctor/dispositions.py"
+register "ops/scripts/manage/fleet_doctor/env_backup_sprawl.py" "${FLEET_DEPLOY_HOME}/scripts/fleet_doctor/env_backup_sprawl.py"
 register "ops/scripts/manage/fleet_doctor/fix.py"     "${FLEET_DEPLOY_HOME}/scripts/fleet_doctor/fix.py"
 register "ops/scripts/manage/fleet_doctor/immutability.py" "${FLEET_DEPLOY_HOME}/scripts/fleet_doctor/immutability.py"
 # Every file in the package is registered INDIVIDUALLY: a new module added here
