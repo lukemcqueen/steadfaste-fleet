@@ -1,0 +1,102 @@
+RS0 — RAW COLLECTION OUTPUT (verbatim, no editing)
+Command: pytest tests/test_enforcer_hook_truth_and_reload.py --collect-only -q
+Date: 2026-11-24   Interpreter: the fleet venv python
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/esther/steadfaste-fleet
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 86 items
+
+<Dir steadfaste-fleet>
+  <Dir tests>
+    <Module test_enforcer_hook_truth_and_reload.py>
+      <Function test_corpus_sizes_are_the_documented_ones>
+      <Function test_collected_count_matches_the_documented_total>
+      <Function test_hook_allows_known_read_only[ls -la]>
+      <Function test_hook_allows_known_read_only[cat README.md]>
+      <Function test_hook_allows_known_read_only[grep -n foo file.py]>
+      <Function test_hook_allows_known_read_only[find . -name '*.py']>
+      <Function test_hook_allows_known_read_only[git status]>
+      <Function test_hook_allows_known_read_only[git log --oneline -5]>
+      <Function test_hook_allows_known_read_only[git diff]>
+      <Function test_hook_allows_known_read_only[git -C /tmp/x status]>
+      <Function test_hook_allows_known_read_only[git --no-pager log]>
+      <Function test_hook_allows_known_read_only[git show HEAD:file]>
+      <Function test_hook_allows_known_read_only[git rev-parse --show-toplevel]>
+      <Function test_hook_allows_known_read_only[docker ps]>
+      <Function test_hook_allows_known_read_only[docker compose ps]>
+      <Function test_hook_allows_known_read_only[docker logs web]>
+      <Function test_hook_allows_known_read_only[systemctl status x]>
+      <Function test_hook_allows_known_read_only[systemctl show unit]>
+      <Function test_hook_allows_known_read_only[systemctl list-unit-files]>
+      <Function test_hook_allows_known_read_only[journalctl -u hermes-gateway]>
+      <Function test_hook_allows_known_read_only[journalctl -u x | tail -20]>
+      <Function test_hook_allows_known_read_only[curl -sI https://example.com]>
+      <Function test_hook_allows_known_read_only[curl -s http://localhost:13004/health]>
+      <Function test_hook_allows_known_read_only[pip list]>
+      <Function test_hook_allows_known_read_only[npm search x]>
+      <Function test_hook_allows_known_read_only[hermes mcp list]>
+      <Function test_hook_allows_known_read_only[mycortex list -n 5]>
+      <Function test_hook_allows_known_read_only[mycortex answer search foo]>
+      <Function test_hook_allows_known_read_only[ps aux]>
+      <Function test_hook_allows_known_read_only[df -h]>
+      <Function test_hook_allows_known_read_only[uname -a]>
+      <Function test_hook_allows_known_read_only[echo hello]>
+      <Function test_hook_allows_known_read_only[printf '%s' hi]>
+      <Function test_hook_allows_known_read_only[cd ~ && pwd]>
+      <Function test_hook_allows_known_read_only[command -v python3]>
+      <Function test_hook_allows_known_read_only[test -f x]>
+      <Function test_hook_allows_known_read_only[true]>
+      <Function test_hook_allows_known_read_only[ls -la | grep .py]>
+      <Function test_hook_allows_known_read_only[git status --short | head]>
+      <Function test_hook_allows_known_read_only[git log --oneline && git diff]>
+      <Function test_hook_allows_known_read_only[cat a.txt | grep x | wc -l]>
+      <Function test_hook_allows_known_read_only[journalctl -u x | tail -5]>
+      <Function test_hook_blocks_known_write[rm -rf x]>
+      <Function test_hook_blocks_known_write[mv a b]>
+      <Function test_hook_blocks_known_write[cp a b]>
+      <Function test_hook_blocks_known_write[touch newfile]>
+      <Function test_hook_blocks_known_write[mkdir dir]>
+      <Function test_hook_blocks_known_write[git commit -m 'x']>
+      <Function test_hook_blocks_known_write[git push origin main]>
+      <Function test_hook_blocks_known_write[git reset --hard]>
+      <Function test_hook_blocks_known_write[git branch -d foo]>
+      <Function test_hook_blocks_known_write[git checkout main]>
+      <Function test_hook_blocks_known_write[docker run -it x]>
+      <Function test_hook_blocks_known_write[systemctl restart x]>
+      <Function test_hook_blocks_known_write[pip install foo]>
+      <Function test_hook_blocks_known_write[npm install foo]>
+      <Function test_hook_blocks_known_write[sudo systemctl restart x]>
+      <Function test_hook_blocks_known_write[echo x > file]>
+      <Function test_hook_blocks_known_write[printf 'x' > file]>
+      <Function test_hook_blocks_known_write[cat <> file]>
+      <Function test_hook_blocks_known_write[python3 -c 'print(1)']>
+      <Function test_hook_blocks_known_write[bash -c 'rm x']>
+      <Function test_hook_blocks_known_write[python3 script.py]>
+      <Function test_hook_blocks_known_write[bash setup.sh]>
+      <Function test_hook_blocks_known_write[node app.js]>
+      <Function test_hook_blocks_known_write[find . -exec rm {} +]>
+      <Function test_hook_blocks_known_write[find . -delete]>
+      <Function test_hook_blocks_known_write[sort -o out.txt in.txt]>
+      <Function test_hook_blocks_known_write[date -s '2020-01-01']>
+      <Function test_hook_blocks_known_write[curl -s URL -d x=y]>
+      <Function test_hook_blocks_known_write[curl -s URL -X POST]>
+      <Function test_hook_blocks_known_write[env bash -c 'x']>
+      <Function test_hook_blocks_known_write[env FOO=bar python3 x.py]>
+      <Function test_hook_blocks_known_write[git branch newbranch]>
+      <Function test_hook_blocks_known_write[journalctl --vacuum-time=1d]>
+      <Function test_hook_blocks_known_write[dmesg -C]>
+      <Function test_hook_blocks_known_write[nohup python3 x.py]>
+      <Function test_hook_blocks_known_write[crontab -e]>
+      <Function test_hook_blocks_known_write[wget -O x url]>
+      <Function test_hook_blocks_known_write[echo x > ~/.bashrc]>
+      <Function test_hook_blocks_known_write[git status > foo]>
+      <Function test_hook_blocks_known_write[cat file > out]>
+      <Function test_hook_follows_contract_mutation_without_restart>
+      <Function test_hook_follows_permissive_mutation_both_directions>
+      <Function test_cli_contract_mutation_reload_proof>
+      <Function test_missing_contract_fails_closed>
+
+========================= 86 tests collected in 0.14s ==========================

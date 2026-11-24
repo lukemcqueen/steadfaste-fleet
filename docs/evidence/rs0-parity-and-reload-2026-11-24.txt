@@ -1,0 +1,148 @@
+RS0 — WRITE-CLASS PARITY RE-PINNED TO THE HOOK DECISION PATH + HERMETIC RELOAD PROOF
+====================================================================================
+Date        : 2026-11-24
+Slice       : docs/plans/enforcer-residue-shrink.md RS0 (task slice 51b234d2)
+Range base  : 8cdebc5c — the commit this slice builds on (git rev-parse HEAD before
+              the RS0 commit).
+Contract    : ops/services/fleet-governance/write_class.py (unchanged by this slice)
+Plugin      : plugins/governance-enforcer/__init__.py (unchanged by this slice)
+New file    : tests/test_enforcer_hook_truth_and_reload.py (86 collected)
+Interpreter : the fleet venv python (the fleet venv, not a repo-local .venv)
+
+CORRECTION (finding ADV-15148-1, folded in two rounds)
+-----------------------------------------------------
+Round 1 — the first version of this artifact claimed "40 allow + 44 block" cases.
+The block corpus is 40, not 44; a reviewer caught the arithmetic (40+44+4 does
+not equal the 84 pytest collected). Corrected to 40 allow + 40 block. Verified by
+ast over the file: ALLOW 40, BLOCK 40, no duplicates within either.
+
+Round 2 — the reviewer accepted the correction but held the line that a count
+asserted only in prose is not verifiable, and asked for the collected total to be
+committed or pinned by a test. BOTH are now done:
+  * the verbatim collection transcript is committed below (COLLECTION), and
+  * the counts are pinned IN THE FILE by two executable tests:
+      - test_corpus_sizes_are_the_documented_ones  -> len(ALLOW) == 40, len(BLOCK) == 40
+      - test_collected_count_matches_the_documented_total -> actually RUNS
+        pytest --collect-only on this file and asserts the reported total
+    The second test is itself one of the standalone tests, so the documented
+    total counts it: 40 + 40 + 6 = 86.
+
+Every transcript below was re-run after the final edit, so the numbers in this
+artifact are internally consistent with the committed blobs.
+
+
+WHY (FINDING F0)
+----------------
+tests/test_write_class_parity.py compared the contract against
+enforcer._is_readonly_terminal_command — but since CR2 that function delegates
+through ops/scripts/loop-gov-classify.py to the SAME contract, so the test was a
+contract-vs-contract self-comparison: green (209 passed, rc 0) and blind to drift.
+RS0 replaces that with a comparison against HAND-STATED TRUTH plus a reload proof.
+
+
+ACCEPTANCE — and what was run to meet it
+----------------------------------------
+(a) TRUTH: the hook's allow/deny over the corpus is compared against the
+    corpus's own expectations, not against the contract's function.
+    CORPUS: 40 allow (plain + compound read-only) + 40 block (writes + evasions),
+    hand-stated literals, carried over from tests/test_write_class_parity.py so
+    the two corpora stay aligned.
+
+(b) RELOAD, hermetic: the enforcer module is loaded ONCE; its contract is then
+    mutated at a scratch path IN PLACE; the SAME already-answered command is
+    asked again and the verdict must flip. Nothing is restarted — the module
+    object identity is asserted unchanged. Run in both directions (a blocking
+    override and an allowing override). The same proof one level down against
+    the CLI alone (the master plan's CR5 shape): copy CLI+contract to a scratch
+    tree, mutate the copy, verdict differs; --contract selects the copy asked for.
+
+(c) BOTH DIRECTIONS: the truth corpus asserts allow AND block cases; the reload
+    proof asserts a blocking mutation AND a permissive mutation.
+
+(d) This file is the evidence artifact and cites the range base sha above.
+
+
+TRANSCRIPTS (run with the fleet venv python)
+--------------------------------------------
+COLLECTION (committed because finding ADV-15148-1 asked for the collected count
+to be verifiable rather than asserted). The RAW, unedited collection output —
+every node id, naming all six standalone tests — is committed as
+docs/evidence/rs0-collection-2026-11-24.txt; the summary is repeated here:
+    $ venv/bin/python3 -m pytest tests/test_enforcer_hook_truth_and_reload.py --collect-only -q
+    ========================= 86 tests collected in 0.17s ==========================
+    breakdown by node id:
+          40    test_hook_blocks_known_write[...]
+          40    test_hook_allows_known_read_only[...]
+           6    non-parametrized: test_corpus_sizes_are_the_documented_ones,
+                test_collected_count_matches_the_documented_total,
+                test_hook_follows_contract_mutation_without_restart,
+                test_hook_follows_permissive_mutation_both_directions,
+                test_cli_contract_mutation_reload_proof,
+                test_missing_contract_fails_closed
+    (40 + 40 + 6 = 86; the corpus sizes are pinned in-file by the first test and
+     the collected total by the second, which collects for real)
+
+GREEN, the new file:
+    $ venv/bin/python3 -m pytest tests/test_enforcer_hook_truth_and_reload.py -q
+    ============================== 86 passed in 6.12s ==============================
+
+RED PROOF A — a contract regression must fail the truth tests. Appended to
+ops/services/fleet-governance/write_class.py (reverted afterwards):
+
+    def is_readonly_command(command):  # RS0 RED-PROOF REGRESSION
+        return False
+
+    $ venv/bin/python3 -m pytest tests/test_enforcer_hook_truth_and_reload.py -q \
+        -k "hook_allows or hook_blocks"
+    ================= 40 failed, 40 passed, 6 deselected in 5.42s =================
+    (every allow case failed; the block cases still passed — a one-directional
+     regression caught in exactly its direction)
+    $ git checkout -- ops/services/fleet-governance/write_class.py
+    $ git status --short -- ops/services/fleet-governance/write_class.py   # empty
+
+RED PROOF B — the regression this file exists to catch: a VERDICT CACHE inside
+the plugin. Temporarily added to plugins/governance-enforcer/__init__.py
+(reverted afterwards):
+
+    _RS0_REDBOOF_VERDICT_CACHE: dict = {}
+    if command in _RS0_REDBOOF_VERDICT_CACHE:
+        return _RS0_REDBOOF_VERDICT_CACHE[command]
+
+    $ venv/bin/python3 -m pytest tests/test_enforcer_hook_truth_and_reload.py -q -k follows
+    ========================= 2 failed, 84 deselected in 0.35s =========================
+    $ git checkout -- plugins/governance-enforcer/__init__.py
+    $ git status --short -- plugins/governance-enforcer/__init__.py       # empty
+
+PRISTINE TREE, all three write-class suites together:
+    $ venv/bin/python3 -m pytest tests/test_enforcer_hook_truth_and_reload.py \
+        tests/test_write_class_parity.py tests/test_loop_gov_classify.py -q
+    ============================== 324 passed in 18.16s ==============================
+    (86 new + 209 parity + 29 classify)
+
+
+WHAT THE TEST CAUGHT IN ITS OWN FIRST DRAFT
+-------------------------------------------
+The first green run was 82 passed / 2 failed, and both failures were bugs in the
+TEST, not the product — recorded because they are findings about the seams:
+  1. the --contract assertion built its path from the CLI FILE instead of the
+     scratch tree root, so it asked for a path under a file;
+  2. the fail-closed test deleted the scratch contract and expected the CLI to
+     report COULD NOT VERIFY — but the CLI's lookup falls back to the deployed
+     copy under ~/.steadfaste-fleet/services, so a host with a deployed contract
+     can never reach that branch. The test now points HOME at the scratch root
+     for the child process, which is what makes the fail-closed branch reachable
+     and asserted rather than assumed.
+
+Both are documented in the test's docstrings as well.
+
+
+SEAMS UNDER TEST (tdd skill: pre-agreed seams)
+----------------------------------------------
+- _is_readonly_terminal_command (the hook's terminal allow/deny decision, the
+  function the block-message path and the hook call) — catches contract drift in
+  both directions, verdict caching, inlined re-implementation of the rules;
+  does NOT assert the telemetry side-effects of _allow/_deny_terminal.
+- ops/scripts/loop-gov-classify.py --contract (the reload seam) — catches a
+  per-process contract cache in the CLI and proves the file-update-only reload.
+- Not asserted here (RS4's subject): the sanctioned recovery lane surviving a
+  missing contract.
