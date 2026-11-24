@@ -21,6 +21,7 @@ import os
 import gateway_envelope as env
 
 from . import transport as _bus
+from . import usage as _usage
 from .backend import BackendAdapter
 
 log = logging.getLogger("fleet_gateway.backend")
@@ -72,7 +73,9 @@ class HermesBackend(BackendAdapter):
     async_replies = True
 
     def __init__(self, agent: str, bus_url: str, bus_headers: dict,
-                 secret: str):
+                 secret: str, usage_notice: bool = False,
+                 usage_interval_s: int = 600, usage_db: str = "",
+                 usage=None):
         if not isinstance(agent, str) or not agent:
             raise ValueError("agent must be a non-empty string")
         if not isinstance(secret, str) or not secret:
@@ -86,6 +89,13 @@ class HermesBackend(BackendAdapter):
         # Subject for inbound human messages (the bus demands UPPER_CASE).
         self.inbound_subject = (
             os.environ.get("GATEWAY_INBOUND_SUBJECT", "").strip() or DEFAULT_INBOUND_SUBJECT)
+        # Periodic usage notice. The bus backend has no prompt to inject into —
+        # the envelope BODY is the message the agent receives. The hermes agent's
+        # token counts live in its own state.db (the gateway only sees the bus),
+        # so this source is read-only and silent on failure.
+        self.usage_notice = bool(usage_notice)
+        self.usage_db = usage_db or os.path.expanduser("~/.hermes/state.db")
+        self.usage = usage or _usage.UsageNotice(usage_interval_s)
 
     def start(self) -> None:
         pass
@@ -101,6 +111,11 @@ class HermesBackend(BackendAdapter):
             envelope = env.validate(envelope)
         except env.EnvelopeError:
             return None  # malformed inbound — DLQ, never crash the loop
+        # Periodic usage notice: appended to the BODY the agent receives. A copy —
+        # the caller's envelope is never mutated.
+        body = self._body_with_usage(envelope)
+        if body != envelope.get("body"):
+            envelope = {**envelope, "body": body}
         signed = env.sign_payload(envelope, self.secret)
         # The BUS has its own message schema and rejects the ADR-0005 envelope's
         # fields outright — verified against the live bus 2026-10-02:
@@ -162,6 +177,17 @@ class HermesBackend(BackendAdapter):
             _bus.bus_archive(self.bus_url, self.bus_headers,
                              f"out_{self.agent}", msg["msg_id"])
         return out
+
+    def _body_with_usage(self, envelope: dict) -> str:
+        """The message body the agent receives, plus the notice when due."""
+        body = str(envelope.get("body", ""))
+        if not self.usage_notice:
+            return body
+        chat = str(envelope.get("channel_user_id") or "")
+        key = f"{envelope.get('channel', '')}:{chat}"
+        footer = self.usage.notice(
+            key, lambda: _usage.hermes_usage(self.usage_db, chat))
+        return f"{body}\n\n{footer}" if footer else body
 
     def health(self) -> dict:
         return {"ok": True, "backend": "hermes", "agent": self.agent}

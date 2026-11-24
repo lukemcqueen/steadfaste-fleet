@@ -21,6 +21,12 @@ Usage (argv templates live in gateway.yaml, never here):
     pi-control compact     --session-id fleet-pi-<chat> [--model M] [--instructions TEXT]
     pi-control check-model <provider/model>
     pi-control state       --session-id fleet-pi-<chat>
+    pi-control stats       --session-id fleet-pi-<chat> [--model M]
+
+``stats`` prints the ONE line the gateway's periodic usage notice reads
+(``model=… tokens=… cost=… context=…%``). It is a real measurement from pi's
+``get_session_stats`` — never an estimate. A field pi does not report is
+omitted rather than guessed.
 
 Exit codes follow the fleet convention for a check that can fail three ways:
 
@@ -345,10 +351,49 @@ def cmd_state(args) -> int:
     return 0
 
 
+def cmd_stats(args) -> int:
+    """One line of REAL session usage: model, tokens, cost, context %.
+
+    Read by the gateway's periodic usage notice (``fleet_gateway.usage``), which
+    parses ``key=value`` pairs. pi's ``get_session_stats`` reports tokens and cost
+    across the whole session plus the current context-window estimate; a field pi
+    does not report is OMITTED — the gateway must never print a guessed number.
+    """
+    resp = _rpc(_session_argv(args), {"type": "get_session_stats"},
+                deadline_s=args.timeout_s)
+    if not resp.get("success"):
+        print(str(resp.get("error") or "pi could not read the session stats"),
+              file=sys.stderr)
+        return COULD_NOT_VERIFY
+    d = resp.get("data") or {}
+    tokens = d.get("tokens") or {}
+    total = tokens.get("total") if isinstance(tokens, dict) else None
+    cost = d.get("cost")
+    ctx = d.get("contextUsage") or {}
+    parts = []
+    if getattr(args, "model", ""):
+        parts.append(f"model={args.model}")
+    if isinstance(total, int):
+        parts.append(f"tokens={total}")
+    if isinstance(cost, (int, float)):
+        parts.append(f"cost={cost}")
+    if isinstance(ctx.get("percent"), (int, float)):
+        parts.append(f"context={ctx['percent']}%")
+    if isinstance(ctx.get("tokens"), int):
+        parts.append(f"context_tokens={ctx['tokens']}")
+    if isinstance(ctx.get("contextWindow"), int):
+        parts.append(f"context_window={ctx['contextWindow']}")
+    if not parts:
+        print("pi reported no usage for this session", file=sys.stderr)
+        return REFUSED
+    print(" ".join(parts))
+    return 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="pi-control",
                                  description="pi commands the gateway cannot send "
-                                             "as a prompt (compact, check-model, state)")
+                                             "as a prompt (compact, check-model, state, stats)")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     p = sub.add_parser("compact", help="manually compact the session context")
@@ -373,6 +418,14 @@ def main(argv=None) -> int:
     p.add_argument("--model", default="")
     p.add_argument("--timeout-s", type=float, default=60.0)
     p.set_defaults(fn=cmd_state)
+
+    p = sub.add_parser("stats", help="tokens/cost/context for the session (one line)")
+    p.add_argument("--session-id", required=True)
+    p.add_argument("--session-dir", default="")
+    p.add_argument("--model", default="")
+    # stats is a READ; 30s bounds a wedged pi without stalling the gateway's turn.
+    p.add_argument("--timeout-s", type=float, default=30.0)
+    p.set_defaults(fn=cmd_stats)
 
     args = ap.parse_args(argv)
     return args.fn(args)

@@ -42,6 +42,8 @@ from dataclasses import dataclass, field
 
 import gateway_envelope as env
 
+from . import usage as _usage
+
 log = logging.getLogger("fleet_gateway.agents")
 
 # ── kinds ────────────────────────────────────────────────────────────────
@@ -187,6 +189,12 @@ class AgentSpec:
     # pinned key every chat falls back to ONE session key and they share a
     # checkpoint. That is a data-correctness bug, not a cosmetic one.
     env: dict = field(default_factory=dict)
+    # Periodic usage notice in the prompt (opt-in, off by default). The reader is
+    # a declared argv that prints `key=value` pairs — the same seam as `commands`,
+    # so the gateway learns no new hardcoded backend. See fleet_gateway.usage.
+    usage_notice: bool = False
+    usage_interval_s: int = 600
+    usage_command: list = field(default_factory=list)
     extra: dict = field(default_factory=dict)
 
     @staticmethod
@@ -197,7 +205,8 @@ class AgentSpec:
             raise ValueError(f"backend spec must be a mapping or a name, got {type(d).__name__}")
         allowed = {"name", "kind", "command", "prompt_template", "timeout_s", "reply_mode",
                    "capabilities", "model", "subject", "output", "session", "session_args",
-                   "model_args", "commands", "stream", "env", "extra"}
+                   "model_args", "commands", "stream", "env", "extra",
+                   "usage_notice", "usage_interval_s", "usage_command"}
         unknown = set(d) - allowed
         if unknown:
             raise ValueError(
@@ -223,6 +232,9 @@ class AgentSpec:
             model=str(d.get("model", "") or ""),
             subject=str(d.get("subject", "USER_MESSAGE") or "USER_MESSAGE"),
             env={str(k): str(v) for k, v in (d.get("env") or {}).items()},
+            usage_notice=bool(d.get("usage_notice")),
+            usage_interval_s=_positive_or_default(d.get("usage_interval_s"), 600),
+            usage_command=_argv_list(d.get("usage_command") or []),
             extra=dict(d.get("extra", {}) or {}),
         )
 
@@ -290,6 +302,16 @@ class AgentSpec:
             raise ValueError(
                 f"backend '{self.name}': 'commands' is only honoured by kind 'command' "
                 f"(got {self.kind!r}) — it would be accepted and silently ignored")
+        # A usage notice with no reader would be accepted and silently produce
+        # nothing — the failure this module exists to stop. Fail at build time.
+        if self.usage_notice and self.kind == "command" and not self.usage_command:
+            raise ValueError(
+                f"backend '{self.name}': usage_notice is on but usage_command is empty — "
+                "declare the reader argv (e.g. pi-control stats) or turn the notice off")
+        if self.usage_notice and self.usage_interval_s <= 0:
+            raise ValueError(
+                f"backend '{self.name}': usage_interval_s must be positive "
+                f"(got {self.usage_interval_s})")
 
 
 # ── reply routing (the one rule every backend shares) ────────────────────
@@ -354,7 +376,9 @@ def _build_hermes(spec: AgentSpec, ctx: dict):
             "is HMAC-signed, and an empty key makes the signature forgeable")
     os.environ.setdefault("GATEWAY_INBOUND_SUBJECT", spec.subject)
     backend = HermesBackend(agent=spec.name, bus_url=ctx.get("bus_url", ""),
-                            bus_headers=ctx.get("bus_headers", {}), secret=ctx["secret"])
+                            bus_headers=ctx.get("bus_headers", {}), secret=ctx["secret"],
+                            usage_notice=spec.usage_notice,
+                            usage_interval_s=spec.usage_interval_s)
     backend.spec = spec            # operators/health can see what was declared
     return backend
 
@@ -373,10 +397,14 @@ class CommandBackend:
     # silently flipped if that default ever changes. A CLI agent answers INSIDE dispatch.
     async_replies = False
 
-    def __init__(self, spec: AgentSpec, *, bus_url: str = "", bus_headers: dict | None = None):
+    def __init__(self, spec: AgentSpec, *, bus_url: str = "", bus_headers: dict | None = None,
+                 usage=None):
         self.spec = spec
         self.bus_url = bus_url
         self.bus_headers = bus_headers or {}
+        # One interval gate per backend, keyed by session. Injectable so tests
+        # drive the clock instead of sleeping.
+        self.usage = usage or _usage.UsageNotice(spec.usage_interval_s)
 
     # -- BackendAdapter surface ------------------------------------------------
     def start(self) -> None:
@@ -444,6 +472,36 @@ class CommandBackend:
 
     # -- internals -------------------------------------------------------------
     def _prompt(self, inbound: dict) -> str:
+        """The human's message, plus the periodic usage notice when it is due."""
+        base = self._base_prompt(inbound)
+        footer = self._usage_footer(inbound)
+        return f"{base}\n\n{footer}" if footer else base
+
+    def _usage_footer(self, inbound: dict) -> str:
+        """The `[gateway-usage]` line, or '' when off / not due / unreadable."""
+        if not self.spec.usage_notice:
+            return ""
+        key = self._session_id(inbound) or f"{self.spec.name}:{inbound.get('channel_user_id')}"
+        vals = {
+            "session_id": key,
+            "model": self._model(inbound),
+            "agent": self.spec.name,
+            "channel": str(inbound.get("channel", "")),
+            "user": str(inbound.get("channel_user_id", "")),
+        }
+
+        def source():
+            argv = []
+            for raw in self.spec.usage_command:
+                try:
+                    argv.append(str(raw).format(**vals))
+                except (KeyError, IndexError):
+                    argv.append(str(raw))
+            return _usage.command_usage(argv)
+
+        return self.usage.notice(key, source)
+
+    def _base_prompt(self, inbound: dict) -> str:
         try:
             body = self.spec.prompt_template.format(
                 body=inbound.get("body", ""), agent=self.spec.name,

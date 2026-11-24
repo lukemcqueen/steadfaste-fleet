@@ -17,6 +17,17 @@
         "FLEET_SESSION_HARNESS": "pi",
         "FLEET_SESSION_KEY": "{session_id}"
       },
+      "usage_notice": true,
+      "usage_interval_s": 600,
+      "usage_command": [
+        "/usr/bin/python3",
+        "/home/<user>/.steadfaste-fleet/scripts/fleet_gateway/pi_control.py",
+        "stats",
+        "--session-id",
+        "{session_id}",
+        "--model",
+        "{model}"
+      ],
       "commands": {
         "compact": {
           "argv": ["/usr/bin/python3", "/home/<user>/.steadfaste-fleet/scripts/fleet_gateway/pi_control.py",

@@ -926,6 +926,9 @@ register "ops/scripts/fleet_gateway/models.py"     "${FLEET_DEPLOY_HOME}/scripts
 # restarted, so the first reply once it is back carries the confirmation (and the
 # agent is told the same fact, or it answers "no" from a session that survived).
 register "ops/scripts/fleet_gateway/restarts.py"   "${FLEET_DEPLOY_HOME}/scripts/fleet_gateway/restarts.py"
+# Periodic model/token/cost notice in prompts (opt-in per backend). Reads a
+# declared usage_command (pi-control stats) or the hermes agent's own state.db.
+register "ops/scripts/fleet_gateway/usage.py"      "${FLEET_DEPLOY_HOME}/scripts/fleet_gateway/usage.py"
 # The PI harness adapter: pi's session operations the gateway cannot express as a
 # prompt (`/compact` lives in pi's RPC mode). Declared per host in gateway.yaml under
 # backends[].commands, and run with the stock python3 — stdlib only.
