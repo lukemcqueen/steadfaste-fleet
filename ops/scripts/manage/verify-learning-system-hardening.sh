@@ -229,16 +229,39 @@ fi
 
 echo
 if [[ ${JSON_MODE} -eq 1 ]]; then
-  printf '{"claims": ['
-  first=1
-  for r in "${RESULTS[@]}"; do
-    IFS='|' read -r st name detail <<<"${r}"
-    if [[ ${first} -eq 0 ]]; then printf ','; fi
-    first=0
-    printf '{"name": "%s", "status": "%s", "detail": "%s"}' "${name}" "${st}" "${detail}"
-  done
-  printf '], "all_pass": %s, "unverified": %d}\n' \
-    "$([[ ${FAIL} -eq 0 && ${SKIP_COUNT} -eq 0 ]] && echo true || echo false)" "${SKIP_COUNT}"
+  # Emit valid JSON: escape every string through python3 json.dumps so a
+  # FAIL detail containing a double quote (e.g. a stderr excerpt with a
+  # quoted path or a Python traceback line) cannot produce syntactically
+  # invalid JSON. The header advertises "machine-readable" — that is a
+  # promise, and unescaped printf is not one.
+  # Join the RESULTS array into a newline-delimited env var for the encoder.
+  RESULTS_ENV="$(printf '%s\n' "${RESULTS[@]}")"
+  export RESULTS_ENV SKIP_COUNT FAIL_FLAG="${FAIL}"
+  JSON_PAYLOAD=$(python3 -c '
+import json, os, sys
+results = []
+for r in os.environ.get("RESULTS_ENV", "").split("\n"):
+    if not r:
+        continue
+    st, name, detail = r.split("|", 2)
+    results.append({"name": name, "status": st, "detail": detail})
+skip = int(os.environ.get("SKIP_COUNT", "0"))
+fail = int(os.environ.get("FAIL_FLAG", "0"))
+print(json.dumps({
+    "claims": results,
+    "all_pass": fail == 0 and skip == 0,
+    "unverified": skip,
+}))
+' 2>&1)
+  JSON_RC=$?
+  if [[ ${JSON_RC} -eq 0 ]]; then
+    printf '%s\n' "${JSON_PAYLOAD}"
+  else
+    # Do not emit a half-built JSON object on failure — emit a valid
+    # one-line error object so a machine reader still gets parseable output.
+    printf '{"error": "json-encode-failed", "rc": %d, "stderr": %s}\n' \
+      "${JSON_RC}" "$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "${JSON_PAYLOAD:0:200}")"
+  fi
 else
   if [[ ${FAIL} -ne 0 ]]; then
     echo "  ❌ SOME CLAIMS DO NOT HOLD — see FAIL rows above"
