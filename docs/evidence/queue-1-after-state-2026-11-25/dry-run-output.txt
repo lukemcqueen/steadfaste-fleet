@@ -1,0 +1,26 @@
+review-queue-sweep DRY-RUN: would close 0 cycles (ids -..-)
+  would clean 0 precommit test-fixture cycles (ids -..-)
+  unreviewed before: 2606
+    stop_ok    6
+    loop       2546
+    move_on    52
+    stop_fail  1
+    pending    1
+  stalled LOOPs: 17
+    STALLED LOOP: task 'precommit-checkout-master/base' — 52 LOOP iterations at composite 6.70 (2026-10-08 00:56:16 to 2026-10-18 07:26:05); no score progress
+    STALLED LOOP: task 'precommit-hermes-cortex-main/base' — 239 LOOP iterations at composite 7.20 (2026-10-08 02:13:16 to 2026-10-18 07:30:42); no score progress
+    STALLED LOOP: task 'precommit-hermes-cortex-main/change' — 5 LOOP iterations at composite 7.50 (2026-10-10 07:59:16 to 2026-10-10 08:28:09); no score progress
+    STALLED LOOP: task 'precommit-hermes-cortex-main/docs-design-cortex-memory-session-as-mcp-servers' — 3 LOOP iterations at composite 7.20 (2026-10-01 15:05:47 to 2026-10-01 15:10:55); no score progress
+    STALLED LOOP: task 'precommit-hermes-cortex-main/docs-evidence-record-agents-md-pruning-scan-for-' — 4 LOOP iterations at composite 7.30 (2026-10-08 19:48:40 to 2026-10-08 19:49:13); no score progress
+    STALLED LOOP: task 'precommit-hermes-cortex-main/evidence-bus-inbox-tick-re-runnable-no-op-verifi' — 3 LOOP iterations at composite 7.30 (2026-10-11 23:53:49 to 2026-10-12 00:12:16); no score progress
+    STALLED LOOP: task 'precommit-hermes-cortex-main/evidence-correct-the-cancel-check-rows-are-archi' — 3 LOOP iterations at composite 7.40 (2026-10-04 00:50:47 to 2026-10-04 00:57:42); no score progress
+    STALLED LOOP: task 'precommit-hermes-cortex-main/feat-pi-make-the-deploy-actually-wire-pi-when-pi' — 4 LOOP iterations at composite 7.20 (2026-10-13 03:48:45 to 2026-10-13 04:49:40); no score progress
+    STALLED LOOP: task 'precommit-hermes-cortex-main/fix-skills-landthestrandedchange-checklistskilli' — 4 LOOP iterations at composite 7.30 (2026-10-21 11:59:24 to 2026-10-21 13:30:05); no score progress
+    STALLED LOOP: task 'precommit-hermes-cortex-main/gate-inputs' — 17 LOOP iterations at composite 6.60 (2026-10-08 02:13:21 to 2026-10-09 15:13:19); no score progress
+    STALLED LOOP: task 'precommit-hermes-cortex-main/seed' — 6 LOOP iterations at composite 7.50 (2026-10-10 07:58:45 to 2026-10-10 08:27:57); no score progress
+    STALLED LOOP: task 'precommit-r-master/peer-enforcement-change' — 6 LOOP iterations at composite 6.50 (2026-10-02 05:50:58 to 2026-10-06 13:19:32); no score progress
+    STALLED LOOP: task 'precommit-r-master/setup' — 6 LOOP iterations at composite 5.80 (2026-10-02 05:50:53 to 2026-10-06 13:19:28); no score progress
+    STALLED LOOP: task 'precommit-steadfaste-fleet-main/chore-cli-rename-hc-clito-fleet-hermes-cortexbra' — 3 LOOP iterations at composite 6.10 (2026-11-04 09:21:42 to 2026-11-04 09:23:03); no score progress
+    STALLED LOOP: task 'precommit-steadfaste-fleet-main/rename-sweep-hermes-cortex-steadfaste-fleetacros' — 3 LOOP iterations at composite 6.20 (2026-11-03 10:54:45 to 2026-11-03 11:24:48); no score progress
+    STALLED LOOP: task 'precommit-steadfaste-fleet-main/tests-enforcer-rs0-write-classparityvsknowntruth' — 3 LOOP iterations at composite 7.30 (2026-11-24 09:37:32 to 2026-11-24 09:40:18); no score progress
+    STALLED LOOP: task 'precommit-work-main/seed' — 12 LOOP iterations at composite 6.70 (2026-10-09 14:04:57 to 2026-10-18 07:23:42); no score progress
