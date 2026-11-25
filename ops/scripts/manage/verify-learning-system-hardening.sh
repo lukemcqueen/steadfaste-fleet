@@ -14,7 +14,14 @@
 #   bash ops/scripts/manage/verify-learning-system-hardening.sh
 #   bash ops/scripts/manage/verify-learning-system-hardening.sh --json   # machine-readable
 #
-# Exit code 0 = every claim holds. Non-zero = at least one claim does not.
+# Exit code 0 = every claim that should apply on this host was verified PASS.
+# Non-zero = at least one claim FAILed. SKIP rows are claims not applicable
+# on this host (e.g. a tool that is repo-only by design and is not deployed
+# anywhere) — they are reported as unverified and are NOT counted as PASS,
+# but they do not by themselves mark the run as not-holding. The summary
+# says "N claims unverified (SKIP)" when any SKIP is present, so a reader
+# cannot mistake "did not check" for "checked and fine".
+#
 # Every check is a real command whose output is the proof — no assertion-only checks.
 #
 # CHECKOUT-ONLY by design (deliberately NOT registered in fleet-update.sh's
@@ -32,15 +39,18 @@ JSON_MODE=0
 [[ "${1:-}" == "--json" ]] && JSON_MODE=1
 
 FAIL=0
+SKIP_COUNT=0
 declare -a RESULTS=()
 
 report() {
   local name="$1" status="$2" detail="$3"
   RESULTS+=("${status}|${name}|${detail}")
-  # SKIP is not a failure — it means the claim does not apply on this host
-  # (e.g. a tool that is repo-only by design and is not deployed anywhere).
-  # Only a FAIL marks the run as not-holding.
+  # FAIL marks the run as not-holding. SKIP is reported as UNVERIFIED (the
+  # summary prints a count) but does not mark the run as not-holding on its
+  # own — see the header contract. PASS is the only status that counts as
+  # verified.
   if [[ "${status}" == "FAIL" ]]; then FAIL=1; fi
+  if [[ "${status}" == "SKIP" ]]; then SKIP_COUNT=$((SKIP_COUNT + 1)); fi
   if [[ ${JSON_MODE} -eq 0 ]]; then
     local icon="✅"
     if [[ "${status}" == "FAIL" ]]; then icon="❌"; fi
@@ -110,6 +120,10 @@ else
 fi
 
 # ── Claim 5: the deployed fleet-doctor surfaces the new row ──────────────────
+# The deployed doctor is the LIVE path (the fleet calls `fleet-doctor.py` from
+# `~/.steadfaste-fleet/scripts/`, not the repo). A missing deployed doctor is
+# exactly the state where the hardening is NOT in place — that is a FAIL, not
+# a SKIP.
 DOCTOR_BIN="${HOME}/.steadfaste-fleet/scripts/fleet-doctor.py"
 if [[ -f "${DOCTOR_BIN}" ]]; then
   DOCTOR_OUT="$(cd "${REPO}" && "${HOME}/.steadfaste-fleet/venv/bin/python3" "${DOCTOR_BIN}" --quiet 2>&1)"
@@ -120,10 +134,12 @@ if [[ -f "${DOCTOR_BIN}" ]]; then
     report "fleet-doctor surfaces Learning collector freshness" "FAIL" "row not present — is the deployed fleet_doctor/ in sync with the repo?"
   fi
 else
-  report "fleet-doctor surfaces Learning collector freshness" "SKIP" "no deployed doctor at ${DOCTOR_BIN}"
+  report "fleet-doctor surfaces Learning collector freshness" "FAIL" "no deployed doctor at ${DOCTOR_BIN} — run fleet-update.sh; this claim cannot SKIP because the deployed doctor is the live path"
 fi
 
 # ── Claim 6: the deployed fleet_doctor/checks.py is in sync with the repo ────
+# Same logic: the deployed copy is what the live doctor imports, so its
+# absence is a hardening gap, not a not-applicable case.
 REPO_CHECKS_SHA=$(sha256sum "${REPO}/ops/scripts/manage/fleet_doctor/checks.py" | cut -d' ' -f1)
 DEPLOYED_CHECKS="${HOME}/.steadfaste-fleet/scripts/fleet_doctor/checks.py"
 if [[ -f "${DEPLOYED_CHECKS}" ]]; then
@@ -134,7 +150,7 @@ if [[ -f "${DEPLOYED_CHECKS}" ]]; then
     report "fleet_doctor/checks.py deployed = repo" "FAIL" "repo=${REPO_CHECKS_SHA:0:16} deployed=${DEPLOYED_CHECKS_SHA:0:16} — run fleet-update.sh"
   fi
 else
-  report "fleet_doctor/checks.py deployed = repo" "SKIP" "no deployed copy at ${DEPLOYED_CHECKS}"
+  report "fleet_doctor/checks.py deployed = repo" "FAIL" "no deployed copy at ${DEPLOYED_CHECKS} — run fleet-update.sh; this claim cannot SKIP because the deployed copy is what the live doctor imports"
 fi
 
 # ── Claim 7: every hand-merged SKILL.md is byte-identical between repo and deployed
@@ -182,12 +198,17 @@ if [[ ${JSON_MODE} -eq 1 ]]; then
     first=0
     printf '{"name": "%s", "status": "%s", "detail": "%s"}' "${name}" "${st}" "${detail}"
   done
-  if [[ ${FAIL} -eq 0 ]]; then printf '], "all_pass": true}\n'; else printf '], "all_pass": false}\n'; fi
+  printf '], "all_pass": %s, "unverified": %d}\n' \
+    "$([[ ${FAIL} -eq 0 && ${SKIP_COUNT} -eq 0 ]] && echo true || echo false)" "${SKIP_COUNT}"
 else
-  if [[ ${FAIL} -eq 0 ]]; then
-    echo "  ✅ ALL CLAIMS HOLD"
-  else
+  if [[ ${FAIL} -ne 0 ]]; then
     echo "  ❌ SOME CLAIMS DO NOT HOLD — see FAIL rows above"
+  elif [[ ${SKIP_COUNT} -ne 0 ]]; then
+    # Do NOT claim "ALL CLAIMS HOLD" when some claims were not verified —
+    # "did not check" is not "checked and fine".
+    echo "  ⚠️  NO CLAIM FAILed, but ${SKIP_COUNT} claim(s) UNVERIFIED (SKIP) — see ➖ rows above"
+  else
+    echo "  ✅ ALL CLAIMS HOLD"
   fi
 fi
 
