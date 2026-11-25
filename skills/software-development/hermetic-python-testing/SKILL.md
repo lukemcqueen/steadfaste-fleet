@@ -324,6 +324,36 @@ provenance block still empty.
   and leaves only empty repos. A refused fixture fails the SEED, not the later
   assertions, so the red run names the real cause.
 
+### 13. Proving a RELOAD (or any "computed at call time" claim) needs the same question asked BEFORE and after the mutation
+
+A test that mutates a scratch copy and then asks the question ONCE proves nothing
+about reloading. With a verdict cache in the code under test, that single call
+still consults the source and returns the mutated answer, so the test passes while
+the property it claims — a file change takes effect with no restart — is false. The
+reload is only demonstrated by a FLIP on the identical input:
+
+- Build the scratch tree, take the **baseline answer first**, then mutate the
+  source **in place**, then ask the **identical** input again. Never mutate first
+  and ask once: that shape cannot distinguish "reloaded" from "cached".
+- **Assert the module object was not reloaded** (`id(mod)` unchanged between the
+  two calls), so the flip can only have come from reading the file per call —
+  otherwise the test also passes against a reimport, which is a different claim.
+- **Run BOTH directions** — a restrictive mutation and a permissive one — because
+  a one-directional proof also passes when the code simply hard-codes the strict
+  answer. Then **RED-prove the pair by temporarily installing the defect it is
+  meant to catch** (add the cache, confirm both tests fail, revert, confirm green):
+  an assertion whose failure mode you have never observed is a hypothesis, not
+  coverage.
+- **When the code under test delegates through a subprocess or CLI, point the
+  WRAPPER's own path-resolution function at the scratch copy** (`monkeypatch.setattr`
+  on the function that resolves the script/contract path), so the proof covers the
+  caller the hook actually invokes and not only the leaf program. The leaf's own
+  `--contract`-style seam then gets its own case, one level down.
+- The scratch tree must mirror the layout the leaf resolves RELATIVE TO ITSELF
+  (`<tmp>/ops/scripts/<cli>` beside `<tmp>/ops/services/.../<contract>`), or the
+  leaf silently falls back to the installed copy and every case passes against the
+  wrong file.
+
 ## Verification
 
 - `pytest tests/test_<module>_unit.py -q` → all pass

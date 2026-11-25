@@ -9,7 +9,7 @@ platforms: [linux, macos]
 metadata:
   hermes:
     tags: [cleanup, maintenance, hermes, stale-files, disk-space]
-    related_skills: [hermes-backup, steadfaste-fleet-maintenance, repo-organization, survey-before-action]
+    related_skills: [hermes-backup, steadfaste-fleet-maintenance, repo-organization, execute-right]
 ---
 <!-- Backport provenance (deployed -> repo): the DEPLOYED copy of this file was the
      newer side — a SUPERSET carrying lessons the repo lacked (verification step 5, the
@@ -54,6 +54,38 @@ done | grep -F '<path>'
 
 **Zero references in ALL FIVE = candidate. One reference = LIVE. Never guess.**
 
+### A sweep scoped by FILE TYPE is not a consumer sweep
+
+The chain above answers "does anything reference this name" only as widely as you
+grep. `grep -rn <name> --include='*.sh' --include='*.py'` is a FOUR-EXTENSION
+question, and reporting its result as "no consumer exists" is an overstatement — for
+an IRREVERSIBLE delete that overstatement is the entire risk. Enumerate the surfaces
+and STATE the enumeration in the report:
+
+```bash
+# a. EVERY file under $HOME, no --include filter, skipping noise dirs
+#    (expect HUNDREDS of hits — classify them, do not read them as consumers)
+grep -rIl '<name>' ~ --exclude-dir=.git --exclude-dir=node_modules \
+  --exclude-dir=venv --exclude-dir=__pycache__ --exclude-dir=.cache
+# b. systemd, both scopes
+grep -rI -l '<name>' ~/.config/systemd/user/ /etc/systemd/system/
+# c. the user crontab
+crontab -l | grep -c '<name>'
+# d. every RUNNING container's environment
+for c in $(docker ps --format '{{.Names}}'); do
+  docker inspect "$c" --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -c '<name>'
+done
+# e. nginx (sites-available + sites-enabled + conf.d)
+grep -rI -l '<name>' /etc/nginx/
+```
+
+Classify every hit instead of counting them: a match in `docs/evidence/`, an
+archive, a log, a session dump, a **comment line inside a config**, an UNINSTALLED
+template, or `state/deploy-backups/` is **not a reader**. Only a code path that
+LOADS the name is. The wide sweep is what turns a plausible claim into a measured
+one — and the surfaces it adds (systemd, crontab, container env, nginx, dotfiles,
+non-standard extensions) are exactly the ones a `--include` filter hides.
+
 ### The bind-mount trap (a stale path with LIVE data)
 
 A "stale path" in a doctor or tool report means *nothing references that NAME any
@@ -74,6 +106,67 @@ Order of operations for this shape:
 3. Migrate the subtree to the canonical new path, repoint the consumer, verify it
    still serves, and only then remove the stale dir. See `docker-management` →
    "Migrating a live bind-mount off a stale path" for the reversible recipe.
+
+**The migration script must resolve the INVOKING user's home — never bare `$HOME`.** This
+class of script is documented to run as `sudo bash <script>`, and sudo's default
+`env_reset` sets `HOME` to ROOT's home, so every default derived from `$HOME` resolves
+under root's home and the path/mount assertion refuses with
+`expected '<root-home>/...'`. Resolve it as `${SUDO_USER:-$(id -un)}` → `getent passwd`
+(Linux) / `dscl` (macOS) → `$HOME` only as a last resort, and keep per-path env overrides
+(`<PREFIX>_OLD_DIR` / `_NEW_DIR`) so an operator can correct a wrong guess without editing
+the script. Never "fix" such a refusal by relaxing the comparison: the assertion is what
+turned a move **from the wrong directory** into a clean error instead of an incident.
+
+**Reproduce a sudo-only failure with NO root and NO password.** The mechanism is just
+`$HOME`, so an unprivileged run with a foreign HOME exercises the identical code path —
+which makes the RED→GREEN evidence re-runnable by any reader, including on a host where
+the agent has no sudo at all:
+
+```bash
+HOME=/tmp/not-a-home bash <script>                     # pre-fix: the refusal above, rc=1
+SUDO_USER=<user> HOME=/tmp/not-a-home bash <script>    # the real sudo shape
+```
+
+## Credential sprawl — `.env.*` backups in the deploy root
+
+Every ad-hoc edit of the deploy-root `.env` conventionally leaves a `.env.bak-*`
+copy behind, and each copy is a COMPLETE plaintext duplicate of the entire secret
+set. Nothing collects them, so they accumulate without bound — six were found
+beside one live `.env`: seven independent exposure paths for one credential set,
+six of which carried no information the seventh did not.
+
+**The retention rule: ONE recovery point — the newest.** That newest copy is what
+the deploy runbook names as the repair source for a corrupted `.env`; a second copy
+adds exposure and no capability. The doctor enforces this as a check named
+`Env backup sprawl` (KEEP_MAX=1): it names the copies and hands over a remedy, and
+deliberately **never deletes** — pruning is an owner decision, not a checker's.
+
+Prove nothing is lost before pruning the extras — compare **key NAMES, never values**:
+
+```bash
+sed -n 's/^\([A-Za-z0-9_]*\)=.*/\1/p' <file> | sort -u   # names only; no value is read
+diff <(sed -n ... '<live .env>' | sort -u) <(sed -n ... '<backup>' | sort -u)
+```
+
+- Names unique to a backup are the only thing a copy can hold that the live file
+  lacks. **No unique names = the copy is redundant by construction.**
+- A unique name still needs a reader check (see the sweep above). A RETIRED
+  spelling usually has no reader at all, and its values then already sit in the
+  live file under the canonical name.
+- Record `sha256sum` of each deleted copy in the evidence file. A hash is not
+  reversible, so it is safe to commit and gives a later reader an audit trail; the
+  bytes themselves are gone and cannot be re-measured afterwards, so say plainly
+  which claims survive ("no reader exists for the 13 names") and which do not
+  ("byte-equality with the deleted values") rather than implying both.
+
+**A backup is never a reader.** Code reads `.env`; nothing reads `.env.bak-*` — the
+only glob of that shape in the whole tree is a recovery one-liner a HUMAN types. So
+deleting backup copies cannot break a running service whatever names they contain,
+and the reader sweep is a question about the NAME, not about the copies.
+
+**Verify the live file survived:** compare mode, byte size and distinct key count
+before and after (`stat -c '%a %s' .env` plus the key count above). A cleanup that
+quietly rewrites the live `.env` is a far worse mishap than the sprawl it cured.
 
 ## LIVE — Do NOT Touch (agent-owned)
 
@@ -170,7 +263,7 @@ hermes profile list        # the duplicate-credential warning must be gone
 ## Procedure
 
 1. **Survey** — `du -sh ~/.hermes/* ~/.steadfaste-fleet/* | sort -rh`; identify top consumers
-2. **Verify chain** — for each candidate, run the 4-step grep above
+2. **Verify chain** — for each candidate, run the 5-step grep above
 3. **Classify** — LIVE (skip) / STALE (delete) / VERIFY-FIRST (flag to owner)
 4. **Delete stale only**, from the table above. Never `rm -rf` a LIVE path
 5. **Re-verify** — `du -sh` before/after; `hermes doctor` / `fleet-doctor.py --quiet` still clean
@@ -207,6 +300,16 @@ hermes profile list        # the duplicate-credential warning must be gone
 - **A tool's `rm -rf` suggestion is a hypothesis, not a clearance.** It was computed
   from path NAME references and knows nothing about open mounts, running processes, or
   service-owned data. Re-run the five-step chain yourself before acting on it.
+- **A checker must never print an unconditionally destructive remedy — the other side of
+  the same handoff.** When you author or repair a doctor/scan check whose branch says
+  "remove this", the check's OWN premise ("stale = dead weight") can be false for the exact
+  path it names, and an operator will trust the command *because a doctor printed it* — a
+  checker that emits a destructive command launders data loss as maintenance. State the
+  PRECONDITION to establish first, name the purpose-built tool for the live case, and offer
+  plain removal only for a path confirmed inert. Guard the wording with a test asserting
+  the bare destructive form is ABSENT, plus a positive control that the safe tool IS named
+  so the test cannot pass by the advice merely going empty; prove it discriminates by
+  driving the same assertion at the pre-fix module read out of git.
 - **Do not work around a restricted access boundary.** When the target is owned by
   another user and non-interactive privileged access is limited to a short allowlist,
   the delete needs the operator: hand over the exact command, or ask for a rule scoped

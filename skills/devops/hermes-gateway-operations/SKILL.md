@@ -104,8 +104,15 @@ is not loaded until the gateway restarts. Two independent failure modes:
    command and the script it references, not merely the timing, and attempting the workaround IS the
    violation. Restart from a **separate shell**, or hand the operator the gateway's own `/restart`
    command — which exits with the code its supervisor relaunches on, so the service comes back by
-   design and announces itself. Name which one you are asking for, and hand it over once; do not
-   loop-retry.
+   by design and announces itself. Name which one you are asking for, and hand it over once; do not
+   loop-retry. The block fires on the COMMAND's text, so it equally refuses restarting a SIBLING
+   gateway unit (`systemctl --user restart fleet-gateway-<bot>.service`) — you are not running
+   inside that service, but the classifier cannot know that, and rewording to slip past it is the
+   violation. Hand that command over as well, then verify the LANDING from the journal rather than
+   from `is-active`: after a config or token-var rename, the proof is the unit's OWN startup line
+   echoing the resolved `token_ref` (the `ExecStartPre` guard's output). Until that line appears,
+   the running process is still serving the value it loaded at its previous start — an old value in
+   memory is not a failure, but it is also not the rename exercised.
 2. **A restart can report success and still not land.** Verify; do not assume:
 
 ```bash

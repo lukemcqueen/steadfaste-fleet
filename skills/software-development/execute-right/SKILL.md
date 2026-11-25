@@ -37,6 +37,14 @@ The non-negotiable rules of doing the work. Route (`task-orient`) → execute
    changed from memory; run the diff and make claims only it supports (in a
    recent case a nginx change was reported when none existed). The
    `hermes-never-assume` skill enforces this policy.
+   **READ THE DIFF THE EDIT TOOL RETURNS, not just its success line.** An
+   `old_string` that SPANS text you meant to KEEP deletes that text along with
+   the part you replaced: anchoring a new section on the heading that follows it
+   swallowed the heading and the first line of the section below, and only the
+   returned diff showed it. Replace the smallest span you actually intend to
+   change; when inserting a section, anchor on the LAST line of the preceding
+   text, never on the following heading; then read the diff for structure you
+   did not mean to remove before moving on.
 5. **Test FIRST (TDD Iron Law)** — no production code without a failing test
    first. A test written after the code passes immediately and proves nothing.
 6. **Never ask "do you want tests?"** — testing is mandatory.
@@ -143,7 +151,25 @@ The non-negotiable rules of doing the work. Route (`task-orient`) → execute
     what a previous session BELIEVED, not what is true now. Re-measure its
     headline numbers ("N files carry X", "already fixed", a named file list)
     against the live tree before building on them, and say plainly when they
-    differ — a summary is a lead, never a work order.
+    differ — a summary is a lead, never a work order. **A service/unit-file HEADER
+    comment is that same class of doc**, and repeating its CONSTRAINT as a rule is
+    how a fact about one unit becomes a false claim about another: a header saying
+    "only one poller per token — stop `hermes-gateway.service` first" describes the
+    unit whose config names the primary credential; it says nothing about the
+    SIBLING unit running a different one, which coexists with it fine. Asserting the
+    constraint for "the gateway" contradicted the operator twice. When a doc states a
+    constraint or a required ORDER, name the exact SUBJECT and measure it —
+    `systemctl --user cat <unit>` (which config/argv it really runs), `show -p
+    MainPID`, the live journal — and for any credential claim compare the two sides by
+    FINGERPRINT (`sha256[:12]`, never printing the value), not by the name the comment
+    used. **The same bar covers a NAME's provenance — do not assert WHY a spelling exists,
+    where a term came from, or that one word abbreviates or derives from another, unless
+    you have evidence.** A guessed etymology is an invention dressed as a fact: no doc
+    states it and no command can confirm it, which is exactly what makes it the easiest
+    claim to make — nothing in the tree contradicts a story about why something is called
+    what it is. When the operator corrects it, say plainly that the claim was unverified
+    and drop it; do not re-explain it in other words or fold it into a wider theory. If the
+    origin genuinely matters, say you do not know and name what would settle it.
 20. **A review candidate is a suggestion; the documented harm is the mandate.**
     When a review subagent proposes a fix, do not treat the full proposed
     refactor as gospel — re-derive the SPECIFIC harm it names and ship the
@@ -158,6 +184,25 @@ The non-negotiable rules of doing the work. Route (`task-orient`) → execute
     because context-compaction erases a delegated deliverable mid-run and
     `session_search` cannot resurrect it — stop and re-run the review rather
     than improvise later candidates from bare titles.
+21. **Your own grep is a PROBE: a zero is a hypothesis about the PATTERN, and a count
+    is not a reading.** "Absent", "0 hits", and "N matches" are all statements about
+    your pattern until you have opened the lines it produced. Three ways this lies,
+    all measured in one session:
+      - a character class that cannot SPAN the data silently excludes it —
+        `^[A-Z_]*BOT_TOKEN` never matches `ESTHER0001_BOT_TOKEN` (the digits break
+        the class), so a survey "proved" a variable absent that was right there and
+        about to be renamed;
+      - a pattern copied from SOURCE does not match the source — `grep 'bots[idx]'`
+        cannot match `bots[{idx}]`, because an f-string's braces are literal text in
+        the file, so a correctly-deployed fix looked undeployed and sent a chase after
+        a deploy that had already worked;
+      - a loose alternation counts NOISE — `grep -ci '409|Conflict'` collected process
+        ids (`sg[3154094]`), log timestamps (`20:33:32,409`) and byte counts (`4096`):
+        41 "conflicts", none real and all from the wrong unit.
+    So: read the matched lines before reporting a hit, a count, OR an absence; when a
+    pattern returns nothing, re-run it against a value you KNOW exists before reporting
+    the thing missing; and confirm a file's content with `diff` against the authoritative
+    copy rather than a `grep -c` on a pattern you reconstructed from memory.
 
 ## Survey before action (mandatory pre-flight)
 
@@ -302,7 +347,19 @@ exit code equal to the number of claims that failed, so a green run carries
 information. A guard that lives in N handlers needs N assertions — parametrise
 over the set (one table of member → the function it calls) instead of proving it
 for the single member you happened to exercise, or a sibling that loses the guard
-ships silently.
+ships silently. **The same rule governs the VALIDATOR's own code, not only its
+tests: a check that reads only `items[0]` validates ONE of N.** Generalising a
+single-item artifact into a family is exactly when this bites — the artifact
+gains siblings while the validator keeps its original single-item shape, so the
+new items are never examined and the check stays green (measured: a startup guard
+reading `bots[0]` let the primary credential sit in the SECOND entry of a
+multi-bot config and pass, which is the precise failure the guard existed to
+prevent). Loop over EVERY item; make the test exercise a NON-FIRST one so an
+`[0]`-only implementation cannot pass; and add a POSITIVE CONTROL that N distinct
+items are ACCEPTED, or a validator that refuses everything would satisfy the
+refusal cases while being useless. Two items in ONE collection can also collide
+with EACH OTHER — with no external reference value involved — so validate
+intra-collection uniqueness as its own rule.
 
 In repos with gates: assert the RETURN CODE of a process-driven subject, not
 only its output (a content-only assertion stays green across a crash; give

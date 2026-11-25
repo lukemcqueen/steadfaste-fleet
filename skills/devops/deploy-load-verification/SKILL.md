@@ -118,7 +118,25 @@ old behaviour right after a clean deploy is this, not a broken fix.
 guard refuses a gateway restart from inside an agent session, and its stated reason
 (SIGTERM reaching the child) may not even apply to the unit you want — the guard is
 pattern-based and cannot tell. Give the operator the exact one-line command and say
-what will change after it. What the guard does NOT block is proving a startup guard:
+what will change after it.
+
+**When the operator authorises the restart, it is the LAST act — a gateway restart ENDS the
+interactive session.** The conversation dies mid-turn (no final message, no summary), and any open
+governance cycle is left behind: its lock file stays on disk with nobody left to score it, and
+`reclaim_dead_locks` reports "no dead locks" until that lock's own TTL elapses, so it cannot be
+tidied in the moment. So sequence it deliberately: close and score every open cycle, send the reply
+the operator needs, tell them the session will drop, and only then run it. The follow-on session
+must read the work out of the store (lock file, `state/loop-gov-daemon.json`,
+`state/governance-enforcer-deployed`, the sessions list) rather than expect a handoff message that
+never got sent.
+
+**Verify the restart landed from its two state records, not from "a new pid exists".** The deploy's
+`state/governance-enforcer-deployed` holds the combined content hash + the epoch at which the
+activation-only content last changed; compare that epoch with the new gateway process's start epoch
+(`ps -o lstart= -p <pid>`) — start AFTER it is the proof, and the doctor's `Stale enforcer plugin` row
+clears by itself once that holds. For the MCP half, `state/loop-gov-daemon.json` is a pid → `sha256`
+map of the module each daemon LOADED; compare it with `sha256sum` of the module on disk. Both rows
+passing is the evidence that a restart-load actually took effect. What the guard does NOT block is proving a startup guard:
 a throwaway probe unit can be run to show an `ExecStartPre` refusing or accepting a
 config, which is how you verify that logic without touching the live service.
 
@@ -561,6 +579,17 @@ fails will keep failing while the fix looks broken.
   deployed package, add its `register()` line in the SAME change, then run the
   DEPLOYED entry point (not the repo copy) to prove the import resolves. A green
   deploy-sync check is not evidence the package is complete.
+- **Fix the CHECK by the import graph, not by directory listing.** To make a
+  manifest-based deploy check catch unregistered modules, parse each registered
+  `.py` file's relative imports with `ast` and report an import whose module is
+  absent from the deploy tree. Sweeping the deployed DIRECTORY for unregistered
+  files instead flags every legitimately-unregistered sibling (installers,
+  one-off scripts) — 75 false positives on a 409-entry map — so the check
+  becomes noise nobody reads. Run the import check in BOTH branches (HEAD ==
+  deployed revision and HEAD != deployed): the equal-revision case is exactly
+  where a missing module hides, and skipping it is the false green. Model the
+  incident in the fixture — a registered module importing an unregistered
+  sibling — not a generic stray file.
 
 ## Coda: a lesson written only into the DEPLOYED skill copy is not landed
 

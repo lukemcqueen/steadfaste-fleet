@@ -231,7 +231,8 @@ tree, so `begin_change` on that repo is legitimately available and work proceeds
 **`reclaim_dead_locks` needs the TTL, not proof of death.** Its staleness predicate is
 heartbeat-past-the-lock's-own-TTL AND no commit by that agent, so a lock whose owner is provably
 gone is still reported as "no dead locks — … live, or being written right now" until the TTL
-elapses. Do not wait it out inside the session and never `rm` the file: the TTL purge removes it and
+elapses. (The commonest origin of such an orphan: a GATEWAY RESTART ended the owning session
+mid-cycle — the conversation dies, the lock file and its PENDING cycle stay behind.) Do not wait it out inside the session and never `rm` the file: the TTL purge removes it and
 resolves its cycle UNSCORED, which is the clean ending. State the expiry, and record the underlying
 defect separately — a lock minted from a cwd that is not the repo (a cron job with no `workdir`)
 governs nothing, so its own write gate was VACUOUS while it ran.
@@ -580,6 +581,14 @@ the SAME no-verdict reply across retries against byte-identical content, and res
 real CONTENT change for when the STORE holds a not-clean verdict for that blob's sha.
 Conflating the two sends you editing files that were never judged wrong. Report the message/store disagreement as a defect in the close's diagnostics — a gate
 whose message asserts a stored verdict that does not exist is a one-way gate for anyone who believes it.
+
+**Zero blobs SENT with a non-empty `failed` list is a SPENT BUDGET, not a verdict problem.** When the
+reviewer calls TIMEOUT, the pass budget is consumed and the remaining blob has no verdict row at all
+— so the close's "every blob carries a not-clean verdict" wording misdiagnoses a transient latency
+condition as a content problem and sends you to rewrite good code. Read the blob table first: zero
+calls plus failed blobs means re-issue `end_change` (each call gets a fresh per-pass budget); only a
+stored not-clean verdict for that blob's sha means the content must change. Branch the diagnostic on
+`failed` so the two cases read differently — fix the message, not the judged file.
 
 **A reviewer finding on a TEST is often a real lesson: fix the test, not the production code.** The
 tell is a meaningful finding that names exact lines in the test file (e.g. a test mutates

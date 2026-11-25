@@ -22,7 +22,8 @@ a given actor.
 
 **Trigger phrases:** "who deleted X", "these files are gone", "git status
 shows deleted but I didn't do it", "find out what happened to the repo",
-"uncommitted changes I didn't author".
+"uncommitted changes I didn't author", "how often does this region change", "which parts of this
+file churn", "is this table a renewal surface or a stable one".
 
 ## Golden Rule — Uncommitted ≠ Committed
 
@@ -124,6 +125,36 @@ inactive on this host — don't expect ausearch hits.
   assistant message right before the block to see the actual command.
 - `grep -c` returning 0 / `search_files` returning empty on hidden dirs —
   verify with `ls`/`git ls-files` before concluding absence.
+
+## Measuring region churn — which code actually changes
+
+When you need "how often does this region change" — to rank what is worth modularising, or to tell
+a renewal surface from a frozen one — the tempting probe is `-S` and it is WRONG:
+
+```bash
+git log --oneline -S'WRITE_TOOLS' -- plugins/x/__init__.py | wc -l
+```
+
+`-S<string>` counts commits in which the NUMBER OF OCCURRENCES of that literal changed. Editing the
+CONTENTS of a table — adding a member inside a set/list, changing a regex — leaves the count
+identical, so every value edit is invisible and the probe reports 1-3 for everything. It reads as
+"nothing here ever changes", which is the opposite of the truth for the tables people edit most.
+
+Use `-L`, which follows a line REGION through history and counts the commits that actually modified
+it:
+
+```bash
+git log --oneline -L 1808,1860:plugins/x/__init__.py | grep -c '^[0-9a-f]\{7,\} '
+```
+
+- `-L` ranges are the line numbers of the revision you MEASURED. State that revision's sha beside
+  the numbers (and say when the repo and deployed copies are byte-identical), and tell the reader to
+  re-run the probe rather than trusting them as anchors — a later edit shifts every number.
+- Publish the discarded probe too, labelled as wrong, next to the corrected one. A disclosed bad
+  measure reads as methodology; a silently replaced one reads as a claim.
+- The same rule at the level of any measurement: a probe that cannot register the change you care
+  about reports "no change" rather than an error, so state what the probe would have had to see for
+  the opposite answer.
 
 ## SECURITY RULE — User Directive (2026-08-01)
 

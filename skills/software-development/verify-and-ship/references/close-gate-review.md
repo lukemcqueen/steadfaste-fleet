@@ -77,6 +77,34 @@ drives the exact shape the finding describes. If it PASSES, the hypothesis was
 wrong and is now pinned by executable proof; if it FAILS, you found a real bug.
 Editing prose explains nothing and leaves the claim unverifiable.
 
+## 7. A finding re-raised on the blob you just changed — meet the remedy LITERALLY, then BOUND the loop
+
+Verdicts are keyed to blob CONTENT, so every fold mints a new blob judged from
+scratch. That is correct, and it is also how a prose-shaped finding comes back on
+the new bytes under the SAME id with a rationale the new content already answers.
+
+- **Read the finding's `recommendation` as the SPEC and satisfy it literally.**
+  "commit the collection output rather than asserting the count" is met by a
+  verbatim transcript of the producing command inside the evidence file; a
+  better-worded sentence, a re-stated number, or a test elsewhere does not meet
+  it and is re-filed on the next pass. When a number is load-bearing, the remedy
+  is almost always: commit the command's RAW output, and pin the number with a
+  test that DERIVES it (runs the collection, parses the artifact) instead of
+  asserting it in prose.
+- **Settle claims about your own artifact INDEPENDENTLY before folding** — parse
+  the file with `ast`, count with a tool, re-run the command. When the finding's
+  arithmetic contradicts the committed bytes, the finding is wrong and the edit
+  is waste; fold the derivation into the answer, not a fresh paragraph.
+- **Bound it: after the second round on the same finding id whose stated remedy
+  you have met, STOP editing and report.** A finding whose rationale is
+  self-contradictory — it enumerates the items it claims are unverifiable, then
+  files them unverifiable anyway — is the signature of reviewer repetition, not
+  of a defect in your change. Past that point the loop IS the gate: each edit
+  burns a reviewer round, resets every verdict for that blob, and holds the
+  governance lock. State plainly which derivation contradicts the premise, name
+  the committed evidence, and surface it to the operator. Never edit a file
+  merely to make a reviewer stop, and never loop indefinitely on a moving verdict.
+
 ## 6. "Cannot close yet: N blob(s) not covered" with NO findings → RETRY, don't re-review
 
 This refusal is a BUDGET message, not a defect report: one close pass judges a
