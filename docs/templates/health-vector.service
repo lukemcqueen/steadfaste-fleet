@@ -20,6 +20,10 @@ After=network.target
 [Service]
 Type=simple
 Environment=PATH=%h/.local/bin:%h/.bun/bin:/usr/local/bin:/usr/bin:/bin
+# Identify this agent to the orchestrator — health-vector.py reads
+# HEALTH_HOSTNAME (default: first char of the hostname). Set it to the
+# agent's name so fleet health reports attribute this vector correctly.
+Environment=HEALTH_HOSTNAME=<agent-hostname-prefix>
 # The FLEET venv, not the system python (2026-10-13) — the interpreter
 # fleet-update.sh registers every MCP server against and the one the macOS
 # counterpart (docs/templates/com.hermes.health-push.plist) uses. The shared

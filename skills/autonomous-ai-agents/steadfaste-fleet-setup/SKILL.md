@@ -352,7 +352,7 @@ The agent names from the template:
 | `gisu` | communications | Inbox routing, message triage |
 | `joseph` | web-infrastructure | Web/infra server |
 
-**Pitfall — localhost vs domain URL:** For local dev, use `http://127.0.0.1:8905/api/v1/health`. For production, Moses would update this to the public URL with nginx + basic auth.
+**Pitfall — localhost vs domain URL:** For local dev, use `http://127.0.0.1:8905/health` (the compact vector — the only path health-vector.py serves alongside `/`; `/api/v1/health` was removed with the FastAPI health-server). For production, Moses would update this to the public URL with nginx + basic auth.
 
 ### 7. Set Up mycortex Sync
 
