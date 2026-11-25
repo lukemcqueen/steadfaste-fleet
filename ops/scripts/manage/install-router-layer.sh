@@ -90,7 +90,8 @@ else
 fi
 
 DOCTOR_FAILED=0
-say "== 3. jev doctor =="
+DECISION_OK=0
+say "== 3. jev doctor (decision model must be present AND reachable) =="
 JEV_BIN="$HERMES_HOME/bin/jev"
 [ -x "$JEV_BIN" ] || JEV_BIN="$(command -v jev 2>/dev/null || true)"
 if [ -z "$JEV_BIN" ]; then
@@ -98,8 +99,33 @@ if [ -z "$JEV_BIN" ]; then
 elif [ "$MODE" = "check" ]; then
   say "  (check mode: not running doctor)"
 else
-  if ! "$JEV_BIN" doctor; then
-    say "  FAIL: \`jev doctor\` reported a problem — the layer is installed but NOT VERIFIED"
+  # Fail CLOSED on the decision model: routing must never be armed on a host that
+  # cannot actually ask the decision model. `jev doctor`'s exit code alone is not
+  # enough (it returns 0 even when pools carry warnings), so capture its stdout
+  # and parse the JSON for the two fields that prove the model is usable: key
+  # present and endpoint reachable. A doctor error, non-JSON output, a missing
+  # key, or an unreachable endpoint are all hard failures — no routing.
+  DOCTOR_RC=0
+  DOCTOR_JSON="$("$JEV_BIN" doctor 2>&1)" || DOCTOR_RC=$?
+  if [ "$DOCTOR_RC" -ne 0 ]; then
+    printf '%s\n' "$DOCTOR_JSON" | head -5
+    say "  FAIL: \`jev doctor\` exited $DOCTOR_RC — the decision model could not be reached"
+    DOCTOR_FAILED=1
+  elif python3 -c '
+import json,sys
+try:
+    d = json.loads(sys.stdin.read())
+except Exception:
+    print("FAIL: jev doctor returned non-JSON"); sys.exit(1)
+key = d.get("key") or {}; jev = d.get("jev") or {}
+if key.get("present") is not True:
+    print("FAIL: decision model key is NOT set (run `jev setup-key` on this machine)"); sys.exit(1)
+if jev.get("reachable") is not True:
+    print("FAIL: decision model endpoint is NOT reachable"); sys.exit(1)
+print("ok: decision model present and reachable")
+' <<<"$DOCTOR_JSON"; then
+    DECISION_OK=1
+  else
     DOCTOR_FAILED=1
   fi
 fi
@@ -130,10 +156,47 @@ if [ "$MODE" = "check" ]; then
   exit 0
 fi
 if [ "$DOCTOR_FAILED" -ne 0 ]; then
-  say "VERDICT: installed/upgraded at $ACTUAL, but NOT VERIFIED — \`jev doctor\` failed above"
+  say "VERDICT: installed/upgraded at $ACTUAL, but NOT VERIFIED — \`jev doctor\` failed above, so routing is NOT enabled"
   exit 1
 fi
-say "VERDICT: installed/upgraded at $ACTUAL, doctor verified"
+
+say "== 5. enable routing (default ON for every profile) =="
+STATE_FILE="$HERMES_HOME/jev/state.json"
+# Routing defaults ON for any host that installs the layer, so the fleet's
+# cheaper-to-better auto-routing is live without a human flipping a switch.
+# Written to the SHARED state file (the default for every profile; a profile's
+# own setting still wins), the same file `/jev routing on` would write.
+if [ "$DECISION_OK" -eq 1 ]; then
+  if STATE_FILE="$STATE_FILE" mkdir -p "$(dirname "$STATE_FILE")" && STATE_FILE="$STATE_FILE" python3 -c '
+import json, os
+p = os.environ["STATE_FILE"]
+state = {}
+try:
+    state = json.load(open(p, encoding="utf-8"))
+except Exception:
+    state = {}
+if not isinstance(state, dict):
+    state = {}
+state["routing"] = "on"
+with open(p, "w", encoding="utf-8") as fh:
+    json.dump(state, fh, indent=2)
+print("  routing: on -> %s" % p)
+' ; then
+    say "  ok: routing enabled in shared state (default for every profile)"
+  else
+    say "  WARN: could not write $STATE_FILE — routing stays off; enable with \`/jev routing on\`"
+    DOCTOR_FAILED=1
+  fi
+else
+  say "  WARN: decision model not verified above — routing NOT enabled"
+  DOCTOR_FAILED=1
+fi
+
+if [ "$DOCTOR_FAILED" -ne 0 ]; then
+  say "VERDICT: installed/upgraded at $ACTUAL, but routing is NOT enabled (decision model not verified above)"
+  exit 1
+fi
+say "VERDICT: installed/upgraded at $ACTUAL, doctor verified, routing ON"
 say "NEXT: restart the gateway (the plugin loads at start), then in a session:"
-say "  /jev            status"
-say "  /jev routing shadow    decide and log, switch nothing  <- start here"
+say "  /jev            status   (should show \"routing: on\")"
+say "  /jev notice on           if you want the one-line routing notice on routed replies"

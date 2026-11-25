@@ -1,0 +1,47 @@
+install-router-layer.sh: routing ON by default + fail-closed on decision model
+=============================================================================
+Captured: 2026-11-25 (router default-on change, cycle fleet-healthcheck-plan)
+repo:steadfaste-fleet · captured-at: fc699a7d6 (working tree)
+
+WHAT CHANGED
+  - install-router-layer.sh: after `jev doctor`, parse its JSON and FAIL the install
+    (exit non-zero, routing NOT enabled) if the decision-model key is unset OR the
+    endpoint is unreachable. On success, write `routing: on` to the shared
+    $HERMES_HOME/jev/state.json (default for every profile) — routing is now ON by
+    default, no manual `/jev routing shadow` hand-step.
+  - docs/design/router-layer.md: document the default-on + fail-closed behavior and
+    retire the now-false "fleet rollout (not done) / shadow first" claims.
+
+ROOT CAUSE THIS FIXES
+  The fleet's model router was fully built and verified but disabled on every host
+  except esther, because the installer's last step was a *human* `/jev routing shadow`
+  and nothing ever flipped the live switch. `_setting("routing","off")` is the plugin
+  default. (This is the same "machinery exists but was never wired live" class as the
+  kustos health-check 403: both are capability-present-not-armed.)
+
+VERIFICATION (each command beside its own result)
+  1. bash -n ops/scripts/manage/install-router-layer.sh            -> syntax OK (rc=0)
+  2. fail-closed gate (missing key / unreachable), the exact python
+     predicate added to the installer:
+       echo '{"key":{"present":false},"jev":{"reachable":false}}' \
+         | python3 -c '<the gate>'                                -> "FAIL: decision model key NOT set", exit 1
+  3. success gate against REAL live `jev doctor` output:
+       jev doctor | python3 -c '<the gate>'                        -> "ok: decision model present and reachable", exit 0
+  4. state-file write (temp HERMES_HOME) produces {"routing":"on"} -> confirmed
+  5. router test suite (fleet venv):
+       pytest tests/test_router_pools.py test_router_pools_seed.py
+              test_fleet_doctor_router_layer.py test_router_swap_seam.py
+              test_router_shadow_report.py test_router_notice_contract.py
+       -> 49 passed, 16 skipped (skips are network-dependent swap-seam/notice probes)
+  6. adversarial-verify.py --file ops/scripts/manage/install-router-layer.sh --level A4 --gate
+       -> GATE_PASSED, 0 findings, rc=0
+
+LIVE (this host now)
+  ~/.hermes/jev/state.json written to {"routing":"on"}; plugin readback confirmed
+  "effective routing: on". Takes effect next gateway/model call. (Backup saved to
+  ~/.hermes/jev/state.json.pre-routing-on.)
+
+PROPAGATION
+  install-router-layer.sh is a registered deploy-map file (fleet-update.sh), so the
+  change reaches every host's ~/.steadfaste-fleet/scripts/manage/ on the next
+  fleet-update; re-running the installer on a host is the enable step (idempotent).

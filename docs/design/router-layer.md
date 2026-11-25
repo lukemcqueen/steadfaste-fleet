@@ -40,7 +40,21 @@ units. `install.py --uninstall` reverses it.
 
 It never reads, asks for, or prints the API key: `jev setup-key` is a separate private step.
 
-## Shadow first (this is the contract, verified)
+## Routing is ON by default, and fails closed on a missing decision model
+
+`install-router-layer.sh` now **enables routing on install** — after `jev doctor` verifies the
+decision model, it writes `routing: on` to the shared `$HERMES_HOME/jev/state.json` (the same
+file `/jev routing on` writes, so it is the default for every profile). It also **fails closed**:
+it parses the doctor JSON and aborts with a hard error if the decision-model key is unset or the
+endpoint is unreachable, so routing is never armed on a host that cannot actually ask the
+decision model. There is no manual "flip it on" step.
+
+Why this changed (2026-11-25): routing was fully built and verified but left **off** on every
+host except esther, because the installer's final step was a *human* `/jev routing shadow` — a
+capability nobody turns on is the same as none. The manual switch still exists in-session
+(`/jev routing on|shadow|off`); the installer now just sets the sane default.
+
+## Shadow first (the per-host tuning loop, not the default)
 
 ```text
 /jev                    status
@@ -139,8 +153,9 @@ regression when thinking is off).
   AND the no-effort baseline on the probe key (OpenRouter data-policy guardrail → NOT an
   effort problem, so it is listed in `effort.excluded`, not in `effort.models`).
 
-## Fleet rollout (not done)
+## Fleet rollout — routing is ON by default, no manual step
 
-One host is installed. A rollout needs the same three things on every host: the installer run,
-`jev models suggest --write`, and the gateway restarted before `/jev routing shadow`. Do it on
-this host first, with shadow data, then decide.
+Routing is now **default-on**: running `install-router-layer.sh` on any host installs the layer
+and enables routing (after verifying the decision model is present and reachable). A rollout is
+therefore just running the installer per host (and restarting the gateway so the plugin loads).
+No `/jev routing shadow` hand-step remains. idempotent — re-running is the upgrade path.
