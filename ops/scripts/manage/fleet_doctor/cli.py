@@ -67,6 +67,7 @@ from .checks import (
     check_review_provenance,
     check_stale_loop_gov_daemon,
     check_task_id_hygiene,
+    check_collector_health,
     check_harness_registry,
     check_harness_doc_conflicts,
 )
@@ -179,6 +180,7 @@ def main():
         check_stale_loop_gov_daemon,
         check_stale_enforcer_plugin,
         check_task_id_hygiene,
+        check_collector_health,
         ]
 
     if do_quick:

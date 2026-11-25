@@ -1151,6 +1151,114 @@ def check_restart_pending(res):
     return
 
 
+# ── agent-learning-collector health ─────────────────────────────────────────
+# The collector (`agent-learning-collector.py`, runs as a no_agent cron every
+# 6h) is the fleet's lesson pipeline: it reads skills, brain/lessons, session
+# stats, and sends a Learning Report to the orchestrator inbox via PGMQ. Its
+# `last_run` epoch advances ONLY on a successful send — a cron that fires but
+# silently fails (auth 401, network error, a swallowed subprocess rc) leaves
+# the state file frozen while the schedule keeps running. That is the
+# 2026-11-19 blind window: five days of the cron wrapper recording "silent",
+# the collector writing nothing, and the fleet receiving zero new learning
+# reports — discovered only after the fact, in a pitfall paragraph.
+#
+# The signal is the state file's `last_run` vs now. Thresholds are anchored to
+# the documented 6h no_agent schedule, with headroom for one or two missed
+# cycles before we call it a problem. `check_collector_health` is read-only;
+# it never modifies the state file.
+_LEARNING_COLLECTOR_MAX_AGE_FRESH_H = 24   # PASS below this
+_LEARNING_COLLECTOR_MAX_AGE_WARN_H = 72    # WARN between the two, FAIL above
+
+
+def check_collector_health(res: "Results", state_path: "Path | None" = None) -> None:
+    """Fail when agent-learning-collector.py stops advancing its state file.
+
+    The failure mode this catches is the SILENT one: the cron fires on
+    schedule, the script exits 0, but no send ever succeeds. The state file's
+    `last_run` is the only durable trace of the send — frozen state IS the
+    failure signal (the collector saves state only on success, so a missing
+    `last_run` advance and a missing send are the same event).
+
+    Reads `~/.steadfaste-fleet/state/agent-learning-collector-state.json`
+    (the collector's own derivation, not FLEET_DEPLOY_HOME — see
+    `agent-learning-collector.py:STATE_DIR`), so the check sees the file the
+    collector actually writes even on a host that overrides FLEET_DEPLOY_HOME.
+
+    Concurrency: the collector writes the state file with a plain
+    `write_text` (no tmp+rename), so a reader can observe a partial file
+    mid-write. JSON parse errors and a missing `last_run` are therefore
+    reported as SKIP, never FAIL — a torn read is not a real failure of the
+    collector. A SKIP row is not silence: it names the reason and tells the
+    reader to re-run.
+
+    Thresholds are module constants (not env vars — there is no existing env
+    contract for this, and inventing one is worse than a named constant) so
+    tests can tighten them without touching the live state file. The path
+    parameter exists for the same reason: the test drives a tmpdir copy, the
+    live check reads the real one.
+    """
+    if state_path is None:
+        state_path = Path.home() / ".steadfaste-fleet" / "state" / "agent-learning-collector-state.json"
+    label = "Learning collector freshness"
+    try:
+        if not state_path.exists():
+            # Not a failure of the collector — it simply has not produced a
+            # state file here. Surface the reason rather than silently passing.
+            res.add(label, "SKIP",
+                    f"state file absent — the collector has never completed a send on this host ({state_path})",
+                    "If the collector is supposed to run here, check the cron is installed and that it can reach the bus.")
+            return
+        raw = state_path.read_text(encoding="utf-8", errors="replace")
+    except OSError as e:
+        res.add(label, "SKIP", f"could not read state file: {type(e).__name__}: {e}",
+                "Re-run the doctor; if it persists, check permissions on the state dir.")
+        return
+
+    try:
+        state = json.loads(raw)
+    except json.JSONDecodeError as e:
+        # The collector writes non-atomically, so a torn read is possible.
+        # Report as SKIP (with the parse error surfaced), not FAIL.
+        res.add(label, "SKIP",
+                f"state file is not valid JSON (torn read or corruption): {e}",
+                "Re-run the doctor. If this repeats, the collector's write path needs tmp+rename.")
+        return
+
+    last_run = state.get("last_run") if isinstance(state, dict) else None
+    if not isinstance(last_run, (int, float)):
+        res.add(label, "SKIP",
+                f"state file has no numeric 'last_run' (found: {type(last_run).__name__})",
+                "Re-run the collector once to write a fresh state file.")
+        return
+
+    age_h = (time.time() - float(last_run)) / 3600.0
+    if age_h < 0:
+        # Clock skew (NTP correction, host resume) — not a collector failure.
+        res.add(label, "SKIP",
+                f"last_run is {-age_h:.1f}h in the future — clock skew, not a collector failure",
+                "Check NTP / system clock; re-run the doctor after it settles.")
+        return
+
+    readable = time.strftime("%Y-%m-%d %H:%M:%S %Z", time.localtime(float(last_run)))
+    if age_h <= _LEARNING_COLLECTOR_MAX_AGE_FRESH_H:
+        res.add(label, "PASS",
+                f"last successful send {age_h:.1f}h ago ({readable}); "
+                f"threshold is {_LEARNING_COLLECTOR_MAX_AGE_FRESH_H}h for a 6h no_agent cron.")
+    elif age_h <= _LEARNING_COLLECTOR_MAX_AGE_WARN_H:
+        res.add(label, "WARN",
+                f"last successful send {age_h:.1f}h ago ({readable}) — past the {_LEARNING_COLLECTOR_MAX_AGE_FRESH_H}h "
+                f"fresh threshold but under the {_LEARNING_COLLECTOR_MAX_AGE_WARN_H}h failure threshold; "
+                "likely a few missed cycles.",
+                f"Run the collector by hand and watch the rc: `python3 ~/.steadfaste-fleet/scripts/agent-learning-collector.py`. "
+                "If it 401s, the auth path is broken — see the 2026-11-19 pitfall in the orch-skill-lifecycle skill.")
+    else:
+        res.add(label, "FAIL",
+                f"last successful send {age_h:.1f}h ago ({readable}) — over the {_LEARNING_COLLECTOR_MAX_AGE_WARN_H}h "
+                "failure threshold. This is the blind-window failure mode: the cron is firing but no send is succeeding.",
+                f"Run the collector by hand and check the rc: `python3 ~/.steadfaste-fleet/scripts/agent-learning-collector.py`. "
+                "The skill `orch-skill-lifecycle` documents the 2026-11-19 auth-bug diagnosis tell (state file mtime frozen while the timer is active).")
+
+
 def check_user_template(res):
   """Check live USER.md aligns with the fleet template's purpose.
 
