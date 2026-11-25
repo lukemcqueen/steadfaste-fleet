@@ -2,15 +2,17 @@
 
 Regenerate with: `python3 ops/scripts/manage/check-skill-drift-parity.py`
 
-Run identity: this file is written by that command (the deploy runs it), so
-the commit carrying it IS the run. `git log -1 --format=%h --
-docs/evidence/skill-drift-parity.txt` names it, and `git diff <that>~ --
-docs/evidence/skill-drift-parity.txt` prints the previous counts — which is
-what settles any move between runs: a deploy copies repo content into the
-deployed tree, so files leave `skipped ... repo ahead` and enter
+Run identity: this file is written by that command when it is run by hand
+from a repo checkout, so the commit carrying this file IS the record of the
+run that produced the table at the bottom. `git log -1 --format=%h --
+docs/evidence/skill-drift-parity.txt` names that commit, and `git diff
+<that>~ -- docs/evidence/skill-drift-parity.txt` prints the previous counts
+— which is what settles any move between runs: a deploy copies repo content
+into the deployed tree, so files leave `skipped ... repo ahead` and enter
 `in sync`; a skills backport changes them in the repo first, so the repo
 runs ahead until the next deploy. Counts that move without a deploy or a
-repo skills change are the signal to look at.
+repo skills change are the signal to look at. NOTE: the fleet deploy does
+NOT run this command — see "Run provenance" below for who does.
 
 A deployed skill file whose content appears in neither the repo working
 tree nor any committed revision of that path means a lesson was written on
@@ -33,9 +35,41 @@ non-zero on any mismatch, so these counts are checkable rather than
 asserted once. The record of the run is the check itself: re-run it to
 reproduce these numbers, and diff this file against its parent revision
 to read the previous counts. Callers of --check:
-ops/scripts/manage/capture-crons-receipt-evidence.py and the
-soul-refinement evidence script. NOTE: the fleet deploy does NOT run it -
-an earlier version of this paragraph claimed it did, which was wrong.
+ops/scripts/manage/capture-crons-receipt-evidence.py,
+the soul-refinement evidence script, and
+ops/scripts/manage/verify-learning-system-hardening.sh (the cycle
+evidence script — see "Run provenance" below). NOTE: the fleet
+deploy does NOT run it — an earlier version of this paragraph claimed it
+did, which was wrong.
+
+## Run provenance
+
+The table at the bottom of this file was produced by this exact command,
+run by hand from a repo checkout:
+
+    python3 ops/scripts/manage/check-skill-drift-parity.py
+
+That command writes this file; the commit whose diff added the current
+table is therefore the run record. To find it:
+
+    git log -1 --format='%h %ad' --date=iso -- docs/evidence/skill-drift-parity.txt
+
+To RE-DERIVE these numbers rather than trust them, the cycle that landed
+this revision committed a re-runnable evidence script whose claims 1 and 2
+are this file's claims (0 stranded, 0 absent, verdict PASS; `--check`
+agrees with the artifact). It also re-checks the deployed-vs-repo sync of
+the drift tooling and the hand-merged skill files, so one command covers
+the whole range's claims:
+
+    bash ops/scripts/manage/verify-learning-system-hardening.sh
+
+Re-run that script after any change to `ops/scripts/manage/
+check-skill-drift-parity.py`, `ops/scripts/manage/
+reconcile-stranded-skills.py`, `ops/scripts/manage/agent-skill-drift-
+reconcile.sh`, `ops/scripts/manage/fleet_doctor/`, `tests/
+test_fleet_doctor_collector_health.py`, or any file under `skills/` that
+this parity checker compares. Its `--json` mode emits the same rows for a
+machine reader.
 
 | Measure | Value |
 |---|---|
