@@ -223,6 +223,72 @@ def check_alerts(con, surfacing, live_locks, pending_hours=24, hardfail_days=7):
     return alerts
 
 
+def detect_stalled_loops(con, min_iterations=3):
+    """Detect LOOP cycles stalled at the same outcome_note or composite score.
+
+    A stalled LOOP is one where the same outcome_note repeats across >=
+    min_iterations LOOP cycles of the same task_id (dominant alert), or
+    where >= min_iterations LOOP cycles settle at the same composite score
+    with a different note (no measured progress despite iteration).
+
+    Returns a list of alert strings, one per distinct stalled task_id.
+    Never auto-accepts — only surfaces with severity.
+    """
+    alerts = []
+
+    # Check 1: same outcome_note across >= min_iterations LOOP cycles
+    by_note = con.execute("""
+        SELECT task_id, outcome_note, composite,
+               COUNT(*) as cnt,
+               MIN(timestamp) as first_ts,
+               MAX(timestamp) as last_ts
+        FROM loop_cycles
+        WHERE decision LIKE 'LOOP%'
+          AND user_overrode IS NULL
+          AND outcome_note IS NOT NULL
+          AND outcome_note != ''
+        GROUP BY task_id, outcome_note
+        HAVING cnt >= ?
+    """, (min_iterations,)).fetchall()
+
+    task_ids_reported = set()
+    for r in by_note:
+        task_ids_reported.add(r["task_id"])
+        alerts.append(
+            "STALLED LOOP: task '%s' — same outcome_note across %d LOOP "
+            "iterations (%s to %s); composite=%.2f; reviewer attention "
+            "recommended" % (
+                r["task_id"], r["cnt"], r["first_ts"], r["last_ts"],
+                r["composite"])
+        )
+
+    # Check 2: same composite score across >= min_iterations (different notes
+    # but no measured progress).
+    by_composite = con.execute("""
+        SELECT task_id, composite,
+               COUNT(*) as cnt,
+               MIN(timestamp) as first_ts,
+               MAX(timestamp) as last_ts
+        FROM loop_cycles
+        WHERE decision LIKE 'LOOP%'
+          AND user_overrode IS NULL
+        GROUP BY task_id, composite
+        HAVING cnt >= ?
+    """, (min_iterations,)).fetchall()
+
+    for r in by_composite:
+        if r["task_id"] not in task_ids_reported:
+            alerts.append(
+                "STALLED LOOP: task '%s' — %d LOOP iterations at composite "
+                "%.2f (%s to %s); no score progress" % (
+                    r["task_id"], r["cnt"], r["composite"],
+                    r["first_ts"], r["last_ts"])
+            )
+            task_ids_reported.add(r["task_id"])
+
+    return alerts
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--days", type=float, default=3.0, help="age cutoff in days (default 3)")
@@ -272,6 +338,11 @@ def main():
             print("  unreviewed before: %d" % n_before)
             for k in ("stop_ok", "loop", "move_on", "stop_fail", "pending"):
                 print("    %-10s %d" % (k, buckets_before.get(k, 0)))
+            stalled_dry = detect_stalled_loops(con)
+            if stalled_dry:
+                print("  stalled LOOPs: %d" % len(stalled_dry))
+                for s in stalled_dry:
+                    print("    " + s)
             return 0
 
         if fixture_ids:
@@ -288,6 +359,8 @@ def main():
         n_after = sum(buckets_after.values())
 
         alerts = check_alerts(con, surfacing, _live_lock_task_ids())
+        stalled = detect_stalled_loops(con)
+        alerts.extend(stalled)
 
         # Alert dedup: deliver each anomaly once (state-tracked seen set),
         # otherwise the daily cron spams the same backlog every tick.
@@ -317,6 +390,8 @@ def main():
             "buckets_after": buckets_after,
             "alerts": alerts,
             "new_alerts": new_alerts,
+            "stalled_loops": len(stalled),
+            "stalled_details": stalled[:10],  # cap detail to keep record compact
         }
         os.makedirs(_state_dir(), exist_ok=True)
         with open(_run_log(), "a", encoding="utf-8") as fh:
