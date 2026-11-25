@@ -1,0 +1,5 @@
+Running: systemd-analyze verify docs/templates/health-vector.service
+rc: 0
+when: 2026-11-25T06:24:17Z
+
+sha256: f91d665cc81fa7cd57a2349c2fafbaeb10d459301090fbac0b9f1fb641894518

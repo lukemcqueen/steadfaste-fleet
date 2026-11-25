@@ -22,7 +22,9 @@ Type=simple
 Environment=PATH=%h/.local/bin:%h/.bun/bin:/usr/local/bin:/usr/bin:/bin
 # Identify this agent to the orchestrator — health-vector.py reads
 # HEALTH_HOSTNAME (default: first char of the hostname). Set it to the
-# agent's name so fleet health reports attribute this vector correctly.
+# agent's hostname-prefix token (the fleet-setup skill's documented
+# <agent-hostname-prefix> placeholder) so fleet health reports attribute
+# this vector to the right agent.
 Environment=HEALTH_HOSTNAME=<agent-hostname-prefix>
 # The FLEET venv, not the system python (2026-10-13) — the interpreter
 # fleet-update.sh registers every MCP server against and the one the macOS
