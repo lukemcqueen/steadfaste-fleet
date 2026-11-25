@@ -69,26 +69,37 @@ echo
 # non-zero while its output happens to contain the right numbers, must not
 # be reported as PASS. The header contract ("every check is a real command
 # whose output is the proof") includes the command's exit status.
-PARITY_OUT="$(cd "${REPO}" && python3 ops/scripts/manage/check-skill-drift-parity.py 2>&1)"
+# Capture stdout and stderr SEPARATELY so diagnostic noise (tracebacks,
+# warnings) cannot be parsed as the tool's structured output — only stdout
+# is parsed; stderr is surfaced in the FAIL detail.
+PARITY_ERR="$(mktemp)"
+PARITY_OUT="$(cd "${REPO}" && python3 ops/scripts/manage/check-skill-drift-parity.py 2>"${PARITY_ERR}")"
 PARITY_RC=$?
+PARITY_STDERR="$(cat "${PARITY_ERR}")"
+rm -f "${PARITY_ERR}"
 STRANDED=$(grep -E "Stranded in place" <<<"${PARITY_OUT}" | grep -oE "[0-9]+" | head -1)
 ABSENT=$(grep -E "Absent from the repo" <<<"${PARITY_OUT}" | grep -oE "[0-9]+" | head -1)
 VERDICT=$(grep -E "Verdict:" <<<"${PARITY_OUT}" | tail -1 | sed 's/.*Verdict: *//' | tr -d '*[:space:]')
 if [[ ${PARITY_RC} -eq 0 && "${STRANDED:-?}" == "0" && "${ABSENT:-?}" == "0" && "${VERDICT:-}" == "PASS" ]]; then
   report "skill-drift parity (stranded + absent = 0)" "PASS" "rc=0 stranded=${STRANDED} absent=${ABSENT} verdict=${VERDICT}"
 elif [[ ${PARITY_RC} -ne 0 ]]; then
-  report "skill-drift parity (stranded + absent = 0)" "FAIL" "rc=${PARITY_RC} — the parity command did not exit 0; parsed values cannot be trusted (stranded=${STRANDED:-?} absent=${ABSENT:-?} verdict=${VERDICT:-?})"
+  report "skill-drift parity (stranded + absent = 0)" "FAIL" "rc=${PARITY_RC} — the parity command did not exit 0; parsed values cannot be trusted (stranded=${STRANDED:-?} absent=${ABSENT:-?} verdict=${VERDICT:-?}) stderr=[${PARITY_STDERR:0:200}]"
 else
-  report "skill-drift parity (stranded + absent = 0)" "FAIL" "rc=0 but parsed values disagree (stranded=${STRANDED:-?} absent=${ABSENT:-?} verdict=${VERDICT:-?})"
+  report "skill-drift parity (stranded + absent = 0)" "FAIL" "rc=0 but parsed values disagree (stranded=${STRANDED:-?} absent=${ABSENT:-?} verdict=${VERDICT:-?}) stderr=[${PARITY_STDERR:0:200}]"
 fi
 
 # ── Claim 2: --check agrees with the artifact it records ─────────────────────
-CHECK_OUT="$(cd "${REPO}" && python3 ops/scripts/manage/check-skill-drift-parity.py --check 2>&1)"
+CHECK_ERR="$(mktemp)"
+CHECK_OUT="$(cd "${REPO}" && python3 ops/scripts/manage/check-skill-drift-parity.py --check 2>"${CHECK_ERR}")"
 CHECK_RC=$?
-if [[ ${CHECK_RC} -eq 0 ]] && grep -q "artifact matches the live derivation" <<<"${CHECK_OUT}"; then
+CHECK_STDERR="$(cat "${CHECK_ERR}")"
+rm -f "${CHECK_ERR}"
+if [[ ${CHECK_RC} -eq 0 && "${CHECK_OUT}" == *"artifact matches the live derivation"* ]]; then
   report "parity --check re-derivation" "PASS" "rc=0, artifact matches live derivation"
+elif [[ ${CHECK_RC} -ne 0 ]]; then
+  report "parity --check re-derivation" "FAIL" "rc=${CHECK_RC}: ${CHECK_OUT:-<no stdout>} stderr=[${CHECK_STDERR:0:200}]"
 else
-  report "parity --check re-derivation" "FAIL" "rc=${CHECK_RC}: $(tail -1 <<<"${CHECK_OUT}")"
+  report "parity --check re-derivation" "FAIL" "rc=0 but output does not say 'artifact matches the live derivation': ${CHECK_OUT}"
 fi
 
 # ── Claim 3: the deployed reconciler (the one the deploy map actually ships) ─
@@ -118,13 +129,20 @@ else
 fi
 
 # ── Claim 4: the new collector-health test passes ────────────────────────────
-TEST_OUT="$(cd "${REPO}" && bash tests/run-tests.sh tests/test_fleet_doctor_collector_health.py -q 2>&1)"
+# Same stdout/stderr split: parse only stdout so diagnostic noise cannot
+# masquerade as a test summary.
+TEST_ERR="$(mktemp)"
+TEST_OUT="$(cd "${REPO}" && bash tests/run-tests.sh tests/test_fleet_doctor_collector_health.py -q 2>"${TEST_ERR}")"
 TEST_RC=$?
+TEST_STDERR="$(cat "${TEST_ERR}")"
+rm -f "${TEST_ERR}"
 PASSED_LINE=$(grep -E "passed|failed" <<<"${TEST_OUT}" | tail -1)
 if [[ ${TEST_RC} -eq 0 ]] && grep -qE "[0-9]+ passed" <<<"${TEST_OUT}"; then
   report "collector-health tests" "PASS" "${PASSED_LINE}"
+elif [[ ${TEST_RC} -ne 0 ]]; then
+  report "collector-health tests" "FAIL" "rc=${TEST_RC}: ${PASSED_LINE:-no summary line} stderr=[${TEST_STDERR:0:200}]"
 else
-  report "collector-health tests" "FAIL" "rc=${TEST_RC}: ${PASSED_LINE:-no summary line}"
+  report "collector-health tests" "FAIL" "rc=0 but no '[0-9]+ passed' summary line in stdout: ${TEST_OUT:0:200} stderr=[${TEST_STDERR:0:200}]"
 fi
 
 # ── Claim 5: the deployed fleet-doctor surfaces the new row ──────────────────
@@ -134,21 +152,25 @@ fi
 # a SKIP.
 DOCTOR_BIN="${HOME}/.steadfaste-fleet/scripts/fleet-doctor.py"
 if [[ -f "${DOCTOR_BIN}" ]]; then
-  DOCTOR_OUT="$(cd "${REPO}" && "${HOME}/.steadfaste-fleet/venv/bin/python3" "${DOCTOR_BIN}" --quiet 2>&1)"
+  DOCTOR_ERR="$(mktemp)"
+  DOCTOR_OUT="$(cd "${REPO}" && "${HOME}/.steadfaste-fleet/venv/bin/python3" "${DOCTOR_BIN}" --quiet 2>"${DOCTOR_ERR}")"
   DOCTOR_RC=$?
+  DOCTOR_STDERR="$(cat "${DOCTOR_ERR}")"
+  rm -f "${DOCTOR_ERR}"
   # The doctor's rc is a warn/fail summary (0 healthy, 1 warnings, 2+ fails),
   # not a "did it run" indicator — so we do NOT require rc=0. But an empty
   # output or an obviously-broken rc (>2) means the run itself did not
-  # produce a usable verdict.
+  # produce a usable verdict. Parse only stdout; stderr is surfaced separately
+  # so diagnostic noise cannot masquerade as a doctor row.
   if [[ -z "${DOCTOR_OUT}" ]]; then
-    report "fleet-doctor surfaces Learning collector freshness" "FAIL" "the doctor produced no output (rc=${DOCTOR_RC}) — cannot verify the row"
+    report "fleet-doctor surfaces Learning collector freshness" "FAIL" "the doctor produced no stdout (rc=${DOCTOR_RC}) stderr=[${DOCTOR_STDERR:0:200}] — cannot verify the row"
   elif [[ ${DOCTOR_RC} -gt 2 ]]; then
-    report "fleet-doctor surfaces Learning collector freshness" "FAIL" "the doctor exited rc=${DOCTOR_RC} (above the warn/fail summary range) — cannot verify the row"
+    report "fleet-doctor surfaces Learning collector freshness" "FAIL" "the doctor exited rc=${DOCTOR_RC} (above the warn/fail summary range) stderr=[${DOCTOR_STDERR:0:200}] — cannot verify the row"
   elif grep -q "Learning collector freshness" <<<"${DOCTOR_OUT}"; then
     ROW=$(grep "Learning collector freshness" <<<"${DOCTOR_OUT}" | head -1 | sed 's/^ *//')
     report "fleet-doctor surfaces Learning collector freshness" "PASS" "${ROW} (doctor rc=${DOCTOR_RC})"
   else
-    report "fleet-doctor surfaces Learning collector freshness" "FAIL" "row not present (doctor rc=${DOCTOR_RC}) — is the deployed fleet_doctor/ in sync with the repo?"
+    report "fleet-doctor surfaces Learning collector freshness" "FAIL" "row not present (doctor rc=${DOCTOR_RC}) stderr=[${DOCTOR_STDERR:0:200}] — is the deployed fleet_doctor/ in sync with the repo?"
   fi
 else
   report "fleet-doctor surfaces Learning collector freshness" "FAIL" "no deployed doctor at ${DOCTOR_BIN} — run fleet-update.sh; this claim cannot SKIP because the deployed doctor is the live path"
