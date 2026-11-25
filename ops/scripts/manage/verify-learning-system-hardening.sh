@@ -64,14 +64,22 @@ echo "repo: ${REPO}"
 echo
 
 # ── Claim 1: skill-drift parity is at PASS (0 stranded, 0 absent) ────────────
+# Check the exit code as well as the parsed strings: a parity run that
+# crashes after printing a stale "Verdict: PASS" line, or that exits
+# non-zero while its output happens to contain the right numbers, must not
+# be reported as PASS. The header contract ("every check is a real command
+# whose output is the proof") includes the command's exit status.
 PARITY_OUT="$(cd "${REPO}" && python3 ops/scripts/manage/check-skill-drift-parity.py 2>&1)"
+PARITY_RC=$?
 STRANDED=$(grep -E "Stranded in place" <<<"${PARITY_OUT}" | grep -oE "[0-9]+" | head -1)
 ABSENT=$(grep -E "Absent from the repo" <<<"${PARITY_OUT}" | grep -oE "[0-9]+" | head -1)
 VERDICT=$(grep -E "Verdict:" <<<"${PARITY_OUT}" | tail -1 | sed 's/.*Verdict: *//' | tr -d '*[:space:]')
-if [[ "${STRANDED:-?}" == "0" && "${ABSENT:-?}" == "0" && "${VERDICT:-}" == "PASS" ]]; then
-  report "skill-drift parity (stranded + absent = 0)" "PASS" "stranded=${STRANDED} absent=${ABSENT} verdict=${VERDICT}"
+if [[ ${PARITY_RC} -eq 0 && "${STRANDED:-?}" == "0" && "${ABSENT:-?}" == "0" && "${VERDICT:-}" == "PASS" ]]; then
+  report "skill-drift parity (stranded + absent = 0)" "PASS" "rc=0 stranded=${STRANDED} absent=${ABSENT} verdict=${VERDICT}"
+elif [[ ${PARITY_RC} -ne 0 ]]; then
+  report "skill-drift parity (stranded + absent = 0)" "FAIL" "rc=${PARITY_RC} — the parity command did not exit 0; parsed values cannot be trusted (stranded=${STRANDED:-?} absent=${ABSENT:-?} verdict=${VERDICT:-?})"
 else
-  report "skill-drift parity (stranded + absent = 0)" "FAIL" "stranded=${STRANDED:-?} absent=${ABSENT:-?} verdict=${VERDICT:-?}"
+  report "skill-drift parity (stranded + absent = 0)" "FAIL" "rc=0 but parsed values disagree (stranded=${STRANDED:-?} absent=${ABSENT:-?} verdict=${VERDICT:-?})"
 fi
 
 # ── Claim 2: --check agrees with the artifact it records ─────────────────────
@@ -127,11 +135,20 @@ fi
 DOCTOR_BIN="${HOME}/.steadfaste-fleet/scripts/fleet-doctor.py"
 if [[ -f "${DOCTOR_BIN}" ]]; then
   DOCTOR_OUT="$(cd "${REPO}" && "${HOME}/.steadfaste-fleet/venv/bin/python3" "${DOCTOR_BIN}" --quiet 2>&1)"
-  if grep -q "Learning collector freshness" <<<"${DOCTOR_OUT}"; then
+  DOCTOR_RC=$?
+  # The doctor's rc is a warn/fail summary (0 healthy, 1 warnings, 2+ fails),
+  # not a "did it run" indicator — so we do NOT require rc=0. But an empty
+  # output or an obviously-broken rc (>2) means the run itself did not
+  # produce a usable verdict.
+  if [[ -z "${DOCTOR_OUT}" ]]; then
+    report "fleet-doctor surfaces Learning collector freshness" "FAIL" "the doctor produced no output (rc=${DOCTOR_RC}) — cannot verify the row"
+  elif [[ ${DOCTOR_RC} -gt 2 ]]; then
+    report "fleet-doctor surfaces Learning collector freshness" "FAIL" "the doctor exited rc=${DOCTOR_RC} (above the warn/fail summary range) — cannot verify the row"
+  elif grep -q "Learning collector freshness" <<<"${DOCTOR_OUT}"; then
     ROW=$(grep "Learning collector freshness" <<<"${DOCTOR_OUT}" | head -1 | sed 's/^ *//')
-    report "fleet-doctor surfaces Learning collector freshness" "PASS" "${ROW}"
+    report "fleet-doctor surfaces Learning collector freshness" "PASS" "${ROW} (doctor rc=${DOCTOR_RC})"
   else
-    report "fleet-doctor surfaces Learning collector freshness" "FAIL" "row not present — is the deployed fleet_doctor/ in sync with the repo?"
+    report "fleet-doctor surfaces Learning collector freshness" "FAIL" "row not present (doctor rc=${DOCTOR_RC}) — is the deployed fleet_doctor/ in sync with the repo?"
   fi
 else
   report "fleet-doctor surfaces Learning collector freshness" "FAIL" "no deployed doctor at ${DOCTOR_BIN} — run fleet-update.sh; this claim cannot SKIP because the deployed doctor is the live path"
