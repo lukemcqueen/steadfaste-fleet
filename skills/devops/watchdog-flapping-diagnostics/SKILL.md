@@ -161,6 +161,33 @@ with the cron that produced it, so `digest down cron:orch-fleet-watchdog` means 
 stale cron. Read the vector index the message names; grep for `cron:` only to learn
 the sender, never to identify the offending job.
 
+## Check EVERY per-role path for the debounce, not just the one that flapped last
+
+A watchdog with per-role branches (orchestrator vs worker) can have the debounce
+applied to ONE branch and not the other. Measured: commit `84794f85` debounced the
+WORKER path of `fleet-bus-failover-watchdog.py` (`WORKER_ALERT_CONSECUTIVE`) and
+left the ORCHESTRATOR branch warning on `consecutive_failures == 1`, so a single
+blip kept raising `⚠️ <peer> health check FAILED (1/N)` on the orchestrator host
+while the peer was up. When you debounce one path, grep the file for the other
+branch's alert condition and debounce it too, with a regression test per path.
+
+Prefer a `>= threshold AND not already-alerted` pair (an `orch_alerted`-style flag
+reset by the healthy branch) over a bare `== 1` — the flag still fires once when a
+carried-over state file already sits at or above the threshold.
+
+## A deploy step that only PRINTS a sudo command leaves the config stale invisibly
+
+`deploy_nginx_configs()` in `fleet-update.sh` compares the repo nginx template
+against `/etc/nginx/` and — because applying it needs root — only prints
+`sudo cp … && sudo nginx -t && sudo systemctl reload nginx`, then exits 0. Nothing
+records that the live config was never updated, so a shipped allowlist fix can sit
+undeployed for months while the throttle it was meant to remove keeps producing
+false alarms. When a fix depends on a printed manual step, add a guardrail that
+READS the live artifact and WARNs (the nginx zone file is world-readable, so no
+sudo is needed): make it a pure `path -> (status, detail, remedy)` seam in the
+existing check, and pin the repo template in the same test so the guardrail and
+the deploy cannot drift apart.
+
 ## Pitfalls
 
 - Don't call it network flakiness because the probe source varies — NAT collapses

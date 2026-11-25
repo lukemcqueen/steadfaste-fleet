@@ -73,11 +73,14 @@ machine reader.
 
 | Measure | Value |
 |---|---|
-| Stranded in place (path in repo, content only deployed) | 0 |
+| Stranded in place (path in repo, content only deployed) | 1 |
 | Absent from the repo (deployed under a repo-owned skill) | 0 |
 |   ↳ path dropped from repo history | 0 |
 |   ↳ path never committed | 0 |
-| Files in sync | 1070 |
+| Files in sync | 1069 |
 | Skipped (Hermes defaults, or repo ahead) | 556 |
 
-**Verdict: PASS**
+**Verdict: FAIL**
+
+Stranded in place:
+- devops/watchdog-flapping-diagnostics/SKILL.md
