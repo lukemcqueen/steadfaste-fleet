@@ -16,6 +16,14 @@
 #
 # Exit code 0 = every claim holds. Non-zero = at least one claim does not.
 # Every check is a real command whose output is the proof — no assertion-only checks.
+#
+# CHECKOUT-ONLY by design (deliberately NOT registered in fleet-update.sh's
+# register() map): this is a run-scoped evidence tool for THIS cycle's work,
+# the same class as `check-skill-drift-parity.py` (also repo-only — see
+# deploy-manifest.tsv, which does not carry it either). It reads the repo
+# working tree to verify the repo is in sync with the deployed tree; there is
+# no deployed copy to verify against. The tools it CHECKS (reconciler,
+# fleet_doctor/) ARE deployed and are compared in claims 3 and 6 below.
 
 set -uo pipefail
 
