@@ -200,15 +200,35 @@ def phase1_detection(mod) -> None:
     else:
         ok("_moses_reachable([]) = False (fail closed)")
 
-    # First failure must warn
+    # First failure must be SILENT; the warning fires ONCE at
+    # ORCH_ALERT_CONSECUTIVE (Luke 2026-11-25 — the orchestrator debounce,
+    # mirroring the worker path's WORKER_ALERT_CONSECUTIVE). A single transient
+    # probe blip (an nginx-throttled / 8 s-timed-out health probe) must not
+    # raise a false alarm while Moses is answering; the dedicated regression is
+    # tests/test-bus-failover-orch-debounce.py.
     state = mod._load_state()
     state["failover_active"] = False
+    state["consecutive_failures"] = 0
+    state["first_failure_at"] = None
+    state["orch_alerted"] = False
     mod._save_state(state)
-    out = mod.run_once(moses_up=False, esther_up=True)
-    if any("Moses health check FAILED" in l for l in out):
-        ok("first failure warns (detection start announced)")
+    first = mod.run_once(moses_up=False, esther_up=True)
+    if any("Moses health check FAILED" in l for l in first):
+        bad("first failure warned (false alarm — a single blip must be silent)",
+            str(first))
     else:
-        bad("first failure did not warn", str(out))
+        ok("first failure is silent (transient blip debounced)")
+    warned_at = []
+    for _ in range(mod.ORCH_ALERT_CONSECUTIVE):
+        out = mod.run_once(moses_up=False, esther_up=True)
+        tick_state = mod._load_state()
+        if any("Moses health check FAILED" in l for l in out):
+            warned_at.append(tick_state["consecutive_failures"])
+    if warned_at == [mod.ORCH_ALERT_CONSECUTIVE]:
+        ok(f"warning fires once, at consecutive failure #{mod.ORCH_ALERT_CONSECUTIVE}")
+    else:
+        bad(f"warning cadence wrong — fired at counts {warned_at}, "
+            f"want [{mod.ORCH_ALERT_CONSECUTIVE}]")
 
     # REGRESSION (Luke 2026-08-24 — fleet-wide false CRITICAL): a WORKER
     # with EMPTY ORCH_HEALTH_URLS/BACKUP_ORCH_HEALTH_URLS (unconfigured)

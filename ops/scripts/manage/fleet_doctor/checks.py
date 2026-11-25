@@ -3318,6 +3318,60 @@ def check_config(res):
         res.add(f"Config ({var})", "INFO", f"defined but zero consumer scripts reference it")
 
 
+def nginx_probe_allowlist_verdict(zone_defs_path):
+  """Judge the fleet-probe allowlist in a hermes-zone-defs.conf.
+
+  Returns (status, detail, remedy). PURE: takes the path, reads no globals, so
+  every branch is directly testable.
+
+  Why this exists: the xx007 health server block keeps deliberately tight limits
+  (`limit_conn conn_limit 10` + `limit_req zone=general burst=10 nodelay`) as the
+  public DDoS ceiling, and the fleet is meant to bypass them via the
+  `geo $limit_bypass` allowlist (an empty limit-zone key => nginx applies no
+  limit). When that allowlist is not deployed the zones stay keyed on
+  `$binary_remote_addr`, so the fleet's OWN health probes are throttled: they
+  queue past the probe's 8 s urlopen timeout and the watchdog reads the peer as
+  "unreachable" while it is answering — the false failover-alarm class
+  (Luke 2026-11-25). fleet-update's deploy_nginx_configs() cannot apply this
+  itself (it needs root for /etc/nginx) and only PRINTS the sudo command, so
+  without this guardrail the stale state stays invisible indefinitely. The file
+  is world-readable, so the check needs no sudo.
+
+  See docs/runbooks/health-throttle-false-unreachable.md.
+  """
+  p = Path(zone_defs_path)
+  try:
+    if not p.exists():
+      return ("INFO",
+          f"{p} not present — skipping (host is not using the fleet nginx template)",
+          "")
+    if not p.is_file():
+      return ("WARN",
+          f"{p} exists but is not a regular file — the probe allowlist cannot be judged",
+          "Remove the obstructing path so the nginx template can be verified")
+  except OSError as e:
+    return ("WARN",
+        f"cannot stat {p}: {type(e).__name__} — fleet-probe throttling cannot be ruled out",
+        "Fix the filesystem error so the throttle guardrail can be verified")
+  try:
+    text = p.read_text()
+  except OSError as e:
+    return ("WARN",
+        f"cannot read {p}: {type(e).__name__} — fleet-probe throttling cannot be ruled out",
+        "Fix readability so the throttle guardrail can be verified")
+  if "geo $limit_bypass" in text and "$limit_bypass" in text:
+    return ("PASS",
+        "geo $limit_bypass present — fleet health probes bypass the health-block limits",
+        "")
+  return ("WARN",
+      "limit zones keyed on $binary_remote_addr (no geo $limit_bypass) — fleet "
+      "health probes are rate/conn limited and can read as unreachable",
+      "Apply the repo template (needs root): sudo cp "
+      f"{FLEET_REPO}/ops/install/deploy/nginx/hermes-zone-defs.conf {p} && "
+      "sudo nginx -t && sudo systemctl restart nginx "
+      "(restart, NOT reload — a limit-zone KEY change is refused by reload)")
+
+
 def check_nginx(res):
   """7. Nginx config: file exists, htpasswd, agent-card, SSL certs, syntax."""
 
@@ -3445,6 +3499,14 @@ def check_nginx(res):
 
   if "__SSL_CERT__" not in text and cert_found > 0 and cert_missing == 0:
     res.add("Nginx SSL certs", "PASS", f"{len(seen_certs)} cert path(s) resolve")
+
+  # Fleet-probe throttle guardrail (Luke 2026-11-25): the health block's tight
+  # limits are bypassed only when hermes-zone-defs.conf carries the
+  # `geo $limit_bypass` allowlist. Without it the fleet's own probes are
+  # throttled and read as "unreachable" — the false failover-alarm class.
+  _status, _detail, _remedy = nginx_probe_allowlist_verdict(
+      nginx_brew_dir / "hermes-zone-defs.conf")
+  res.add("Nginx probe allowlist", _status, _detail, _remedy)
 
   # nginx -t syntax check
   if nginx_available():

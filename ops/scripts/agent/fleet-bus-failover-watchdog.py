@@ -8,7 +8,9 @@ orchestrator, anything else → worker.
 ROLE BEHAVIOR
   ── Orchestrator (Esther — backup) ────────────────────────────────
   IDLE       Moses healthy → silent.
-  DEGRADED   1-2 consecutive failed checks → warn ONCE on first failure.
+  DEGRADED   >= ORCH_ALERT_CONSECUTIVE consecutive failed checks (default 2)
+             → warn ONCE, at the threshold. A single transient blip is
+             SILENT (the worker path's debounce, applied here 2026-11-25).
   FAILOVER   3+ consecutive failures AND elapsed >= FAILOVER_MIN_DOWN_MINUTES
              → ACTIVATE: swap Esther's .env primary/fallback, write the
                .failover-active marker (MARKER_FILE.write_text in the
@@ -59,6 +61,12 @@ CONFIG (env vars, all optional):
                              probes (single-transient-blip debounce, 2026-10-04);
                              recovery is reported only after
                              RECOVER_REQUIRED_SUCCESSES consecutive successes
+  ORCH_ALERT_CONSECUTIVE     default 2 — orchestrator emits the "Moses health
+                             check FAILED" warning only after this many
+                             consecutive failed probes (same debounce class,
+                             applied to the orchestrator path 2026-11-25).
+                             A single transient blip is silent; activation is
+                             unchanged (3 failures + MIN_DOWN_MINUTES elapsed).
 
 Safe to run anytime. no_agent cron pattern: empty stdout = silent; text
 output = delivered to the configured channel.
@@ -149,6 +157,15 @@ RECOVER_REQUIRED_SUCCESSES = 3  # consecutive healthy checks before restoring
 # consecutive successes. A single transient probe blip must produce ZERO
 # output. Mirrors the orchestrator path (3 failures + elapsed, 3 successes).
 WORKER_ALERT_CONSECUTIVE = int(os.environ.get("WORKER_ALERT_CONSECUTIVE", "2"))
+# ORCHESTRATOR alert debounce (Luke 2026-11-25 — the same flapping class on the
+# orchestrator path, which 84794f85 left undebounced): emit the "Moses health
+# check FAILED" warning only after this many CONSECUTIVE failed probes. The
+# blip is real and reproducible — a burst of probes to a throttled nginx health
+# listener queues past conn_limit/burst and trips the probe's own 8 s urlopen
+# timeout, which endpoints_reachable() reads as "down" — so a single tick of it
+# must not raise a false alarm while Moses is answering. Mirrors
+# WORKER_ALERT_CONSECUTIVE; activation is unchanged (3 failures + elapsed).
+ORCH_ALERT_CONSECUTIVE = int(os.environ.get("ORCH_ALERT_CONSECUTIVE", "2"))
 
 
 def _now_iso() -> str:
@@ -174,6 +191,7 @@ def _load_state() -> dict:
         "first_failure_at": None,
         "consecutive_successes": 0,
         "failover_active": False,
+        "orch_alerted": False,
         "last_status": "idle",
         "last_check_at": None,
     }
@@ -518,6 +536,7 @@ def run_once(
         # Primary healthy
         state["consecutive_failures"] = 0
         state["first_failure_at"] = None
+        state["orch_alerted"] = False  # a new outage may warn again
         state["consecutive_successes"] = state.get("consecutive_successes", 0) + 1
         if state.get("failover_active") and IS_ORCHESTRATOR:
             state["last_status"] = "recovering"
@@ -552,10 +571,18 @@ def run_once(
         if state.get("failover_active"):
             state["last_status"] = "failover"  # stays active, stays quiet
         elif IS_ORCHESTRATOR:
-            # Orchestrator: warn on first failure, activate after threshold
-            if state["consecutive_failures"] == 1:
+            # Orchestrator: warn ONCE after ORCH_ALERT_CONSECUTIVE consecutive
+            # failures, then activate after the threshold. The debounce (Luke
+            # 2026-11-25) mirrors the worker path: a single transient probe blip
+            # must produce ZERO output. `orch_alerted` makes it once-per-outage
+            # even when a carried-over state file already sits at/above the
+            # threshold; the healthy branch resets both the streak and the flag.
+            if (state["consecutive_failures"] >= ORCH_ALERT_CONSECUTIVE
+                    and not state.get("orch_alerted")):
+                state["orch_alerted"] = True
                 out.append(
-                    f"⚠️ Moses health check FAILED (1/{WARN_TICK_TOTAL}) — "
+                    f"⚠️ Moses health check FAILED "
+                    f"({state['consecutive_failures']}/{WARN_TICK_TOTAL}) — "
                     f"failover to Esther will trigger after >{MIN_DOWN_MINUTES} min of continuous outage"
                 )
             first_fail = state.get("first_failure_at")
