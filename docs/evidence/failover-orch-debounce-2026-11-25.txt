@@ -1,0 +1,136 @@
+failover orchestrator debounce — evidence
+========================================
+captured: 2026-11-25 14:07:33 KST
+host: esther    fix commit: 04f2f8c6    baseline: 04f2f8c6~1
+cycle: #15176    runbook: docs/runbooks/health-throttle-false-unreachable.md
+
+Reported (Luke): cron:fleet-bus-failover-watchdog delivered
+  "⚠️ Moses health check FAILED (1/4) — failover to Esther will trigger after >15 min of continuous outage"
+while Moses was up. Two independent defects:
+  (A) the ORCHESTRATOR path had no debounce, so one blip raised the alarm;
+  (B) this host's live nginx is the STALE revision, so the fleet's own health
+      probes are still rate/conn limited — the source of the blip.
+
+## 1. Fix verified — orchestrator debounce (case E pins the pre-fix RED from git, so the before/after re-runs forever)
+$ python3 tests/test-bus-failover-orch-debounce.py
+rc=0
+═══ Orchestrator failover watchdog debounce regression ═══
+  ✅ knob: ORCH_ALERT_CONSECUTIVE=2 (>= 2)
+  ✅ A: single-tick Moses blip → NO warning and NO recovery (silent)
+  ✅ B: warning fires exactly once, on consecutive failure #2
+  ✅ C: no repeat warning on a later tick while still down (once-only)
+  ✅ D: real outage still ACTIVATES failover (3 failures + elapsed)
+  ✅ E: pre-fix baseline DOES emit the false alarm on a single blip (the test discriminates RED -> GREEN), baseline=04f2f8c6~1
+
+═══ Summary: 6 passed, 0 failed ═══
+
+## 2. No regression — the worker debounce sibling test
+$ python3 tests/test-bus-failover-worker-debounce.py
+rc=0
+═══ Worker failover watchdog debounce regression ═══
+  ✅ A: single-tick Moses blip → NO alert and NO recovery (silent, no flapping)
+  ✅ A: worker_was_down NOT set by a single transient failure
+  ✅ B: persistent outage alerts after WORKER_ALERT_CONSECUTIVE failures
+  ✅ C: recovery reported only after exactly 3 healthy checks
+
+═══ Summary: 4 passed, 0 failed ═══
+
+## 3. Doctor guardrail + collector-health tests
+$ <HOME>/.steadfaste-fleet/venv/bin/python -m pytest -q tests/test_fleet_doctor_nginx_probe_allowlist.py tests/test_fleet_doctor_collector_health.py
+rc=0
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: <HOME>/steadfaste-fleet
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 15 items
+
+tests/test_fleet_doctor_nginx_probe_allowlist.py .....                   [ 33%]
+tests/test_fleet_doctor_collector_health.py ..........                   [100%]
+
+============================== 15 passed in 0.32s ==============================
+
+## 4. Drill — its Phase 1 asserted the OLD contract, updated to the debounced behaviour
+$ python3 tests/test-failover-drill.py
+rc=2
+  ❌ Esther external bus DOWN: https://bus.example.org:14004/health
+  ❌ worker fallback target DOWN: https://bus.example.org:14004/health
+═══ Summary: 35 passed, 2 failed, 3 warned ═══
+  ❌ Drill FAILED
+
+  PRE-EXISTING FAILURES, not caused by this change: the drill hardcodes the
+  unresolvable placeholder `bus.example.org`. Proven by stashing the watchdog
+  change and re-running: baseline = 34 passed / 2 failed with the SAME two
+  lines; with the fix = 35 passed / 2 failed (the extra pass is the new
+  assertion). `tests/test-bus-failover.py`'s 2 failures are likewise identical
+  pre-fix (an auth-name mismatch in the test's own sender, and a DLQ residue).
+
+## 5. The blip, proven from the watchdog's OWN run history (independent of bursts)
+
+$ journalctl --user -u fleet-bridge-fleet-bus-failover-watchdog.service   (last 400 lines = 200 ticks)
+  tick-duration histogram:
+    {0.0: 5, 1.0: 140, 2.0: 49, 3.0: 4, 7.0: 1, 10.0: 1}
+  outliers (>3s):
+    2026-11-25T13:35:00+09:00   10.0s
+    2026-11-25T13:55:00+09:00    7.0s
+  The tick probes TWO URLs, each with an 8 s urlopen timeout, so ~1-2 s is the
+  healthy cost and a >8 s tick means a probe TIMED OUT — `endpoints_reachable()`
+  then returns False and `consecutive_failures` increments. The 10.0 s tick is
+  the measured origin of Luke's alert: on that tick the pre-fix orchestrator
+  branch fired "Moses health check FAILED (1/4)". The next tick was healthy, so
+  the state reset to `consecutive_failures=0 / last_status=idle` — the
+  self-healed signature, which is why the report said "Moses is up".
+
+  Independently corroborated by a burst against the live listener:
+    25 concurrent GETs -> https://realgospelmessage.org:13007/health
+      measured:  8.1s  {'TimeoutError': 25}      <- all queued past the 8 s cap
+                 2.2s  {200: 25} ... (later samples all pass)
+    Single probes are ~0.3 s and 200 every time. The burst is INTERMITTENT —
+    every sample measured above is reported, not just the failing one — because
+    it needs the fleet's probes to land in the same tick to fill the bucket.
+    The bus port (:13004) answers 401 instantly, so this is the health
+    listener's limits, not a network or service fault.
+
+  Mechanism (docs/runbooks/health-throttle-false-unreachable.md): the xx007
+  health block sets `limit_conn conn_limit 10` + `limit_req zone=general
+  burst=10 nodelay` as the public DDoS ceiling; the FLEET is meant to bypass it
+  via the allowlist below. Without that allowlist, probes arriving in a fleet
+  tick exceed the bucket, queue, and trip the watchdog's own 8 s timeout.
+
+## 6. Root cause: the live nginx is the STALE revision
+file: /etc/nginx/hermes-zone-defs.conf   (mtime Aug 10 — never re-deployed)
+  LIVE limit zones:
+    limit_req_zone  $binary_remote_addr zone=general:10m rate=20r/s;
+    limit_req_zone  $binary_remote_addr zone=auth:10m   rate=5r/s;
+    limit_conn_zone $binary_remote_addr zone=conn_limit:10m;
+  REPO template (ops/install/deploy/nginx/hermes-zone-defs.conf):
+    limit_req_zone  $limit_bypass zone=general:10m rate=20r/s;
+    limit_req_zone  $limit_bypass zone=auth:10m   rate=5r/s;
+    limit_conn_zone $limit_bypass zone=conn_limit:10m;
+  The live file has NO `geo $limit_bypass` and keys every zone on
+  `$binary_remote_addr`, so the fleet's own probes are limited. The repo
+  template re-keys them onto the allowlist (an EMPTY key => no limit).
+  fleet-update's deploy_nginx_configs() cannot apply this itself — it needs
+  root for /etc/nginx and only PRINTS the sudo command, which is why the stale
+  state persisted. OPERATOR FIX (root required, both orchestrator hosts):
+    sudo cp <HOME>/steadfaste-fleet/ops/install/deploy/nginx/hermes-zone-defs.conf \
+        /etc/nginx/hermes-zone-defs.conf
+    sudo nginx -t && sudo systemctl restart nginx
+  RESTART, not reload: a limit-zone KEY change is refused by reload
+  ([emerg] ... uses the "$limit_bypass" key while previously it used the
+  "$binary_remote_addr" key), leaving the stale worker serving.
+
+## 7. Durable visibility — the new doctor guardrail
+$ <HOME>/.steadfaste-fleet/scripts/fleet-doctor.py   (deployed path)
+rc=1
+  ⚠️  Nginx probe allowlist — limit zones keyed on $binary_remote_addr (no geo $limit_bypass) — fleet health probes are rate/conn limited and can read as unreachable
+  ✅ Checksum: checks.py — content matches (after stripping SOURCE header)
+  ✅ Checksum: fleet-bus-failover-watchdog.py — content matches (after stripping SOURCE header)
+  ⚠️  Overall: WARNING  (532 pass · 5 warn · 0 fail · 2 info)  · 2 undisposed
+  · Nginx probe allowlist
+  or:  fleet-doctor.py --disposition "Nginx probe allowlist" --as deferred --owner <you> --reason "<why>"
+  The guardrail (fleet_doctor/checks.py, pure `nginx_probe_allowlist_verdict`
+  seam, world-readable file, no sudo) keeps this visible until an operator
+  applies it. Test: tests/test_fleet_doctor_nginx_probe_allowlist.py pins the
+  repo template too, so the guardrail and the deploy cannot drift apart.
+

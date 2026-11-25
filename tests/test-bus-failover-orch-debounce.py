@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import importlib.util
 import shutil
+import subprocess
 import sys
 import tempfile
 from datetime import datetime, timedelta, timezone
@@ -73,6 +74,47 @@ def _load_watchdog():
     mod.IS_ORCHESTRATOR = True
     mod.IS_MOSES = False
     return mod
+
+
+def _load_source(src: str, name: str):
+    """Import watchdog source TEXT with state/log redirected to a temp dir and
+    orchestrator (non-Moses) role forced — used for the git-pinned baseline."""
+    tmpdir = Path(tempfile.mkdtemp(prefix=f"{name}-"))
+    path = tmpdir / f"{name}.py"          # real .py suffix or the loader yields nothing
+    path.write_text(src)
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    mod.STATE_FILE = tmpdir / "state.json"
+    mod.LOG_FILE = tmpdir / ".log"
+    mod._tmpdir = tmpdir
+    mod.IS_ORCHESTRATOR = True
+    mod.IS_MOSES = False
+    return mod
+
+
+def _pre_fix_source():
+    """The watchdog source immediately BEFORE the orchestrator debounce landed.
+
+    Derived from git — the PARENT of the commit that introduced
+    ORCH_ALERT_CONSECUTIVE — so the before/after comparison re-runs forever
+    instead of scoring against a copy that silently becomes the fixed code.
+    Returns (source_text | None, introducing_sha | None).
+    """
+    path = "ops/scripts/agent/fleet-bus-failover-watchdog.py"
+    r = subprocess.run(["git", "log", "-S", "ORCH_ALERT_CONSECUTIVE",
+                        "--format=%H", "--", path],
+                       capture_output=True, text=True, cwd=REPO, timeout=60)
+    shas = [l.strip() for l in r.stdout.splitlines() if l.strip()]
+    if not shas:
+        return None, None
+    intro = shas[-1]                       # oldest commit that introduced the symbol
+    r2 = subprocess.run(["git", "show", f"{intro}~1:{path}"],
+                        capture_output=True, text=True, cwd=REPO, timeout=60)
+    if r2.returncode != 0:
+        return None, intro
+    return r2.stdout, intro
 
 
 def _fresh(mod):
@@ -152,6 +194,36 @@ def main() -> int:
         ok("D: real outage still ACTIVATES failover (3 failures + elapsed)")
     else:
         bad(f"D: activation broken by the debounce — {act}")
+
+    # ── TEST E: the test DISCRIMINATES — the pre-fix code must raise the alarm ──
+    # A green run proves nothing unless the same input would have failed before
+    # the fix. The baseline is materialised from GIT (the parent of the commit
+    # that introduced ORCH_ALERT_CONSECUTIVE), never a stale copy, so this
+    # comparison re-runs correctly forever; the extraction is asserted genuine
+    # by the absence of the symbol the fix introduced.
+    pre_src, intro_sha = _pre_fix_source()
+    if pre_src is None:
+        bad(f"E: could not materialise the pre-fix baseline from git "
+            f"(introducing commit: {intro_sha}) — discrimination unproven")
+    else:
+        if "ORCH_ALERT_CONSECUTIVE" in pre_src:
+            bad("E: baseline is NOT pre-fix — it already contains ORCH_ALERT_CONSECUTIVE")
+        else:
+            pre = _load_source(pre_src, "wd_prefix")
+            pre.DRY_RUN = True
+            pre.IS_ORCHESTRATOR = True
+            pre.IS_MOSES = False
+            _fresh(pre)
+            pre_out = pre.run_once(moses_up=False, esther_up=True,
+                                   moses_urls=urls_m, esther_urls=urls_e)
+            if any("FAILED" in l for l in pre_out):
+                ok("E: pre-fix baseline DOES emit the false alarm on a single blip "
+                   "(the test discriminates RED -> GREEN), baseline="
+                   f"{intro_sha[:8]}~1")
+            else:
+                bad(f"E: pre-fix baseline was silent too — the assertion is vacuous "
+                    f"(baseline={intro_sha[:8]}~1, out={pre_out})")
+            shutil.rmtree(getattr(pre, "_tmpdir", ""), ignore_errors=True)
 
     try:
         shutil.rmtree(getattr(mod, "_tmpdir", ""), ignore_errors=True)
