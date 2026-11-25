@@ -4,7 +4,7 @@
 
 Generated from `registry.yaml`. **Add a harness by adding a registry entry**, not by writing a new doc.
 
-Declared harnesses: **9**
+Declared harnesses: **10**
 
 | Harness | Layer | Status | Surface |
 |---|---|---|---|
@@ -16,6 +16,7 @@ Declared harnesses: **9**
 | `copilot` | `mcp` | planned | `~/.copilot/mcp-config.json [mcpServers] (or `copilot mcp add`)` |
 | `cursor` | `mcp` | planned | `~/.cursor/mcp.json [mcpServers] (project: .cursor/mcp.json)` |
 | `docker-agent` | `mcp` | planned | `cagent agent YAML — toolsets: [{type: mcp, ref: <server>}]` |
+| `kilo` | `mcp` | planned | `~/.config/kilo/kilo.json [mcp.<name>] (or `kilo mcp add`)` |
 | `opencode` | `mcp` | planned | `~/.config/opencode/opencode.json "mcp": {"servers": {…}}` |
 
 ## Layer meanings

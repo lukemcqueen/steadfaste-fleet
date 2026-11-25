@@ -176,6 +176,14 @@ HARNESSES = {
                 "declared either (the registry declares this harness by its binary, "
                 "`cagent`). Declared gap."),
     },
+    "kilo": {
+        "presence": "~/.config/kilo/",
+        "surface": None,
+        "mechanism": None,
+        "why": ("No provider-exclusion knob verified. Kilo (a fork of OpenCode) reads "
+                "provider/model and MCP servers from ~/.config/kilo/kilo.json, but its "
+                "provider-exclusion surface has not been probed on a host. Declared gap."),
+    },
 }
 
 

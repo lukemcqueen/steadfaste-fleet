@@ -520,6 +520,43 @@ harnesses:
       - 'cagent runs an agent whose toolsets include fleet-context and the fleet-context tools are listed.'
       - 'In that session call mem_context — the peer card must come back.'
 
+  - name: kilo
+    layer: mcp
+    status: planned
+    presence:
+      - ~/.config/kilo/
+      - cmd:kilo
+    surface: '~/.config/kilo/kilo.json [mcp.<name>] (or `kilo mcp add`)'
+    why: |
+      Kilo Code CLI is MCP-native: MCP servers live under the top-level `mcp`
+      key of ~/.config/kilo/kilo.json (global; also supports kilo.jsonc /
+      config.json; project-scope: ./kilo.json or ./.kilo/kilo.json, project
+      takes precedence). It is a fork of OpenCode — the same `type: local` +
+      `command` ARRAY shape (NOT a string, so this entry is a sibling of the
+      opencode one, never a copy of the Claude/Codex one). Declared from Kilo's
+      own MCP docs (read 2026-11-25):
+      https://kilo.ai/docs/automate/mcp/using-in-cli and
+      https://kilo.ai/docs/automate/mcp/using-in-kilo-code. `kilo mcp list` is
+      the read-back (presence `cmd:kilo` is the installed CLI, measured as
+      kilo 7.8.32 on this host).
+
+      OWED BEFORE `documented`: which env var carries the harness's session id
+      into the MCP child is UNVERIFIED (see the per-harness table in the
+      cross-agent-design skill). If none reaches the child the resolver answers
+      "per-repo, shared" — a real defect for lock ownership, not a cosmetic one.
+    install: |
+      # provider + model: `kilo auth` (or /connect in the TUI); provider, model,
+      # permission and MCP settings all live in ~/.config/kilo/kilo.json
+      Add to ~/.config/kilo/kilo.json:
+        { "mcp": { "fleet-context": {
+            "type": "local",
+            "command": ["<fleet venv python>", "<mcp_server>"] } } }
+      # read back:  kilo mcp list
+    verify:
+      - 'kilo mcp list shows fleet-context.'
+      - "In a Kilo session call mem_context — the peer card must come back."
+      - 'Session identity (which env var reaches the MCP child) is UNVERIFIED for Kilo — resolve it before promoting this entry.'
+
   - name: steadfaste-tui
     layer: none
     status: blocked
