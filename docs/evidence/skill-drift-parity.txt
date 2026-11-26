@@ -82,8 +82,8 @@ machine reader.
 | Absent from the repo (deployed under a repo-owned skill) | 0 |
 |   ↳ path dropped from repo history | 0 |
 |   ↳ path never committed | 0 |
-| Files in sync | 1074 |
-| Skipped (Hermes defaults, or repo ahead) | 562 |
+| Files in sync | 1075 |
+| Skipped (Hermes defaults, or repo ahead) | 561 |
 
 **Verdict: PASS**
 
