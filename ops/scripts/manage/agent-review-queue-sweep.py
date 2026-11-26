@@ -38,6 +38,28 @@ import sqlite3
 import sys
 
 
+# ── Stalled-LOOP drain (2026-11-26) ──────────────────────────────────────────
+# The loop scorer's decision is a PURE function of the composite score
+# (core/governance/loop_scorer.py: `elif comp >= t["loop"]: "LOOP 🔄 ..."`), with
+# no memory of prior iterations — so a task that settles at one score re-derives
+# LOOP forever and NOTHING terminates it. Measured cause of the review backlog:
+# 2548 unreviewed LOOP cycles, 100% precommit-* artifacts, one task_id carrying
+# 240 identical rows (same decision, same composite 7.20, empty note) over 10
+# days at ~18s spacing.
+#
+# STALL_MIN_ITERATIONS: how many LOOP cycles at ONE (task_id, composite) count as
+# stalled rather than merely unfinished. Kept EQUAL to detect_stalled_loops' own
+# alert threshold (3) so "what the alert reports" and "what the drain clears" are
+# the same set — a lower drain threshold than the alert would silently discard
+# material the alert never surfaced, and a higher one would leave reported stalls
+# accumulating forever.
+# LOOP_DRAIN_DAYS_DEFAULT: age gate for the drain. Conservative by default: only
+# cycles nobody has looked at for a month are drained, so a live investigation is
+# never closed out from under its author.
+STALL_MIN_ITERATIONS = 3
+LOOP_DRAIN_DAYS_DEFAULT = 30.0
+
+
 def _state_dir():
     override = os.environ.get("REVIEW_STATE_DIR")
     if override:
@@ -168,6 +190,42 @@ def measure(con, cutoff_ts):
     return buckets, closable, surfacing
 
 
+def closable_stalled_loops(con, cutoff_ts, min_iterations=STALL_MIN_ITERATIONS):
+    """LOOP cycles that are provably stalled and past the age gate.
+
+    "Stalled" is measured, not asserted: the (task_id, composite) group must
+    already carry >= min_iterations LOOP cycles, i.e. the same task settled at
+    the same score again and again with no progress. A task with a single bad
+    LOOP, or one whose score is still moving, is never returned.
+
+    Scope is deliberately narrow — precommit-* artifacts only. Those are minted
+    by the global git hook on every commit, so an unproductive repo can emit
+    hundreds of identical LOOP rows (measured: 240 for one task_id over 10 days,
+    all at composite 7.20). The scorer's decision is a pure function of the
+    composite, so it re-derives LOOP forever and nothing terminates it.
+
+    Safety contract matches the rest of the sweep: only user_overrode IS NULL
+    (never a human override), never deletes, idempotent — the next run finds
+    nothing. Returns rows carrying just `id`, which is all close_cycles reads.
+    """
+    return con.execute("""
+        SELECT id FROM loop_cycles
+        WHERE user_overrode IS NULL
+          AND task_id LIKE 'precommit-%'
+          AND decision LIKE 'LOOP%'
+          AND timestamp < ?
+          AND (task_id, composite) IN (
+              SELECT task_id, composite FROM loop_cycles
+              WHERE user_overrode IS NULL
+                AND task_id LIKE 'precommit-%'
+                AND decision LIKE 'LOOP%'
+              GROUP BY task_id, composite
+              HAVING COUNT(*) >= ?
+          )
+        ORDER BY id
+    """, (cutoff_ts, min_iterations)).fetchall()
+
+
 def close_cycles(con, closable, note):
     ids = [r["id"] for r in closable]
     if not ids:
@@ -294,6 +352,19 @@ def main():
     ap.add_argument("--days", type=float, default=3.0, help="age cutoff in days (default 3)")
     ap.add_argument("--dry-run", action="store_true", help="report only, no writes")
     ap.add_argument("--report", action="store_true", help="always print summary")
+    ap.add_argument(
+        "--loop-days", type=float, default=LOOP_DRAIN_DAYS_DEFAULT,
+        help="age cutoff in days for draining provably-stalled precommit LOOP "
+             "cycles (default %.0f). 0 means NO age gate — every matched cycle "
+             "is drained however recent, which is NOT the default and only "
+             "sensible for a one-off catch-up" % LOOP_DRAIN_DAYS_DEFAULT,
+    )
+    ap.add_argument(
+        "--stall-min", type=int, default=STALL_MIN_ITERATIONS,
+        help="LOOP cycles at one (task_id, composite) before a task counts as "
+             "stalled (default %d; keep >= the alert threshold in "
+             "detect_stalled_loops)" % STALL_MIN_ITERATIONS,
+    )
     args = ap.parse_args()
 
     if not os.path.exists(_db_file()):
@@ -328,6 +399,19 @@ def main():
             "older than %.0fd, clean outcome note" % args.days
         )
 
+        loop_cutoff_ts = (
+            now - datetime.timedelta(days=args.loop_days)
+        ).strftime("%Y-%m-%d %H:%M:%S")
+        stalled_closable = closable_stalled_loops(con, loop_cutoff_ts, args.stall_min)
+        stalled_note = (
+            "auto-swept by agent-review-queue-sweep: stalled LOOP drained — "
+            "%d+ LOOP cycles at the same composite for this task, older than "
+            "%.0fd, no score progress. The scorer's decision is a pure function "
+            "of the composite, so it re-derives LOOP indefinitely; closed here "
+            "so the backlog cannot grow unbounded. Reopen if the work is live."
+            % (STALL_MIN_ITERATIONS, args.loop_days)
+        )
+
         if args.dry_run:
             ids = sorted(r["id"] for r in closable)
             print("review-queue-sweep DRY-RUN: would close %d cycles (ids %s..%s)" % (
@@ -335,6 +419,10 @@ def main():
             print("  would clean %d precommit test-fixture cycles (ids %s..%s)" % (
                 len(fixture_ids), fixture_ids[0] if fixture_ids else "-",
                 fixture_ids[-1] if fixture_ids else "-"))
+            sids = sorted(r["id"] for r in stalled_closable)
+            print("  would DRAIN %d stalled LOOP cycles >=%.0fd old (ids %s..%s)" % (
+                len(sids), args.loop_days, sids[0] if sids else "-",
+                sids[-1] if sids else "-"))
             print("  unreviewed before: %d" % n_before)
             for k in ("stop_ok", "loop", "move_on", "stop_fail", "pending"):
                 print("    %-10s %d" % (k, buckets_before.get(k, 0)))
@@ -354,6 +442,7 @@ def main():
             con.commit()
 
         n_closed = close_cycles(con, closable, note)
+        n_drained = close_cycles(con, stalled_closable, stalled_note)
 
         buckets_after, _, surfacing_after = measure(con, cutoff_ts)
         n_after = sum(buckets_after.values())
@@ -384,6 +473,7 @@ def main():
             "before_total": n_before,
             "closed": n_closed,
             "fixture_cleaned": len(fixture_ids),
+            "stalled_drained": n_drained,
             "fixture_ids": fixture_ids,
             "after_total": n_after,
             "buckets_before": buckets_before,
@@ -404,6 +494,11 @@ def main():
             lines.append("review-queue-sweep: closed %d/%d unreviewed (%d remain)" % (n_closed, n_before, n_after))
             if fixture_ids:
                 lines.append("  fixtures: cleaned %d precommit test-fixture cycles (test-repo commits)" % len(fixture_ids))
+            if n_drained:
+                lines.append(
+                    "  drained: closed %d stalled LOOP cycles (>=%d iterations at one "
+                    "composite, untouched >=%.0fd) — backlog cannot grow unbounded"
+                    % (n_drained, args.stall_min, args.loop_days))
             for k in ("stop_ok", "loop", "move_on", "stop_fail", "pending"):
                 lines.append("  %-10s %d" % (k, buckets_after.get(k, 0)))
             for a in new_alerts:
