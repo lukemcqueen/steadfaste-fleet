@@ -81,6 +81,23 @@ machine only) — see `cron-job-management`.
 | Output is always same shape (status, digest, watchdog) | ❌ | ✅ |
 | Small model + many tool calls + boilerplate output | ❌ | ✅ |
 
+### State-transition watchdog shape (the dominant conversion)
+
+When the cron's job is "read state, report only on change" (a monitor, a
+watchdog, a "report only if something materially changed" job), convert it to a
+fingerprint-diff no_agent script — it burns zero tokens on quiet ticks:
+
+1. Project the MATERIAL state from each input file (drop volatile fields:
+   timestamps, last_run/status, transient flags). What counts as material is
+   the job's mandate — for a model-availability monitor it is prices/tiers/
+   candidates/violations and config model pins; a jobs file's `updated_at` is
+   NOT material, a candidate list change IS.
+2. Hash the canonical JSON (`json.dumps(sort_keys=True)`); store
+   `fingerprint|state_json` in a state file under `~/.steadfaste-fleet/state/`.
+3. On each run: compute the new fingerprint; equal → empty stdout, exit 0
+   (silent, nothing delivered); different → print the diff of what changed and
+   rewrite the state file. First run writes the baseline.
+
 ## Verification After Conversion
 
 ```bash
@@ -104,6 +121,24 @@ python3 ~/.hermes/scripts/local-nginx-error-summary.py
   refreshes, then run the doctor to confirm it clears.
 - **no_agent scripts must be silent on success** — empty stdout + exit 0
   delivers nothing; any stdout or non-zero exit delivers an alert.
+- **Compare the fingerprint HALF of the stored line, not the whole line.** If
+  the state file holds `fp|state_json`, comparing `stored == new_fp` can never
+  match and every run reports a change. Partition on `|`, compare `prev_fp`
+  only, and parse the state half separately for the diff.
+- **The diff helper must read the SAME shape the state file stores.** A diff
+  written against flat sections (model/cron/prices) fed the nested state dict
+  ({config, market, jobs}) silently finds nothing and reports "changed but not
+  attributable". Extract by the stored shape, then diff per section.
+- **Deploy the script BEFORE updating the cron.** `cronjob action=update`
+  validates the script path through the `~/.hermes/scripts` →
+  `~/.steadfaste-fleet/scripts` symlink and fails "Script file not found" if
+  it is not deployed. Register it in fleet-update.sh and run fleet-update.sh
+  first, then point the job at `manage/<script>.py`.
+- **A new production script needs its test in the SAME commit** (TDD iron-law
+  gate refuses otherwise). Give the script env-var path overrides (e.g.
+  `LSM_CONFIG_PATH`) so tests drive it via subprocess with tmp_path fixtures
+  instead of touching the live home directory — matches the repo's existing
+  test style (see tests/test_local_model_scan.py).
 
 ## Related
 - `cron-job-management` — naming, installers, doctor truth source
