@@ -12,9 +12,11 @@ transport, not a per-host mix:
 - **`ADVERSARIAL_REVIEW_BACKEND=llm`** on every host.
 - **Reviewer model = ONE source, `fleet_lib/models.py`** (DRY, 2026-11-13, cycle
   8265). The canonical model is declared once as `REVIEWER_MODEL_DEFAULT` in
-  `ops/scripts/fleet_lib/models.py` (currently `xiaomi/mimo-v2.6-pro` — the verified
-  cheaper winner; change it THERE, not in any surface); every surface
-  resolves it through `get_reviewer_model()`:
+  `ops/scripts/fleet_lib/models.py` (currently `deepseek/deepseek-v4-pro`; change it
+  THERE, not in any surface); every surface
+  resolves it through `get_reviewer_model()` — EXCEPT the light review tier,
+  which reads the constant directly (`_light_reviewer_model()`), so a per-host
+  `ADVERSARIAL_REVIEWER_MODEL` override does not apply to it:
   - `mcp-servers/loop-gov-mcp.py` (close gate) — imports `REVIEWER_MODEL_DEFAULT`
     from `fleet_lib.models` (fail-closed: a missing fleet_lib refuses rather than
     silently re-picking a judge);

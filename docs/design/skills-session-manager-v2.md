@@ -13,8 +13,9 @@
 
 1. **Binary marker** — `.skills-loaded` is a boolean file. It can't answer "which skills are loaded" or "were on_task skills loaded too"
 2. **Session ID linkage** — The marker is session-scoped (`session:{id}`), which is good, but the session ID concept is opaque to the agent. Agents don't know their session ID, can't verify the marker themselves, and have no feedback loop
-3. **No task-awareness** — The marker only tracks 8 always-section skills. It doesn't know about on_task skills, task classification, or workflow type
-4. **Zero agent guidance** — When the enforcer blocks a tool, it says "load skills first" but doesn't say *which* skills. The agent must remember all 8 names
+3. **No task-awareness** — The marker only tracks the always-section set (8 at the
+   time of writing; consolidated to 3 on 2026-11-06, see `docs/design/skills-always-consolidation-plan.md`). It doesn't know about on_task skills, task classification, or workflow type
+4. **Zero agent guidance** — When the enforcer blocks a tool, it says "load skills first" but doesn't say *which* skills. The agent must remember all the names
 5. **Marker cleared by context** — Post-commit hooks, end_change, and session compaction can reset the marker state, forcing agents to reload skills they already loaded
 
 ### The Real Agent Memory Problem

@@ -102,10 +102,14 @@ def get_model(env_var: str, default: str) -> str:
 # backend all resolve their default here; changing the reviewer (e.g. to a
 # cheaper model) is a ONE-LINE edit to the constant, not 5 files. The env var
 # ADVERSARIAL_REVIEWER_MODEL is honored first everywhere.
-# canonical reviewer — winner of docs/evidence/plan-reviewer-model-eval-2026-11-13/
-# (equal recall, ~6x cheaper, fastest) and docs/evidence/codegen-pro-models-2026-11-13/
-# (6/6 at the lowest measured cost). Change it via ADVERSARIAL_REVIEWER_MODEL.
-REVIEWER_MODEL_DEFAULT = "xiaomi/mimo-v2.6-pro"
+# canonical reviewer — REPOINTED 2026-11-26: `xiaomi/mimo-v2.6-pro` was RETIRED upstream
+# (it answers HTTP 404 and is absent from the OpenRouter catalogue), so every close
+# deadlocked on REVIEW_PENDING. Chosen by measurement 2026-11-26: perfect recall
+# (12/12 and 5/5 on a planted-defect battery), p50 8.6s / max 9.6s at production
+# prompt size, and NOT flash-tier (operator directive 2026-10-18). ~13x the cost of
+# the flash tier at ~$0.011/review, which is why the reviewer is NOT auto-routed.
+# Change it via ADVERSARIAL_REVIEWER_MODEL (per-host override), or here + fleet update.
+REVIEWER_MODEL_DEFAULT = "deepseek/deepseek-v4-pro"
 
 
 def get_reviewer_model() -> str:

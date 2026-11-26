@@ -71,7 +71,7 @@ log = logging.getLogger("governance-enforcer")
 
 # ── Skills-loading verification ────────────────────────────
 # The enforcer tracks actual skill_view() calls and auto-creates the
-# .skills-loaded marker with session-proof content when all 7 required
+# .skills-loaded marker with session-proof content when all required
 # skills have been loaded. A bare `touch .skills-loaded` creates an
 # empty file that fails content verification — blocking the bypass.
 # See SOUL.md Principle 23 for agent-side guardrail.
@@ -711,7 +711,7 @@ def _write_skills_state(
 
 
 def _get_loaded_skills_summary(session_id: str = "") -> dict:
-    """Return a dict of {skill_name: bool} for all 7 required skills
+    """Return a dict of {skill_name: bool} for all required skills
     for the given session."""
     state = _read_skills_state(session_id)
     always = state.get("always_skills", {})
@@ -979,7 +979,7 @@ def _skills_dir() -> Path:
 def _auto_create_skills_marker(session_id: str) -> None:
     """Write THIS session's per-session skills marker with session-proof content.
 
-    Called automatically when all 7 required skills have been loaded
+    Called automatically when all required skills have been loaded
     via skill_view() in this session. Each session owns a marker file at
     state/skills-loaded/<session_id> — concurrent sessions can never
     overwrite each other (the pre-2026-08-01 shared .skills-loaded file had
@@ -3109,7 +3109,7 @@ def register(ctx):
 
             # ── Track skill_view calls ──
             # Moved BEFORE the skills gate so agents can load skills.
-            # When all 7 required skills are loaded, the marker is
+            # When all required skills are loaded, the marker is
             # auto-created with session-proof content.
             #
             # Per-session tracking (2026-08-08 — cross-session bleed fix):
@@ -3118,7 +3118,7 @@ def register(ctx):
             # sessions contributed to each other's count, so a session that
             # loaded 2 skills could get a valid marker. Now each session has
             # its own set (_session_skills_loaded[session_id]) and must load
-            # all 7 itself. The global set is retained only for the legacy
+            # them itself. The global set is retained only for the legacy
             # auto-create path and block-message summary.
             if tool_name == "skill_view":
                 skill_name = args.get("name", "")
@@ -3175,7 +3175,7 @@ def register(ctx):
             # an empty file that fails _check_skills_loaded_marker().
             # Read-only tools (read_file, search_files, session_search, cron list/run,
             # web_search, vision_analyze, etc.) pass through — they can't modify state.
-            # The enforcer auto-creates the marker when all 7 skills have
+            # The enforcer auto-creates the marker when all required skills have
             # been loaded via actual skill_view() calls — no touch needed.
             if not _check_skills_loaded_marker(hermes_session_id):
                 if _is_write_tool(tool_name, args, _terminal_verdict):
@@ -3600,7 +3600,7 @@ def register(ctx):
                     + _compound_note
                     + _push_note
                     + "This repo requires an active governance lock.\n"
-                    "This is GATE 2 of 2 — gate 1 is the skills gate (all 7 always-section\n"
+                    "This is GATE 2 of 2 — gate 1 is the skills gate (all always-section\n"
                     "skills loaded via skill_view). If you just fixed gate 1, a second\n"
                     "block here is EXPECTED: the two gates are independent and BOTH must\n"
                     "be satisfied.\n\n"

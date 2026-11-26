@@ -4009,7 +4009,7 @@ def check_governance(res):
   # reading here.
   # "The default reviewer is the canonical reviewer for all agents" is true in the CODE BY
   # CONSTRUCTION: loop-gov-mcp.py's `_reviewer_model()` and `_light_reviewer_model()` both
-  # fall back to REVIEWER_MODEL_DEFAULT (fleet_lib/models.py — currently mimo, the verified
+  # fall back to REVIEWER_MODEL_DEFAULT (fleet_lib/models.py — the canonical reviewer; the
   # cheaper winner; change it there, not here), and there is deliberately no lighter default
   # constant. What the code cannot guarantee is a host's ENV — setting
   # ADVERSARIAL_REVIEWER_MODEL (or ADVERSARIAL_REVIEW_LIGHT_MODEL) to something cheaper
@@ -4096,7 +4096,8 @@ def check_governance(res):
       res.add("Adversarial reviewer model config", "WARN",
           f"the reviewer is NOT the canonical {_rv_canonical}: " + "; ".join(_rv_bad),
           "Remove the override from that .env (or set it to the canonical model) and "
-          "restart the loop-governance MCP server so it re-reads the value")
+          "no restart is needed: the gate re-reads the env file on EVERY call "
+          "(`_env_value`), so the override is live as soon as the file is edited")
 
   # ── MCP servers ──
   is_orch = AGENT_ROLE == "orchestrator"

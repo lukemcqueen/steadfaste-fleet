@@ -318,8 +318,22 @@ def test_the_reviewer_is_the_canonical_model_on_every_path():
         for k in saved:
             os.environ.pop(k, None)
         canonical = mcp.REVIEWER_MODEL_DEFAULT
-        _check("the canonical reviewer model is xiaomi/mimo-v2.6-pro",
-               canonical == "xiaomi/mimo-v2.6-pro", canonical)
+        # a LITERAL on purpose: this guards the canonical id against accidental change,
+        # so deriving it from REVIEWER_MODEL_DEFAULT would make the check tautological.
+        # Repointed 2026-11-26 off the retired xiaomi/mimo-v2.6-pro.
+        _check("the canonical reviewer model is deepseek/deepseek-v4-pro",
+               canonical == "deepseek/deepseek-v4-pro", canonical)
+
+        # Cross-file guard for that literal. Without it the literal only drifts
+        # silently after the next repoint - the stale-reference class this whole
+        # change exists to remove. Read the source as TEXT (no import, so no
+        # sys.path or relative-import fragility) and pin the declaration itself.
+        _src = (Path(__file__).resolve().parent.parent
+                / "ops" / "scripts" / "fleet_lib" / "models.py").read_text(encoding="utf-8")
+        _decl = [ln.strip() for ln in _src.splitlines()
+                 if ln.startswith("REVIEWER_MODEL_DEFAULT")]
+        _check("fleet_lib/models.py declares the canonical id this test guards",
+               _decl == ['REVIEWER_MODEL_DEFAULT = "deepseek/deepseek-v4-pro"'], _decl)
 
         # With nothing configured, every resolution path agrees.
         _check("_reviewer_model() is the canonical model",

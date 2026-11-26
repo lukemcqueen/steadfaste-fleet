@@ -668,7 +668,7 @@ GOVERNANCE LOCK REQUIRED
 
 Tool 'write_file' modifies system state
 ...
-This is GATE 2 of 2 — gate 1 is the skills gate (all 7 always-section
+This is GATE 2 of 2 — gate 1 is the skills gate (all always-section
 skills loaded via skill_view). If you just fixed gate 1, a second
 block here is EXPECTED: the two gates are independent and BOTH must
 be satisfied.

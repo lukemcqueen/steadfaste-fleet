@@ -133,7 +133,7 @@ misconfigured or unreachable reviewer can only make closing harder.
 
 **All agents configure the reviewer the SAME way (2026-10-07):**
 `ADVERSARIAL_REVIEW_BACKEND=llm` with
-`ADVERSARIAL_REVIEWER_MODEL=xiaomi/mimo-v2.6-pro` — the single canonical
+`ADVERSARIAL_REVIEWER_MODEL=deepseek/deepseek-v4-pro` — the single canonical
 reviewer. Keep the reviewer model DIFFERENT from the worker's model. The endpoint
 is `ADVERSARIAL_REVIEW_BASE_URL` (default OpenRouter, so a local or self-hosted
 endpoint can review). Name the credential with `ADVERSARIAL_REVIEW_API_KEY_ENV`;
@@ -161,9 +161,12 @@ measurement it already uses to decide *whether* to review:
   under the heavy bar (`<10` files and `<200` added+removed lines): reviewed over
   a **fast chat-completions call** rather than spawning the agent, even when
   `ADVERSARIAL_REVIEW_BACKEND=agent`. The tier changes the **transport, not the
-  model** — it uses `ADVERSARIAL_REVIEWER_MODEL` (the canonical reviewer
-  resolved via `get_reviewer_model()` / `REVIEWER_MODEL_DEFAULT` — currently
-  `xiaomi/mimo-v2.6-pro`, see `fleet_lib/models.py`), the same reviewer as every other change. Set
+  model** — it judges with `REVIEWER_MODEL_DEFAULT`, the **constant** in
+  `fleet_lib/models.py`. It does NOT go through `get_reviewer_model()`, so a
+  host's `ADVERSARIAL_REVIEWER_MODEL` override does not reach the light tier: on
+  such a host the two tiers can use DIFFERENT judges (the doctor's reviewer-model
+  check reports that as a WARN by design). Otherwise the same reviewer as every
+  other change. Set
   `ADVERSARIAL_REVIEW_LIGHT_MODEL` to review the light tier with a different
   model on purpose; before 2026-10-08 this tier silently defaulted to
   `deepseek/deepseek-v4-flash-0731`.
