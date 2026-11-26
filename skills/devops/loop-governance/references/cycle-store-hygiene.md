@@ -1,5 +1,11 @@
 # Cycle Store Hygiene — why the review backlog grows, and how to bound it
 
+<!-- COVERED BY tests/test_cycle_store_hygiene_claims.py (2026-11-26): the
+     stateless-decision claim (~L20) and the no_progress-unreachability claim
+     (~L28) are pinned by tests 1-4 against core/governance/loop_scorer.py.
+     If the scorer changes, the tests fail loudly instead of this reference
+     silently going stale. -->
+
 Depth for the `loop-governance` SKILL.md. Load this when the review-queue sweep
 reports a large unreviewed count, when a `LOOP` decision looks like it will never
 resolve, or before changing anything in `core/governance/loop_scorer.py` or
