@@ -1,0 +1,13 @@
+━━━ verify-learning-system-hardening ━━━  (2026-11-26 23:53:34 KST)
+repo: /home/esther/steadfaste-fleet
+
+  ✅ skill-drift parity (stranded + absent = 0) — rc=0 stranded=0 absent=0 verdict=PASS
+  ✅ parity --check re-derivation — rc=0, artifact matches live derivation
+  ✅ agent-skill-drift-reconcile.sh deployed = repo (banner-stripped) — content sha256=eef9b26f8baafa9f
+  ✅ collector-health tests — ============================== 10 passed in 0.17s ==============================
+  ✅ fleet-doctor surfaces Learning collector freshness — ✅ Learning collector freshness (doctor rc=1)
+  ✅ content_sha strips the 3-line SOURCE banner (self-test) — 8cb53e8a30d51d1b
+  ✅ fleet_doctor/checks.py deployed = repo (banner-stripped) — content sha256=acdf2415a540d029
+  ✅ 7 hand-merged SKILL.md files byte-identical (repo = deployed) — 7/7 identical
+
+  ✅ ALL CLAIMS HOLD

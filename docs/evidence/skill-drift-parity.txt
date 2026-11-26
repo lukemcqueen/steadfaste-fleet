@@ -63,6 +63,11 @@ the whole range's claims:
 
     bash ops/scripts/manage/verify-learning-system-hardening.sh
 
+The run that produced THIS revision's table is captured verbatim at
+docs/evidence/verify-learning-system-hardening-2026-11-26.txt (ALL CLAIMS
+HOLD; its claim-1 line reports the same verdict, stranded=0 and absent=0
+that this table's rows show).
+
 Re-run that script after any change to `ops/scripts/manage/
 check-skill-drift-parity.py`, `ops/scripts/manage/
 reconcile-stranded-skills.py`, `ops/scripts/manage/agent-skill-drift-
@@ -77,7 +82,7 @@ machine reader.
 | Absent from the repo (deployed under a repo-owned skill) | 0 |
 |   ↳ path dropped from repo history | 0 |
 |   ↳ path never committed | 0 |
-| Files in sync | 1075 |
-| Skipped (Hermes defaults, or repo ahead) | 561 |
+| Files in sync | 1074 |
+| Skipped (Hermes defaults, or repo ahead) | 562 |
 
 **Verdict: PASS**
