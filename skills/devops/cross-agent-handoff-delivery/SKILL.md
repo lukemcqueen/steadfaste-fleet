@@ -42,7 +42,13 @@ the work stalls until they chase you.
 1. Attach the actual content to the body: full `git diff --cached` output,
    artifact, or patch text. OR push the branch to a remote the recipient can
    reach. Never name a local-only branch as the handoff.
-2. Reuse the original `correlation_id` when resending a correction so the
+2. A change gate-blocked on YOUR host (orchestrator-only paths like
+   `ops/scripts/` or `tests/`) is still YOUR job to transmit — the
+   orchestrator has NO shell access to worker hosts, so "commit my staged
+   files on my server" is not an action it can take. The gate means the
+   commit must happen in the orchestrator's SHARED repo, and the only way
+   your working-tree state gets there is as the actual diff in the message.
+3. Reuse the original `correlation_id` when resending a correction so the
    recipient can thread it to the first message.
 
 ### Verify it landed AND is usable
@@ -141,7 +147,15 @@ only as good as its measurements. Never `git apply` it blind, and never relay it
    working-tree stub on their host is invisible to you until it is pushed; search YOUR repo for the
    named files and read them before assuming they exist — the claim can be true on their box and
    false on yours.
-8. **A named commit hash or handoff-doc in a cross-host summary is a LOOKUP, not a fact — and an
+8. **A request that presumes you can act INSIDE the sender's host rests on a false premise when
+   the fleet is bus-connected.** "Commit my staged files, push, run the update on my server"
+   assumes orchestrator shell access that does not exist (check it: DNS, `~/.ssh/config`, key
+   rejection, and `git status` in YOUR clone — the files are absent because they live only in the
+   sender's working tree). Before promising, verify the MECHANISM; then answer with the correct
+   path: the sender sends the actual diff via the bus as a `PROPOSAL`, you land it in the shared
+   repo and push, and an `UPDATE_REQUEST` triggers the agent's OWN local pull+deploy. A
+   description that names files but carries no patch is unactionable in either direction.
+9. **A named commit hash or handoff-doc in a cross-host summary is a LOOKUP, not a fact — and an
    unresolvable one means rebuild from the design docs that are present, never chase the phantom.**
    The prior host may record "committed ce05c9a" when that commit never left its tree (an un-pushed
    sandbox handoff this session: `git cat-file -t <sha>` → "Not a valid object", `git log --all`
@@ -151,7 +165,7 @@ only as good as its measurements. Never `git apply` it blind, and never relay it
    already carry the content (this session: the sandbox design docs did, so the handoff-plan doc was
    rebuilt from them and the stranded sha superseded cleanly), and note the stranded commit in the
    commit message so the reader knows the old sha is a dead pointer.
-9. **Run the peer's own stated verify step before landing — a prompt-redaction pass can leave
+10. **Run the peer's own stated verify step before landing — a prompt-redaction pass can leave
    literal placeholder tokens that are syntax errors in the file.** A redaction artifact
    (`API_KEY = [SECRET]"..."`) is real file bytes, so the draft fails the compiler even though the
    prose around it reads complete and "already tested". Executing the sender's own stated check
@@ -162,7 +176,7 @@ only as good as its measurements. Never `git apply` it blind, and never relay it
    fleet serves from `mcp.server.Server` + `mcp.types`), which kills the module at load on every
    host. Import/run the draft under the venv that will actually serve it, not the one that merely
    compiles it, before calling the peer's "code is written" claim true.
-10. **Secret-redaction is INTENDED on any transferred prompt — treat `[SECRET]` as deliberate, not a
+11. **Secret-redaction is INTENDED on any transferred prompt — treat `[SECRET]` as deliberate, not a
    sender error.** Secrets never travel in-band between agents, so any prompt is redacted as a matter
    of course. When the redaction removed code the receiver needs (the exact key-resolution call),
    reconstruct it from the documented intent (an env var name, a `.env` path, the fleet's convention)
