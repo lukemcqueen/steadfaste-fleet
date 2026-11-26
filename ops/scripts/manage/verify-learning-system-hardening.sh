@@ -178,18 +178,21 @@ fi
 
 # ── Claim 6: the deployed fleet_doctor/checks.py is in sync with the repo ────
 # Same logic: the deployed copy is what the live doctor imports, so its
-# absence is a hardening gap, not a not-applicable case.
-REPO_CHECKS_SHA=$(sha256sum "${REPO}/ops/scripts/manage/fleet_doctor/checks.py" | cut -d' ' -f1)
+# absence is a hardening gap, not a not-applicable case. Like claim 3, the
+# deploy stamps a 3-line SOURCE banner on shipped scripts — compare content
+# with the banner stripped (content_sha), not raw sha256, or every nightly
+# run false-FAILs on a banner-only delta.
+REPO_CHECKS_SHA=$(content_sha "${REPO}/ops/scripts/manage/fleet_doctor/checks.py")
 DEPLOYED_CHECKS="${HOME}/.steadfaste-fleet/scripts/fleet_doctor/checks.py"
 if [[ -f "${DEPLOYED_CHECKS}" ]]; then
-  DEPLOYED_CHECKS_SHA=$(sha256sum "${DEPLOYED_CHECKS}" | cut -d' ' -f1)
+  DEPLOYED_CHECKS_SHA=$(content_sha "${DEPLOYED_CHECKS}")
   if [[ "${REPO_CHECKS_SHA}" == "${DEPLOYED_CHECKS_SHA}" ]]; then
-    report "fleet_doctor/checks.py deployed = repo" "PASS" "sha256=${REPO_CHECKS_SHA:0:16}"
+    report "fleet_doctor/checks.py deployed = repo (banner-stripped)" "PASS" "content sha256=${REPO_CHECKS_SHA:0:16}"
   else
-    report "fleet_doctor/checks.py deployed = repo" "FAIL" "repo=${REPO_CHECKS_SHA:0:16} deployed=${DEPLOYED_CHECKS_SHA:0:16} — run fleet-update.sh"
+    report "fleet_doctor/checks.py deployed = repo (banner-stripped)" "FAIL" "repo=${REPO_CHECKS_SHA:0:16} deployed=${DEPLOYED_CHECKS_SHA:0:16} — run fleet-update.sh"
   fi
 else
-  report "fleet_doctor/checks.py deployed = repo" "FAIL" "no deployed copy at ${DEPLOYED_CHECKS} — run fleet-update.sh; this claim cannot SKIP because the deployed copy is what the live doctor imports"
+  report "fleet_doctor/checks.py deployed = repo (banner-stripped)" "FAIL" "no deployed copy at ${DEPLOYED_CHECKS} — run fleet-update.sh; this claim cannot SKIP because the deployed copy is what the live doctor imports"
 fi
 
 # ── Claim 7: every hand-merged SKILL.md is byte-identical between repo and deployed

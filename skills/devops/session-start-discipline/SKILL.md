@@ -20,7 +20,7 @@ restore uses `~/.steadfaste-fleet/scripts/task-db.py pending` (there is no
 ## What to do instead
 
 1. `skill_view('task-start')` — bundles the complete pre-task sequence:
-   cache_search → begin_change → load all 7 always-section skills →
+   cache_search → begin_change → load all 3 always-section skills →
    classify (agent-flow) → restore todos via `task-db.py pending` →
    survey → work.
 2. Marker mechanics (never `touch` the per-session marker at

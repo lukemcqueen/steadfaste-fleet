@@ -14,6 +14,11 @@ platforms: [linux, macos]
      deploy carries them fleet-wide. Every repo-only line this supersedes was
      checked by phrase match: each is superseded IN PLACE (a corrected acceptance
      recipe and a corrected latency claim), not lost. -->
+<!-- Behavioral-claim evidence (2026-11-26, soul-refine close review ADV-15212):
+     the hook-order claim (~L110), the abandoned-unmerged-index shape (~L1072) and
+     the stale "7"-vs-3 always-skills count (~L1029) are verified by the re-runnable
+     ops/scripts/manage/evidence-fleet-deployment-sync-claims.sh; its captured run
+     is docs/evidence/fleet-deployment-sync-claims-2026-11-26.txt (ALL CLAIMS HOLD). -->
 
 <!-- renamed from skills/devops/cortex-deployment-sync/SKILL.md in the cortex-to-fleet sweep; content predates the range (commit 353c3d54) -->
 

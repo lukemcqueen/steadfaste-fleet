@@ -3,9 +3,11 @@
 
 THE CLASS (diagnosed 2026-10-26, cycle 13823; recurring since 2026-09-30):
 a Hermes cron job that carries an EXPLICIT ``enabled_toolsets`` allowlist which
-omits ``skills`` is never given a skill tool. The 7 always-section skills can
-therefore never load, governance gate 1 blocks every write tool, and the job's
-write-back silently never happens — while the job still reports success.
+omits ``skills`` is never given a skill tool. The 3 always-section skills (per
+``~/.steadfaste-fleet/skills.yaml`` ``always:`` — task-orient, execute-right,
+verify-and-ship) can therefore never load, governance gate 1 blocks every write
+tool, and the job's write-back silently never happens — while the job still
+reports success.
 
 ``skills`` is a real Hermes toolset; a per-job allowlist is authoritative over
 ``platform_toolsets.cron``, so the ONLY fix is that job's own config field.

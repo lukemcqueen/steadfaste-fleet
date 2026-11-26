@@ -1,0 +1,40 @@
+━━━ evidence-fleet-deployment-sync-claims ━━━ (2026-11-26 23:40:42 KST)
+  skills.yaml always: section lists 3 skills
+  ✅ C5: skills.yaml always: = 3 (task-orient, execute-right, verify-and-ship)
+  ✅ C5: no stale '7 always-section skills' wording remains in fix-cron-skills-toolset.py
+[fleet-committers] unexpected read error: fatal: invalid object name 'HEAD'.
+  \033[0;32m✅ change-validate: all checks passed\033[0m
+
+🧪  Self-test: orchestrator guard...
+✅  Self-test passed: host detected as orchestrator (hostname+home-dir)
+    Env spoof check: ok-still-orch (env ignored)
+✅  Adversarial verify: passed on 1 file(s)
+📊  score-cycle: LOOP 🔄 — keep iterating (task=precommit-c3-demo-oAWj-HEAD/update, pass-pct=100)
+  hooks fired during rebase: [HOOK post-rewrite FIRED]
+  ✅ C3: rebase runs post-rewrite only; post-merge does NOT fire
+[fleet-committers] unexpected read error: fatal: invalid object name 'HEAD'.
+  \033[0;32m✅ change-validate: all checks passed\033[0m
+
+🧪  Self-test: orchestrator guard...
+✅  Self-test passed: host detected as orchestrator (hostname+home-dir)
+    Env spoof check: ok-still-orch (env ignored)
+✅  Adversarial verify: passed on 1 file(s)
+📊  score-cycle: LOOP 🔄 — keep iterating (task=precommit-c4-demo-Ji8u-HEAD/update, pass-pct=100)
+  \033[0;32m✅ change-validate: all checks passed\033[0m
+
+🧪  Self-test: orchestrator guard...
+✅  Self-test passed: host detected as orchestrator (hostname+home-dir)
+    Env spoof check: ok-still-orch (env ignored)
+✅  Adversarial verify: passed on 1 file(s)
+📊  score-cycle: LOOP 🔄 — keep iterating (task=precommit-c4-demo-Ji8u-cronbranch/base, pass-pct=100)
+  \033[0;32m✅ change-validate: all checks passed\033[0m
+
+🧪  Self-test: orchestrator guard...
+✅  Self-test passed: host detected as orchestrator (hostname+home-dir)
+    Env spoof check: ok-still-orch (env ignored)
+✅  Adversarial verify: passed on 1 file(s)
+📊  score-cycle: LOOP 🔄 — keep iterating (task=precommit-c4-demo-Ji8u-main/cron-side, pass-pct=100)
+  abandoned shape: UU=1 state_files=[<none>]
+  ✅ C4: abandoned shape reproduced — UU present, no MERGE_HEAD/rebase state
+  detection recipe: absent : .git/MERGE_HEAD;absent : .git/rebase-merge;absent : .git/rebase-apply;absent : .git/CHERRY_PICK_HEAD;
+━━━ result: ALL CLAIMS HOLD ━━━

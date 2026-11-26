@@ -64,12 +64,14 @@ Every improvement you make that benefits other agents MUST go into the `steadfas
 ## Enforcement
 
 - **Rule 1** is enforced by the MCP server at the tool level — you cannot write files without a lock
-- **Skills gate** — `~/.steadfaste-fleet/state/skills-loaded/<session-id>` is auto-created when all 7
-  always-section skills are loaded via `skill_view()` (task-start bundles the list). Do NOT `touch` it —
+- **Skills gate** — `~/.steadfaste-fleet/state/skills-loaded/<session-id>` is auto-created when all 3
+  always-section skills are loaded via `skill_view()` (task-orient, execute-right, verify-and-ship —
+  `~/.steadfaste-fleet/skills.yaml` `always:`; the enforcer's block message may still say "7", a stale
+  count from before the 2026-11-06 consolidation — load the names, not the count). Do NOT `touch` it —
   the enforcer rejects empty/session-mismatched markers. Per-session files mean concurrent sessions
   never stomp each other's proof.
-- **After a gateway restart, load all 7 always-skills with `skill_view()` (read-only, so the gate lets
-  them through); the 7th call regenerates the marker.** A deploy only invalidates the marker when a
+- **After a gateway restart, load all 3 always-skills with `skill_view()` (read-only, so the gate lets
+  them through); the 3rd call regenerates the marker.** A deploy only invalidates the marker when a
   skill's CONTENT changed (fingerprint = content hash since 2026-09-23) — and then the block message
   names exactly which skills to reload, so re-load that list, not the whole set.
 - **Reflexion gate** — The pre-commit hook queries the session DB for proof that `reflexion-check`
@@ -101,7 +103,7 @@ say 'are you bypassing governance?'" If yes, you're about to make a mistake.
 The skills gate and the lock gate BOTH block write tools, each with its own
 message and remedy, and neither implies the other:
 
-1. **Gate 1 (skills gate):** all 7 always-section skills loaded → marker auto-created.
+1. **Gate 1 (skills gate):** all 3 always-section skills loaded → marker auto-created.
 2. **Gate 2 (lock gate):** an active governance lock → `begin_change()`.
 
 Fixing gate 1 does NOT satisfy gate 2 — a "GOVERNANCE LOCK REQUIRED" block
