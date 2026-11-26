@@ -90,7 +90,7 @@ materialize_dual_spellings() {   # convert <env-file> CORTEX_* -> FLEET_*
     for i in "${!cm[@]}"; do [[ "${cm[$i]}" == "$nm" ]] && hasc=1; done
     if [[ "$hasc" -eq 0 ]]; then
       local already=0
-      for z in "${seen[@]}"; do [[ "$z" == "$nm" ]] && already=1; done
+      for z in ${seen[@]+"${seen[@]}"}; do [[ "$z" == "$nm" ]] && already=1; done
       if [[ "$already" -eq 0 ]]; then
         printf 'FLEET_%s=%s\n' "$nm" "${fv[$j]}" >> "$tmp"
         seen+=("$nm")
