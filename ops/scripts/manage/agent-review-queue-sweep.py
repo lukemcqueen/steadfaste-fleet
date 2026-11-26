@@ -59,6 +59,26 @@ import sys
 STALL_MIN_ITERATIONS = 3
 LOOP_DRAIN_DAYS_DEFAULT = 30.0
 
+# ── System-level LOOP-rate detector (2026-11-26) ─────────────────────────────
+# detect_stalled_loops() is PER-TASK: it needs >= min_iterations LOOP rows on ONE
+# task_id. The backlog this was written for was DIFFUSE — 2548 stalled LOOP rows
+# spread over 1774 distinct task_ids, 1.4 rows each — so no single task_id ever
+# accrued enough rows to trip the per-task alert, and the storm stayed invisible
+# for ~6 weeks while the table grew. A rate measured across the WHOLE fleet in a
+# short window is the only shape that sees a spread storm.
+#
+# LOOP_RATE_ALERT_THRESHOLD is deliberately provisional and should be re-tuned
+# from recorded numbers rather than by feel. It is NOT derived from the storm
+# that prompted this work, because that storm was SLOW AND STEADY rather than
+# fast: 1684 LOOP rows across 31 days (~2.3/hour fleet-wide) at its October
+# peak. A threshold set low enough to catch that would also fire on ordinary
+# LOOP traffic, and no fleet baseline for legitimate LOOP volume has been
+# recorded yet. So this reports the rate on EVERY run (accumulating the baseline
+# in the state file) and alerts only on a rate well above normal — it catches a
+# fast storm today and earns the data to catch a slow one later.
+LOOP_RATE_WINDOW_MIN = 60
+LOOP_RATE_ALERT_THRESHOLD = 40
+
 
 def _state_dir():
     override = os.environ.get("REVIEW_STATE_DIR")
@@ -262,6 +282,48 @@ def clean_fixtures(con, note):
     return ids
 
 
+def loop_rate_in_window(con, window_min=LOOP_RATE_WINDOW_MIN):
+    """Return (loop_rows, distinct_task_ids) created in the last window_min.
+
+    The SYSTEM-level companion to detect_stalled_loops(). That function needs
+    >= min_iterations LOOP rows on ONE task_id, so it is structurally blind to a
+    storm spread thinly over many task_ids — the shape actually measured (2548
+    stalled rows over 1774 distinct task_ids, 1.4 rows each).
+
+    Timestamps are stored as local '%Y-%m-%d %H:%M:%S' text, the same format
+    check_alerts() and the drain parse, so the cutoff is built the same way.
+    """
+    cutoff = (datetime.datetime.now()
+              - datetime.timedelta(minutes=window_min)).strftime("%Y-%m-%d %H:%M:%S")
+    row = con.execute(
+        "SELECT COUNT(*), COUNT(DISTINCT task_id) FROM loop_cycles "
+        "WHERE timestamp >= ? AND decision LIKE 'LOOP%'",
+        (cutoff,),
+    ).fetchone()
+    if not row:
+        return (0, 0)
+    return (row[0] or 0, row[1] or 0)
+
+
+def rate_alert(con, window_min=LOOP_RATE_WINDOW_MIN,
+               threshold=LOOP_RATE_ALERT_THRESHOLD):
+    """Alert when fleet-wide LOOP traffic exceeds threshold in the window.
+
+    Returns None when quiet. Reports the DISTINCT task_id count beside the row
+    count because that ratio is what separates a diffuse storm (many task_ids,
+    ~1 row each) from ordinary iteration (few task_ids, many rows) — a bare row
+    count cannot tell the operator which they are looking at.
+    """
+    count, distinct = loop_rate_in_window(con, window_min=window_min)
+    if count < threshold:
+        return None
+    return ("LOOP storm: %d LOOP cycles across %d distinct task_ids in the last "
+            "%d min (threshold %d) — a diffuse machine-driven loop, not human "
+            "iteration. Look for a cron/hook re-firing; the per-task stall "
+            "detector cannot see this shape."
+            % (count, distinct, window_min, threshold))
+
+
 def check_alerts(con, surfacing, live_locks, pending_hours=24, hardfail_days=7):
     now = datetime.datetime.now()
     alerts = []
@@ -365,6 +427,21 @@ def main():
              "stalled (default %d; keep >= the alert threshold in "
              "detect_stalled_loops)" % STALL_MIN_ITERATIONS,
     )
+    ap.add_argument(
+        "--rate-window", type=int, default=LOOP_RATE_WINDOW_MIN,
+        help="look-back window in minutes for the system-level LOOP-rate check "
+             "(default %d min). This check exists because the per-task stall "
+             "detector cannot see a storm spread over many task_ids."
+             % LOOP_RATE_WINDOW_MIN,
+    )
+    ap.add_argument(
+        "--rate-threshold", type=int, default=LOOP_RATE_ALERT_THRESHOLD,
+        help="LOOP cycles in the window before the rate alert fires "
+             "(default %d). PROVISIONAL: not derived from the storm that "
+             "prompted this work (that one was slow — ~2.3/hour at peak), and no "
+             "legitimate-LOOP baseline has been recorded yet. Re-tune from the "
+             "per-run rate recorded in the state file." % LOOP_RATE_ALERT_THRESHOLD,
+    )
     args = ap.parse_args()
 
     if not os.path.exists(_db_file()):
@@ -450,6 +527,13 @@ def main():
         alerts = check_alerts(con, surfacing, _live_lock_task_ids())
         stalled = detect_stalled_loops(con)
         alerts.extend(stalled)
+        # System-level rate check. detect_stalled_loops() above is PER-TASK and
+        # structurally blind to a storm spread thinly across many task_ids — the
+        # shape this backlog actually had (1.4 rows per task_id). This is the
+        # only check here that can see that shape.
+        _rate = rate_alert(con, args.rate_window, args.rate_threshold)
+        if _rate:
+            alerts.append(_rate)
 
         # Alert dedup: deliver each anomaly once (state-tracked seen set),
         # otherwise the daily cron spams the same backlog every tick.

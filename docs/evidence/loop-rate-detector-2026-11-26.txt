@@ -1,0 +1,34 @@
+# EV-2026-11-26 loop-rate-detector — system-level LOOP-rate detector
+# captured: 2026-11-26T18:55:27+09:00
+# subject: ops/scripts/manage/agent-review-queue-sweep.py (loop_rate_in_window / rate_alert)
+#
+# DB: a COPY of the prod loop-governance DB in a scratch dir. Prod is untouched.
+# Seeded with the DIFFUSE shape actually measured in the backlog:
+# 50 LOOP rows over 50 DISTINCT task_ids (1 row each) created just now,
+# composite 7.20, decision 'LOOP - keep iterating', empty outcome_note.
+# The per-task detector (detect_stalled_loops, needs >=3 rows on ONE
+# task_id) cannot see this shape; the rate detector is the point of the change.
+
+=== INVOCATION 1: --rate-threshold 40  (must FIRE; note the ABSENCE of any
+    'stalled LOOPs' line, i.e. the per-task detector saw none of the 50) ===
+review-queue-sweep: closed 0/2660 unreviewed (2015 remain)
+  drained: closed 645 stalled LOOP cycles (>=3 iterations at one composite, untouched >=30d) — backlog cannot grow unbounded
+  stop_ok    6
+  loop       1954
+  move_on    53
+  stop_fail  1
+  pending    1
+  ALERT: hard-fail STOP unaddressed: cycle 9210 (fix-orch-autonomy-digest-delivery) 2026-09-10 00:03:46
+  ALERT: STALLED LOOP: task 'precommit-steadfaste-fleet-main/chore-cli-rename-hc-clito-fleet-hermes-cortexbra' — 3 LOOP iterations at composite 6.10 (2026-11-04 09:21:42 to 2026-11-04 09:23:03); no score progress
+  ALERT: STALLED LOOP: task 'precommit-steadfaste-fleet-main/rename-sweep-hermes-cortex-steadfaste-fleetacros' — 3 LOOP iterations at composite 6.20 (2026-11-03 10:54:45 to 2026-11-03 11:24:48); no score progress
+  ALERT: STALLED LOOP: task 'precommit-steadfaste-fleet-main/tests-enforcer-rs0-write-classparityvsknowntruth' — 3 LOOP iterations at composite 7.30 (2026-11-24 09:37:32 to 2026-11-24 09:40:18); no score progress
+  ALERT: LOOP storm: 50 LOOP cycles across 50 distinct task_ids in the last 60 min (threshold 40) — a diffuse machine-driven loop, not human iteration. Look for a cron/hook re-firing; the per-task stall detector cannot see this shape.
+rc=1
+
+=== INVOCATION 2 (CONTROL): --rate-threshold 99999 (must stay SILENT) ===
+rc=0
+
+=== test suite (16 tests: 10 drain + 6 rate) ===
+tests/test_review_queue_sweep_stalled_loops.py ................          [100%]
+
+============================== 16 passed in 0.23s ==============================

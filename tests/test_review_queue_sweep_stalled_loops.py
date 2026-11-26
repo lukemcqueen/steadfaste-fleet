@@ -176,3 +176,61 @@ def test_default_threshold_matches_alert_threshold(sweep):
     assert sweep.STALL_MIN_ITERATIONS == 3, (
         "STALL_MIN_ITERATIONS drifted from detect_stalled_loops' alert threshold"
     )
+
+
+# ── System-level LOOP-rate detector (the diffuse-storm signal) ───────────────
+#
+# detect_stalled_loops() is PER-TASK: it needs >= min_iterations LOOP rows on ONE
+# task_id. The measured storm was DIFFUSE — 2548 stalled rows across 1774
+# distinct task_ids, 1.4 rows each — so no single task_id accrued enough to trip
+# it, and the storm stayed invisible for ~6 weeks. These tests pin the
+# system-level signal that CAN see it, AND pin the blindness it compensates for,
+# so the pair cannot silently drift back apart.
+
+
+def test_rate_sees_the_diffuse_storm_the_per_task_detector_is_blind_to(con, sweep):
+    """THE discriminating case: one LOOP row each on 60 distinct task_ids.
+
+    A per-task counter can never reach its threshold here. This asserts that
+    blindness explicitly, so an implementation that merely re-counts per-task
+    rows cannot pass this test by accident.
+    """
+    for i in range(60):
+        _add(con, "precommit-repo%d-main/base" % i, 7.2, _ts(0))
+
+    assert sweep.detect_stalled_loops(con) == [], "per-task must be blind here"
+    assert sweep.loop_rate_in_window(con, window_min=60) == (60, 60)
+
+
+def test_rate_excludes_rows_older_than_the_window(con, sweep):
+    _add(con, "precommit-a/base", 7.2, _ts(0), n=3)   # inside the window
+    _add(con, "precommit-b/base", 7.2, _ts(2), n=9)   # 2 days old -> outside
+    assert sweep.loop_rate_in_window(con, window_min=60) == (3, 1)
+
+
+def test_rate_excludes_non_loop_decisions(con, sweep):
+    _add(con, "precommit-a/base", 7.2, _ts(0), n=2)
+    _add(con, "precommit-b/base", 9.0, _ts(0),
+         decision="STOP ✓ — goal met, quality acceptable", n=5)
+    assert sweep.loop_rate_in_window(con, window_min=60) == (2, 1)
+
+
+def test_rate_alert_fires_above_threshold_and_reports_the_spread(con, sweep):
+    """30 LOOP rows over 10 task_ids: both numbers must reach the operator —
+    the row count is the rate, the DISTINCT count is the spread."""
+    for i in range(10):
+        _add(con, "precommit-repo%d-main/base" % i, 7.2, _ts(0), n=3)
+    msg = sweep.rate_alert(con, window_min=60, threshold=20)
+    assert msg is not None
+    assert "30" in msg, "row count must be visible"
+    assert "10" in msg, "distinct task_id count is the spread signal"
+
+
+def test_rate_alert_is_silent_below_threshold(con, sweep):
+    _add(con, "precommit-a/base", 7.2, _ts(0), n=4)
+    assert sweep.rate_alert(con, window_min=60, threshold=20) is None
+
+
+def test_rate_on_an_empty_table_is_zero_not_an_error(con, sweep):
+    assert sweep.loop_rate_in_window(con, window_min=60) == (0, 0)
+    assert sweep.rate_alert(con, window_min=60, threshold=20) is None

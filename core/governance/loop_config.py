@@ -31,7 +31,12 @@ DEFAULTS = {
         "loop": 5.0,           # composite ≥ loop → LOOP 🔄 (below stop, above move_on)
         "move_on": 3.0,        # composite ≥ move_on → MOVE ON → (below loop)
         "no_progress_score": 2.0,   # progress < this → no-progress
-        "no_progress_limit": 3,      # consecutive no-progress before HARD FAIL
+        # no-progress streak limit. NOT enforced by the decision path: the decision
+        # is derived from the composite alone (loop_scorer.composite_score), so no
+        # HARD FAIL fires — a task can re-derive LOOP forever. Read only by
+        # auto_apply (range validation) and loop_evaluator (auto-tune key); the
+        # spinning-task report uses its own literal 3, not this value.
+        "no_progress_limit": 3,
     },
     "auto_apply": {
         "min_confidence": 0.7,       # skip patches below this confidence
