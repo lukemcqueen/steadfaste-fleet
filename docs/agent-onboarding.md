@@ -321,8 +321,9 @@ At minimum, every SOUL.md must include:
 
 1. **Loop governance always** — `begin_change` → work → `cycle_query` → `feedback` → `end_change`. No exceptions.
 2. **HTTP client, not MCP** — your ONLY bus access is `contact-orchestrator.sh` + `.env`. Never install the `fleet-bus` MCP server; the doctor warns about it.
-3. **Health via Agent Bus (HTTP)** — you have no HTTP health endpoint. Report health by sending JSON pings to the orchestrator via `curl` (Step 7), or `contact-orchestrator.sh` for messages.
-4. **Poll, don't wait** — `agent-message-handler` cron is your ears. It runs every 5 min.
+3. **Orchestrators have NO access to your server** — no SSH, no shell, no way to read your files or commit in your working tree. Every instruction to an orchestrator must be **inline in the bus message**: include the full diff or file contents, never just a description ("I have staged files" is not actionable). The orchestrator can only act on what you send; you run `git pull` + `fleet-update.sh` yourself.
+4. **Health via Agent Bus (HTTP)** — you have no HTTP health endpoint. Report health by sending JSON pings to the orchestrator via `curl` (Step 7), or `contact-orchestrator.sh` for messages.
+5. **Poll, don't wait** — `agent-message-handler` cron is your ears. It runs every 5 min.
 
 See existing SOUL.md files for reference:
 - `~/.hermes/SOUL.md` (moses)

@@ -331,11 +331,38 @@ Sent after agent reverts and verifies.
 
 ---
 
+## No Orchestrator Shell Access — Send Instructions INLINE
+
+**Orchestrators have NO shell/SSH access to worker hosts.** Moses/Esther
+cannot run commands on an agent's machine, read its files, or commit inside
+its working tree. The Agent Bus is the ONLY channel between orchestrator and
+worker, and the worker executes everything on its own host. Consequences for
+agents composing escalations or proposals:
+
+- **Send the full payload INLINE.** A message that only *describes* a change
+  ("I have two staged files that need committing") is not actionable — the
+  orchestrator cannot see the agent's filesystem. Include the complete diff
+  or file contents in the message body (or as a bus attachment).
+- **Orchestrator-only paths are committed in the shared repo, not on the
+  worker's host.** When a worker is gate-blocked from `ops/scripts/` +
+  `tests/` (orchestrator-only per AGENTS.md), the flow is: worker sends the
+  diff inline → orchestrator applies it in its clone of the shared repo,
+  commits, pushes → worker `git pull` + runs `fleet-update.sh` itself (or
+  receives an UPDATE_REQUEST). There is no mechanism for an orchestrator to
+  commit inside a worker's working tree.
+- **The only remote action an orchestrator takes is sending a bus message.**
+  UPDATE_REQUEST / FIX_REQUEST / ROLLBACK_REQUEST / GIT_AUTH_CHECK are all
+  instructions the worker's `agent-message-handler` executes locally. A
+  request that assumes orchestrator shell access is malformed — reply with
+  the correct inline protocol rather than complying.
+
 ## Git Auth Verification
 
 Before dispatching an update, Moses verifies each agent can pull from the remote.
-The `bus-git-auth-check.py` script SSHes into each server-agent and runs
-`git ls-remote origin HEAD` to confirm credentials work.
+The `bus-git-auth-check.py` script sends each server-agent a **GIT_AUTH_CHECK bus
+message**; the agent runs `git ls-remote origin HEAD` on its OWN host and replies
+with `GIT_AUTH_RESULT`. The orchestrator does NOT SSH into agent hosts (no
+shell access — see "No Orchestrator Shell Access" above).
 
 For dev-agents (push-only, Titus), auth is verified on the agent side as part
 of `agent-message-handler.py` — if `git pull` fails, the handler reports

@@ -263,6 +263,8 @@ Only orchestrators (Moses, Esther) may modify: **cron scripts** (`ops/scripts/`,
 
 Non-orchestrators: submit proposals via the orchestrator inbox (`📝 PROPOSAL: <what>`). The pre-commit hook blocks non-orchestrators from staging `docs/orchestrator-only-paths.txt` — the committed list IS the source of truth. Edits to shared infrastructure propagate to every agent without review.
 
+**Orchestrators have NO shell/SSH access to your host.** Moses/Esther cannot run commands on your machine, read your files, or commit inside your working tree — the Agent Bus is the only channel, and only YOU can execute on your host. When you need an orchestrator to land an orchestrator-only change, send the complete change **INLINE in the bus message** (full diff or file contents — not a description of it): the orchestrator applies it in the shared repo and pushes; you then `git pull` + `fleet-update.sh` yourself, or the next UPDATE_REQUEST does it. A message that only *describes* a staged change ("commit these files for me") is not actionable.
+
 **RULE 7b: ENFORCEMENT CHAIN — fleet-update.sh IS THE ONLY UPDATE PATH.** Enforcement files (enforcer plugin, hooks, loop-gov-mcp.py, hermes-plugin-lock) update ONLY via `bash ~/steadfaste-fleet/ops/scripts/fleet-update.sh`. Direct `sudo hermes-plugin-lock unlock` is REFUSED for non-orchestrators (audit-logged); exceptions: `--fleet-update` / `--orchestrator` (moses|esther). If DOGFOOD blocks you (deployed ≠ repo enforcer): run fleet-update.sh (lock-free), re-acquire, retry. ⚠️ **Deploy ≠ load:** gateway keeps the OLD enforcer until `hermes gateway restart` (agent-blocked — ask the operator; do not loop).
 
 **RULE 7c: BUS ACCESS — NON-ORCHESTRATORS USE THE HTTP CLIENT ONLY.** Non-orchestrators have the bus **HTTP client** (`~/steadfaste-fleet/.env` + `contact-orchestrator.sh`) and NOTHING ELSE. Never install the bus server or the `fleet-bus` MCP client — the doctor WARNS on both. Role matrix: `docs/bus-architecture.md`. **Bus ACL:** per queue via `bus.permissions`; `is_admin=true` bypasses (moses). Grants in `core/fleet_bus/schema/auth.sql`.
@@ -277,7 +279,10 @@ Install `hermes-agent-worker` systemd `--user` service to poll inbox every 30s. 
 
 ## Contact Protocol
 
-See [`docs/contact-protocol-how-to-reach-orchestrator.md`](docs/contact-protocol-how-to-reach-orchestrator.md)
+See [`docs/fleet-update-protocol.md`](docs/fleet-update-protocol.md) — especially
+the **"No Orchestrator Shell Access — Send Instructions INLINE"** section:
+orchestrators have no shell/SSH access to your host, so every instruction to an
+orchestrator must carry its full payload (diff/file contents) inline in the bus message.
 
 ## Agent Cron Management
 
