@@ -73,19 +73,25 @@ machine reader.
 
 | Measure | Value |
 |---|---|
-| Stranded in place (path in repo, content only deployed) | 4 |
-| Absent from the repo (deployed under a repo-owned skill) | 130 |
+| Stranded in place (path in repo, content only deployed) | 10 |
+| Absent from the repo (deployed under a repo-owned skill) | 132 |
 |   ↳ path dropped from repo history | 5 |
-|   ↳ path never committed | 125 |
-| Files in sync | 1058 |
-| Skipped (Hermes defaults, or repo ahead) | 907 |
+|   ↳ path never committed | 127 |
+| Files in sync | 1054 |
+| Skipped (Hermes defaults, or repo ahead) | 908 |
 
 **Verdict: FAIL**
 
 Stranded in place:
+- devops/cross-agent-handoff-delivery/SKILL.md
+- devops/fix-without-asking/SKILL.md
+- devops/fleet-bus/SKILL.md
+- devops/fleet-commands/SKILL.md
 - devops/health-external-verification/SKILL.md
 - devops/hermes-model-config/SKILL.md
-- devops/hermes-model-config/references/model-upstream-servability.md
+- devops/shared-repo-push-gates/SKILL.md
+- devops/steadfaste-fleet-maintenance/SKILL.md
+- software-development/execute-right/SKILL.md
 - software-development/steadfaste-design/SKILL.md
 
 Absent from the repo (deployed under a repo-owned skill):
@@ -187,7 +193,9 @@ Absent from the repo (deployed under a repo-owned skill):
 - devops/self-improvement-pipeline/references/sibling-pattern-search.md (never-committed)
 - devops/sensor-false-positive-remediation/references/gbrain-health-false-positive.md (dropped-from-repo)
 - devops/server-administration/references/sddm-remote-access.md (never-committed)
+- devops/shared-repo-push-gates/references/dirty-tree-recovery.md (never-committed)
 - devops/shared-repo-push-gates/references/dogfood-gate-and-post-close-writes.md (never-committed)
+- devops/shared-repo-push-gates/references/rebase-conflict-arbitration.md (never-committed)
 - devops/system-one-judgment/references/jev-decision-layer-install.md (never-committed)
 - hermes-agent/soul-refinement/references/biblical-soul-refinement.md (never-committed)
 - hermes-agent/soul-refinement/references/mandatory-section-gaps.md (never-committed)

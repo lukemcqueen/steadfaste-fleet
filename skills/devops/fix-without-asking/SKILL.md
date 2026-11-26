@@ -453,6 +453,21 @@ with a dirty doctor. When you discover a doctor FAIL that your change caused,
 the correct response is to fix the expected-list, not to ask "should I fix the
 doctor?" — this is an extension of the "fix without asking" principle.
 
+### Pre-Existing State Is Your State — No "Not Mine" Disclaimers
+
+**"Everything is yours. It might have been a previous session but it is always
+you."** A dirty shared-repo tree — staged files, an unmerged conflict, a commit
+superseded by upstream, a doctor FAIL surfaced by a deploy — is YOUR unfinished
+work, never "pre-existing, not mine." Disclaiming ownership reads as dodging the
+assignment and is the behavior operators correct hardest. The fix path for each:
+resolve the unmerged path (if the file has no conflict markers, `git add` it —
+marks it resolved with the on-disk content, nothing lost), commit staged
+backports as their own governed change, reconcile a superseded commit against
+the deployed truth, and fix doctor FAILs your own change caused (a config
+source edit that leaves a runtime file stale is YOUR gap until the generator
+projects it). Report what you found AND fixed — never a queue of "not mine"
+items handed back.
+
 ### Pre-Existing Doctor Warnings — Fix, Don't Ignore
 
 **Warnings that predate your change are NOT exempt.** When a verification or

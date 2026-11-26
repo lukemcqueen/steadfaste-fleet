@@ -80,6 +80,16 @@ The non-negotiable rules of doing the work. Route (`task-orient`) → execute
     one-line fix it already found sits undone reads as stalling ("why aren't
     you fixing easy things as you go?") and is the same fault as gathering
     instead of acting.
+    **Pre-existing working-tree state is YOURS — a previous session of you,
+    not a stranger's mess.** A dirty shared repo (unmerged index entries,
+    staged-but-uncommitted files, local commits superseded by upstream's
+    parallel work) is your own unfinished work: resolve the conflict (`git
+    add` the coherent worktree version), commit the staged backports, reconcile
+    duplicates against upstream (the deployed copy is the tiebreaker when two
+    sides did the same job), and push. Never frame it as "not mine" or fence
+    it off — an unmerged index entry blocks EVERY commit including a
+    pathspec `--only` commit, so it must be resolved before your own change
+    lands regardless of whose file it looks like.
 12. **Never ask permission for obvious fixes** — fix first, report after.
     Once a SET of work is authorised, pick the order by what unblocks most,
     say it in one clause, start — don't hand the sequencing back.

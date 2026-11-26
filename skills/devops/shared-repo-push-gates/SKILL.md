@@ -933,6 +933,14 @@ May need several rounds on active days; each round's dogfood re-runs clean.
 - Do NOT stash, clean, or commit a peer's in-flight files (SOUL P9 — don't
   race a peer's in-flight update). Stand down, state the block in your
   delivery, push after the tree clears.
+- **Dormant leftovers from a PREVIOUS session are your own unfinished work —
+  own them, never disclaim them.** "Pre-existing, not mine" is the wrong
+  frame for staged files, an unmerged index entry, or a local commit a prior
+  session left behind: with no lock or cron holding the state there is no
+  active peer to race, so the stand-down rule above does not apply — resolve
+  the conflict, finish the commit, reconcile against upstream, push. Active
+  peer (lock held) → stand down; dormant state (no lock) → yours to close.
+  Rebase-conflict arbitration: `references/rebase-conflict-arbitration.md`.
 - Stage only YOUR files (`git add <yours>`) — never `git add -A` in a
   shared tree. A generated file that a cron or peer writes into the tree is swept in by `-A`,
   lands in your commit and in the reviewed range, and then conflicts when the peer's own version

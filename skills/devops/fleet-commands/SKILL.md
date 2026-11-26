@@ -579,6 +579,17 @@ After they report back, fix the identified issue (corrupt state file, handler cr
 
 ## Pitfalls
 
+- **Orchestrators have NO shell access to worker hosts — the fleet is bus-connected, not
+  SSH-connected.** A worker's staged/uncommitted files live in ITS working tree and are invisible
+  to the orchestrator's clone; "commit my staged files on my server" is unactionable from the
+  orchestrator side. The only levers over a worker are bus messages (`EXEC`, `UPDATE_REQUEST`,
+  `FLEET_NOTICE`) that the agent executes on its own host. When a worker request presumes
+  orchestrator SSH (check DNS, `~/.ssh/config`, key rejection to confirm), reply with the correct
+  path: the worker sends the actual diff via the bus as `PROPOSAL`, the orchestrator lands it in
+  the shared repo + pushes, then `UPDATE_REQUEST` triggers the agent's own pull+deploy. Related:
+  the fleet-update-protocol doc's claim that "bus-git-auth-check.py SSHes into each server-agent"
+  is stale — `orch-bus-git-auth-check.py` sends a bus `GIT_AUTH_CHECK`, not SSH.
+
 - **`fleet` is not on PATH — always invoke the deployed wrapper by full path.**
   `command -v fleet` finds nothing (nothing in the repo creates a PATH link;
   the wrapper `~/.steadfaste-fleet/scripts/fleet` execs `fleet.py` beside it,

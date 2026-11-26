@@ -1071,6 +1071,8 @@ register "ops/scripts/manage/router-pools.py"   "${FLEET_DEPLOY_HOME}/scripts/ma
 register "ops/scripts/manage/provider-policy.py" "${FLEET_DEPLOY_HOME}/scripts/manage/provider-policy.py"
 register "ops/scripts/manage/router-pools-seed.py" "${FLEET_DEPLOY_HOME}/scripts/manage/router-pools-seed.py"
 register "ops/scripts/manage/orch-model-market-scan.py" "${FLEET_DEPLOY_HOME}/scripts/manage/orch-model-market-scan.py"
+register "ops/scripts/manage/local-model-scan-watchdog.py" "${FLEET_DEPLOY_HOME}/scripts/manage/local-model-scan-watchdog.py"
+register "ops/scripts/manage/local-model-scan.py"          "${FLEET_DEPLOY_HOME}/scripts/manage/local-model-scan.py"
 register "config/router-models.json"             "${FLEET_DEPLOY_HOME}/config/router-models.json"
 register "ops/scripts/manage/agent-push-metrics.sh"     "${FLEET_DEPLOY_HOME}/scripts/agent-push-metrics.sh"
 register "ops/scripts/manage/cron-cost-metrics.py"      "${FLEET_DEPLOY_HOME}/scripts/cron-cost-metrics.py"

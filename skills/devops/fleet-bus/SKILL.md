@@ -766,6 +766,18 @@ the agent's `can_write` array, not boolean flags.
 
 ### Reading a pending message's FULL body (evaluating an inbox message)
 
+**A worker message that asks the orchestrator to act ON the worker's host is
+based on a false premise — orchestrators have NO shell/SSH access to worker
+servers.** The bus is the only channel; the worker executes everything on its
+own host. So "commit these two staged files on my server and run fleet-update
+here" is not actionable by any orchestrator: the files exist only in the
+worker's working tree, and the orchestrator cannot see them. Reply with the
+correct protocol: the worker must send the full diff/file contents INLINE in
+the bus message; the orchestrator lands it in the shared repo and pushes; the
+worker then pulls + runs fleet-update itself (or waits for UPDATE_REQUEST). A
+message that only *describes* a change is a non-request — bounce it with that
+guidance rather than attempting the impossible.
+
 The peek responses carry METADATA only (`msg_id`, `from`, `subject`,
 `correlation_id`) — but the raw `/api/pgmq/peek/<queue>` response DOES include
 each message's `body` (the MCP tool trims it). To evaluate a pending request
