@@ -274,6 +274,32 @@ def build() -> tuple[str, bool]:
     if absent:
         lines += ["", "Absent from the repo (deployed under a repo-owned skill):"]
         lines += [f"- {p} ({r})" for p, r in absent]
+    lines += [
+        "",
+        "## Resolution trace (2026-11-26 soul-refine pass)",
+        "",
+        "The 5 stranded and 5 absent entries listed in the PREVIOUS revision of",
+        "this file (commit 4a5d68de's parent) were resolved by landing the",
+        "deployed-side content into the repo source (commit 4a5d68de, then",
+        "39382000 after rebase):",
+        "",
+        "- devops/eval-harness/SKILL.md (reworded superset of repo copy)",
+        "- devops/fleet-deployment-sync/SKILL.md (reworded superset)",
+        "- devops/governance-lock-lifecycle/SKILL.md (reworded superset)",
+        "- devops/hermes-model-config/SKILL.md (reworded superset)",
+        "- software-development/verify-and-ship/SKILL.md (reworded superset)",
+        "- devops/governance-closeout/references/reviewer-latency-closeouts.md",
+        "- devops/hermes-model-config/references/openrouter-account-provider-policy.md",
+        "- devops/loop-governance/references/cycle-store-hygiene.md",
+        "- devops/loop-governance/references/runaway-loop-detection.md",
+        "- devops/loop-governance/references/scoring-signal-audit.md",
+        "",
+        "Every SKILL.md was diffed hunk-by-hunk against its deployed twin",
+        "(headers byte-identical; the deployed side was reflowed+extended, so the",
+        "repo side was superseded IN PLACE rather than merged). All three DROP",
+        "lines the reconciler proposed were false positives of the same",
+        "deployed-side-reflow shape and were NOT dropped.",
+    ]
     return "\n".join(lines) + "\n", ok
 
 
