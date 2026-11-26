@@ -196,6 +196,25 @@ legitimately keep the token, rather than letting a residual count read as work y
 - **When the sweep corrects a CLAIM that a shipped change made false, put the measurement in the
 same edit.** One clause is enough — why the old sentence was wrong (what was measured, what it
 showed) — otherwise the next reader reintroduces it as "obviously true".
+- **A replacement that RESTATES the words before its own anchor leaves a visible stutter that the
+  exact-match assertion cannot catch.** Anchoring on `... — currently X` and substituting text that
+  begins `the current X` produces `— currently / the current X`: the old string matched exactly once
+  as required, so every assertion passes and the doc reads as broken. After the sweep, scan the
+  written files for duplicated ADJACENT words (`\b(\w+) \1\b`) and read every changed line whose
+  replacement shares a word with the anchor — the match count proves uniqueness, never legibility.
+- **A count of a live set is stale the moment it is written — delete the number, do not update it.**
+  A prose claim like "all 7 required skills" / "the marker tracks 8 names" has already drifted twice
+  before you arrive (the file's own history recording a previous mismatch is the tell). Replacing 7
+  with 3 buys one more drift, because nothing keeps a comment in step with a `len()`; rewrite the
+  claim to be count-free ("all required skills") or derive it at runtime, so the sentence cannot go
+  stale again. Sweep every copy of the count, including user-facing block messages, and report the
+  re-grep as zero.
+- **A DATED snapshot is honest; the same number in PRESENT tense is stale.** A plan, changelog or
+  evidence file that labels its own date ("prices fetched 2026-11-13", "state at capture time")
+  records what was true then and is NOT stale — rewriting it falsifies the record and breaks any
+  hash over it. The identical value asserted with no date, or in a doc describing how the system
+  currently works, is stale and must be fixed or dated. State this boundary in the report and NAME
+  the files you deliberately left alone, or a reviewer reads the untouched hits as work you missed.
 
 ## Pitfalls
 

@@ -508,6 +508,19 @@ exactly what the vacuous path looks like. Measured: a three-case guard probe rep
 branches PASS while its copies ran in the wrong tree; the guards were correct the whole
 time and the probe was lying, and the FAILs it did report were partly its own fault.
 
+**A second, path-independent mechanism produces the same false green: an early-return
+MODE.** A flag whose handler RETURNS before the block you extended — a `--dry-run`
+branch, a `--check`/`--quiet` path, an early `return` for a special case — means your
+new code never executes, so "driving the change through that mode" proves nothing, prints
+a plausible summary, and exits 0. Measured: a new detector was "verified" with `--dry-run`
+against a real DB copy, but the dry-run path returned several lines ABOVE the alert
+assembly, so the new branch had never run and the green was empty. Two rules close it:
+**confirm the invocation actually REACHES the new code** (seed the triggering input, or
+drive the real non-dry-run path against a throwaway copy), and **pair every run with a
+CONTROL that flips the outcome** (threshold far above the data must go silent; far below
+must fire), so "nothing printed" cannot pass as success. A dry-run proves what the code
+would do only if the dry-run path contains the code under test.
+
 **A "concurrent" regression whose workers run SERIALLY cannot pin the race it claims — name it concurrency only when the writes truly overlap, and prove RED against the pre-fix code.** A test that spawns two subprocesses calling a shared writer back-to-back (`p1 = run(...); p2 = run(...)`) is a fabrication for a torn-write / interleaved-writer bug: the second process reads the file AFTER the first finished, so the race window never closes and the pre-fix (un-locked, non-atomic) code passes green — the assertion is vacuous and the commit message's "a future revert fails RED" is a false claim the independent reviewer files as HIGH. Drive real overlap with a ready/go barrier (each child creates `<ready>/<pid>` then polls for a `<go>` sentinel; the parent releases both only once BOTH are at the write line), assert BOTH survivors coexist where the bug dropped one, and — because the race is scheduling-dependent and may not collide every run — demonstrate RED separately by driving the SAME barrier against the pre-fix writer and showing it fails (a lone GREEN pass is expected on a race test; the RED harness is what proves non-vacuity). Emulate the barrier portably (file/counter polling) since the stdlib thread barrier is process-local and flock is per-process-fd.
 
 **A differential probe scored against the LIVE artifact becomes a tautology the moment you

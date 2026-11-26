@@ -495,6 +495,16 @@ treat that as part of the deliverable, not a follow-up.
   expands `${HOME}` — a literal `${HOME}` can never stand in a shebang (the
   kernel does not expand variables there). Add this to the migration runbook's
   cleanup list; it is a distinct residue class from stale `__pycache__`.
+- **A home-dir rename leaves the venv's ACTIVATE scripts pointing at the dead path — sourcing them
+  sets `VIRTUAL_ENV` to a location that no longer exists.** Fixing console-script shebangs does NOT
+  repair `activate{, .fish, .csh, .bat, .nu}`, which embed the venv path used at creation; the venv
+  then activates into a ghost. Repoint all five in one pass with backups (`sed -i
+  's#<old>/venv#<new>/venv#g'`), re-grep → 0, and PROVE activation end-to-end FROM the activated
+  shell: `$VIRTUAL_ENV` resolves to the new path, `python -c 'import sys; print(sys.prefix)'`
+  matches it, and one real call runs through the venv interpreter (a psycopg import or a fleet
+  function) — a grep-0 proof shows file text, never that sourcing works. In the same pass purge
+  ORPHANED bytecode (`.pyc` with no matching source beside its `__pycache__`, venv and data trees
+  excluded) and report the count honestly — an honest 0-orphan result is a finding, not a skip.
 - **Deployed launcher SYMLINKS silently survive a directory rename and break every cron that calls them.** A `~/.hermes/bin/<tool>` symlink whose target still points into the renamed home (`~/hermes-cortex/…` after the tree became `~/steadfaste-fleet`) makes the cron fail with "CLI not found at <path>" while the symlink itself exists — the target is dead, so `-f` / `-x` on the link fails. The sweep surface includes symlink TARGETS, not just files: `find ~/.hermes/bin -type l -exec readlink {} + | grep <old-home>` finds them; re-point with `ln -sfn <new-target> <link>`. A "not found" error on a path that exists as a symlink is a dead-target signature, never a missing-file assumption.
 - **A background result can be SUPERSEDED — check it is the latest run before
   acting.** A long test/deploy run finishing late reports the tree from when it

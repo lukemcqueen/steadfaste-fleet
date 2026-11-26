@@ -10,6 +10,36 @@ platforms: [macos, linux]
 
 Deploy a custom web app behind a Hermes-style nginx stack with SSL, basic auth, rate limiting, and auto-restart.
 
+## Step 0 — verify the HOST before copying any config
+
+The repo holds fleet DEFAULTS; a host may run a local variant. Two reads settle which is
+which, and both are cheap:
+
+```bash
+ss -ltn                            # what THIS host actually listens on
+include_lines=$(grep -n include /etc/nginx/nginx.conf)
+ls -la /etc/nginx/sites-enabled/   # the symlinks nginx picks up
+```
+
+- **Never infer the host's ports from the repo — run `ss -ltn`.** The fleet runs more than
+  one external port namespace: its committed nginx templates are the 13xxx variant
+  (`13001`/`13002`/`13003`/`13004`/`13005`/`13007`), while another host listens on
+  `14001`/`14002`/`14004`/`14005`/`14007` with NO repo counterpart. Copying the 13xxx
+  template onto the 14xxx host moves its dashboard, metrics and health listeners and
+  breaks them. The host's live listeners are the arbiter, not the template and not the
+  port table in Step 1.
+- **Copy only content that is port-free.** A shared include (a `geo` map, `limit_*_zone`
+  definitions, `map` blocks) binds no port and is safe across hosts; any file containing
+  `server { listen … }` is host-specific — verify its `listen` lines against `ss -ltn`
+  before it goes anywhere.
+- **Writing to a path nginx does not include is INERT — a silent no-op, not a fix.** A
+  deploy step that drops `/etc/nginx/<name>.conf` changes nothing when `nginx.conf` only
+  includes `conf.d/*.conf` and `sites-enabled/*`, and it reports success either way. So
+  after ANY config write, prove it is loaded: the file is named in an `include` line
+  (directly or via a `sites-enabled/` symlink) AND `ss -ltn` shows the port. A config that
+  is present but not included is the failure shape — the fix looks applied and nothing
+  changes.
+
 ## Step 1 — Choose Port
 
 Recommended port convention for Hermes-style setups:
@@ -22,6 +52,9 @@ Recommended port convention for Hermes-style setups:
 | _(next)_ | 13004+ | — |
 
 Internal (app) ports are typically in the 5000-9000 range. External (nginx) ports are 13001+.
+
+**This table is a CONVENTION, not a reading of your host.** Confirm the host's real
+listeners with `ss -ltn` before choosing or copying anything (Step 0).
 
 ## Step 2 — Write the App
 
@@ -136,6 +169,29 @@ server {
 }
 ```
 
+### Trusted sources bypass the limits without loosening the public ceiling
+
+Key the limit zones on a `geo` map that is EMPTY for trusted sources — nginx applies NO
+limit when a zone's key variable is empty, so trusted hosts are exempt while everyone else
+keeps the tight ceiling keyed by source IP:
+
+```nginx
+geo $limit_bypass {
+    default          $binary_remote_addr;   # everyone else: keyed by source IP
+    192.168.1.0/24   "";                    # trusted network
+    127.0.0.0/8      "";                    # localhost
+}
+limit_req_zone  $limit_bypass zone=general:10m rate=20r/s;
+limit_req_zone  $limit_bypass zone=auth:10m   rate=5r/s;
+limit_conn_zone $limit_bypass zone=conn_limit:10m;
+```
+
+Do NOT reach this outcome by widening `burst`/`limit_conn` for everybody: a ceiling wide
+enough for trusted internal probes is no longer a DDoS ceiling. And when traffic from a
+trusted host is being throttled, check whether the LIVE include is still the pre-allowlist
+revision (`$binary_remote_addr` keys, no `geo`) BEFORE touching any burst value — the limit
+that fired may simply not have the allowlist loaded.
+
 ### CRITICAL — Single Listener Rule
 
 ⚠️ **NEVER add a second `listen` directive on the same port.** Each server block must have exactly ONE `listen` line:
@@ -204,3 +260,6 @@ venv/bin/python test_api.py
 | launchd PATH missing | Gunicorn not found | Set `EnvironmentVariables:PATH` in plist |
 | No automated test suite | Regression goes unnoticed | Write test_api.py before declaring done |
 | htpasswd written to wrong file | 401 even with correct credentials | Check which file `auth_basic_user_file` in nginx config actually points to vs where you wrote the passwords |
+| Repo template ports don't match the host | Copying it binds the wrong ports and takes the host's services down | `ss -ltn` first (Step 0); copy only port-free includes, treat `server { listen … }` files as host-specific |
+| Config written to a path nginx never includes | Deploy reports success, behaviour is unchanged | Confirm the file is named in an `include` line (or reachable via `sites-enabled/`) AND the port shows in `ss -ltn` |
+| Changed a limit zone's KEY and reloaded | The reload is refused; the old worker keeps serving the stale limits, so the fix looks ineffective | Restart nginx — a limit-zone key change is not accepted by `nginx -s reload` |

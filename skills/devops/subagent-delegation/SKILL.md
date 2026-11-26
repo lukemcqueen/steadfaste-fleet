@@ -88,6 +88,29 @@ three extra rules apply:
   flags it),  a graceful-SKIP that is actually an unverified check, a decision the
   child made because a slice left it open.
 
+## Review the DESIGN before implementing it
+
+Luke asks for this by name on any non-trivial governance or scoring change
+("review with pro before you implement") — treat it as a standing gate on that
+class of work, not a per-task instruction. The ORDERING is the whole point:
+review the plan, then implement.
+
+- **Review the design, not a finished diff, when the change is SEMANTIC** — when
+  it alters what a label MEANS, or what a metric actually MEASURES. Plan-time
+  review costs one round trip; the same discovery at diff time costs a rewrite
+  of already-committed semantics.
+- **Hand the child your own diagnosis as the thing to refute**, and ask it
+  explicitly to test the proposal as a possible WEAKENING of enforcement whenever
+  it touches a gate, a label or a threshold. A review asked only for correctness
+  will politely confirm a plausible-but-wrong design.
+- **Dispatch one review child at a time.** Two pro children in flight at once can
+  402 (credits / in-flight limits) — serialise them rather than fanning out.
+- **A design review is read-only work.** Say so in the brief and tell the child
+  to return the review as the TEXT of its final answer (see the write-gate note
+  below), so it does not burn its passes on refused file writes.
+- **Persist the returned review immediately** — see the persistence rule in the
+  reviewer section below; a design review that is compacted away is scope lost.
+
 ## Using children as external reviewers (their findings are CLAIMS)
 
 A review child sees a bounded window — its own context, a truncated diff, no terminal — so its
@@ -130,3 +153,10 @@ findings are claims to verify, not conclusions to act on:
 - **A child's probe can be the bug.** When a finding's evidence is a count, a path or a regex the
   child wrote, verify the probe before rewriting the code it accuses — a wrong finding belongs to
   the check, and the same discipline applies to a child's claims as to your own.
+- **Every question you need answered must be a REQUIRED `output_schema` field.** A brief that asks
+  eight questions but requires four fields gets four answers: the child fills the schema, answers
+  those in full, and silently drops the rest — the free-text summary does not reliably carry them
+  either. Measured: the one question a session most needed answered (a blocked close gate) came
+  back absent while seven easier ones were answered thoroughly. Make each question a required field,
+  and treat an unanswered question as UNASKED — dispatch a focused follow-up child rather than
+  assuming it was read and declined.
