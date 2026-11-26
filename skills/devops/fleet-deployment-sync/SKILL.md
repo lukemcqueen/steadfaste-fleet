@@ -105,12 +105,20 @@ leftovers nobody closed stop the whole operation. Clear them first, in this orde
    `--as deferred` naming the dead session — never "fix" it by touching the lock,
    and never report it as cleared.
 
-**A pull that CONFLICTS never deployed — do not read `rebase --continue` as "updated".**
-The post-merge hook fires on a successful merge/pull; a pull that stops on a conflict
-returns before it, and finishing the rebase by hand does not re-fire it. So after ANY
-conflicted pull, run the sanctioned `fleet-update.sh` explicitly and read its
-`UPDATE_EXIT` plus the doctor's `Overall:` line as the deploy verdict. A clean rebase
-says the HISTORY is right, nothing about whether the HOST was updated.
+**A PULL NEVER DEPLOYS — never infer "the host was updated" from one. Run the sanctioned
+`fleet-update.sh` as its own explicit step, then VERIFY a deploy actually ran.** The deploy
+hook here is `post-merge`, and a rebase-based pull does not run it: git runs `post-rewrite`
+for a rebase. Measured on this repo — `git pull --rebase origin main` finished with ONLY the
+fetch + `Successfully rebased and updated refs/heads/main` lines in its output, and
+`ps -eo pid,etime,args | grep -E 'fleet-update|fleet-dogfood'` was EMPTY afterwards: the pull
+triggered no deploy at all, and a 3-line pull log is a COMPLETE pull, not a truncated one.
+So do not read a clean rebase as a deploy (it is fast and lands nothing), and do not expect
+finishing a conflicted rebase by hand to re-fire anything either.
+
+Verify the deploy RAN rather than assuming it did — cheapest read first: the deploy log
+carries a real transcript; `ps` shows a `fleet-update` process while it runs; and the
+doctor's `Deploy sync` row agrees with HEAD. `Successfully rebased and updated
+refs/heads/main` tells you the HISTORY is right and nothing whatsoever about the HOST.
 
 ## The proper sequence (user directive, 2026-07-31)
 
@@ -184,9 +192,9 @@ says the HISTORY is right, nothing about whether the HOST was updated.
      parse from there. The grep recipe above is immune to the prefix, which is another reason to
      prefer it over parsing.
    - **`Repo sync` as the LAST undisposed item right after your OWN deploy is not a warning to
-     disposition — a peer pushed during the deploy.** Re-pull once (`git pull --rebase origin main`,
-     the post-merge hook deploys again) and it converges; on a busy stream this repeats until the
-     peers pause. Deferring it hides a genuine behind-origin state (Pitfall 12) and the next deploy
+     disposition — a peer pushed during the deploy.** Re-pull once (`git pull --rebase origin main`) AND run the sanctioned deploy
+     again — the pull alone lands nothing (a rebase runs no post-merge hook), so this is one pull
+     plus one deploy; on a busy stream it repeats until the peers pause. Deferring it hides a genuine behind-origin state (Pitfall 12) and the next deploy
      re-flags it anyway.
    - **A warning a freshly-installed optional layer created is a deliberate artifact of that install,
      not a defect to "fix" by removing the file.** If the installer is the one that placed the file
@@ -464,9 +472,11 @@ and the mutex-helper preference should favor the repo copy under dogfood.
 ## Pitfall 19: A `git pull --rebase --autostash` that hits the terminal timeout may have FINISHED — and can leave a conflicted autostash
 
 The foreground terminal tool kills a command at its timeout (180s) and returns exit
-124, but the pull itself may have completed the fast-forward while the POST-MERGE
-HOOK was still running fleet-update.sh (5–8 min) in the same call — that is why a
-pull on this repo is slow, and why a timed-out pull is not necessarily a failed one.
+124, but the pull itself may already have completed — a timed-out pull is not
+necessarily a failed one. Do NOT explain a slow pull as "the post-merge deploy is still
+draining": a rebase-based pull runs no deploy hook at all (see the rebase note above), so a
+pull that hangs is hanging in the REBASE — a big range, a conflict, a held lock — and the
+deploy is a separate step you have not reached yet.
 Before re-pulling or diagnosing: `git log --oneline -1` (did HEAD advance to
 origin/main?), `git status -sb` (in sync?), `ps -eo pid,etime,args | grep
 fleet-update` (is the deploy still running?). If HEAD == origin/main and the deploy
@@ -1006,9 +1016,22 @@ satisfying two separate governance gates before the operation will succeed:
 3. Perform the fleet update operation
 4. Close the change cycle appropriately
 
-**Do NOT try to batch the skill loads or the lock acquisition** — each operation must be performed
-separately as detailed in the original session, and attempting to combine them in a single call
-will trigger the governance checks as documented in the error messages.
+**BATCH the skill loads; do NOT batch the lock.** Load all three always-skills in ONE
+batched turn of `skill_view` calls — that is what the fleet runbook prescribes
+(`docs/runbooks/agent-fleet-update.md`: "one batched turn of `skill_view` calls"), and
+loaded proofs persist for the session. `begin_change` is the one that must be its own
+separate call, because it CREATES state (the lock + a PENDING cycle) that the earlier
+loads do not. The two gates are INDEPENDENT, so clearing one does not clear the other —
+but independence is not serialisation: satisfying gate 1 in one turn and gate 2 in the
+next is the normal, expected order, not a workaround.
+
+**The block message's count is not the manifest's count.** Gate 1's refusal can read
+"all 7 always-section skills" while `skills.yaml`'s `always:` section lists THREE — the 7 is
+stale wording from before the route→execute→verify consolidation. Read the required names
+from the block (or from `skills.yaml`) and load those; do not go hunting for a seventh skill
+that does not exist. The same stale count can appear as "0/7" even after you have loaded
+every required skill, which is the signal to re-load the whole set in one batch rather than
+to keep guessing at a missing name.
 
 This pitfall stems from the enforcement system that checks both skill loading validity
 and lock acquisition before allowing write operations, which is critical to understand
@@ -1046,6 +1069,29 @@ host produced. And read both sides before discarding one — a side listing an
 `absent from repo` class the other does not is reporting real fleet debt, so carry that
 observation into your report instead of silently dropping it.
 
+**The shape that is NOT a rebase: an ABANDONED unmerged index.** A SCHEDULED pull (the
+skill-drift reconciler timer, a sync cron) that conflicts on this file and whose process
+then ends leaves `UU docs/evidence/skill-drift-parity.txt` with NO `.git/MERGE_HEAD`, NO
+`rebase-merge/`, NO `rebase-apply/` and NO `stash@{0}`. Nothing is in flight, so there is
+nothing for `rebase --continue` to continue — and because an unmerged index blocks EVERY
+commit on the host, the next governed change dies at its commit with no hint that a cron
+left the mess. Discriminate before picking a remedy; only this shape is the abandoned one:
+
+```bash
+for d in .git/MERGE_HEAD .git/rebase-merge .git/rebase-apply .git/CHERRY_PICK_HEAD; do
+  [ -e "$d" ] && echo "PRESENT: $d" || echo "absent : $d"
+done
+```
+
+Then resolve to the UPSTREAM side — `git checkout origin/main -- <path>` — rather than
+`git checkout HEAD -- <path>`. The abandoned pull was trying to move onto origin, so taking
+the current `HEAD` version restores the side that just conflicted and the next pull hits the
+same hunk again; taking origin's resolves to what the pull was bringing in. This is a
+DELIBERATE exception to the `--theirs`-during-rebase recipe above, which only holds while a
+rebase is actually in flight. Afterwards confirm `git status --short` shows no `UU` on the
+path AND that your own unstaged work survived — resolving an index in a shared tree must
+never sweep up a peer's or a cron's edits along with the conflict.
+
 ## Pitfall 25: A BACKGROUND `git pull` does not inherit the terminal session's workdir — cd into the repo or it dies with exit 128
 
 The background form of `terminal` starts the command in the SESSION cwd
@@ -1054,9 +1100,10 @@ The background form of `terminal` starts the command in the SESSION cwd
 log carries NO post-merge deploy output (so you cannot tell whether it deployed).
 This costs a turn (re-pull) and leaves the deploy unverified. Always bind the
 cwd explicitly in the background command: `cd ~/steadfaste-fleet && git pull
---rebase origin main > <stamp>.log 2>&1`. Verify the log shows the post-merge
-`deploy complete` line, not just `PULL_EXIT=0` — an exit-0 run that never entered
-the repo did nothing.
+--rebase origin main > <stamp>.log 2>&1`. Verify the log carries the `Successfully
+rebased` line, not just `PULL_EXIT=0` — an exit-0 run that never entered the repo did
+nothing. Do NOT look for a deploy transcript here: a rebase pull runs no deploy hook, so
+a short log is a COMPLETE pull.
 
 **Never point two runs at the SAME log file with `>`** — a foreground pull
 AND a background pull both redirecting to `<stamp>.log` clobber each other: the

@@ -518,7 +518,16 @@ opening a cycle on the peer, and the reply itself is the evidence.
 ## A close that never judges blobs is a DOWN reviewer — probe the credential before the gate
 
 A close returning "reviewed this pass: 0" on EVERY pass — for many sessions in a row — is a DOWN
-reviewer, NOT a gate desync. The per-blob reviewer's resolved credential is shadow-candidate by
+reviewer, NOT a gate desync.
+
+**Do not wait for "many sessions in a row" — you cannot observe that from inside ONE session.** A
+zero-work pass that does not DECREASE across two consecutive `end_change` calls is already enough,
+because the discriminator is one cheap authenticated curl while the alternative is an open-ended
+stall. Run the credential probe BEFORE concluding the gate is wedged, and before reporting a stall
+upward: "every outstanding blob's review timed out ... no blob was JUDGED" is the signature of a dead
+reviewer credential, not of a hung gate. A stall report that skips the probe sends the next session
+to the same dead end, and a byte-identical refusal across retries is evidence of a steady external
+cause, never a licence to stop diagnosing or to reach for `force=True`. The per-blob reviewer's resolved credential is shadow-candidate by
 precedence: in this fleet the repo `.env` outranks `~/.hermes/.env` in `_env_value`, so a REVOKED
 `OPENROUTER_API_KEY` sitting in the repo `.env` takes the whole close-gate down (HTTP 401), no blob
 is ever judged, and the repeated zero-work output reads as an endless desync (it was once

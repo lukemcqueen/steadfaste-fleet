@@ -43,9 +43,28 @@ warning, cron model overrides, model.default regressions after `hermes update`.
   agent-instructions at "the current canonical reviewer" (or the resolver),
   never a pinned id — a pinned id makes the next reader re-apply a model the
   operator already replaced. When the default moves, sweep the old id out of
-  docs + comments + tests in the SAME change, and make any guard test DERIVE its
-  expected value from `get_reviewer_model()` rather than a literal so it cannot
-  re-rot.
+  EVERY place it is written, not only docs: comments, tests, the shipped env
+  template, and the fleet's own routing config (pools AND pricing) — a retired
+  id left in the router sends work to a model that cannot answer while nothing
+  else reports it.
+- **Sweep the OVERRIDES, and find which one WINS.** Resolution is per-host
+  override → shared constant, so a one-line default change reaches NOTHING on a
+  host whose own `.env` still names the old value: the constant and the host file
+  are two separate edits, and the host file is the one that takes effect. The
+  tiers also do not resolve alike — the deep reviewer goes through the resolver
+  (env-first) while the LIGHT tier reads the constant DIRECTLY, so a host
+  override quietly leaves the two tiers judging with different models. Settle
+  read semantics from the running system, not a doc: the env file is re-read on
+  every call (no restart needed) UNLESS the name is present in the live process's
+  own environment, so check `/proc/<pid>/environ` before believing a file edit
+  took effect. Two docs disagreeing about whether a restart is required is itself
+  a finding to fix.
+- **A guard test has two legitimate shapes, and the wrong one is silently
+  useless.** A CONSISTENCY test (do the surfaces resolve through the resolver?)
+  must DERIVE its expectation from the code, so it survives a repoint. A test
+  that PINS the canonical id must use a LITERAL — deriving it makes the assertion
+  tautological, so it can never fail and never tells you the reviewer changed.
+  Decide which of the two you are writing before reaching for the resolver.
 - **`deepseek-chat` is LLM-cron-ONLY.** It must never be the session default.
   Crons pin it per-job: `"model": "deepseek-chat"` in `~/.hermes/cron/jobs.json`
   (see `LLM_CRON_MODEL=deepseek-chat` in `ops/scripts/install-crons.sh` and

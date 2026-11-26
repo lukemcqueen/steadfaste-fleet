@@ -263,11 +263,44 @@ rules keep the grader honest:
 - **Smoke-test the grader on a known-good AND a known-bad solution (plus a
   missing-symbol case) before the real run** — assert good passes, bad fails
   with detail, and the missing symbol is flagged. A grader that has never seen
-  a failing input is untested.
+  a failing input is untested. And validate the EXPECTED value itself with a
+  tool before scoring: a hand-typed oracle that is simply wrong marks every
+  candidate identically wrong, which reads exactly like "all models failed" and
+  sends you hunting a model defect that does not exist.
 - **Execute each solution in a timeout-bounded child process** so a
   non-terminating solution grades as wrong instead of hanging the run; record
   tokens, latency and catalogue-price cost per (model, task) so the comparison
   covers cost and speed, not just correctness.
+
+### Grading a MODEL'S PROSE (reviewer quality, answer quality)
+
+A keyword scorer is the cheapest grader and the easiest to fool, and it fails in
+a direction that flatters the candidate:
+
+- **A pattern scored over the model's WHOLE response matches the INPUT quoted
+  back inside it.** A reviewer that echoes the material it is judging therefore
+  "catches" every planted defect, because the defect's own text is in its
+  answer. Strip or reconstruct the quoted input before matching, and treat any
+  suspiciously high score as a probe defect until you have READ the matched
+  span — never report a hit, a count, or a zero from a pattern you have not
+  looked at.
+- **Print the raw answer for every failure (and a sample of passes).** The
+  graded output is the only way to tell a model failure from a broken check; a
+  run that reports only a score cannot be audited at all.
+- **Design the battery so a strong candidate CAN fail.** Recall alone cannot
+  separate a good reviewer from a keyword matcher: include a NO-DEFECT case to
+  catch over-flagging (a reviewer that invents findings blocks honest work), a
+  case whose defect needs real reasoning rather than pattern matching, an
+  INSTRUCTION-EMBEDDED case to test whether the material can hijack it, and a
+  case whose evidence was never produced. Score those separately — quality is a
+  per-axis profile, never one number.
+- **Run the battery at PRODUCTION payload size.** A prompt assembled smaller than
+  the live one measures an easier task on a colder path; both the quality and the
+  latency it reports are optimistic and not transferable.
+- **Re-sample before concluding.** Deterministic settings make repeats
+  byte-identical, so a one-off miss may be the only behaviour of that input; a
+  rate needs enough repeats to expose more than one distinct output, and a
+  finding that rests on a single sample must say so.
 
 ### LLM Rubric Graders
 

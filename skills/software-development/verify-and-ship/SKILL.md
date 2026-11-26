@@ -407,7 +407,13 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   A reviewer will accept 'asserted by test X, runnable with pytest' where it
   will never accept 'verified: offsets were compared'.
 - **A committed test alone is re-filed as unverified-claim unless a CAPTURED RUN ARTIFACT rides in the same range — and the ACCUSED file must itself change to point at the evidence.** Verdicts stay keyed to the blob's un-changed bytes forever, so adding a test elsewhere (or claiming it in the commit message) never clears the accused file: edit that file to reference the test, and commit `docs/evidence/<topic>-<date>.txt` carrying the exact command, output and exit code. For a script that iterates the whole environment (`env | sed` mirrors, prompt samplers), its hermetic test must CLEANSE its own test-scoped vars up front or the reviewer files an ambient-leak finding.
-- **A DOC that NAMES its evidence files is still unverified-claim — the per-blob window cannot ENUMERATE the range, so INLINE the raw output rather than citing paths.** A review window that could not list the transcript a README named filed the inventory line as a contradiction, and re-filed the SAME finding after the inventory was corrected — because the blob still *depended* on files the window could not see. Naming a sibling is also how a doc asserts something its reader cannot check. Put the exact command output in the blob itself (the transcript, the score table, the exit codes) so every number is verifiable from the file being read; keep the transcript files as the re-runnable backing, never as the only place the evidence lives. Corollary: a `rereview_change` that returns CLEAN does **not** clear a per-blob finding unless the ACCUSED blob's bytes changed — a verdict is keyed to the blob's content, so edit the named file; changing a different one leaves the verdict standing.
+- **A DOC that NAMES its evidence files is still unverified-claim — the per-blob window cannot ENUMERATE the range, so INLINE the raw output rather than citing paths.** A review window that could not list the transcript a README named filed the inventory line as a contradiction, and re-filed the SAME finding after the inventory was corrected — because the blob still *depended* on files the window could not see. Naming a sibling is also how a doc asserts something its reader cannot check. Put the exact command output in the blob itself (the transcript, the score table, the exit codes) so every number is verifiable from the file being read; keep the transcript files as the re-runnable backing, never as the only place the evidence lives. Corollary: a `rereview_change` that returns CLEAN does **not** clear a per-blob finding unless the ACCUSED blob's bytes changed — a verdict is keyed to  the blob's content, so edit the named file; changing a different one leaves the verdict standing.
+- **A claim YOU added to a doc without executing it is yours to REMOVE, not to re-prove.** The close
+  reviewer files it unverified-claim; re-proving it spends a cycle on something the change never
+  needed, and rewording invites a re-file. Deleting your own unproven sentence is the honest remedy;
+  a behavior the code actually has gets the committed-test proof instead (see the env-first
+  precedence case: a committed test asserting the override wins cleared it, while the doctor-WARN
+  sentence — asserted, never run — was deleted).
 - **The CLOSE gate is a per-blob reviewer with a limited window — pin the test's
   SUBJECT inside the test.** A test importing module internals from a file the
   close reviewer cannot see is filed FABRICATION; hardcoded expectations are
@@ -472,6 +478,13 @@ workflow change → AGENTS.md/SOUL.md.
   blob in history (and on the public remote once pushed); the amend removes it. The
   tip then moves, so the review receipt no longer matches — re-close the cycle before
   pushing, and expect the per-blob reviewer to judge the changed blobs fresh.
+- **A clean review receipt authorises the push ONLY as a LONE `git push` — any compound shape (pipe,
+  redirection, `&&`, background, separator) is refused as unprovable and must fail closed.** Run the
+  push alone, then verify separately. And the receipt is keyed to the commit SHA range: a `--rebase`
+  pull rewrites the SHAs and invalidates it, while a merge preserves them — reconcile by merge
+  (`git pull --no-rebase`) when a peer's unpushed commits are in the tree so their SHAs survive, then
+  re-close for a fresh receipt before pushing. `git stash pop` is a working-tree WRITE like any other
+  and needs its own begin_change before it.
 - Symptom proof — the specific error/alert/blocker is gone, not just "compiles".
 - Stale expected-lists cleaned (removed crons also removed from uninstall arrays).
 - Doctor clean — `fleet-doctor.py --quiet`; record its EXIT CODE and warning
