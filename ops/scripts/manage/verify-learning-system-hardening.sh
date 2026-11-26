@@ -180,8 +180,10 @@ fi
 # Same logic: the deployed copy is what the live doctor imports, so its
 # absence is a hardening gap, not a not-applicable case. Like claim 3, the
 # deploy stamps a 3-line SOURCE banner on shipped scripts — compare content
-# with the banner stripped (content_sha), not raw sha256, or every nightly
-# run false-FAILs on a banner-only delta.
+# with the banner stripped, not raw sha256, or every nightly run false-FAILs
+# on a banner-only delta. `content_sha` is defined just above claim 3
+# (line ~115 of THIS file): it strips the leading 3-line "# SOURCE:" banner
+# and hashes the rest.
 REPO_CHECKS_SHA=$(content_sha "${REPO}/ops/scripts/manage/fleet_doctor/checks.py")
 DEPLOYED_CHECKS="${HOME}/.steadfaste-fleet/scripts/fleet_doctor/checks.py"
 if [[ -f "${DEPLOYED_CHECKS}" ]]; then
