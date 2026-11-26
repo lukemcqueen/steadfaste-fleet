@@ -99,6 +99,21 @@ Never touch the marker yourself (a bare file fails content verification).
 After fixing gate 1, a gate-2 block is EXPECTED — not a malfunction, and the
 lock is not "already held".
 
+## begin_change locks a REPO — verify it locked the RIGHT one
+
+`begin_change` derives the lock's repo from the current working directory. If the
+cwd resolves to a sibling repo (a design-doc repo sitting next to the fleet repo),
+the lock lands on THAT repo — and a write to the target repo is refused with the
+SAME "GOVERNANCE LOCK REQUIRED" message as if no lock existed, because the per-repo
+gate does not see the foreign lock. The block text is identical either way, so the
+tell is the lock file: read `~/.steadfaste-fleet/state/.governance-<session>.json`
+(or `check_lock`) and confirm `repo_path`/`repo_slug` matches the files you are
+about to edit. If it does not: close the misplaced cycle UNSCORED
+(`feedback_accept(cycle_id=N, unscored_reason='no work performed: lock resolved
+to <wrong repo>')` — zero work under it is exactly the unscored case), `end_change`,
+`cd` into the target repo (`git rev-parse --show-toplevel` to confirm), then
+`begin_change` again.
+
 ## Terminal classifier (what counts as a write)
 
 Any command with compound metacharacters (`; | & > < \` $()` or a newline —

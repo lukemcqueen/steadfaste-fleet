@@ -349,6 +349,13 @@ delivering) / ZERO (cannot verify core claims — investigate, do not deliver).
   'head not below baseline' rule and looks exactly like over-firing — fix the
   fixture, never the code). Recipe: `references/evidence-verifier-recipes.md`.
 - A captured check transcript carries its EXIT CODE and WARNING COUNT.
+- **A NON-SCRIPT artifact needs its real validator run NOW, not a "validated at deploy" promise.**
+  For a systemd unit/template, nginx conf, or other declarative file, writing "syntax validated
+  by systemd at deploy" in the material is filed unverified-claim — deploy-time validation is not
+  a check THIS change performs, and the reviewer says exactly that. Run the actual validator in
+  the cycle and commit the rc=0 artifact: `systemd-analyze verify <unit>` for unit files,
+  `nginx -t` for nginx confs, the config's own parse command otherwise. Reproduce it AFTER the
+  final edit so the artifact covers the shipped blob; `make-evidence.sh` gives the committed shape.
 - Evidence scripts are READ-ONLY — never repair what they measure; never
   commit a query's output before seeing it return rows.
 - A test judged by the close reviewer DERIVES expected values from the

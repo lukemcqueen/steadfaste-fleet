@@ -273,6 +273,13 @@ showed) — otherwise the next reader reintroduces it as "obviously true".
   finding, not a wording nit — the comment is then the ONLY thing holding the invariant, and a
   comment is not a control. Fix it by WRITING the guard, then leave the comment true. The same
   follows for a comment asserting a property is impossible; prove it or delete the claim.
+- **A comment next to a config VALUE is a claim about that value — it must match the placeholder's
+  documented semantics, not a paraphrase that contradicts it.** When you add a line like
+  `Environment=X=<placeholder>`, the adjacent comment must describe what the placeholder MEANS per
+  the skill/reference that documents it (e.g. the hostname-prefix token, not "the agent's name").
+  An independent reviewer files the mismatch as a medium finding (comment contradicts its own
+  value), and it is the same drift class the audit exists to catch — now authored by the fix.
+  Cross-check the comment against the owning skill's documented placeholder before committing.
 - **Editing ONE line inside an example block obliges auditing the WHOLE example.** A config,
   YAML or command block carries an IDENTIFIER (the key, the server name, the env var) that the
   prose beside it and the code consuming it must agree with. Fix the path inside the block and
