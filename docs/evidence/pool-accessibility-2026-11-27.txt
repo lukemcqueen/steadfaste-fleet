@@ -1,0 +1,19 @@
+Running: python3 <HOME>/.hermes/cache/scratch/pool-accessibility-evidence.py
+rc: 1
+when: 2026-11-27T04:57:05Z
+
+Accessibility probe per pool model (hermes chat one-shot, openrouter, --run-budget 120, 2026-11-27 13:5x KST)
+========================================================================================
+amazon/nova-lite-v1: NOT SERVED -> fallback (served=deepseek/deepseek-v4-flash-0731, api_calls=1/150)
+anthropic/claude-haiku-5.5: OK (served=anthropic/claude-haiku-5.5, api_calls=1/150)
+deepseek/deepseek-v4-flash: OK (served=deepseek/deepseek-v4-flash, api_calls=1/150)
+deepseek/deepseek-v4-flash-0731: OK (served=deepseek/deepseek-v4-flash-0731, api_calls=1/150)
+deepseek/deepseek-v4.1-flash-1017: OK (served=deepseek/deepseek-v4.1-flash-1017, api_calls=1/150)
+mistralai/ministral-3b-2512: OK (served=mistralai/ministral-3b-2512, api_calls=1/150)
+mistralai/ministral-8b-2512: OK (served=mistralai/ministral-8b-2512, api_calls=1/150)
+openai/gpt-6-luna: OK (served=openai/gpt-6-luna, api_calls=1/150)
+openai/gpt-oss-20b: OK (served=openai/gpt-oss-20b, api_calls=1/150)
+qwen/qwen3-coder-30b-a3b-instruct: OK (served=qwen/qwen3-coder-30b-a3b-instruct, api_calls=1/150)
+========================================================================================
+RESULT: 9/10 served directly, 1 fell back
+sha256: 2199849e25f2fc3f324126f0fab56def9834e97f77fd6e698b0091d0fa5beef5

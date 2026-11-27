@@ -101,12 +101,6 @@
         "low",
         "medium",
         "high"
-      ],
-      "openrouter:amazon/nova-lite-v1": [
-        "none",
-        "low",
-        "medium",
-        "high"
       ]
     }
   },
@@ -150,7 +144,6 @@
         "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
       ],
       "research": [
-        "openrouter:amazon/nova-lite-v1",
         "openrouter:deepseek/deepseek-v4-flash-0731",
         "openrouter:qwen/qwen3-coder-30b-a3b-instruct"
       ]
@@ -179,11 +172,6 @@
     }
   },
   "prices": {
-    "openrouter:amazon/nova-lite-v1": {
-      "in": 0.06,
-      "out": 0.24,
-      "cache_read": 0.0
-    },
     "openrouter:anthropic/claude-haiku-5.5": {
       "in": 0.1,
       "out": 0.5,
@@ -266,7 +254,7 @@
       "medium/vision": "openrouter:mistralai/ministral-8b-2512 = 0.15 in + 0.15 out = $0.300/M",
       "medium/coding": "openrouter:deepseek/deepseek-v4-flash = 0.09 in + 0.18 out = $0.270/M",
       "medium/writing": "openrouter:mistralai/ministral-8b-2512 = 0.15 in + 0.15 out = $0.300/M",
-      "medium/research": "openrouter:amazon/nova-lite-v1 = 0.06 in + 0.24 out = $0.300/M",
+      "medium/research": "openrouter:deepseek/deepseek-v4-flash-0731 = 0.047 in + 0.30 out = $0.347/M",
       "hard/general": "openrouter:anthropic/claude-haiku-5.5 = 0.1 in + 0.5 out = $0.600/M",
       "hard/coding": "openrouter:openai/gpt-6-luna = 0.1 in + 0.5 out = $0.600/M",
       "hard/vision": "openrouter:anthropic/claude-haiku-5.5 = 0.1 in + 0.5 out = $0.600/M",
@@ -293,6 +281,13 @@
       "reason_ref": "policy.rejected_reason",
       "in_usd_per_m": 0.6,
       "out_usd_per_m": 3.0
+    },
+    "openrouter:amazon/nova-lite-v1": {
+      "price_usd_per_m": 0.3,
+      "ratio_of_baseline": 0.86,
+      "reason": "REMOVED from pools 2026-11-27 (live accessibility verification, cycle verify-pool-model-access): BOTH of its endpoints are Amazon Bedrock, which is excluded on this key (provider_exclusions.amazon-bedrock, 2026-11-17) — live probe 404'd 'All providers have been ignored' and every research turn silently fell back to deepseek/deepseek-v4-flash-0731. Was medium/research head. Re-promote with a one-file edit if an allowed provider starts serving it.",
+      "in_usd_per_m": 0.06,
+      "out_usd_per_m": 0.24
     },
     "openrouter:deepseek/deepseek-v4-pro-0813": {
       "price_usd_per_m": 4.551,
